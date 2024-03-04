@@ -1,5 +1,5 @@
 {
-  "name": "observe",
+  "name": "@rungalileo/observe",
   "version": "0.0.1",
   "description": "NodeJS client for Galileo Observe.",
   "main": "index.js",
