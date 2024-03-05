@@ -1,3 +1,3 @@
-import { GalileoObserveCallback } from "./src/callback";
+import { GalileoObserveCallback } from './src/callback'
 
-module.exports = GalileoObserveCallback;
+module.exports = GalileoObserveCallback

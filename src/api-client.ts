@@ -39,9 +39,15 @@ class HttpHeaders {
 }
 
 export class ApiClient {
-  private project_id: string | null;
+  private project_id: string;
   private api_url: string;
   private token: string;
+
+  constructor() {
+    this.project_id = '';
+    this.api_url = '';
+    this.token = '';
+  }
 
   public async init(project_name: string): Promise<void> {
     this.api_url = await this.getApiUrl();
@@ -49,7 +55,7 @@ export class ApiClient {
       this.token = await this.getToken();
       try {
         this.project_id = await this.getProjectIdByName(project_name);
-      } catch (e) {
+      } catch (e: any) {
         if (e.message.includes('not found')) {
           await this.createProject(project_name);
           console.log(
