@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import {decode} from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
@@ -114,7 +114,7 @@ export class ApiClient {
     );
   }
 
-  private async get_auth_header(): Promise<{ Authorization: string }> {
+  private get_auth_header(): { Authorization: string } {
     return { Authorization: `Bearer ${this.token}` };
   }
 
@@ -139,7 +139,7 @@ export class ApiClient {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
     if (endpoint !== Routes.login && this.token) {
-      const claims: any = jwt.decode(this.token, { complete: true });
+      const claims: any = decode(this.token, { complete: true });
       if (claims.payload.exp < Math.floor(Date.now() / 1000)) {
         this.token = await this.getToken();
       }

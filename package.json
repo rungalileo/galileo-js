@@ -15,8 +15,12 @@
   "homepage": "https://www.rungalileo.io/",
   "dependencies": {
     "@langchain/community": "^0.0.34",
+    "@langchain/core": "^0.1.41",
+    "@langchain/openai": "^0.0.16",
     "axios": "^1.6.7",
-    "jsonwebtoken": "^9.0.2"
+    "hnswlib-node": "^1.4.2",
+    "jsonwebtoken": "^9.0.2",
+    "langchain": "^0.1.25"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",

@@ -1,5 +1,3 @@
-import { GalileoObserveCallback } from './src/callback'
+import { GalileoObserveCallback } from './src/callback.js'
 
-module.exports = {
-    GalileoObserveCallback
-}
+export {GalileoObserveCallback}
