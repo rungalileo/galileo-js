@@ -4,9 +4,28 @@
   "description": "NodeJS client for Galileo Observe.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "lint-fix": "eslint . --fix",
+    "format": "prettier --config .prettierrc.js 'src/**/*.ts' --write"
   },
   "author": "Galileo Technologies Inc. <team@rungalileo.io>",
   "license": "Apache-2.0",
-  "homepage": "https://www.rungalileo.io/"
+  "homepage": "https://www.rungalileo.io/",
+  "dependencies": {
+    "@langchain/community": "^0.0.34",
+    "axios": "^1.6.7",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.1.1",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  }
 }

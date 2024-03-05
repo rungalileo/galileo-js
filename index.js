@@ -1,5 +1,3 @@
-function hello() {
-  return "Hello from Galileo Observe!";
-}
+import { GalileoObserveCallback } from "./src/callback";
 
-module.exports = hello;
+module.exports = GalileoObserveCallback;
