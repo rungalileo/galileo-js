@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Routes = void 0;
-var Routes = {
+const Routes = {
     healthcheck: 'healthcheck',
     login: 'login',
     get_token: 'get-token',
@@ -19,3 +19,4 @@ var Routes = {
     ingest: '/projects/{project_id}/llm_monitor/ingest'
 };
 exports.Routes = Routes;
+//# sourceMappingURL=routes.constants.js.map

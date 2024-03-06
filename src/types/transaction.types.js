@@ -10,3 +10,4 @@ var TransactionRecordType;
     TransactionRecordType["agent"] = "agent";
     TransactionRecordType["retriever"] = "retriever";
 })(TransactionRecordType || (exports.TransactionRecordType = TransactionRecordType = {}));
+//# sourceMappingURL=transaction.types.js.map

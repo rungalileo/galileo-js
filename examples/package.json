@@ -1,0 +1,19 @@
+{
+  "name": "observe-js-example",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "openai.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/community": "^0.0.35",
+    "@langchain/core": "^0.1.42",
+    "@langchain/openai": "^0.0.16",
+    "hnswlib-node": "^1.4.2",
+    "langchain": "^0.1.25"
+  }
+}

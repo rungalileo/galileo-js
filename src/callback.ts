@@ -19,12 +19,17 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
   timers: Record<string, Record<string, number>> = {};
   records: Record<string, TransactionRecord> = {};
   version: string | null;
+  project_name: string;
 
   constructor(project_name: string, version: string | null = null) {
     super();
     this.version = version;
+    this.project_name = project_name;
     this.api_client = new ApiClient();
-    this.api_client.init(project_name);
+  }
+
+  async init(): Promise<void> {
+    await this.api_client.init(this.project_name);
   }
 
   private async _start_new_node(

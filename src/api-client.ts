@@ -5,6 +5,7 @@ import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 import { Routes } from './constants/routes.constants.js';
 import type { TransactionRecordBatch } from './types/transaction.types.js';
 
+import querystring from 'querystring';
 interface Project {
   id: string;
   name: string;
@@ -18,25 +19,25 @@ enum RequestMethod {
   DELETE = 'DELETE'
 }
 
-class HttpHeaders {
-  accept = 'accept';
-  content_type = 'Content-Type';
-  application_json = 'application/json';
+// class HttpHeaders {
+//   accept = 'accept';
+//   content_type = 'Content-Type';
+//   application_json = 'application/json';
 
-  static acceptJson(): Record<string, string> {
-    const headers = new HttpHeaders();
-    return { [headers.accept]: headers.application_json };
-  }
+//   static acceptJson(): Record<string, string> {
+//     const headers = new HttpHeaders();
+//     return { [headers.accept]: headers.application_json };
+//   }
 
-  static json(): Record<string, string> {
-    return { ...HttpHeaders.acceptJson(), ...HttpHeaders.contentTypeJson() };
-  }
+//   static json(): Record<string, string> {
+//     return { ...HttpHeaders.acceptJson(), ...HttpHeaders.contentTypeJson() };
+//   }
 
-  static contentTypeJson(): Record<string, string> {
-    const headers = new HttpHeaders();
-    return { [headers.content_type]: headers.application_json };
-  }
-}
+//   static contentTypeJson(): Record<string, string> {
+//     const headers = new HttpHeaders();
+//     return { [headers.content_type]: headers.application_json };
+//   }
+// }
 
 export class ApiClient {
   private project_id: string;
@@ -50,7 +51,7 @@ export class ApiClient {
   }
 
   public async init(project_name: string): Promise<void> {
-    this.api_url = await this.getApiUrl();
+    this.api_url = this.getApiUrl();
     if (await this.healthcheck()) {
       this.token = await this.getToken();
       try {
@@ -68,7 +69,7 @@ export class ApiClient {
     }
   }
 
-  private async getApiUrl(): Promise<string> {
+  private getApiUrl(): string {
     const console_url = process.env.GALILEO_CONSOLE_URL;
     if (!console_url) {
       throw new Error('GALILEO_CONSOLE_URL must be set');
@@ -94,7 +95,7 @@ export class ApiClient {
   }
 
   private async healthcheck(): Promise<boolean> {
-    await this.makeRequest(RequestMethod.GET, this.api_url, Routes.healthcheck);
+    await this.makeRequest(RequestMethod.GET, Routes.healthcheck);
     return true;
   }
 
@@ -104,18 +105,18 @@ export class ApiClient {
   ): Promise<{ access_token: string }> {
     return await this.makeRequest(
       RequestMethod.POST,
-      this.api_url,
       Routes.login,
-      {
+      querystring.stringify({
         username,
-        password,
-        auth_method: 'email'
-      }
+        password
+      })
     );
   }
 
-  private get_auth_header(): { Authorization: string } {
-    return { Authorization: `Bearer ${this.token}` };
+  private async getAuthHeader(
+    token: string
+  ): Promise<{ Authorization: string }> {
+    return { Authorization: `Bearer ${token}` };
   }
 
   private async validateResponse(response: AxiosResponse): Promise<void> {
@@ -129,15 +130,11 @@ export class ApiClient {
   private async makeRequest(
     request_method: Method,
     endpoint: string,
-    body?: any,
-    data?: any,
-    files?: any,
-    params?: any,
-    timeout?: number | null,
-    json_request_only?: boolean
+    data?: any
   ): Promise<any> {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
+    let headers: any = {};
     if (endpoint !== Routes.login && this.token) {
       const claims: any = decode(this.token, { complete: true });
       if (claims.payload.exp < Math.floor(Date.now() / 1000)) {
@@ -145,19 +142,15 @@ export class ApiClient {
       }
     }
 
-    const headers = {
-      ...this.get_auth_header(),
-      ...(json_request_only ? HttpHeaders.acceptJson() : HttpHeaders.json())
-    };
+    if (this.token) {
+      headers = await this.getAuthHeader(this.token);
+    }
+
     const config: AxiosRequestConfig = {
       method: request_method,
-      url: `${this.api_url}${endpoint}`,
+      url: `${this.api_url}/${endpoint}`,
       headers,
-      timeout,
-      params,
-      data,
-      ...(body && { body }),
-      ...(files && { files })
+      data
     };
 
     const response = await axios.request(config);
