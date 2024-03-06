@@ -5,7 +5,7 @@ import type { Serialized } from '@langchain/core/load/serializable';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import type { AgentAction, AgentFinish } from '@langchain/core/agents';
 import type { ChainValues } from '@langchain/core/utils/types';
-import { ApiClient } from './api-client';
+import { ApiClient } from './api-client.js';
 
 export class GalileoObserveCallback extends BaseCallbackHandler {
   name = 'GalileoObserveCallback';

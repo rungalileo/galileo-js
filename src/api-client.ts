@@ -2,8 +2,8 @@ import {decode} from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
-import { Routes } from './constants/routes.constants';
-import type { TransactionRecordBatch } from './types/transaction.types';
+import { Routes } from './constants/routes.constants.js';
+import type { TransactionRecordBatch } from './types/transaction.types.js';
 
 interface Project {
   id: string;

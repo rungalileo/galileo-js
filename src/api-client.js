@@ -50,7 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiClient = void 0;
 var jsonwebtoken_1 = require("jsonwebtoken");
 var axios_1 = require("axios");
-var routes_constants_1 = require("./constants/routes.constants");
+var routes_constants_js_1 = require("./constants/routes.constants.js");
 var RequestMethod;
 (function (RequestMethod) {
     RequestMethod["GET"] = "GET";
@@ -167,7 +167,7 @@ var ApiClient = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.GET, this.api_url, routes_constants_1.Routes.healthcheck)];
+                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.GET, this.api_url, routes_constants_js_1.Routes.healthcheck)];
                     case 1:
                         _a.sent();
                         return [2 /*return*/, true];
@@ -179,7 +179,7 @@ var ApiClient = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.POST, this.api_url, routes_constants_1.Routes.login, {
+                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.POST, this.api_url, routes_constants_js_1.Routes.login, {
                             username: username,
                             password: password,
                             auth_method: 'email'
@@ -211,7 +211,7 @@ var ApiClient = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        if (!(endpoint !== routes_constants_1.Routes.login && this.token)) return [3 /*break*/, 2];
+                        if (!(endpoint !== routes_constants_js_1.Routes.login && this.token)) return [3 /*break*/, 2];
                         claims = (0, jsonwebtoken_1.decode)(this.token, { complete: true });
                         if (!(claims.payload.exp < Math.floor(Date.now() / 1000))) return [3 /*break*/, 2];
                         _a = this;
@@ -237,7 +237,7 @@ var ApiClient = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.POST, routes_constants_1.Routes.ingest.replace('{project_id}', this.project_id), transaction_batch)];
+                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.ingest.replace('{project_id}', this.project_id), transaction_batch)];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             });
@@ -248,7 +248,7 @@ var ApiClient = /** @class */ (function () {
             var projects;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.GET, routes_constants_1.Routes.projects, {
+                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.GET, routes_constants_js_1.Routes.projects, {
                             project_name: project_name,
                             type: 'llm_monitor'
                         })];
@@ -266,7 +266,7 @@ var ApiClient = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.POST, routes_constants_1.Routes.projects, {
+                    case 0: return [4 /*yield*/, this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.projects, {
                             name: project_name,
                             type: 'llm_monitor'
                         })];

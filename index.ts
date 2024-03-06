@@ -1,3 +1,1 @@
-import { GalileoObserveCallback } from './src/callback.js'
-
-export {GalileoObserveCallback}
+export * from './src/callback.js'

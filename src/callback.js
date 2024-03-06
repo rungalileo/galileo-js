@@ -17,13 +17,13 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GalileoObserveCallback = void 0;
 var base_1 = require("@langchain/core/callbacks/base");
-var api_client_1 = require("./api-client");
+var api_client_js_1 = require("./api-client.js");
 var GalileoObserveCallback = /** @class */ (function (_super) {
     __extends(GalileoObserveCallback, _super);
     function GalileoObserveCallback(project_name) {
         var _this = _super.call(this) || this;
         _this.name = 'GalileoObserveCallback';
-        _this.api_client = new api_client_1.ApiClient();
+        _this.api_client = new api_client_js_1.ApiClient();
         _this.api_client.init(project_name);
         return _this;
     }
