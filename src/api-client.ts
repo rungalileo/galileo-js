@@ -1,4 +1,4 @@
-import {decode} from 'jsonwebtoken';
+import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
