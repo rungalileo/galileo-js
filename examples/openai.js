@@ -8,7 +8,6 @@ import {
 } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { GalileoObserveCallback } from "@rungalileo/observe";
-import { callbackify } from "util";
 
 const observe_callback = new GalileoObserveCallback("llm_monitor_test_1")
 

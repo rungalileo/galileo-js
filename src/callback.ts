@@ -15,8 +15,6 @@ import {
 import { encoding_for_model } from 'tiktoken/init';
 import { TiktokenModel } from '@langchain/openai';
 
-const IDX_OF_CONSTRUCTOR = 3;
-
 export class GalileoObserveCallback extends BaseCallbackHandler {
   name = 'GalileoObserveCallback';
   api_client: ApiClient;
@@ -111,7 +109,7 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
       parentRunId
     );
     const input_text = prompts[0];
-    const constructor = llm['id'][IDX_OF_CONSTRUCTOR];
+    const constructor = llm['id'].pop();
     const invocation_params: any = extraParams?.invocation_params;
     const model = invocation_params?.model_name;
     const temperature = invocation_params?.temperature;
@@ -222,7 +220,7 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
       parentRunId
     );
     const chat_messages = new ChatPromptValue(messages[0]);
-    const constructor = llm['id'][IDX_OF_CONSTRUCTOR];
+    const constructor = llm['id'].pop();
     const invocation_params: any = extraParams?.invocation_params;
     const model = invocation_params?.model || invocation_params?._type;
     const temperature = invocation_params?.temperature;
@@ -260,7 +258,7 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
       runId,
       parentRunId
     );
-    const constructor = chain['id'][IDX_OF_CONSTRUCTOR];
+    const constructor = chain['id'].pop();
 
     let node_input: any = {};
     if (typeof inputs === 'string') {
@@ -358,7 +356,28 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined,
     name?: string | undefined
-  ): Promise<any>;
+  ): Promise<void> {
+    const [node_id, chain_root_id, chain_id] = await this._start_new_node(
+      runId,
+      parentRunId
+    );
+
+    const constructor = tool['id'].pop();
+
+    this.records[node_id] = {
+      node_id: node_id,
+      chain_id: chain_id,
+      chain_root_id: chain_root_id,
+      input_text: input,
+      created_at: new Date().toISOString(),
+      tags: tags,
+      user_metadata: metadata,
+      node_type: TransactionRecordType.tool,
+      constructor: constructor,
+      version: this.version,
+      has_children: false
+    };
+  }
   /**
    * Called if a Tool run encounters an error
    */
@@ -367,7 +386,15 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined
-  ): Promise<any>;
+  ): Promise<void> {
+    const [node_id, latency_ms] = await this._end_node(runId);
+    const record = this.records[node_id];
+    record.output_text = `ERROR: ${err.message}`;
+    record.latency_ms = latency_ms;
+    record.status_code = err.response.status;
+
+    await this._finalize_node(record);
+  }
   /**
    * Called at the end of a Tool run, with the tool output and the run ID.
    */
@@ -376,23 +403,16 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined
-  ): Promise<any>;
-  async handleText?(
-    text: string,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void>;
-  /**
-   * Called when an agent is about to execute an action,
-   * with the action and the run ID.
-   */
-  async handleAgentAction?(
-    action: AgentAction,
-    runId: string,
-    parentRunId?: string | undefined,
-    tags?: string[] | undefined
-  ): Promise<void>;
+  ): Promise<void> {
+    const [node_id, latency_ms] = await this._end_node(runId);
+    const record = this.records[node_id];
+    record.output_text = output;
+    record.latency_ms = latency_ms;
+    record.status_code = 200;
+
+    await this._finalize_node(record);
+  }
+
   /**
    * Called when an agent finishes execution, before it exits.
    * with the final output and the run ID.
@@ -402,7 +422,13 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined
-  ): Promise<void>;
+  ): Promise<void> {
+    const node_id = runId;
+    const record = this.records[node_id];
+    record.node_type = TransactionRecordType.agent;
+
+    await this._finalize_node(record);
+  }
 
   async handleRetrieverStart?(
     retriever: Serialized,
@@ -412,19 +438,56 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
     tags?: string[] | undefined,
     metadata?: Record<string, unknown> | undefined,
     name?: string | undefined
-  ): Promise<any>;
+  ): Promise<void> {
+    const [node_id, chain_root_id, chain_id] = await this._start_new_node(
+      runId,
+      parentRunId
+    );
+
+    const constructor = retriever['id'].pop();
+
+    this.records[node_id] = {
+      node_id: node_id,
+      chain_id: chain_id,
+      chain_root_id: chain_root_id,
+      input_text: query,
+      created_at: new Date().toISOString(),
+      tags: tags,
+      user_metadata: metadata,
+      node_type: TransactionRecordType.retriever,
+      constructor: constructor,
+      version: this.version,
+      has_children: false
+    };
+  }
 
   async handleRetrieverEnd?(
     documents: DocumentInterface<Record<string, any>>[],
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined
-  ): Promise<any>;
+  ): Promise<void> {
+    const [node_id, latency_ms] = await this._end_node(runId);
+    const record = this.records[node_id];
+    record.output_text = JSON.stringify(documents);
+    record.latency_ms = latency_ms;
+    record.status_code = 200;
+
+    await this._finalize_node(record);
+  }
 
   async handleRetrieverError?(
     err: any,
     runId: string,
     parentRunId?: string | undefined,
     tags?: string[] | undefined
-  ): Promise<any>;
+  ): Promise<void> {
+    const [node_id, latency_ms] = await this._end_node(runId);
+    const record = this.records[node_id];
+    record.output_text = `ERROR: ${err.message}`;
+    record.latency_ms = latency_ms;
+    record.status_code = err.response.status;
+
+    await this._finalize_node(record);
+  }
 }

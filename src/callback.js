@@ -8,7 +8,6 @@ const api_client_js_1 = require("./api-client.js");
 const prompt_values_1 = require("@langchain/core/prompt_values");
 const transaction_types_js_1 = require("./types/transaction.types.js");
 const init_1 = require("tiktoken/init");
-const IDX_OF_CONSTRUCTOR = 3;
 class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     constructor(project_name, version) {
         super();
@@ -47,8 +46,6 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     }
     async _end_node(run_id) {
         const node_id = run_id;
-        console.log(node_id);
-        console.log(this.timers);
         this.timers[node_id]['stop'] = performance.now();
         const latency_ms = Math.round((this.timers[node_id]['stop'] - this.timers[node_id]['start']) * 1000);
         delete this.timers[node_id];
@@ -75,7 +72,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     async handleLLMStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata, name) {
         const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
         const input_text = prompts[0];
-        const constructor = llm['id'][IDX_OF_CONSTRUCTOR];
+        const constructor = llm['id'].pop();
         const invocation_params = extraParams?.invocation_params;
         const model = invocation_params?.model_name;
         const temperature = invocation_params?.temperature;
@@ -110,49 +107,44 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      * Called at the end of an LLM/ChatModel run, with the output and the run ID.
      */
     async handleLLMEnd(output, runId, parentRunId, tags) {
-        try {
-            const [node_id, latency_ms] = await this._end_node(runId);
-            const generation = output.generations[0][0];
-            const output_text = generation.text;
-            let num_input_tokens = undefined;
-            let num_output_tokens = undefined;
-            let num_total_tokens = undefined;
-            if (output.llmOutput) {
-                const usage = output.llmOutput.tokenUsage || {};
-                num_input_tokens = usage.promptTokens || null;
-                num_output_tokens = usage.completionTokens || null;
-                num_total_tokens = usage.totalTokens || null;
-            }
-            else {
-                try {
-                    const encoding = (0, init_1.encoding_for_model)(this.records[node_id].model);
-                    num_input_tokens = encoding.encode(this.records[node_id].input_text).length;
-                    num_output_tokens = encoding.encode(output_text).length;
-                    num_total_tokens = num_input_tokens + num_output_tokens;
-                }
-                catch (error) {
-                    num_input_tokens = 0;
-                    num_output_tokens = 0;
-                    num_total_tokens = 0;
-                }
-            }
-            let finish_reason;
-            if (generation.generationInfo) {
-                finish_reason = generation.generationInfo.finish_reason || '';
-            }
-            const record = this.records[node_id];
-            record.output_text = output_text;
-            record.num_input_tokens = num_input_tokens;
-            record.num_output_tokens = num_output_tokens;
-            record.num_total_tokens = num_total_tokens;
-            record.finish_reason = finish_reason;
-            record.latency_ms = latency_ms;
-            record.status_code = 200;
-            await this._finalize_node(record);
+        const [node_id, latency_ms] = await this._end_node(runId);
+        const generation = output.generations[0][0];
+        const output_text = generation.text;
+        let num_input_tokens = undefined;
+        let num_output_tokens = undefined;
+        let num_total_tokens = undefined;
+        if (output.llmOutput) {
+            const usage = output.llmOutput.tokenUsage || {};
+            num_input_tokens = usage.promptTokens || null;
+            num_output_tokens = usage.completionTokens || null;
+            num_total_tokens = usage.totalTokens || null;
         }
-        catch (error) {
-            console.error('Error in handleLLMEnd', error);
+        else {
+            try {
+                const encoding = (0, init_1.encoding_for_model)(this.records[node_id].model);
+                num_input_tokens = encoding.encode(this.records[node_id].input_text).length;
+                num_output_tokens = encoding.encode(output_text).length;
+                num_total_tokens = num_input_tokens + num_output_tokens;
+            }
+            catch (error) {
+                num_input_tokens = 0;
+                num_output_tokens = 0;
+                num_total_tokens = 0;
+            }
         }
+        let finish_reason;
+        if (generation.generationInfo) {
+            finish_reason = generation.generationInfo.finish_reason || '';
+        }
+        const record = this.records[node_id];
+        record.output_text = output_text;
+        record.num_input_tokens = num_input_tokens;
+        record.num_output_tokens = num_output_tokens;
+        record.num_total_tokens = num_total_tokens;
+        record.finish_reason = finish_reason;
+        record.latency_ms = latency_ms;
+        record.status_code = 200;
+        await this._finalize_node(record);
     }
     /**
      * Called at the start of a Chat Model run, with the prompt(s)
@@ -161,7 +153,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     async handleChatModelStart(llm, messages, runId, parentRunId, extraParams, tags, metadata, name) {
         const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
         const chat_messages = new prompt_values_1.ChatPromptValue(messages[0]);
-        const constructor = llm['id'][IDX_OF_CONSTRUCTOR];
+        const constructor = llm['id'].pop();
         const invocation_params = extraParams?.invocation_params;
         const model = invocation_params?.model || invocation_params?._type;
         const temperature = invocation_params?.temperature;
@@ -187,7 +179,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      */
     async handleChainStart(chain, inputs, runId, parentRunId, tags, metadata, runType, name) {
         const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
-        const constructor = chain['id'][IDX_OF_CONSTRUCTOR];
+        const constructor = chain['id'].pop();
         let node_input = {};
         if (typeof inputs === 'string') {
             node_input = { input: inputs };
@@ -241,6 +233,92 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
         record.finish_reason = 'chain_end';
         record.latency_ms = latency_ms;
         record.status_code = 200;
+        await this._finalize_node(record);
+    }
+    /**
+     * Called at the start of a Tool run, with the tool name and input
+     * and the run ID.
+     */
+    async handleToolStart(tool, input, runId, parentRunId, tags, metadata, name) {
+        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
+        const constructor = tool['id'].pop();
+        this.records[node_id] = {
+            node_id: node_id,
+            chain_id: chain_id,
+            chain_root_id: chain_root_id,
+            input_text: input,
+            created_at: new Date().toISOString(),
+            tags: tags,
+            user_metadata: metadata,
+            node_type: transaction_types_js_1.TransactionRecordType.tool,
+            constructor: constructor,
+            version: this.version,
+            has_children: false
+        };
+    }
+    /**
+     * Called if a Tool run encounters an error
+     */
+    async handleToolError(err, runId, parentRunId, tags) {
+        const [node_id, latency_ms] = await this._end_node(runId);
+        const record = this.records[node_id];
+        record.output_text = `ERROR: ${err.message}`;
+        record.latency_ms = latency_ms;
+        record.status_code = err.response.status;
+        await this._finalize_node(record);
+    }
+    /**
+     * Called at the end of a Tool run, with the tool output and the run ID.
+     */
+    async handleToolEnd(output, runId, parentRunId, tags) {
+        const [node_id, latency_ms] = await this._end_node(runId);
+        const record = this.records[node_id];
+        record.output_text = output;
+        record.latency_ms = latency_ms;
+        record.status_code = 200;
+        await this._finalize_node(record);
+    }
+    /**
+     * Called when an agent finishes execution, before it exits.
+     * with the final output and the run ID.
+     */
+    async handleAgentEnd(action, runId, parentRunId, tags) {
+        const node_id = runId;
+        const record = this.records[node_id];
+        record.node_type = transaction_types_js_1.TransactionRecordType.agent;
+        await this._finalize_node(record);
+    }
+    async handleRetrieverStart(retriever, query, runId, parentRunId, tags, metadata, name) {
+        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
+        const constructor = retriever['id'].pop();
+        this.records[node_id] = {
+            node_id: node_id,
+            chain_id: chain_id,
+            chain_root_id: chain_root_id,
+            input_text: query,
+            created_at: new Date().toISOString(),
+            tags: tags,
+            user_metadata: metadata,
+            node_type: transaction_types_js_1.TransactionRecordType.retriever,
+            constructor: constructor,
+            version: this.version,
+            has_children: false
+        };
+    }
+    async handleRetrieverEnd(documents, runId, parentRunId, tags) {
+        const [node_id, latency_ms] = await this._end_node(runId);
+        const record = this.records[node_id];
+        record.output_text = JSON.stringify(documents);
+        record.latency_ms = latency_ms;
+        record.status_code = 200;
+        await this._finalize_node(record);
+    }
+    async handleRetrieverError(err, runId, parentRunId, tags) {
+        const [node_id, latency_ms] = await this._end_node(runId);
+        const record = this.records[node_id];
+        record.output_text = `ERROR: ${err.message}`;
+        record.latency_ms = latency_ms;
+        record.status_code = err.response.status;
         await this._finalize_node(record);
     }
 }
