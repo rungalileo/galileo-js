@@ -16,7 +16,7 @@ const Routes = {
     jobs: 'jobs',
     metrics: 'projects/{project_id}/runs/{run_id}/metrics',
     integrations: 'integrations/{integration_name}',
-    ingest: '/projects/{project_id}/llm_monitor/ingest'
+    ingest: 'projects/{project_id}/llm_monitor/ingest'
 };
 exports.Routes = Routes;
 //# sourceMappingURL=routes.constants.js.map

@@ -8,12 +8,13 @@ import {
 } from "@langchain/core/runnables";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { GalileoObserveCallback } from "@rungalileo/observe";
+import { callbackify } from "util";
 
 const observe_callback = new GalileoObserveCallback("llm_monitor_test_1")
 
 await observe_callback.init();
 
-const model = new ChatOpenAI({callbacks: [observe_callback]});
+const model = new ChatOpenAI();
 
 const condenseQuestionTemplate = `Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
 
@@ -75,8 +76,8 @@ const conversationalRetrievalQAChain =
 const result1 = await conversationalRetrievalQAChain.invoke({
   question: "What is the powerhouse of the cell?",
   chat_history: [],
-});
-console.log(result1);
+}, {callbacks: [observe_callback]});
+// console.log(result1);
 
 const result2 = await conversationalRetrievalQAChain.invoke({
   question: "What are they made out of?",
@@ -86,5 +87,5 @@ const result2 = await conversationalRetrievalQAChain.invoke({
       "The powerhouse of the cell is the mitochondria.",
     ],
   ],
-});
-console.log(result2);
+}, {callbacks: [observe_callback]});
+// console.log(result2);
