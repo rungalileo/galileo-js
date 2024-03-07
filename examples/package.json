@@ -15,6 +15,5 @@
     "@langchain/openai": "^0.0.16",
     "hnswlib-node": "^1.4.2",
     "langchain": "^0.1.25",
-    "tiktoken": "^1.0.13"
   }
 }
