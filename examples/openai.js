@@ -9,7 +9,7 @@ import {
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { GalileoObserveCallback } from "@rungalileo/observe";
 
-const observe_callback = new GalileoObserveCallback("llm_monitor_test_1")
+const observe_callback = new GalileoObserveCallback("llm_monitor_test_1", version="chat_app_v1")
 
 await observe_callback.init();
 
