@@ -69,13 +69,18 @@ class ApiClient {
         }
     }
     async getToken() {
+        const apiKey = process.env.GALILEO_API_KEY;
+        if (apiKey) {
+            const loginResponse = await this.apiKeyLogin(apiKey);
+            return loginResponse.access_token || '';
+        }
         const username = process.env.GALILEO_USERNAME;
         const password = process.env.GALILEO_PASSWORD;
-        if (!username || !password) {
-            throw new Error('GALILEO_USERNAME and GALILEO_PASSWORD must be set');
+        if (username && password) {
+            const loginResponse = await this.usernameLogin(username, password);
+            return loginResponse.access_token || '';
         }
-        const loginResponse = await this.usernameLogin(username, password);
-        return loginResponse.access_token || '';
+        throw new Error('GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set');
     }
     async healthcheck() {
         await this.makeRequest(RequestMethod.GET, routes_constants_js_1.Routes.healthcheck);
@@ -85,6 +90,11 @@ class ApiClient {
         return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.login, querystring_1.default.stringify({
             username,
             password
+        }));
+    }
+    async apiKeyLogin(apiKey) {
+        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.api_key_login, querystring_1.default.stringify({
+            api_key: apiKey
         }));
     }
     async getAuthHeader(token) {
@@ -97,7 +107,7 @@ class ApiClient {
             throw new Error(msg);
         }
     }
-    async makeRequest(request_method, endpoint, data) {
+    async makeRequest(request_method, endpoint, data, params) {
         // Check to see if our token is expired before making a request
         // and refresh token if it's expired
         let headers = {};
@@ -113,6 +123,7 @@ class ApiClient {
         const config = {
             method: request_method,
             url: `${this.api_url}/${endpoint}`,
+            params,
             headers,
             data
         };
@@ -137,6 +148,29 @@ class ApiClient {
         return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.projects, {
             name: project_name,
             type: 'llm_monitor'
+        });
+    }
+    async getLoggedData(start_time, end_time, filters = [], sort_spec = [], limit, offset, include_chains, chain_id) {
+        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.rows.replace('{project_id}', this.project_id), {
+            filters,
+            sort_spec
+        }, {
+            start_time,
+            end_time,
+            chain_id,
+            limit,
+            offset,
+            include_chains
+        });
+    }
+    async getMetrics(start_time, end_time, filters = [], interval, group_by) {
+        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.metrics.replace('{project_id}', this.project_id), {
+            filters
+        }, {
+            start_time,
+            end_time,
+            interval,
+            group_by
         });
     }
 }

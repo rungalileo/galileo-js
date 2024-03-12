@@ -85,13 +85,22 @@ export class ApiClient {
   }
 
   private async getToken(): Promise<string> {
+    const apiKey = process.env.GALILEO_API_KEY;
+    if (apiKey) {
+      const loginResponse = await this.apiKeyLogin(apiKey);
+      return loginResponse.access_token || '';
+    }
+
     const username = process.env.GALILEO_USERNAME;
     const password = process.env.GALILEO_PASSWORD;
-    if (!username || !password) {
-      throw new Error('GALILEO_USERNAME and GALILEO_PASSWORD must be set');
+    if (username && password) {
+      const loginResponse = await this.usernameLogin(username, password);
+      return loginResponse.access_token || '';
     }
-    const loginResponse = await this.usernameLogin(username, password);
-    return loginResponse.access_token || '';
+
+    throw new Error(
+      'GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set'
+    );
   }
 
   private async healthcheck(): Promise<boolean> {
@@ -113,6 +122,16 @@ export class ApiClient {
     );
   }
 
+  private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
+    return await this.makeRequest(
+      RequestMethod.POST,
+      Routes.api_key_login,
+      querystring.stringify({
+        api_key: apiKey
+      })
+    );
+  }
+
   private async getAuthHeader(
     token: string
   ): Promise<{ Authorization: string }> {
@@ -130,7 +149,8 @@ export class ApiClient {
   private async makeRequest(
     request_method: Method,
     endpoint: string,
-    data?: any
+    data?: any,
+    params?: any
   ): Promise<any> {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
@@ -149,6 +169,7 @@ export class ApiClient {
     const config: AxiosRequestConfig = {
       method: request_method,
       url: `${this.api_url}/${endpoint}`,
+      params,
       headers,
       data
     };
@@ -168,7 +189,7 @@ export class ApiClient {
     );
   }
 
-  private async getProjectIdByName(project_name: string): Promise<string> {
+  public async getProjectIdByName(project_name: string): Promise<string> {
     const projects: Project[] = await this.makeRequest(
       RequestMethod.GET,
       Routes.projects,
@@ -190,5 +211,55 @@ export class ApiClient {
       name: project_name,
       type: 'llm_monitor'
     });
+  }
+
+  public async getLoggedData(
+    start_time: string,
+    end_time: string,
+    filters: Array<any> = [],
+    sort_spec: Array<any> = [],
+    limit?: number,
+    offset?: number,
+    include_chains?: boolean,
+    chain_id?: string
+  ): Promise<any> {
+    return await this.makeRequest(
+      RequestMethod.POST,
+      Routes.rows.replace('{project_id}', this.project_id),
+      {
+        filters,
+        sort_spec
+      },
+      {
+        start_time,
+        end_time,
+        chain_id,
+        limit,
+        offset,
+        include_chains
+      }
+    );
+  }
+
+  public async getMetrics(
+    start_time: string,
+    end_time: string,
+    filters: Array<any> = [],
+    interval?: number,
+    group_by?: string
+  ): Promise<any> {
+    return await this.makeRequest(
+      RequestMethod.POST,
+      Routes.metrics.replace('{project_id}', this.project_id),
+      {
+        filters
+      },
+      {
+        start_time,
+        end_time,
+        interval,
+        group_by
+      }
+    );
   }
 }
