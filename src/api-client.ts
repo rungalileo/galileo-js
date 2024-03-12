@@ -126,9 +126,9 @@ export class ApiClient {
     return await this.makeRequest(
       RequestMethod.POST,
       Routes.api_key_login,
-      querystring.stringify({
+      {
         api_key: apiKey
-      })
+      }
     );
   }
 

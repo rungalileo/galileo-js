@@ -93,9 +93,9 @@ class ApiClient {
         }));
     }
     async apiKeyLogin(apiKey) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.api_key_login, querystring_1.default.stringify({
+        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.api_key_login, {
             api_key: apiKey
-        }));
+        });
     }
     async getAuthHeader(token) {
         return { Authorization: `Bearer ${token}` };
