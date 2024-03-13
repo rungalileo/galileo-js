@@ -27,11 +27,9 @@ class ApiClient {
             this.token = await this.getToken();
             try {
                 this.project_id = await this.getProjectIdByName(project_name);
-                console.log(`🚀 Using project ${project_name} with id ${this.project_id}`);
             }
             catch (e) {
                 if (e.message.includes('not found')) {
-                    console.log("here!");
                     const project = await this.createProject(project_name);
                     this.project_id = project.id;
                     console.log(`🚀 Creating new project... project ${project_name} created!`);
