@@ -18,16 +18,16 @@ When updating the code, only modify the *.ts files and then run:
 - `npm run lint-fix` (this doesn't currently pass)
 - `npm run build`
 
-## Sample usage
+## Logging data to Galileo Observe
 ```
 import { GalileoObserveCallback } from "@rungalileo/observe";
 const observe_callback = new GalileoObserveCallback("llm_monitor_example", "app_v1")// project and version
 await observe_callback.init();
 ```
 
-Add the callback `{callbacks: [observe_callback]}` in the invoke step of your application.
+Add the callback `{callbacks: [observe_callback]}` in the Langchain invoke step of your application.
 
-## Data logging
+## Retrieving data from Galileo Observe
 
 ```
 import { ApiClient } from "@rungalileo/observe";
