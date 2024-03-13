@@ -38,8 +38,8 @@ await apiClient.init("llm_monitor_test_1");// project
 You can use this with `getLoggedData` to retrieve the raw data.
 ```
 const rows = await apiClient.getLoggedData(
-    "2024-03-11T16:15:28.294Z",// ISO start_stime string with timezone
-    "2024-03-12T16:15:28.294Z",// ISO end_stime string with timezone
+    "2024-03-11T16:15:28.294Z",// ISO start_time string with timezone
+    "2024-03-12T16:15:28.294Z",// ISO end_time string with timezone
     filters,// an array of information like "col_name":"model"
     sort_spec,// an array of information like "sort_dir":"asc"
     limit// a number of items to return
