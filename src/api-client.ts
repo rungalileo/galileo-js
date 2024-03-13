@@ -104,13 +104,9 @@ export class ApiClient {
   }
 
   private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
-    return await this.makeRequest(
-      RequestMethod.POST,
-      Routes.api_key_login,
-      {
-        api_key: apiKey
-      }
-    );
+    return await this.makeRequest(RequestMethod.POST, Routes.api_key_login, {
+      api_key: apiKey
+    });
   }
 
   private async getAuthHeader(
@@ -186,9 +182,7 @@ export class ApiClient {
     return projects[0].id;
   }
 
-  private async createProject(
-    project_name: string
-  ): Promise<{ id: string }> {
+  private async createProject(project_name: string): Promise<{ id: string }> {
     return await this.makeRequest(RequestMethod.POST, Routes.projects, {
       name: project_name,
       type: 'llm_monitor'
