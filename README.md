@@ -27,4 +27,33 @@ await observe_callback.init();
 
 Add the callback `{callbacks: [observe_callback]}` in the invoke step of your application.
 
-Additionally, this library has a `getLoggedData` method which takes a `start_time` and `end_time` as an ISO string with a timezone, `filters` which takes an array of information such as `"col_name":"model"`, a `sort_spec` which takes an array of information such as `"sort_dir": "asc"`, a `limit` which takes a number of items to return, and `include_chains` which is a boolean to return chains data.
+## Data logging
+
+```
+import { ApiClient } from "@rungalileo/observe";
+const apiClient = new ApiClient();
+await apiClient.init("llm_monitor_test_1");// project
+```
+
+You can use this with `getLoggedData` to retrieve the raw data.
+```
+const rows = await apiClient.getLoggedData(
+    "2024-03-11T16:15:28.294Z",// ISO start_stime string with timezone
+    "2024-03-12T16:15:28.294Z",// ISO end_stime string with timezone
+    filters,// an array of information like "col_name":"model"
+    sort_spec,// an array of information like "sort_dir":"asc"
+    limit// a number of items to return
+);
+console.log(rows);
+```
+
+You can use `getMetrics` to get corresponding metrics.
+
+```
+const metrics = await apiClient.getMetrics(
+    "2024-03-11T16:15:28.294Z",
+    "2024-03-12T16:15:28.294Z",
+    filters
+);
+console.log(metrics);
+```
