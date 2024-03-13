@@ -15,22 +15,6 @@ var RequestMethod;
     RequestMethod["PUT"] = "PUT";
     RequestMethod["DELETE"] = "DELETE";
 })(RequestMethod || (RequestMethod = {}));
-// class HttpHeaders {
-//   accept = 'accept';
-//   content_type = 'Content-Type';
-//   application_json = 'application/json';
-//   static acceptJson(): Record<string, string> {
-//     const headers = new HttpHeaders();
-//     return { [headers.accept]: headers.application_json };
-//   }
-//   static json(): Record<string, string> {
-//     return { ...HttpHeaders.acceptJson(), ...HttpHeaders.contentTypeJson() };
-//   }
-//   static contentTypeJson(): Record<string, string> {
-//     const headers = new HttpHeaders();
-//     return { [headers.content_type]: headers.application_json };
-//   }
-// }
 class ApiClient {
     constructor() {
         this.project_id = '';
@@ -43,10 +27,13 @@ class ApiClient {
             this.token = await this.getToken();
             try {
                 this.project_id = await this.getProjectIdByName(project_name);
+                console.log(`🚀 Using project ${project_name} with id ${this.project_id}`);
             }
             catch (e) {
                 if (e.message.includes('not found')) {
-                    await this.createProject(project_name);
+                    console.log("here!");
+                    const project = await this.createProject(project_name);
+                    this.project_id = project.id;
                     console.log(`🚀 Creating new project... project ${project_name} created!`);
                 }
                 else {
@@ -135,7 +122,7 @@ class ApiClient {
         return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.ingest.replace('{project_id}', this.project_id), transaction_batch);
     }
     async getProjectIdByName(project_name) {
-        const projects = await this.makeRequest(RequestMethod.GET, routes_constants_js_1.Routes.projects, {
+        const projects = await this.makeRequest(RequestMethod.GET, routes_constants_js_1.Routes.projects, null, {
             project_name,
             type: 'llm_monitor'
         });

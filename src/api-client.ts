@@ -19,26 +19,6 @@ enum RequestMethod {
   DELETE = 'DELETE'
 }
 
-// class HttpHeaders {
-//   accept = 'accept';
-//   content_type = 'Content-Type';
-//   application_json = 'application/json';
-
-//   static acceptJson(): Record<string, string> {
-//     const headers = new HttpHeaders();
-//     return { [headers.accept]: headers.application_json };
-//   }
-
-//   static json(): Record<string, string> {
-//     return { ...HttpHeaders.acceptJson(), ...HttpHeaders.contentTypeJson() };
-//   }
-
-//   static contentTypeJson(): Record<string, string> {
-//     const headers = new HttpHeaders();
-//     return { [headers.content_type]: headers.application_json };
-//   }
-// }
-
 export class ApiClient {
   private project_id: string;
   private api_url: string;
@@ -58,7 +38,8 @@ export class ApiClient {
         this.project_id = await this.getProjectIdByName(project_name);
       } catch (e: any) {
         if (e.message.includes('not found')) {
-          await this.createProject(project_name);
+          const project = await this.createProject(project_name);
+          this.project_id = project.id;
           console.log(
             `🚀 Creating new project... project ${project_name} created!`
           );
@@ -193,6 +174,7 @@ export class ApiClient {
     const projects: Project[] = await this.makeRequest(
       RequestMethod.GET,
       Routes.projects,
+      null,
       {
         project_name,
         type: 'llm_monitor'
@@ -206,7 +188,7 @@ export class ApiClient {
 
   private async createProject(
     project_name: string
-  ): Promise<{ [key: string]: string }> {
+  ): Promise<{ id: string }> {
     return await this.makeRequest(RequestMethod.POST, Routes.projects, {
       name: project_name,
       type: 'llm_monitor'

@@ -47,7 +47,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     async _end_node(run_id) {
         const node_id = run_id;
         this.timers[node_id]['stop'] = performance.now();
-        const latency_ms = Math.round((this.timers[node_id]['stop'] - this.timers[node_id]['start']) * 1000);
+        const latency_ms = Math.round((this.timers[node_id]['stop'] - this.timers[node_id]['start']));
         delete this.timers[node_id];
         return [node_id, latency_ms];
     }
