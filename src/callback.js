@@ -8,6 +8,7 @@ const api_client_js_1 = require("./api-client.js");
 const prompt_values_1 = require("@langchain/core/prompt_values");
 const transaction_types_js_1 = require("./types/transaction.types.js");
 const init_1 = require("tiktoken/init");
+const { version } = require('../package.json');
 class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     constructor(project_name, version) {
         super();
@@ -64,7 +65,9 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
                 }
             }
             const transaction_batch = {
-                records: batch_records
+                records: batch_records,
+                logging_method: transaction_types_js_1.TransactionLoggingMethod.js_langchain,
+                client_version: version
             };
             await this.api_client.ingestBatch(transaction_batch);
         }

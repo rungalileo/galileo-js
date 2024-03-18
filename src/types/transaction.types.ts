@@ -7,6 +7,11 @@ export enum TransactionRecordType {
   retriever = 'retriever'
 }
 
+export enum TransactionLoggingMethod {
+  js_langchain = 'js_langchain',
+  js_logger = 'js_logger'
+}
+
 export interface TransactionRecord {
   latency_ms?: number;
   status_code?: number;
@@ -33,4 +38,6 @@ export interface TransactionRecord {
 
 export interface TransactionRecordBatch {
   records: TransactionRecord[];
+  logging_method: TransactionLoggingMethod;
+  client_version: string;
 }

@@ -10,10 +10,13 @@ import { ChatPromptValue } from '@langchain/core/prompt_values';
 import {
   TransactionRecord,
   TransactionRecordBatch,
-  TransactionRecordType
+  TransactionRecordType,
+  TransactionLoggingMethod
 } from './types/transaction.types.js';
 import { encoding_for_model } from 'tiktoken/init';
 import { TiktokenModel } from '@langchain/openai';
+
+const { version } = require('../package.json');
 
 export class GalileoObserveCallback extends BaseCallbackHandler {
   name = 'GalileoObserveCallback';
@@ -88,7 +91,9 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
       }
 
       const transaction_batch: TransactionRecordBatch = {
-        records: batch_records
+        records: batch_records,
+        logging_method: TransactionLoggingMethod.js_langchain,
+        client_version: version
       };
       await this.api_client.ingestBatch(transaction_batch);
     }
