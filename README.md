@@ -3,7 +3,7 @@
 NodeJS client for Galileo Observe.
 
 ## Testing
-In the root direcory, rum:
+In the root directory, run:
 - `npm i`
 - `npm link`
 
