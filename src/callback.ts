@@ -428,9 +428,11 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
     parentRunId?: string | undefined,
     tags?: string[] | undefined
   ): Promise<void> {
-    const node_id = runId;
+    const [node_id, latency_ms] = await this._end_node(runId);
     const record = this.records[node_id];
+    record.latency_ms = latency_ms;
     record.node_type = TransactionRecordType.agent;
+    record.status_code = 200;
 
     await this._finalize_node(record);
   }
