@@ -7,6 +7,7 @@ interface Routes {
   metrics: string;
   ingest: string;
   rows: string;
+  delete: string;
 }
 
 const Routes: Routes = {
@@ -15,9 +16,10 @@ const Routes: Routes = {
   api_key_login: 'login/api_key',
   get_token: 'get-token',
   projects: 'projects',
-  metrics: 'projects/{project_id}/llm_monitor/metrics',
-  ingest: 'projects/{project_id}/llm_monitor/ingest',
-  rows: 'projects/{project_id}/llm_monitor/rows'
+  metrics: 'projects/{project_id}/observe/metrics',
+  ingest: 'projects/{project_id}/observe/ingest',
+  rows: 'projects/{project_id}/observe/rows',
+  delete: 'projects/{project_id}/observe/delete'
 };
 
 export { Routes };
