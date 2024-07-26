@@ -238,4 +238,14 @@ export class ApiClient {
       }
     );
   }
+
+  public async deleteLoggedData(filters: Array<any> = []): Promise<any> {
+    return await this.makeRequest(
+      RequestMethod.POST,
+      Routes.delete.replace('{project_id}', this.project_id),
+      {
+        filters
+      }
+    );
+  }
 }
