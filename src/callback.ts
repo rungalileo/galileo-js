@@ -476,7 +476,13 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
   ): Promise<void> {
     const [node_id, latency_ms] = await this._end_node(runId);
     const record = this.records[node_id];
-    record.output_text = JSON.stringify(documents);
+    const formatted_docs = documents.map((doc) => {
+      return {
+        page_content: doc.pageContent,
+        metadata: doc.metadata
+      };
+    });
+    record.output_text = JSON.stringify(formatted_docs);
     record.latency_ms = latency_ms;
     record.status_code = 200;
 
