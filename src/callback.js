@@ -286,9 +286,11 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      * with the final output and the run ID.
      */
     async handleAgentEnd(action, runId, parentRunId, tags) {
-        const node_id = runId;
+        const [node_id, latency_ms] = await this._end_node(runId);
         const record = this.records[node_id];
+        record.latency_ms = latency_ms;
         record.node_type = transaction_types_js_1.TransactionRecordType.agent;
+        record.status_code = 200;
         await this._finalize_node(record);
     }
     async handleRetrieverStart(retriever, query, runId, parentRunId, tags, metadata, name) {
@@ -311,7 +313,13 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     async handleRetrieverEnd(documents, runId, parentRunId, tags) {
         const [node_id, latency_ms] = await this._end_node(runId);
         const record = this.records[node_id];
-        record.output_text = JSON.stringify(documents);
+        const formatted_docs = documents.map((doc) => {
+            return {
+                page_content: doc.pageContent,
+                metadata: doc.metadata
+            };
+        });
+        record.output_text = JSON.stringify(formatted_docs);
         record.latency_ms = latency_ms;
         record.status_code = 200;
         await this._finalize_node(record);

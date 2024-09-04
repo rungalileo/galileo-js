@@ -158,6 +158,11 @@ class ApiClient {
             group_by
         });
     }
+    async deleteLoggedData(filters = []) {
+        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.delete.replace('{project_id}', this.project_id), {
+            filters
+        });
+    }
 }
 exports.ApiClient = ApiClient;
 //# sourceMappingURL=api-client.js.map
