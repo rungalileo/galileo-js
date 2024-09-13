@@ -1,7 +1,7 @@
 import { Message } from "./message.types";
 import { NodeType } from "./node.types";
 
-type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
+export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
 
 export interface BaseStep {
     type: NodeType;
@@ -40,21 +40,29 @@ export interface RetrieverStep extends Omit<BaseStep, 'input' | 'output'> {
     output: RetrieverStepAllowedOutputType;
 }
 
-export interface StepWithChildren extends BaseStep {
-    steps: BaseStep[];
-    parent?: StepWithChildren;
-    addLlm(step: LlmStep): LlmStep;
-    addRetriever(step: RetrieverStep): RetrieverStep;
-    addTool(step: ToolStep): ToolStep;
-    addSubWorkflow(step: WorkflowStep): WorkflowStep;
-    addSubAgent(step: AgentStep): AgentStep;
-    conclude(
-        output?: StepIOType,
-        durationNs?: number,
-        statusCode?: number
-    ): StepWithChildren | undefined
+export class StepWithChildren implements BaseStep {
+    steps: AWorkflowStep[] = [];
+    parent?: StepWithChildren | undefined;
+    addStep(step: AWorkflowStep): AWorkflowStep {
+        this.steps.push(step)
+        return step
+    };
+    conclude(output?: StepIOType, durationNs?: number, statusCode?: number): StepWithChildren | undefined {
+        this.output = output ?? this.output;
+        this.durationNs = durationNs ?? this.durationNs;
+        this.statusCode = statusCode;
+        return this.parent
+    };
+    type: NodeType = NodeType.workflow;
+    input: StepIOType = [];
+    output: StepIOType = [];
+    name: string = '';
+    createdAtNs: number = 0;
+    durationNs: number = 0;
+    metadata: { [key: string]: string; } = {};
+    statusCode?: number | undefined;
+    groundTruth?: string | undefined;
 }
-
 
 export interface AgentStep extends StepWithChildren {
     type: NodeType.agent;
