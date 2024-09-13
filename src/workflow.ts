@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { ApiClient } from "./api-client";
-import { TransactionRecord } from "./types/transaction.types";
+import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
 import { AgentStep, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/workflows/step.types";
 
 export class Workflows {
@@ -125,9 +125,25 @@ export class Workflows {
     return rows
   }
 
-  public uploadWorkflows(
+  public async uploadWorkflows(): Promise<AWorkflowStep[]> {
+    if (!this.workflows.length) return []
 
-  ): AWorkflowStep[] {
-    return []
+    const records: TransactionRecord[] = [];
+
+    this.workflows.forEach(workflow => {
+      records.push(...this.workflowToRecords(workflow))
+    });
+
+    const transactionBatch: TransactionRecordBatch = {
+      records,
+      logging_method: TransactionLoggingMethod.js_logger
+    }
+
+    await this.apiClient.ingestBatch(transactionBatch);
+
+    const loggedWorkflows = this.workflows;
+    this.workflows = [];
+
+    return loggedWorkflows
   }
 }
