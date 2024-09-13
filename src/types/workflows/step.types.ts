@@ -1,43 +1,63 @@
+import { TransactionRecordType } from "../transaction.types";
 import { Message } from "./message.types";
-import { NodeType } from "./node.types";
 
 export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
 
 export interface BaseStep {
-    type: NodeType;
-    input: StepIOType;
-    output: StepIOType;
-    name: string;
     createdAtNs: number;
     durationNs: number;
-    metadata: { [key: string]: string };
-    statusCode?: number;
     groundTruth?: string;
+    input: StepIOType;
+    metadata: { [key: string]: string };
+    name: string;
+    output: StepIOType;
+    statusCode?: number;
+    type: TransactionRecordType;
 }
 
-export interface ToolStep extends BaseStep {
-    type: NodeType.tool;
+export class ToolStep implements BaseStep {
+    createdAtNs!: number;
+    durationNs!: number;
+    groundTruth?: string | undefined;
+    input!: StepIOType;
+    metadata!: { [key: string]: string; };
+    name!: string;
+    output!: StepIOType;
+    statusCode?: number | undefined;
+    type!: TransactionRecordType.tool;
 }
 
 type LlmStepAllowedIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
 
-export interface LlmStep extends Omit<BaseStep, 'input' | 'output'> {
-    type: NodeType.llm;
-    input: LlmStepAllowedIOType;
-    output: LlmStepAllowedIOType;
-    model?: string;
+export class LlmStep implements Omit<BaseStep, 'input' | 'output'> {
+    createdAtNs!: number;
+    durationNs!: number;
+    groundTruth?: string | undefined;
+    input!: LlmStepAllowedIOType;
     inputTokens?: number;
+    metadata!: { [key: string]: string; };
+    model?: string;
+    name!: string;
+    output!: LlmStepAllowedIOType;
     outputTokens?: number;
-    totalTokens?: number;
+    statusCode?: number | undefined;
     temperature?: number;
+    totalTokens?: number;
+    type!: TransactionRecordType.llm;
 }
 
 type RetrieverStepAllowedOutputType = (string | Document | { [key: string]: string })[];
 
-export interface RetrieverStep extends Omit<BaseStep, 'input' | 'output'> {
-    type: NodeType.retriever;
-    input: string;
-    output: RetrieverStepAllowedOutputType;
+export class RetrieverStep implements Omit<BaseStep, 'input' | 'output'> {
+    createdAtNs!: number;
+    durationNs!: number;
+    groundTruth?: string | undefined;
+    input!: string;
+    metadata!: { [key: string]: string; };
+    name!: string;
+    output!: RetrieverStepAllowedOutputType;
+    statusCode?: number | undefined;
+    type!: TransactionRecordType.retriever;
 }
 
 export class StepWithChildren implements BaseStep {
@@ -53,7 +73,7 @@ export class StepWithChildren implements BaseStep {
         this.statusCode = statusCode;
         return this.parent
     };
-    type: NodeType = NodeType.workflow;
+    type: TransactionRecordType = TransactionRecordType.workflow;
     input: StepIOType = [];
     output: StepIOType = [];
     name: string = '';
@@ -65,15 +85,15 @@ export class StepWithChildren implements BaseStep {
 }
 
 export interface AgentStep extends StepWithChildren {
-    type: NodeType.agent;
+    type: TransactionRecordType.agent;
 }
 
 export interface ChainStep extends StepWithChildren {
-    type: NodeType.chain;
+    type: TransactionRecordType.chain;
 }
 
 export interface WorkflowStep extends StepWithChildren {
-    type: NodeType.workflow;
-}
+    type: TransactionRecordType.workflow;
+}TransactionRecordType
 
 export type AWorkflowStep = ToolStep | LlmStep | RetrieverStep | AgentStep | ChainStep | WorkflowStep;
