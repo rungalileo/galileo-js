@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { ApiClient } from "./api-client";
 import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
-import { AgentStep, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/workflows/step.types";
+import { AgentStep, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/step.types";
 
 export class Workflows {
   public projectName: string;
@@ -21,21 +21,20 @@ export class Workflows {
   private pushStep(step: AWorkflowStep, setCurrentWorkflow: boolean) {
     this.workflows.push(step);
     this.current_workflow = setCurrentWorkflow ? new StepWithChildren() : null;
+
+    return step
   }
 
   public addWorkflow(step: WorkflowStep) {
-    this.pushStep(step, true);
-    return step;
+    return this.pushStep(step, true);
   }
 
   public addAgentWorkflow(step: AgentStep) {
-    this.pushStep(step, true);
-    return step;
+    return this.pushStep(step, true);
   }
 
   public addSingleStepWorkflow(step: LlmStep) {
-    this.pushStep(step, false);
-    return step;
+    return this.pushStep(step, false);
   }
 
   private stepErrorMessage = 'A workflow needs to be created in order to add a step.';
@@ -90,7 +89,6 @@ export class Workflows {
     const has_children = step instanceof StepWithChildren && step.steps.length > 0;
 
     const row: TransactionRecord = {
-      // TODO: Remove or change name of constructor property on TransactionRecord interface
       constructor: undefined,
       node_id,
       node_type: step.type,

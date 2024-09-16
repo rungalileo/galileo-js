@@ -1,4 +1,4 @@
-import { TransactionRecordType } from "../transaction.types";
+import { TransactionRecordType } from "./transaction.types";
 import { Message } from "./message.types";
 
 export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
