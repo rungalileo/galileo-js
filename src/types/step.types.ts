@@ -94,6 +94,6 @@ export interface ChainStep extends StepWithChildren {
 
 export interface WorkflowStep extends StepWithChildren {
     type: TransactionRecordType.workflow;
-}TransactionRecordType
+}
 
 export type AWorkflowStep = ToolStep | LlmStep | RetrieverStep | AgentStep | ChainStep | WorkflowStep;
