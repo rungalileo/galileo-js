@@ -20,7 +20,7 @@ class HttpHeaders {
   }
 }
 
-function validateResponse(response: AxiosResponse): void {
+function validateResponse(response: AxiosResponse) {
   if (response.status >= 300) {
     const msg = `Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
     // TODO: Better error handling.
@@ -34,12 +34,11 @@ async function makeRequest<T>(
   endpoint: string,
   body?: object,
   data?: object,
-  files?: object,
   params?: object,
   headers?: Record<string, string>,
   timeout?: number | null
-): Promise<AxiosResponse> {
-  const response = await axios(`${baseUrl}${endpoint}`, {
+): Promise<T> {
+  const response = await axios<T>(`${baseUrl}${endpoint}`, {
     method: requestMethod,
     headers: {
       ...headers,
