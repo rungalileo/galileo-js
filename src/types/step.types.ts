@@ -100,10 +100,6 @@ export class AgentStep extends StepWithChildren {
     type = TransactionRecordType.agent;
 }
 
-export class ChainStep extends StepWithChildren {
-    type = TransactionRecordType.chain;
-}
-
 export class WorkflowStep extends StepWithChildren {
     type = TransactionRecordType.workflow;
 }

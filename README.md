@@ -41,15 +41,15 @@ await observeWorkflows.init();
 
 Workflows can be added using  `addWorkflow`, `addAgentWorkflow`, and `addSingleStepWorkflow`.
 
+*** Note: Steps and nested workflows can only be added on `addWorkflow` and `addAgentWorkflow`. ***
+
 ```
 observeWorkflows.addWorkflow(new WorkflowStep({ ...step }));
 ```
 
 ### Adding steps and nested workflows
 
-*** Note: steps and nested workflows can only be added with `addWorkflow` and `addAgentWorkflow`. ***
-
-Workflow steps can be added using  `addLlmStep`, `addRetrieverStep`, `addToolStep`.
+Workflow steps can be added using   `addLlmStep`, `addRetrieverStep`, `addToolStep`, `addWorkflow`, and `addAgentWorkflow`.
 
 ```
 observeWorkflows.addLlmStep(new LlmStep({ ...step }));
