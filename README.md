@@ -28,6 +28,8 @@ await observe_callback.init();
 Add the callback `{callbacks: [observe_callback]}` in the Langchain invoke step of your application.
 
 ## Logging workflows to Galileo Observe
+
+
 ```
 import { GalileoObserveWorkflows } from "@rungalileo/observe";
 const observeWorkflows = new GalileoObserveWorkflows("llm_monitor_example");
@@ -39,7 +41,7 @@ await observeWorkflows.init();
 Workflows can be added using  `addWorkflow`, `addAgentWorkflow`, and `addSingleStepWorkflow`.
 
 ```
-observeWorkflows.addWorkflow(step);
+observeWorkflows.addWorkflow(new WorkflowStep({ ...step }));
 ```
 
 ### Adding steps and nested workflows
@@ -49,26 +51,31 @@ observeWorkflows.addWorkflow(step);
 Workflow steps can be added using  `addLlmStep`, `addRetrieverStep`, `addToolStep`.
 
 ```
-observeWorkflows.addLlmStep(step);
+observeWorkflows.addLlmStep(new LlmStep({ ...step }));
 ```
 
 Nested workflows can be added using  `addWorkflowStep` and `addAgentStep`.
 
 ```
-observeWorkflows.addWorkflowStep(step);
+observeWorkflows.addWorkflowStep(new WorkflowStep({ ...step }));
 ```
 
-The next step you add will be a child of this workflow. To step out of the nested workflow, use `concludeWorkflow`.
+The next step you add will be a child of this workflow.
+
+### Concluding workflows
+
+To end a workflow or step out of the nested workflow, use `concludeWorkflow`.
 
 ```
 observeWorkflows.concludeWorkflow(output, durationNs, statusCode);
 ```
 
 ### Uploading workflows
+
 Use `uploadWorkflows` to upload workflows to Galileo Observe.
 
 ```
-observeWorkflows.uploadWorkflows();
+await observeWorkflows.uploadWorkflows();
 ```
 
 ## Retrieving data from Galileo Observe
