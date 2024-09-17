@@ -1,9 +1,9 @@
 import { randomUUID } from "crypto";
 import { ApiClient } from "./api-client";
 import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
-import { AgentStep, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/step.types";
+import { AgentStep, AWorkflow, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/step.types";
 
-export class Workflows {
+export class GalileoObserveWorkflows {
   public projectName: string;
   private apiClient: ApiClient = new ApiClient();
 
@@ -11,30 +11,32 @@ export class Workflows {
     this.projectName = projectName;
   }
 
-  async init(): Promise<void> {
+  public async init(): Promise<void> {
     await this.apiClient.init(this.projectName);
   }
 
-  private workflows: AWorkflowStep[] = [];
+  private workflows: AWorkflow[] = [];
   private current_workflow: StepWithChildren | null = null;
 
-  private pushStep(step: AWorkflowStep, setCurrentWorkflow: boolean) {
+  private pushStep(step: StepWithChildren | AgentStep | LlmStep) {
+    const hasSteps = step instanceof WorkflowStep || step instanceof AgentStep;
+
     this.workflows.push(step);
-    this.current_workflow = setCurrentWorkflow ? new StepWithChildren() : null;
+    this.current_workflow = hasSteps ? step : null;
 
     return step
   }
 
   public addWorkflow(step: WorkflowStep) {
-    return this.pushStep(step, true);
+    return this.pushStep(step);
   }
 
   public addAgentWorkflow(step: AgentStep) {
-    return this.pushStep(step, true);
+    return this.pushStep(step);
   }
 
   public addSingleStepWorkflow(step: LlmStep) {
-    return this.pushStep(step, false);
+    return this.pushStep(step);
   }
 
   private stepErrorMessage = 'A workflow needs to be created in order to add a step.';
@@ -60,10 +62,12 @@ export class Workflows {
   }
 
   public addWorkflowStep(step: WorkflowStep) {
+    step.parent = this.current_workflow;
     return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
   }
 
   public addAgentStep(step: AgentStep) {
+    step.parent = this.current_workflow;
     return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
   }
 
@@ -73,12 +77,12 @@ export class Workflows {
     statusCode?: number
   ): StepWithChildren | null {
     const errorMessage = 'No existing workflow to conclude.';
-    this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode);
+    this.current_workflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
     return this.current_workflow;
   }
 
-  public workflowToRecords(
-    step: AWorkflowStep | StepWithChildren,
+  private workflowToRecords(
+    step: AWorkflowStep,
     rootId?: string,
     chainId?: string,
   ): TransactionRecord[] {
@@ -123,7 +127,7 @@ export class Workflows {
     return rows
   }
 
-  public async uploadWorkflows(): Promise<AWorkflowStep[]> {
+  public async uploadWorkflows(): Promise<AWorkflow[]> {
     if (!this.workflows.length) return []
 
     const records: TransactionRecord[] = [];

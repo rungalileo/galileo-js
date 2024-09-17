@@ -15,18 +15,6 @@ export interface BaseStep {
     type: TransactionRecordType;
 }
 
-export class ToolStep implements BaseStep {
-    createdAtNs!: number;
-    durationNs!: number;
-    groundTruth?: string | undefined;
-    input!: StepIOType;
-    metadata!: { [key: string]: string; };
-    name!: string;
-    output!: StepIOType;
-    statusCode?: number | undefined;
-    type!: TransactionRecordType.tool;
-}
-
 type LlmStepAllowedIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
 
 export class LlmStep implements Omit<BaseStep, 'input' | 'output'> {
@@ -43,7 +31,7 @@ export class LlmStep implements Omit<BaseStep, 'input' | 'output'> {
     statusCode?: number | undefined;
     temperature?: number;
     totalTokens?: number;
-    type!: TransactionRecordType.llm;
+    type = TransactionRecordType.llm;
 }
 
 type RetrieverStepAllowedOutputType = (string | Document | { [key: string]: string })[];
@@ -57,43 +45,69 @@ export class RetrieverStep implements Omit<BaseStep, 'input' | 'output'> {
     name!: string;
     output!: RetrieverStepAllowedOutputType;
     statusCode?: number | undefined;
-    type!: TransactionRecordType.retriever;
+    type = TransactionRecordType.retriever;
+}
+
+export class ToolStep implements BaseStep {
+    createdAtNs!: number;
+    durationNs!: number;
+    groundTruth?: string | undefined;
+    input!: StepIOType;
+    metadata!: { [key: string]: string; };
+    name!: string;
+    output!: StepIOType;
+    statusCode?: number | undefined;
+    type = TransactionRecordType.tool;
 }
 
 export class StepWithChildren implements BaseStep {
+    createdAtNs: number;
+    durationNs: number;
+    groundTruth?: string | undefined;
+    input: StepIOType;
+    metadata: { [key: string]: string; };
+    name: string;
+    output: StepIOType;
+    parent: StepWithChildren | null = null;
+    statusCode?: number | undefined;
     steps: AWorkflowStep[] = [];
-    parent?: StepWithChildren | undefined;
+    type: TransactionRecordType = TransactionRecordType.workflow;
+
+    constructor(public step: Omit<BaseStep, 'type'>) {
+        this.createdAtNs = step.createdAtNs;
+        this.durationNs = step.durationNs;
+        this.groundTruth = step.groundTruth;
+        this.input = step.input;
+        this.metadata = step.metadata;
+        this.name = step.name
+        this.output = step.output;
+        this.statusCode = step.statusCode;
+    }
+
     addStep(step: AWorkflowStep): AWorkflowStep {
         this.steps.push(step)
         return step
     };
-    conclude(output?: StepIOType, durationNs?: number, statusCode?: number): StepWithChildren | undefined {
+    conclude(output?: StepIOType, durationNs?: number, statusCode?: number): StepWithChildren | null {
         this.output = output ?? this.output;
         this.durationNs = durationNs ?? this.durationNs;
         this.statusCode = statusCode;
         return this.parent
     };
-    type: TransactionRecordType = TransactionRecordType.workflow;
-    input: StepIOType = [];
-    output: StepIOType = [];
-    name: string = '';
-    createdAtNs: number = 0;
-    durationNs: number = 0;
-    metadata: { [key: string]: string; } = {};
-    statusCode?: number | undefined;
-    groundTruth?: string | undefined;
 }
 
-export interface AgentStep extends StepWithChildren {
-    type: TransactionRecordType.agent;
+export class AgentStep extends StepWithChildren {
+    type = TransactionRecordType.agent;
 }
 
-export interface ChainStep extends StepWithChildren {
-    type: TransactionRecordType.chain;
+export class ChainStep extends StepWithChildren {
+    type = TransactionRecordType.chain;
 }
 
-export interface WorkflowStep extends StepWithChildren {
-    type: TransactionRecordType.workflow;
+export class WorkflowStep extends StepWithChildren {
+    type = TransactionRecordType.workflow;
 }
 
-export type AWorkflowStep = ToolStep | LlmStep | RetrieverStep | AgentStep | ChainStep | WorkflowStep;
+export type AWorkflow = AgentStep | LlmStep | WorkflowStep;
+
+export type AWorkflowStep = AgentStep | LlmStep | RetrieverStep | ToolStep | WorkflowStep;
