@@ -29,6 +29,7 @@ Add the callback `{callbacks: [observe_callback]}` in the Langchain invoke step 
 
 ## Logging workflows to Galileo Observe
 
+Initialize workflow logging.
 
 ```
 import { GalileoObserveWorkflows } from "@rungalileo/observe";
