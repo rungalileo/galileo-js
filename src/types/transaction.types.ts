@@ -40,5 +40,5 @@ export interface TransactionRecord {
 export interface TransactionRecordBatch {
   records: TransactionRecord[];
   logging_method: TransactionLoggingMethod;
-  client_version?: string;
+  client_version: string;
 }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GalileoObserveWorkflows = void 0;
+const package_json_1 = require("../package.json");
 const crypto_1 = require("crypto");
 const api_client_1 = require("./api-client");
 const transaction_types_1 = require("./types/transaction.types");
@@ -103,7 +103,8 @@ class GalileoObserveWorkflows {
         });
         const transactionBatch = {
             records,
-            logging_method: transaction_types_1.TransactionLoggingMethod.js_logger
+            logging_method: transaction_types_1.TransactionLoggingMethod.js_logger,
+            client_version: package_json_1.version
         };
         await this.apiClient.ingestBatch(transactionBatch);
         const loggedWorkflows = this.workflows;
@@ -111,5 +112,5 @@ class GalileoObserveWorkflows {
         return loggedWorkflows;
     }
 }
-exports.GalileoObserveWorkflows = GalileoObserveWorkflows;
+exports.default = GalileoObserveWorkflows;
 //# sourceMappingURL=workflow.js.map

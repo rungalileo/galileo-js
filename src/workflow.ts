@@ -1,9 +1,12 @@
+import { version } from '../package.json';
 import { randomUUID } from "crypto";
 import { ApiClient } from "./api-client";
 import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
 import { AgentStep, AWorkflow, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/step.types";
 
-export class GalileoObserveWorkflows {
+
+
+export default class GalileoObserveWorkflows {
   public projectName: string;
   private apiClient: ApiClient = new ApiClient();
 
@@ -13,6 +16,7 @@ export class GalileoObserveWorkflows {
 
   public async init(): Promise<void> {
     await this.apiClient.init(this.projectName);
+
   }
 
   private workflows: AWorkflow[] = [];
@@ -138,7 +142,8 @@ export class GalileoObserveWorkflows {
 
     const transactionBatch: TransactionRecordBatch = {
       records,
-      logging_method: TransactionLoggingMethod.js_logger
+      logging_method: TransactionLoggingMethod.js_logger,
+      client_version: version
     }
 
     await this.apiClient.ingestBatch(transactionBatch);
