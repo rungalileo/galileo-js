@@ -1,7 +1,7 @@
-import { AgentStep, AWorkflow, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/step.types";
-import { ApiClient } from "./api-client";
-import { randomUUID } from "crypto";
-import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
+import { AgentStep, AWorkflow, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from './types/step.types';
+import { ApiClient } from './api-client';
+import { randomUUID } from 'crypto';
+import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from './types/transaction.types';
 import { version } from '../package.json';
 
 export default class GalileoObserveWorkflows {
@@ -94,7 +94,6 @@ export default class GalileoObserveWorkflows {
     const has_children = step instanceof StepWithChildren && step.steps.length > 0;
 
     const row: TransactionRecord = {
-      constructor: undefined,
       node_id,
       node_type: step.type,
       input_text: JSON.stringify(step.input),

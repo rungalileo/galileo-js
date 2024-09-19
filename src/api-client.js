@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiClient = void 0;
 const jsonwebtoken_1 = require("jsonwebtoken");
 const axios_1 = __importDefault(require("axios"));
-const routes_constants_js_1 = require("./constants/routes.constants.js");
+const routes_types_js_1 = require("./types/routes.types.js");
 const querystring_1 = __importDefault(require("querystring"));
 var RequestMethod;
 (function (RequestMethod) {
@@ -23,19 +23,20 @@ class ApiClient {
     }
     async init(project_name) {
         this.api_url = this.getApiUrl();
-        if (await this.healthcheck()) {
+        if (await this.healthCheck()) {
             this.token = await this.getToken();
             try {
                 this.project_id = await this.getProjectIdByName(project_name);
             }
-            catch (e) {
-                if (e.message.includes('not found')) {
+            catch (err) {
+                const error = err;
+                if (error.message.includes('not found')) {
                     const project = await this.createProject(project_name);
                     this.project_id = project.id;
-                    console.log(`🚀 Creating new project... project ${project_name} created!`);
+                    console.log(`🚀 Creating new project… project ${project_name} created!`);
                 }
                 else {
-                    throw e;
+                    throw err;
                 }
             }
         }
@@ -67,60 +68,59 @@ class ApiClient {
         }
         throw new Error('GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set');
     }
-    async healthcheck() {
-        await this.makeRequest(RequestMethod.GET, routes_constants_js_1.Routes.healthcheck);
-        return true;
+    async healthCheck() {
+        return await this.makeRequest(RequestMethod.GET, routes_types_js_1.Routes.healthCheck);
     }
     async usernameLogin(username, password) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.login, querystring_1.default.stringify({
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.login, querystring_1.default.stringify({
             username,
             password
         }));
     }
     async apiKeyLogin(apiKey) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.api_key_login, {
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.apiKeyLogin, {
             api_key: apiKey
         });
     }
-    async getAuthHeader(token) {
+    getAuthHeader(token) {
         return { Authorization: `Bearer ${token}` };
     }
-    async validateResponse(response) {
+    validateResponse(response) {
         if (response.status >= 300) {
             const msg = `Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
-            // TODO: Better error handling.
+            // TODO: Better error handling
             throw new Error(msg);
         }
     }
     async makeRequest(request_method, endpoint, data, params) {
         // Check to see if our token is expired before making a request
         // and refresh token if it's expired
-        let headers = {};
-        if (endpoint !== routes_constants_js_1.Routes.login && this.token) {
-            const claims = (0, jsonwebtoken_1.decode)(this.token, { complete: true });
-            if (claims.payload.exp < Math.floor(Date.now() / 1000)) {
+        if (endpoint !== routes_types_js_1.Routes.login && this.token) {
+            const payload = (0, jsonwebtoken_1.decode)(this.token, { json: true });
+            if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
                 this.token = await this.getToken();
             }
         }
+        let headers = {};
         if (this.token) {
-            headers = await this.getAuthHeader(this.token);
+            headers = this.getAuthHeader(this.token);
         }
         const config = {
             method: request_method,
-            url: `${this.api_url}/${endpoint}`,
+            url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id)}`,
             params,
             headers,
             data
         };
         const response = await axios_1.default.request(config);
-        await this.validateResponse(response);
+        this.validateResponse(response);
         return response.data;
     }
     async ingestBatch(transaction_batch) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.ingest.replace('{project_id}', this.project_id), transaction_batch);
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.ingest, transaction_batch);
     }
     async getProjectIdByName(project_name) {
-        const projects = await this.makeRequest(RequestMethod.GET, routes_constants_js_1.Routes.projects, null, {
+        const projects = await this.makeRequest(RequestMethod.GET, routes_types_js_1.Routes.projects, null, {
             project_name,
             type: 'llm_monitor'
         });
@@ -130,13 +130,14 @@ class ApiClient {
         return projects[0].id;
     }
     async createProject(project_name) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.projects, {
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.projects, {
             name: project_name,
             type: 'llm_monitor'
         });
     }
+    // TODO: This should have a more accurate return type
     async getLoggedData(start_time, end_time, filters = [], sort_spec = [], limit, offset, include_chains, chain_id) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.rows.replace('{project_id}', this.project_id), {
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.rows, {
             filters,
             sort_spec
         }, {
@@ -148,8 +149,9 @@ class ApiClient {
             include_chains
         });
     }
+    // TODO: This should have a more accurate return type
     async getMetrics(start_time, end_time, filters = [], interval, group_by) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.metrics.replace('{project_id}', this.project_id), {
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.metrics, {
             filters
         }, {
             start_time,
@@ -158,8 +160,9 @@ class ApiClient {
             group_by
         });
     }
+    // TODO: This should have a more accurate return type
     async deleteLoggedData(filters = []) {
-        return await this.makeRequest(RequestMethod.POST, routes_constants_js_1.Routes.delete.replace('{project_id}', this.project_id), {
+        return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.delete, {
             filters
         });
     }

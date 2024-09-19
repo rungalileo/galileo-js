@@ -94,7 +94,7 @@ export class ApiClient {
     );
   }
 
-  private async healthCheck() {
+  private async healthCheck(): Promise<boolean> {
     return await this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
   }
 
@@ -112,7 +112,7 @@ export class ApiClient {
     )
   }
 
-  private async apiKeyLogin(apiKey: string) {
+  private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
     return await this.makeRequest<{ access_token: string }>(RequestMethod.POST, Routes.apiKeyLogin, {
       api_key: apiKey
     })
@@ -125,7 +125,7 @@ export class ApiClient {
     return { Authorization: `Bearer ${token}` };
   }
 
-  private validateResponse(response: AxiosResponse) {
+  private validateResponse(response: AxiosResponse): void {
     if (response.status >= 300) {
       const msg = `Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
       // TODO: Better error handling
@@ -169,16 +169,15 @@ export class ApiClient {
 
   public async ingestBatch(
     transaction_batch: TransactionRecordBatch
-  ) {
-    // TODO: Needs return type
-    return await this.makeRequest(
+  ): Promise<string> {
+    return await this.makeRequest<string>(
       RequestMethod.POST,
       Routes.ingest,
       transaction_batch
     );
   }
 
-  public async getProjectIdByName(project_name: string) {
+  public async getProjectIdByName(project_name: string): Promise<string> {
     const projects = await this.makeRequest<Project[]>(
       RequestMethod.GET,
       Routes.projects,
@@ -196,13 +195,14 @@ export class ApiClient {
     return projects[0].id;
   }
 
-  private async createProject(project_name: string) {
+  private async createProject(project_name: string): Promise<{ id: string }> {
     return await this.makeRequest<{ id: string }>(RequestMethod.POST, Routes.projects, {
       name: project_name,
       type: 'llm_monitor'
     })
   }
 
+  // TODO: This should have a more accurate return type
   public async getLoggedData(
     start_time: string,
     end_time: string,
@@ -212,9 +212,8 @@ export class ApiClient {
     offset?: number,
     include_chains?: boolean,
     chain_id?: string
-  ) {
-    // TODO: Needs return type
-    return await this.makeRequest(
+  ): Promise<Record<string, unknown>> {
+    return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
       Routes.rows,
       {
@@ -232,15 +231,15 @@ export class ApiClient {
     );
   }
 
+  // TODO: This should have a more accurate return type
   public async getMetrics(
     start_time: string,
     end_time: string,
     filters: Array<any> = [],
     interval?: number,
     group_by?: string
-  ) {
-    // TODO: Needs return type
-    return await this.makeRequest(
+  ): Promise<Record<string, unknown>> {
+    return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
       Routes.metrics,
       {
@@ -255,9 +254,9 @@ export class ApiClient {
     );
   }
 
-  public async deleteLoggedData(filters: Array<any> = []) {
-    // TODO: Needs return type
-    return await this.makeRequest(
+  // TODO: This should have a more accurate return type
+  public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
+    return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
       Routes.delete,
       {
