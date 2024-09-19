@@ -1,15 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const package_json_1 = require("../package.json");
-const crypto_1 = require("crypto");
-const api_client_1 = require("./api-client");
-const transaction_types_1 = require("./types/transaction.types");
 const step_types_1 = require("./types/step.types");
+const api_client_1 = require("./api-client");
+const crypto_1 = require("crypto");
+const transaction_types_1 = require("./types/transaction.types");
+const package_json_1 = require("../package.json");
 class GalileoObserveWorkflows {
     constructor(projectName) {
         this.apiClient = new api_client_1.ApiClient();
         this.workflows = [];
-        this.current_workflow = null;
+        this.currentWorkflow = null;
         this.stepErrorMessage = 'A workflow needs to be created in order to add a step.';
         this.projectName = projectName;
     }
@@ -19,7 +19,7 @@ class GalileoObserveWorkflows {
     pushStep(step) {
         const hasSteps = step instanceof step_types_1.WorkflowStep || step instanceof step_types_1.AgentStep;
         this.workflows.push(step);
-        this.current_workflow = hasSteps ? step : null;
+        this.currentWorkflow = hasSteps ? step : null;
         return step;
     }
     addWorkflow(step) {
@@ -32,10 +32,10 @@ class GalileoObserveWorkflows {
         return this.pushStep(step);
     }
     validWorkflow(errorMessage) {
-        if (this.current_workflow === null) {
+        if (this.currentWorkflow === null) {
             throw new Error(errorMessage);
         }
-        return this.current_workflow;
+        return this.currentWorkflow;
     }
     addLlmStep(step) {
         return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
@@ -47,17 +47,17 @@ class GalileoObserveWorkflows {
         return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
     }
     addWorkflowStep(step) {
-        step.parent = this.current_workflow;
+        step.parent = this.currentWorkflow;
         return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
     }
     addAgentStep(step) {
-        step.parent = this.current_workflow;
+        step.parent = this.currentWorkflow;
         return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
     }
     concludeWorkflow(output, durationNs, statusCode) {
         const errorMessage = 'No existing workflow to conclude.';
-        this.current_workflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
-        return this.current_workflow;
+        this.currentWorkflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
+        return this.currentWorkflow;
     }
     workflowToRecords(step, rootId, chainId) {
         const rows = [];

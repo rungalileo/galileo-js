@@ -1,10 +1,8 @@
-import { version } from '../package.json';
-import { randomUUID } from "crypto";
-import { ApiClient } from "./api-client";
-import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
 import { AgentStep, AWorkflow, AWorkflowStep, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from "./types/step.types";
-
-
+import { ApiClient } from "./api-client";
+import { randomUUID } from "crypto";
+import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "./types/transaction.types";
+import { version } from '../package.json';
 
 export default class GalileoObserveWorkflows {
   public projectName: string;
@@ -16,17 +14,16 @@ export default class GalileoObserveWorkflows {
 
   public async init(): Promise<void> {
     await this.apiClient.init(this.projectName);
-
   }
 
   private workflows: AWorkflow[] = [];
-  private current_workflow: StepWithChildren | null = null;
+  private currentWorkflow: StepWithChildren | null = null;
 
   private pushStep(step: StepWithChildren | AgentStep | LlmStep) {
     const hasSteps = step instanceof WorkflowStep || step instanceof AgentStep;
 
     this.workflows.push(step);
-    this.current_workflow = hasSteps ? step : null;
+    this.currentWorkflow = hasSteps ? step : null;
 
     return step
   }
@@ -46,11 +43,11 @@ export default class GalileoObserveWorkflows {
   private stepErrorMessage = 'A workflow needs to be created in order to add a step.';
 
   private validWorkflow(errorMessage: string): StepWithChildren | null {
-    if (this.current_workflow === null) {
+    if (this.currentWorkflow === null) {
       throw new Error(errorMessage);
     }
 
-    return this.current_workflow
+    return this.currentWorkflow
   }
 
   public addLlmStep(step: LlmStep) {
@@ -66,12 +63,12 @@ export default class GalileoObserveWorkflows {
   }
 
   public addWorkflowStep(step: WorkflowStep) {
-    step.parent = this.current_workflow;
+    step.parent = this.currentWorkflow;
     return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
   }
 
   public addAgentStep(step: AgentStep) {
-    step.parent = this.current_workflow;
+    step.parent = this.currentWorkflow;
     return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
   }
 
@@ -81,8 +78,8 @@ export default class GalileoObserveWorkflows {
     statusCode?: number
   ): StepWithChildren | null {
     const errorMessage = 'No existing workflow to conclude.';
-    this.current_workflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
-    return this.current_workflow;
+    this.currentWorkflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
+    return this.currentWorkflow;
   }
 
   private workflowToRecords(
