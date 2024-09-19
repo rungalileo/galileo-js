@@ -4,7 +4,8 @@ export enum TransactionRecordType {
   chain = 'chain',
   tool = 'tool',
   agent = 'agent',
-  retriever = 'retriever'
+  retriever = 'retriever',
+  workflow = 'workflow'
 }
 
 export enum TransactionLoggingMethod {

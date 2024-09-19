@@ -9,6 +9,7 @@ var TransactionRecordType;
     TransactionRecordType["tool"] = "tool";
     TransactionRecordType["agent"] = "agent";
     TransactionRecordType["retriever"] = "retriever";
+    TransactionRecordType["workflow"] = "workflow";
 })(TransactionRecordType || (exports.TransactionRecordType = TransactionRecordType = {}));
 var TransactionLoggingMethod;
 (function (TransactionLoggingMethod) {
