@@ -280,7 +280,7 @@ export class GalileoObserveCallback extends BaseCallbackHandler {
       node_input = inputs;
     } else if (typeof inputs === 'object') {
       node_input = Object.fromEntries(
-        Object.entries(inputs).filter((value: unknown) => value && typeof value === 'string')
+        Object.entries(inputs).filter(([key, value]: [string, unknown]) => key && value && typeof value === 'string')
       );
     } else if (
       (Array.isArray(inputs) as boolean) &&
