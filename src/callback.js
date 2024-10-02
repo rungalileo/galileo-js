@@ -1,14 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GalileoObserveCallback = void 0;
-const messages_1 = require("@langchain/core/messages");
-const documents_1 = require("@langchain/core/documents");
-const base_1 = require("@langchain/core/callbacks/base");
 const api_client_js_1 = require("./api-client.js");
+const base_1 = require("@langchain/core/callbacks/base");
+const messages_1 = require("@langchain/core/messages");
 const prompt_values_1 = require("@langchain/core/prompt_values");
-const transaction_types_js_1 = require("./types/transaction.types.js");
+const documents_1 = require("@langchain/core/documents");
 const init_1 = require("tiktoken/init");
-const { version } = require('../package.json');
+const transaction_types_js_1 = require("./types/transaction.types.js");
+const package_json_1 = require("../package.json");
 class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     constructor(project_name, version) {
         super();
@@ -22,7 +22,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     async init() {
         await this.api_client.init(this.project_name);
     }
-    async _start_new_node(run_id, parent_run_id) {
+    _start_new_node(run_id, parent_run_id) {
         const node_id = run_id;
         const chain_id = parent_run_id ? parent_run_id : undefined;
         let chain_root_id;
@@ -45,7 +45,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
         this.timers[node_id]['start'] = performance.now();
         return [node_id, chain_root_id, chain_id];
     }
-    async _end_node(run_id) {
+    _end_node(run_id) {
         const node_id = run_id;
         this.timers[node_id]['stop'] = performance.now();
         const latency_ms = Math.round(this.timers[node_id]['stop'] - this.timers[node_id]['start']);
@@ -53,8 +53,8 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
         return [node_id, latency_ms];
     }
     async _finalize_node(record) {
-        this.records[record.node_id] = record;
         const batch_records = [];
+        this.records[record.node_id] = record;
         // If this record is closing out a root chain, then add all
         // records with that chain_root_id to the batch
         if (record.node_id === record.chain_root_id) {
@@ -67,15 +67,14 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             const transaction_batch = {
                 records: batch_records,
                 logging_method: transaction_types_js_1.TransactionLoggingMethod.js_langchain,
-                client_version: version
+                client_version: package_json_1.version
             };
             await this.api_client.ingestBatch(transaction_batch);
         }
     }
-    async handleLLMStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata, name) {
-        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
+    handleLLMStart(llm, prompts, runId, parentRunId, extraParams, tags, metadata) {
+        const [node_id, chain_root_id, chain_id] = this._start_new_node(runId, parentRunId);
         const input_text = prompts[0];
-        const constructor = llm['id'].pop();
         const invocation_params = extraParams?.invocation_params;
         const model = invocation_params?.model_name;
         const temperature = invocation_params?.temperature;
@@ -89,7 +88,6 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             temperature: temperature,
             tags: tags,
             user_metadata: metadata,
-            constructor: constructor,
             node_type: transaction_types_js_1.TransactionRecordType.llm,
             version: this.version,
             has_children: false
@@ -98,10 +96,10 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     /**
      * Called if an LLM/ChatModel run encounters an error
      */
-    async handleLLMError(err, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleLLMError(err, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
-        record.status_code = err.response.status;
+        record.status_code = err.response?.status;
         record.output_text = `ERROR: ${err.message}`;
         record.latency_ms = latency_ms;
         await this._finalize_node(record);
@@ -109,18 +107,18 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     /**
      * Called at the end of an LLM/ChatModel run, with the output and the run ID.
      */
-    async handleLLMEnd(output, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleLLMEnd(output, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const generation = output.generations[0][0];
         const output_text = generation.text;
-        let num_input_tokens = undefined;
-        let num_output_tokens = undefined;
-        let num_total_tokens = undefined;
+        let num_input_tokens;
+        let num_output_tokens;
+        let num_total_tokens;
         if (output.llmOutput) {
-            const usage = output.llmOutput.tokenUsage || {};
-            num_input_tokens = usage.promptTokens || null;
-            num_output_tokens = usage.completionTokens || null;
-            num_total_tokens = usage.totalTokens || null;
+            const usage = output.llmOutput.tokenUsage ?? {};
+            num_input_tokens = usage.promptTokens;
+            num_output_tokens = usage.completionTokens;
+            num_total_tokens = usage.totalTokens;
         }
         else {
             try {
@@ -137,7 +135,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
         }
         let finish_reason;
         if (generation.generationInfo) {
-            finish_reason = generation.generationInfo.finish_reason || '';
+            finish_reason = generation.generationInfo.finish_reason;
         }
         const record = this.records[node_id];
         record.output_text = output_text;
@@ -153,12 +151,11 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      * Called at the start of a Chat Model run, with the prompt(s)
      * and the run ID.
      */
-    async handleChatModelStart(llm, messages, runId, parentRunId, extraParams, tags, metadata, name) {
-        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
+    handleChatModelStart(llm, messages, runId, parentRunId, extraParams, tags, metadata) {
+        const [node_id, chain_root_id, chain_id] = this._start_new_node(runId, parentRunId);
         const chat_messages = new prompt_values_1.ChatPromptValue(messages[0]);
-        const constructor = llm['id'].pop();
         const invocation_params = extraParams?.invocation_params;
-        const model = invocation_params?.model || invocation_params?._type;
+        const model = (invocation_params?.model ?? invocation_params?._type);
         const temperature = invocation_params?.temperature;
         this.records[node_id] = {
             node_id: node_id,
@@ -170,7 +167,6 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             temperature: temperature,
             tags: tags,
             user_metadata: metadata,
-            constructor: constructor,
             node_type: transaction_types_js_1.TransactionRecordType.chat,
             version: this.version,
             has_children: false
@@ -180,9 +176,8 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      * Called at the start of a Chain run, with the chain name and inputs
      * and the run ID.
      */
-    async handleChainStart(chain, inputs, runId, parentRunId, tags, metadata, runType, name) {
-        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
-        const constructor = chain['id'].pop();
+    handleChainStart(chain, inputs, runId, parentRunId, tags, metadata) {
+        const [node_id, chain_root_id, chain_id] = this._start_new_node(runId, parentRunId);
         let node_input = {};
         if (typeof inputs === 'string') {
             node_input = { input: inputs };
@@ -191,7 +186,7 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             node_input = inputs;
         }
         else if (typeof inputs === 'object') {
-            node_input = Object.fromEntries(Object.entries(inputs).filter(([key, value]) => value && typeof value === 'string'));
+            node_input = Object.fromEntries(Object.entries(inputs).filter((value) => value && typeof value === 'string'));
         }
         else if (Array.isArray(inputs) &&
             inputs.every((v) => v instanceof documents_1.Document)) {
@@ -209,7 +204,6 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             tags: tags,
             user_metadata: metadata,
             node_type: transaction_types_js_1.TransactionRecordType.chain,
-            constructor: constructor,
             version: this.version,
             has_children: false
         };
@@ -217,20 +211,20 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     /**
      * Called if a Chain run encounters an error
      */
-    async handleChainError(err, runId, parentRunId, tags, kwargs) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleChainError(err, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         record.output_text = `ERROR: ${err.message}`;
         record.finish_reason = 'chain_error';
         record.latency_ms = latency_ms;
-        record.status_code = err.response.status;
+        record.status_code = err.response?.status;
         await this._finalize_node(record);
     }
     /**
      * Called at the end of a Chain run, with the outputs and the run ID.
      */
-    async handleChainEnd(outputs, runId, parentRunId, tags, kwargs) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleChainEnd(outputs, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         record.output_text = JSON.stringify(outputs);
         record.finish_reason = 'chain_end';
@@ -242,9 +236,8 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      * Called at the start of a Tool run, with the tool name and input
      * and the run ID.
      */
-    async handleToolStart(tool, input, runId, parentRunId, tags, metadata, name) {
-        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
-        const constructor = tool['id'].pop();
+    handleToolStart(tool, input, runId, parentRunId, tags, metadata) {
+        const [node_id, chain_root_id, chain_id] = this._start_new_node(runId, parentRunId);
         this.records[node_id] = {
             node_id: node_id,
             chain_id: chain_id,
@@ -254,7 +247,6 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             tags: tags,
             user_metadata: metadata,
             node_type: transaction_types_js_1.TransactionRecordType.tool,
-            constructor: constructor,
             version: this.version,
             has_children: false
         };
@@ -262,19 +254,19 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
     /**
      * Called if a Tool run encounters an error
      */
-    async handleToolError(err, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleToolError(err, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         record.output_text = `ERROR: ${err.message}`;
         record.latency_ms = latency_ms;
-        record.status_code = err.response.status;
+        record.status_code = err.response?.status;
         await this._finalize_node(record);
     }
     /**
      * Called at the end of a Tool run, with the tool output and the run ID.
      */
-    async handleToolEnd(output, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleToolEnd(output, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         record.output_text = output;
         record.latency_ms = latency_ms;
@@ -285,17 +277,16 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
      * Called when an agent finishes execution, before it exits.
      * with the final output and the run ID.
      */
-    async handleAgentEnd(action, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleAgentEnd(action, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         record.latency_ms = latency_ms;
         record.node_type = transaction_types_js_1.TransactionRecordType.agent;
         record.status_code = 200;
         await this._finalize_node(record);
     }
-    async handleRetrieverStart(retriever, query, runId, parentRunId, tags, metadata, name) {
-        const [node_id, chain_root_id, chain_id] = await this._start_new_node(runId, parentRunId);
-        const constructor = retriever['id'].pop();
+    handleRetrieverStart(retriever, query, runId, parentRunId, tags, metadata) {
+        const [node_id, chain_root_id, chain_id] = this._start_new_node(runId, parentRunId);
         this.records[node_id] = {
             node_id: node_id,
             chain_id: chain_id,
@@ -305,13 +296,12 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
             tags: tags,
             user_metadata: metadata,
             node_type: transaction_types_js_1.TransactionRecordType.retriever,
-            constructor: constructor,
             version: this.version,
             has_children: false
         };
     }
-    async handleRetrieverEnd(documents, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleRetrieverEnd(documents, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         const formatted_docs = documents.map((doc) => {
             return {
@@ -324,12 +314,12 @@ class GalileoObserveCallback extends base_1.BaseCallbackHandler {
         record.status_code = 200;
         await this._finalize_node(record);
     }
-    async handleRetrieverError(err, runId, parentRunId, tags) {
-        const [node_id, latency_ms] = await this._end_node(runId);
+    async handleRetrieverError(err, runId) {
+        const [node_id, latency_ms] = this._end_node(runId);
         const record = this.records[node_id];
         record.output_text = `ERROR: ${err.message}`;
         record.latency_ms = latency_ms;
-        record.status_code = err.response.status;
+        record.status_code = err.response?.status;
         await this._finalize_node(record);
     }
 }

@@ -2,10 +2,11 @@ import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
-import { Routes } from './constants/routes.constants.js';
+import { Routes } from './types/routes.types.js';
 import type { TransactionRecordBatch } from './types/transaction.types.js';
 
 import querystring from 'querystring';
+
 interface Project {
   id: string;
   name: string;
@@ -32,19 +33,24 @@ export class ApiClient {
 
   public async init(project_name: string): Promise<void> {
     this.api_url = this.getApiUrl();
-    if (await this.healthcheck()) {
+    if (await this.healthCheck()) {
       this.token = await this.getToken();
+
       try {
         this.project_id = await this.getProjectIdByName(project_name);
-      } catch (e: any) {
-        if (e.message.includes('not found')) {
+      }
+      catch (err: unknown) {
+        const error = err as Error;
+
+        if (error.message.includes('not found')) {
           const project = await this.createProject(project_name);
           this.project_id = project.id;
           console.log(
-            `🚀 Creating new project... project ${project_name} created!`
+            `🚀 Creating new project… project ${project_name} created!`
           );
-        } else {
-          throw e;
+        }
+        else {
+          throw err;
         }
       }
     }
@@ -52,9 +58,11 @@ export class ApiClient {
 
   private getApiUrl(): string {
     const console_url = process.env.GALILEO_CONSOLE_URL;
+
     if (!console_url) {
       throw new Error('GALILEO_CONSOLE_URL must be set');
     }
+
     if (
       console_url.includes('localhost') ||
       console_url.includes('127.0.0.1')
@@ -67,6 +75,7 @@ export class ApiClient {
 
   private async getToken(): Promise<string> {
     const apiKey = process.env.GALILEO_API_KEY;
+
     if (apiKey) {
       const loginResponse = await this.apiKeyLogin(apiKey);
       return loginResponse.access_token || '';
@@ -74,6 +83,7 @@ export class ApiClient {
 
     const username = process.env.GALILEO_USERNAME;
     const password = process.env.GALILEO_PASSWORD;
+
     if (username && password) {
       const loginResponse = await this.usernameLogin(username, password);
       return loginResponse.access_token || '';
@@ -84,90 +94,91 @@ export class ApiClient {
     );
   }
 
-  private async healthcheck(): Promise<boolean> {
-    await this.makeRequest(RequestMethod.GET, Routes.healthcheck);
-    return true;
+  private async healthCheck(): Promise<boolean> {
+    return await this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
   }
 
   private async usernameLogin(
     username: string,
     password: string
-  ): Promise<{ access_token: string }> {
-    return await this.makeRequest(
+  ) {
+    return await this.makeRequest<{ access_token: string }>(
       RequestMethod.POST,
       Routes.login,
       querystring.stringify({
         username,
         password
       })
-    );
+    )
   }
 
   private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
-    return await this.makeRequest(RequestMethod.POST, Routes.api_key_login, {
+    return await this.makeRequest<{ access_token: string }>(RequestMethod.POST, Routes.apiKeyLogin, {
       api_key: apiKey
-    });
+    })
   }
 
-  private async getAuthHeader(
+
+  private getAuthHeader(
     token: string
-  ): Promise<{ Authorization: string }> {
+  ): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
 
-  private async validateResponse(response: AxiosResponse): Promise<void> {
+  private validateResponse(response: AxiosResponse): void {
     if (response.status >= 300) {
       const msg = `Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
-      // TODO: Better error handling.
+      // TODO: Better error handling
       throw new Error(msg);
     }
   }
 
-  private async makeRequest(
+  private async makeRequest<T>(
     request_method: Method,
-    endpoint: string,
-    data?: any,
-    params?: any
-  ): Promise<any> {
+    endpoint: Routes,
+    data?: string | Record<string, any> | null,
+    params?: Record<string, any>,
+  ): Promise<T> {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
-    let headers: any = {};
     if (endpoint !== Routes.login && this.token) {
-      const claims: any = decode(this.token, { complete: true });
-      if (claims.payload.exp < Math.floor(Date.now() / 1000)) {
+      const payload = decode(this.token, { json: true });
+      if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
         this.token = await this.getToken();
       }
     }
 
+    let headers: Record<string, any> = {};
+
     if (this.token) {
-      headers = await this.getAuthHeader(this.token);
+      headers = this.getAuthHeader(this.token);
     }
 
     const config: AxiosRequestConfig = {
       method: request_method,
-      url: `${this.api_url}/${endpoint}`,
+      url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id)}`,
       params,
       headers,
       data
     };
 
-    const response = await axios.request(config);
-    await this.validateResponse(response);
+    const response = await axios.request<T>(config);
+    this.validateResponse(response);
     return response.data;
   }
 
   public async ingestBatch(
     transaction_batch: TransactionRecordBatch
-  ): Promise<any> {
-    return await this.makeRequest(
+  ): Promise<string> {
+    return await this.makeRequest<string>(
       RequestMethod.POST,
-      Routes.ingest.replace('{project_id}', this.project_id),
+      Routes.ingest,
       transaction_batch
     );
   }
 
   public async getProjectIdByName(project_name: string): Promise<string> {
-    const projects: Project[] = await this.makeRequest(
+    const projects = await this.makeRequest<Project[]>(
       RequestMethod.GET,
       Routes.projects,
       null,
@@ -176,19 +187,22 @@ export class ApiClient {
         type: 'llm_monitor'
       }
     );
+
     if (projects.length < 1) {
       throw new Error(`Galileo project ${project_name} not found`);
     }
+
     return projects[0].id;
   }
 
   private async createProject(project_name: string): Promise<{ id: string }> {
-    return await this.makeRequest(RequestMethod.POST, Routes.projects, {
+    return await this.makeRequest<{ id: string }>(RequestMethod.POST, Routes.projects, {
       name: project_name,
       type: 'llm_monitor'
-    });
+    })
   }
 
+  // TODO: This should have a more accurate return type
   public async getLoggedData(
     start_time: string,
     end_time: string,
@@ -198,10 +212,10 @@ export class ApiClient {
     offset?: number,
     include_chains?: boolean,
     chain_id?: string
-  ): Promise<any> {
-    return await this.makeRequest(
+  ): Promise<Record<string, unknown>> {
+    return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
-      Routes.rows.replace('{project_id}', this.project_id),
+      Routes.rows,
       {
         filters,
         sort_spec
@@ -217,16 +231,17 @@ export class ApiClient {
     );
   }
 
+  // TODO: This should have a more accurate return type
   public async getMetrics(
     start_time: string,
     end_time: string,
     filters: Array<any> = [],
     interval?: number,
     group_by?: string
-  ): Promise<any> {
-    return await this.makeRequest(
+  ): Promise<Record<string, unknown>> {
+    return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
-      Routes.metrics.replace('{project_id}', this.project_id),
+      Routes.metrics,
       {
         filters
       },
@@ -239,10 +254,11 @@ export class ApiClient {
     );
   }
 
-  public async deleteLoggedData(filters: Array<any> = []): Promise<any> {
-    return await this.makeRequest(
+  // TODO: This should have a more accurate return type
+  public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
+    return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
-      Routes.delete.replace('{project_id}', this.project_id),
+      Routes.delete,
       {
         filters
       }

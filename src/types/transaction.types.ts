@@ -31,7 +31,6 @@ export interface TransactionRecord {
   tags?: string[];
   user_metadata?: Record<string, any>;
   temperature?: number;
-  constructor?: string;
   node_type: TransactionRecordType;
   has_children: boolean;
   version?: string;

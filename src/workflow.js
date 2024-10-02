@@ -65,7 +65,6 @@ class GalileoObserveWorkflows {
         const chain_root_id = rootId ?? node_id;
         const has_children = step instanceof step_types_1.StepWithChildren && step.steps.length > 0;
         const row = {
-            constructor: undefined,
             node_id,
             node_type: step.type,
             input_text: JSON.stringify(step.input),
