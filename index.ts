@@ -1,7 +1,14 @@
-import { ApiClient } from './src/api-client.js'
-import { GalileoObserveCallback } from './src/callback.js'
+import GalileoEvaluateApiClient from './src/evaluate/api-client';
+import GalileoEvaluateWorkflows from './src/evaluate/workflow';
+import GalileoObserveApiClient from "./src/observe/api-client";
+import GalileoObserveCallback from "./src/observe/callback";
+import GalileoObserveWorkflows from "./src/observe/workflow";
+
 
 export {
-    ApiClient,
-    GalileoObserveCallback
+    GalileoObserveApiClient,
+    GalileoObserveCallback,
+    GalileoObserveWorkflows,
+    GalileoEvaluateApiClient,
+    GalileoEvaluateWorkflows
 }

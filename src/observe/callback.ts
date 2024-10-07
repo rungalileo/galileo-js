@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { ChainValues } from '@langchain/core/utils/types';
 import { LLMResult } from '@langchain/core/outputs';
-import { ApiClient } from './api-client.js';
+
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { BaseMessage } from '@langchain/core/messages';
 import { ChatPromptValue } from '@langchain/core/prompt_values';
@@ -14,24 +14,25 @@ import {
   TransactionRecord,
   TransactionRecordBatch,
   TransactionRecordType
-} from './types/transaction.types.js';
-import { version } from '../package.json';
+} from '../types/transaction.types.js';
+import { version } from '../../package.json';
 import { AgentFinish } from '@langchain/core/dist/agents.js';
+import GalileoObserveApiClient from './api-client.js';
 
-export class GalileoObserveCallback extends BaseCallbackHandler {
-  name = 'GalileoObserveCallback';
-  api_client: ApiClient;
+export default class GalileoObserveCallback extends BaseCallbackHandler {
+  public name = 'GalileoObserveCallback';
+  private api_client: GalileoObserveApiClient;
 
-  timers: Record<string, Record<string, number>> = {};
-  records: Record<string, TransactionRecord> = {};
-  version?: string;
-  project_name: string;
+  private timers: Record<string, Record<string, number>> = {};
+  private records: Record<string, TransactionRecord> = {};
+  public version?: string;
+  public project_name: string;
 
   constructor(project_name: string, version?: string) {
     super();
     this.version = version;
     this.project_name = project_name;
-    this.api_client = new ApiClient();
+    this.api_client = new GalileoObserveApiClient();
   }
 
   async init(): Promise<void> {

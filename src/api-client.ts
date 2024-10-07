@@ -3,33 +3,32 @@ import { decode } from 'jsonwebtoken';
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
 import { Routes } from './types/routes.types.js';
-import type { TransactionRecordBatch } from './types/transaction.types.js';
 
 import querystring from 'querystring';
+
+export enum ProjectTypes {
+  evaluate = 'llm_prompt',
+  observe = 'llm_monitor'
+}
 
 interface Project {
   id: string;
   name: string;
-  type: string;
+  type: ProjectTypes;
 }
 
-enum RequestMethod {
+export enum RequestMethod {
   GET = 'GET',
   POST = 'POST',
   PUT = 'PUT',
   DELETE = 'DELETE'
 }
 
-export class ApiClient {
-  private project_id: string;
-  private api_url: string;
-  private token: string;
-
-  constructor() {
-    this.project_id = '';
-    this.api_url = '';
-    this.token = '';
-  }
+export class GalileoApiClient {
+  public type: ProjectTypes | undefined = undefined;
+  private project_id: string = '';
+  private api_url: string = '';
+  private token: string = '';
 
   public async init(project_name: string): Promise<void> {
     this.api_url = this.getApiUrl();
@@ -73,6 +72,10 @@ export class ApiClient {
     }
   }
 
+  private async healthCheck(): Promise<boolean> {
+    return await this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
+  }
+
   private async getToken(): Promise<string> {
     const apiKey = process.env.GALILEO_API_KEY;
 
@@ -94,8 +97,10 @@ export class ApiClient {
     );
   }
 
-  private async healthCheck(): Promise<boolean> {
-    return await this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
+  private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
+    return await this.makeRequest<{ access_token: string }>(RequestMethod.POST, Routes.apiKeyLogin, {
+      api_key: apiKey
+    })
   }
 
   private async usernameLogin(
@@ -112,12 +117,30 @@ export class ApiClient {
     )
   }
 
-  private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
-    return await this.makeRequest<{ access_token: string }>(RequestMethod.POST, Routes.apiKeyLogin, {
-      api_key: apiKey
-    })
+  private async getProjectIdByName(project_name: string): Promise<string> {
+    const projects = await this.makeRequest<Project[]>(
+      RequestMethod.GET,
+      Routes.projects,
+      null,
+      {
+        project_name,
+        type: this.type
+      }
+    );
+
+    if (projects.length < 1) {
+      throw new Error(`Galileo project ${project_name} not found`);
+    }
+
+    return projects[0].id;
   }
 
+  private async createProject(project_name: string): Promise<{ id: string }> {
+    return await this.makeRequest<{ id: string }>(RequestMethod.POST, Routes.projects, {
+      name: project_name,
+      type: this.type
+    })
+  }
 
   private getAuthHeader(
     token: string
@@ -133,7 +156,7 @@ export class ApiClient {
     }
   }
 
-  private async makeRequest<T>(
+  public async makeRequest<T>(
     request_method: Method,
     endpoint: Routes,
     data?: string | Record<string, any> | null,
@@ -165,103 +188,5 @@ export class ApiClient {
     const response = await axios.request<T>(config);
     this.validateResponse(response);
     return response.data;
-  }
-
-  public async ingestBatch(
-    transaction_batch: TransactionRecordBatch
-  ): Promise<string> {
-    return await this.makeRequest<string>(
-      RequestMethod.POST,
-      Routes.ingest,
-      transaction_batch
-    );
-  }
-
-  public async getProjectIdByName(project_name: string): Promise<string> {
-    const projects = await this.makeRequest<Project[]>(
-      RequestMethod.GET,
-      Routes.projects,
-      null,
-      {
-        project_name,
-        type: 'llm_monitor'
-      }
-    );
-
-    if (projects.length < 1) {
-      throw new Error(`Galileo project ${project_name} not found`);
-    }
-
-    return projects[0].id;
-  }
-
-  private async createProject(project_name: string): Promise<{ id: string }> {
-    return await this.makeRequest<{ id: string }>(RequestMethod.POST, Routes.projects, {
-      name: project_name,
-      type: 'llm_monitor'
-    })
-  }
-
-  // TODO: This should have a more accurate return type
-  public async getLoggedData(
-    start_time: string,
-    end_time: string,
-    filters: Array<any> = [],
-    sort_spec: Array<any> = [],
-    limit?: number,
-    offset?: number,
-    include_chains?: boolean,
-    chain_id?: string
-  ): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
-      RequestMethod.POST,
-      Routes.rows,
-      {
-        filters,
-        sort_spec
-      },
-      {
-        start_time,
-        end_time,
-        chain_id,
-        limit,
-        offset,
-        include_chains
-      }
-    );
-  }
-
-  // TODO: This should have a more accurate return type
-  public async getMetrics(
-    start_time: string,
-    end_time: string,
-    filters: Array<any> = [],
-    interval?: number,
-    group_by?: string
-  ): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
-      RequestMethod.POST,
-      Routes.metrics,
-      {
-        filters
-      },
-      {
-        start_time,
-        end_time,
-        interval,
-        group_by
-      }
-    );
-  }
-
-  // TODO: This should have a more accurate return type
-  public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
-      RequestMethod.POST,
-      Routes.delete,
-      {
-        filters
-      }
-    );
   }
 }
