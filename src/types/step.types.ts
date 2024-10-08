@@ -1,5 +1,15 @@
-import { TransactionRecordType } from "./transaction.types";
+
 import { Message } from "./message.types";
+
+export enum StepType {
+    llm = 'llm',
+    chat = 'chat',
+    chain = 'chain',
+    tool = 'tool',
+    agent = 'agent',
+    retriever = 'retriever',
+    workflow = 'workflow'
+}
 
 export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
 
@@ -12,7 +22,7 @@ export interface BaseStep {
     name: string;
     output: StepIOType;
     statusCode?: number;
-    type: TransactionRecordType;
+    type: StepType;
 }
 
 type LlmStepAllowedIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
@@ -31,7 +41,7 @@ export class LlmStep implements Omit<BaseStep, 'input' | 'output'> {
     statusCode?: number | undefined;
     temperature?: number;
     totalTokens?: number;
-    type = TransactionRecordType.llm;
+    type = StepType.llm;
 }
 
 type RetrieverStepAllowedOutputType = (string | Document | { [key: string]: string })[];
@@ -45,7 +55,7 @@ export class RetrieverStep implements Omit<BaseStep, 'input' | 'output'> {
     name!: string;
     output!: RetrieverStepAllowedOutputType;
     statusCode?: number | undefined;
-    type = TransactionRecordType.retriever;
+    type = StepType.retriever;
 }
 
 export class ToolStep implements BaseStep {
@@ -57,7 +67,7 @@ export class ToolStep implements BaseStep {
     name!: string;
     output!: StepIOType;
     statusCode?: number | undefined;
-    type = TransactionRecordType.tool;
+    type = StepType.tool;
 }
 
 export class StepWithChildren implements BaseStep {
@@ -71,8 +81,7 @@ export class StepWithChildren implements BaseStep {
     parent: StepWithChildren | null = null;
     statusCode?: number | undefined;
     steps: AWorkflowStep[] = [];
-    type: TransactionRecordType = TransactionRecordType.workflow;
-
+    type: StepType = StepType.workflow;
     constructor(public step: Omit<BaseStep, 'type'>) {
         this.createdAtNs = step.createdAtNs;
         this.durationNs = step.durationNs;
@@ -82,8 +91,7 @@ export class StepWithChildren implements BaseStep {
         this.name = step.name
         this.output = step.output;
         this.statusCode = step.statusCode;
-    }
-
+    };
     addStep(step: AWorkflowStep): AWorkflowStep {
         this.steps.push(step)
         return step
@@ -97,11 +105,11 @@ export class StepWithChildren implements BaseStep {
 }
 
 export class AgentStep extends StepWithChildren {
-    type = TransactionRecordType.agent;
+    type = StepType.agent;
 }
 
 export class WorkflowStep extends StepWithChildren {
-    type = TransactionRecordType.workflow;
+    type = StepType.workflow;
 }
 
 export type AWorkflow = AgentStep | LlmStep | WorkflowStep;

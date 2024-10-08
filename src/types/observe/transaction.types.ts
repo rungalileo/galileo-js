@@ -1,12 +1,4 @@
-export enum TransactionRecordType {
-  llm = 'llm',
-  chat = 'chat',
-  chain = 'chain',
-  tool = 'tool',
-  agent = 'agent',
-  retriever = 'retriever',
-  workflow = 'workflow'
-}
+import { StepType } from './../step.types';
 
 export enum TransactionLoggingMethod {
   js_langchain = 'js_langchain',
@@ -31,7 +23,7 @@ export interface TransactionRecord {
   tags?: string[];
   user_metadata?: Record<string, any>;
   temperature?: number;
-  node_type: TransactionRecordType;
+  node_type: StepType;
   has_children: boolean;
   version?: string;
 }

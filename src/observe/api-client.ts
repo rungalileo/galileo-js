@@ -1,6 +1,6 @@
 import { GalileoApiClient, ProjectTypes, RequestMethod } from "../api-client";
 import { Routes } from "../types/routes.types";
-import { TransactionRecordBatch } from "../types/transaction.types";
+import { TransactionRecordBatch } from "../types/observe/transaction.types";
 
 export default class GalileoObserveApiClient extends GalileoApiClient {
   constructor() {

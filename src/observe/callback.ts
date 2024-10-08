@@ -12,12 +12,12 @@ import { TiktokenModel } from '@langchain/openai';
 import {
   TransactionLoggingMethod,
   TransactionRecord,
-  TransactionRecordBatch,
-  TransactionRecordType
-} from '../types/transaction.types.js';
+  TransactionRecordBatch
+} from '../types/observe/transaction.types.js';
 import { version } from '../../package.json';
 import { AgentFinish } from '@langchain/core/dist/agents.js';
 import GalileoObserveApiClient from './api-client.js';
+import { StepType } from '../types/step.types.js';
 
 export default class GalileoObserveCallback extends BaseCallbackHandler {
   public name = 'GalileoObserveCallback';
@@ -135,7 +135,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       temperature: temperature,
       tags: tags,
       user_metadata: metadata,
-      node_type: TransactionRecordType.llm,
+      node_type: StepType.llm,
       version: this.version,
       has_children: false
     };
@@ -250,7 +250,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       temperature: temperature,
       tags: tags,
       user_metadata: metadata,
-      node_type: TransactionRecordType.chat,
+      node_type: StepType.chat,
       version: this.version,
       has_children: false
     };
@@ -303,7 +303,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       created_at: new Date().toISOString(),
       tags: tags,
       user_metadata: metadata,
-      node_type: TransactionRecordType.chain,
+      node_type: StepType.chain,
       version: this.version,
       has_children: false
     };
@@ -370,7 +370,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       created_at: new Date().toISOString(),
       tags: tags,
       user_metadata: metadata,
-      node_type: TransactionRecordType.tool,
+      node_type: StepType.tool,
       version: this.version,
       has_children: false
     };
@@ -420,7 +420,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
     record.latency_ms = latency_ms;
-    record.node_type = TransactionRecordType.agent;
+    record.node_type = StepType.agent;
     record.status_code = 200;
 
     await this._finalize_node(record);
@@ -447,7 +447,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       created_at: new Date().toISOString(),
       tags: tags,
       user_metadata: metadata,
-      node_type: TransactionRecordType.retriever,
+      node_type: StepType.retriever,
       version: this.version,
       has_children: false
     };

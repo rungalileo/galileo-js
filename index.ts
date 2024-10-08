@@ -4,7 +4,6 @@ import GalileoObserveApiClient from "./src/observe/api-client";
 import GalileoObserveCallback from "./src/observe/callback";
 import GalileoObserveWorkflows from "./src/observe/workflow";
 
-
 export {
     GalileoObserveApiClient,
     GalileoObserveCallback,
