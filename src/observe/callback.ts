@@ -13,7 +13,7 @@ import {
   TransactionLoggingMethod,
   TransactionRecord,
   TransactionRecordBatch
-} from '../types/observe/transaction.types.js';
+} from '../types/transaction.types.js';
 import { version } from '../../package.json';
 import { AgentFinish } from '@langchain/core/dist/agents.js';
 import GalileoObserveApiClient from './api-client.js';

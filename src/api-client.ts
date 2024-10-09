@@ -26,7 +26,8 @@ export enum RequestMethod {
 
 export class GalileoApiClient {
   public type: ProjectTypes | undefined = undefined;
-  private project_id: string = '';
+  public project_id: string = '';
+  public run_id: string = '';
   private api_url: string = '';
   private token: string = '';
 
@@ -179,7 +180,7 @@ export class GalileoApiClient {
 
     const config: AxiosRequestConfig = {
       method: request_method,
-      url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id)}`,
+      url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id).replace('{run_id}', this.run_id)}`,
       params,
       headers,
       data

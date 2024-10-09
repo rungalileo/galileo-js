@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { AWorkflow, AWorkflowStep, LlmStep, StepWithChildren } from "../types/step.types";
-import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "../types/observe/transaction.types";
+import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "../types/transaction.types";
 import GalileoWorkflows from "../workflow";
 import { version } from '../../package.json';
 import GalileoObserveApiClient from "./api-client";

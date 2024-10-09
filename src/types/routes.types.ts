@@ -4,8 +4,9 @@ export enum Routes {
   apiKeyLogin = 'login/api_key',
   getToken = 'get-token',
   projects = 'projects',
-  metrics = 'projects/{project_id}/observe/metrics',
-  ingest = 'projects/{project_id}/observe/ingest',
-  rows = 'projects/{project_id}/observe/rows',
-  delete = 'projects/{project_id}/observe/delete'
+  observeMetrics = 'projects/{project_id}/observe/metrics',
+  observeIngest = 'projects/{project_id}/observe/ingest',
+  observeRows = 'projects/{project_id}/observe/rows',
+  observeDelete = 'projects/{project_id}/observe/delete',
+  evaluateIngest = 'projects/{project_id}/runs/{run_id}/chains/ingest',
 };

@@ -1,4 +1,4 @@
-import { StepType } from "../step.types";
+import { StepType } from "./step.types";
 
 export interface Node {
   chain_id?: string;

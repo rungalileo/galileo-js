@@ -1,6 +1,6 @@
 import { GalileoApiClient, ProjectTypes, RequestMethod } from "../api-client";
 import { Routes } from "../types/routes.types";
-import { TransactionRecordBatch } from "../types/observe/transaction.types";
+import { TransactionRecordBatch } from "../types/transaction.types";
 
 export default class GalileoObserveApiClient extends GalileoApiClient {
   constructor() {
@@ -22,7 +22,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
 
     return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
-      Routes.rows,
+      Routes.observeRows,
       {
         filters,
         sort_spec
@@ -48,7 +48,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   ): Promise<Record<string, unknown>> {
     return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
-      Routes.metrics,
+      Routes.observeMetrics,
       {
         filters
       },
@@ -65,7 +65,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
     return await this.makeRequest<Record<string, unknown>>(
       RequestMethod.POST,
-      Routes.delete,
+      Routes.observeDelete,
       {
         filters
       }
@@ -77,7 +77,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   ): Promise<string> {
     return await this.makeRequest<string>(
       RequestMethod.POST,
-      Routes.ingest,
+      Routes.observeIngest,
       transaction_batch
     );
   }

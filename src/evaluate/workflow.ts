@@ -2,7 +2,9 @@ import { randomUUID } from "crypto";
 import { AWorkflow, AWorkflowStep, LlmStep, StepWithChildren } from "../types/step.types";
 import GalileoWorkflows from "../workflow";
 import GalileoEvaluateApiClient from "./api-client";
-import { Node } from "../types/evaluate/node.types";
+import { Node } from "../types/node.types";
+import { RunTag } from "../types/tag.types";
+import { CustomizedScorer, RegisteredScorer, ScorersConfiguration } from "../types/scorer.types";
 
 export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
   private apiClient: GalileoEvaluateApiClient = new GalileoEvaluateApiClient();
@@ -11,7 +13,7 @@ export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
     await this.apiClient.init(this.projectName);
   }
 
-  private workflowToNodeRows(
+  private workflowToNode(
     step: AWorkflowStep,
     rootId?: string,
     chainId?: string,
@@ -19,13 +21,13 @@ export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
   ): Node[] {
     let currentStepNumber = stepNumber;
 
-    const rows: Node[] = [];
+    const nodes: Node[] = [];
 
     const node_id = randomUUID();
     const chain_root_id = rootId ?? node_id;
     const has_children = step instanceof StepWithChildren && step.steps.length > 0;
 
-    const row: Node = {
+    const node: Node = {
       node_id,
       node_type: step.type,
       node_name: step.name,
@@ -46,36 +48,45 @@ export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
     }
 
     if (step instanceof LlmStep) {
-      row.params.model = step.model
-      row.query_input_tokens = step.inputTokens ?? 0
-      row.query_output_tokens = step.outputTokens ?? 0
-      row.query_total_tokens = step.totalTokens ?? 0
+      node.params.model = step.model
+      node.query_input_tokens = step.inputTokens ?? 0
+      node.query_output_tokens = step.outputTokens ?? 0
+      node.query_total_tokens = step.totalTokens ?? 0
     }
 
-    rows.push(row)
+    nodes.push(node)
 
     currentStepNumber++
 
     if (step instanceof StepWithChildren) {
       step.steps.forEach(childStep => {
-        const childRows = this.workflowToNodeRows(childStep, rootId, node_id, currentStepNumber)
-        rows.push(...childRows)
+        const childeNodes = this.workflowToNode(childStep, rootId, node_id, currentStepNumber)
+        nodes.push(...childeNodes)
       });
     }
 
-    return rows
+    return nodes
   }
 
-  public uploadWorkflows(): AWorkflow[] {
-    if (!this.workflows.length) return []
+  public async uploadWorkflows(
+    run_name: string | undefined = undefined,
+    run_tags: RunTag[] = [],
+    scorers_config: ScorersConfiguration,
+    registered_scorers?: RegisteredScorer[],
+    customized_scorers?: CustomizedScorer[],
+  ): Promise<AWorkflow[]> {
+    if (this.uploadWorkflows.length < 1) throw new Error("Chain run must have at least 1 workflow.");
 
-    const nodeRows: Node[] = [];
+    const nodes: Node[] = [];
 
     this.workflows.forEach(workflow => {
-      nodeRows.push(...this.workflowToNodeRows(workflow))
+      nodes.push(...this.workflowToNode(workflow))
     });
 
-    // TODO: Create chain run goes here…
+    const run = await this.apiClient.createRun(run_name, run_tags);
+    this.apiClient.run_id = run.id
+
+    await this.apiClient.ingestChain(nodes, scorers_config, registered_scorers, customized_scorers)
 
     const loggedWorkflows = this.workflows;
     this.workflows = [];
