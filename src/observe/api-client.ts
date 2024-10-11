@@ -1,4 +1,5 @@
-import { GalileoApiClient, ProjectTypes, RequestMethod } from "../api-client";
+import { GalileoApiClient, RequestMethod } from "../api-client";
+import { ProjectTypes } from "../types/project.types";
 import { Routes } from "../types/routes.types";
 import { TransactionRecordBatch } from "../types/transaction.types";
 
@@ -19,8 +20,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
     include_chains?: boolean,
     chain_id?: string
   ): Promise<Record<string, unknown>> {
-
-    return await this.makeRequest<Record<string, unknown>>(
+    return await this.makeRequest(
       RequestMethod.POST,
       Routes.observeRows,
       {
@@ -46,7 +46,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
     interval?: number,
     group_by?: string
   ): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
+    return await this.makeRequest(
       RequestMethod.POST,
       Routes.observeMetrics,
       {
@@ -63,7 +63,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
 
   // TODO: This should have a more accurate return type
   public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
+    return await this.makeRequest(
       RequestMethod.POST,
       Routes.observeDelete,
       {
@@ -75,7 +75,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   public async ingestBatch(
     transaction_batch: TransactionRecordBatch
   ): Promise<string> {
-    return await this.makeRequest<string>(
+    return await this.makeRequest(
       RequestMethod.POST,
       Routes.observeIngest,
       transaction_batch

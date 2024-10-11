@@ -1,12 +1,12 @@
 import { randomUUID } from "crypto";
 import { AWorkflow, AWorkflowStep, LlmStep, StepWithChildren } from "../types/step.types";
-import GalileoWorkflows from "../workflow";
+import GalileoWorkflow from "../workflow";
 import GalileoEvaluateApiClient from "./api-client";
 import { Node } from "../types/node.types";
 import { RunTag } from "../types/tag.types";
 import { CustomizedScorer, RegisteredScorer, ScorersConfiguration } from "../types/scorer.types";
 
-export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
+export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
   private apiClient: GalileoEvaluateApiClient = new GalileoEvaluateApiClient();
 
   public async init(): Promise<void> {
@@ -37,14 +37,15 @@ export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
       chain_id: chainId,
       step: currentStepNumber,
       has_children,
-      creation_timestamp: new Date(step.createdAtNs).toISOString(),
+      creation_timestamp: step.createdAtNs,
       latency: step.durationNs,
       target: step.groundTruth,
       inputs: {},
       params: {},
       query_input_tokens: 0,
       query_output_tokens: 0,
-      query_total_tokens: 0
+      query_total_tokens: 0,
+      finish_reason: ''
     }
 
     if (step instanceof LlmStep) {
@@ -69,13 +70,13 @@ export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
   }
 
   public async uploadWorkflows(
-    run_name: string | undefined = undefined,
-    run_tags: RunTag[] = [],
     scorers_config: ScorersConfiguration,
+    run_name?: string,
+    run_tags?: RunTag[],
     registered_scorers?: RegisteredScorer[],
     customized_scorers?: CustomizedScorer[],
   ): Promise<AWorkflow[]> {
-    if (this.uploadWorkflows.length < 1) throw new Error("Chain run must have at least 1 workflow.");
+    if (!this.workflows.length) throw new Error("Chain run must have at least 1 workflow.");
 
     const nodes: Node[] = [];
 
@@ -83,8 +84,7 @@ export default class GalileoEvaluateWorkflows extends GalileoWorkflows {
       nodes.push(...this.workflowToNode(workflow))
     });
 
-    const run = await this.apiClient.createRun(run_name, run_tags);
-    this.apiClient.run_id = run.id
+    this.apiClient.run_id = await this.apiClient.createRun(run_name, run_tags);
 
     await this.apiClient.ingestChain(nodes, scorers_config, registered_scorers, customized_scorers)
 

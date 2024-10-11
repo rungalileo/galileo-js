@@ -2,20 +2,10 @@ import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
+import { Project, ProjectTypes } from './types/project.types.js';
 import { Routes } from './types/routes.types.js';
 
 import querystring from 'querystring';
-
-export enum ProjectTypes {
-  evaluate = 'llm_prompt',
-  observe = 'llm_monitor'
-}
-
-interface Project {
-  id: string;
-  name: string;
-  type: ProjectTypes;
-}
 
 export enum RequestMethod {
   GET = 'GET',

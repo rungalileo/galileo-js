@@ -1,11 +1,11 @@
 import { randomUUID } from "crypto";
 import { AWorkflow, AWorkflowStep, LlmStep, StepWithChildren } from "../types/step.types";
 import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "../types/transaction.types";
-import GalileoWorkflows from "../workflow";
+import GalileoWorkflow from "../workflow";
 import { version } from '../../package.json';
 import GalileoObserveApiClient from "./api-client";
 
-export default class GalileoObserveWorkflows extends GalileoWorkflows {
+export default class GalileoObserveWorkflow extends GalileoWorkflow {
   private apiClient: GalileoObserveApiClient = new GalileoObserveApiClient();
 
   public async init(): Promise<void> {
@@ -58,7 +58,7 @@ export default class GalileoObserveWorkflows extends GalileoWorkflows {
   }
 
   public async uploadWorkflows(): Promise<AWorkflow[]> {
-    if (!this.workflows.length) return []
+    if (!this.workflows.length) throw new Error("Batch must have at least 1 workflow.");
 
     const records: TransactionRecord[] = [];
 

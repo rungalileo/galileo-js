@@ -1,6 +1,6 @@
 import { AgentStep, AWorkflow, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from './types/step.types';
 
-export default class GalileoWorkflows {
+export default class GalileoWorkflow {
   public projectName: string;
 
   constructor(projectName: string) {

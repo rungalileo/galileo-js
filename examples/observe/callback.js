@@ -1,6 +1,5 @@
 import { GalileoObserveCallback } from "@rungalileo/observe";
 
-
 const observe_callback = new GalileoObserveCallback("pegasus");
 await observe_callback.init();
 
@@ -25,6 +24,7 @@ const model = new ChatOpenAI({});
 const text = fs.readFileSync("state_of_the_union.txt", "utf8");
 const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
 const docs = await textSplitter.createDocuments([text]);
+
 // Create a vector store from the documents.
 const vectorStore = await HNSWLib.fromDocuments(docs, new OpenAIEmbeddings());
 
@@ -53,7 +53,7 @@ const chain = RunnableSequence.from([
 ]);
 
 const answer = await chain.invoke(
-  "What did the president say about Justice Breyer?", {callbacks: [observe_callback]}
+  "What did the president say about Justice Breyer?", { callbacks: [observe_callback] }
 );
 
 console.log({ answer });

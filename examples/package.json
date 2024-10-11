@@ -14,6 +14,7 @@
     "@langchain/core": "^0.1.43",
     "@langchain/openai": "^0.0.16",
     "@rungalileo/observe": "file:..",
+    "dotenv": "^16.4.5",
     "hnswlib-node": "^1.4.2",
     "langchain": "^0.1.25",
     "typecript": "^0.0.1-security"
