@@ -5,6 +5,13 @@ import { GalileoEvaluateWorkflow } from "@rungalileo/observe";
 const evaluateWorkflow = new GalileoEvaluateWorkflow("Evaluate Workflow Example");
 await evaluateWorkflow.init();
 
+// Evaluation dataset
+const evaluateSet = [
+  "What are hallucinations?",
+  "What are intrinsic hallucinations?",
+  "What are extrinsic hallucinations?"
+]
+
 // Add workflows
 const myLlmApp = (input) => {
   context = "You're an AI assistant helping a user with hallucinations."
@@ -32,13 +39,6 @@ const myLlmApp = (input) => {
   // Conclude workflow
   evaluateWorkflow.concludeWorkflow(llmResponse);
 }
-
-// Evaluation dataset
-const evaluateSet = [
-  "What are hallucinations?",
-  "What are intrinsic hallucinations?",
-  "What are extrinsic hallucinations?"
-]
 
 evaluateSet.forEach((input) => myLlmApp(input));
 

@@ -1,7 +1,7 @@
 {
-  "name": "@rungalileo/observe",
+  "name": "@rungalileo/galileo-js",
   "version": "1.0.0",
-  "description": "NodeJS client for Galileo Observe.",
+  "description": "JS client for Galileo",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
