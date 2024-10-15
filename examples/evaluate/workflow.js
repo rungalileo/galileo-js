@@ -24,7 +24,7 @@ const myLlmApp = (input) => {
 
   // Get response from your LLM
   // Pseudo-code, replace with your LLM call
-  const llmCall = (prompt) => 'An LLM response…';
+  const llmCall = (_prompt) => 'An LLM response…';
   const llmResponse = llmCall(prompt);
 
   // Log LLM step

@@ -45,7 +45,7 @@ class GalileoObserveWorkflow extends workflow_1.default {
         rows.push(row);
         if (step instanceof step_types_1.StepWithChildren) {
             step.steps.forEach(childStep => {
-                const childRows = this.workflowToRecords(childStep, rootId, node_id);
+                const childRows = this.workflowToRecords(childStep, chain_root_id, node_id);
                 rows.push(...childRows);
             });
         }
