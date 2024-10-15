@@ -12,7 +12,7 @@ class GalileoEvaluateApiClient extends api_client_1.GalileoApiClient {
     async createRun(run_name, run_tags) {
         if (!this.project_id)
             throw new Error('Init a project to create a run.');
-        const run = await this.makeRequest(api_client_1.RequestMethod.POST, routes_types_1.Routes.projects, {
+        const run = await this.makeRequest(api_client_1.RequestMethod.POST, routes_types_1.Routes.runs, {
             name: run_name ?? (0, utils_1.timestampName)('run'),
             project_id: this.project_id,
             task_type: 12,

@@ -15,13 +15,13 @@ class GalileoWorkflow {
         return step;
     }
     addWorkflow(step) {
-        return this.pushStep(step);
+        return this.pushStep(new step_types_1.WorkflowStep(step));
     }
     addAgentWorkflow(step) {
-        return this.pushStep(step);
+        return this.pushStep(new step_types_1.AgentStep(step));
     }
     addSingleStepWorkflow(step) {
-        return this.pushStep(step);
+        return this.pushStep(new step_types_1.LlmStep(step));
     }
     validWorkflow(errorMessage) {
         if (this.currentWorkflow === null) {
@@ -30,21 +30,21 @@ class GalileoWorkflow {
         return this.currentWorkflow;
     }
     addLlmStep(step) {
-        return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+        return this.validWorkflow(this.stepErrorMessage)?.addStep(new step_types_1.LlmStep(step));
     }
     addRetrieverStep(step) {
-        return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+        return this.validWorkflow(this.stepErrorMessage)?.addStep(new step_types_1.RetrieverStep(step));
     }
     addToolStep(step) {
-        return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+        return this.validWorkflow(this.stepErrorMessage)?.addStep(new step_types_1.ToolStep(step));
     }
     addWorkflowStep(step) {
         step.parent = this.currentWorkflow;
-        return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+        return this.validWorkflow(this.stepErrorMessage)?.addStep(new step_types_1.WorkflowStep(step));
     }
     addAgentStep(step) {
         step.parent = this.currentWorkflow;
-        return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+        return this.validWorkflow(this.stepErrorMessage)?.addStep(new step_types_1.AgentStep(step));
     }
     concludeWorkflow(output, durationNs, statusCode) {
         const errorMessage = 'No existing workflow to conclude.';

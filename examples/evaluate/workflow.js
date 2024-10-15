@@ -14,20 +14,18 @@ const evaluateSet = [
 
 // Add workflows
 const myLlmApp = (input) => {
-  context = "You're an AI assistant helping a user with hallucinations."
-  template = "Given the following context answer the question. \n Context: {context} \n Question: {question}"
+  const context = "You're an AI assistant helping a user with hallucinations."
+  const template = "Given the following context answer the question. \n Context: {context} \n Question: {question}"
 
   // Add workflow
   evaluateWorkflow.addWorkflow({ input });
 
+  const prompt = template.replace('{context}', context).replace('{question}', input)
+
   // Get response from your LLM
   // Pseudo-code, replace with your LLM call
-  const llmCall = () => ({
-    context: context,
-    question: input
-  });
-
-  const llmResponse = llmCall();
+  const llmCall = (prompt) => 'An LLM response…';
+  const llmResponse = llmCall(prompt);
 
   // Log LLM step
   evaluateWorkflow.addLlmStep({

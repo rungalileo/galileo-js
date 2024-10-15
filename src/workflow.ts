@@ -1,4 +1,17 @@
-import { AgentStep, AWorkflow, LlmStep, RetrieverStep, StepIOType, StepWithChildren, ToolStep, WorkflowStep } from './types/step.types';
+import {
+  AgentStep,
+  AgentStepType,
+  AWorkflow,
+  LlmStep,
+  LlmStepType,
+  RetrieverStep,
+  RetrieverStepType,
+  StepIOType,
+  ToolStep,
+  ToolStepType,
+  WorkflowStep,
+  WorkflowStepType
+} from './types/step.types';
 
 export default class GalileoWorkflow {
   public projectName: string;
@@ -8,9 +21,9 @@ export default class GalileoWorkflow {
   }
 
   public workflows: AWorkflow[] = [];
-  private currentWorkflow: StepWithChildren | null = null;
+  private currentWorkflow: AWorkflow | null = null;
 
-  private pushStep(step: StepWithChildren | AgentStep | LlmStep) {
+  private pushStep(step: AWorkflow) {
     const hasSteps = step instanceof WorkflowStep || step instanceof AgentStep;
 
     this.workflows.push(step);
@@ -19,55 +32,54 @@ export default class GalileoWorkflow {
     return step
   }
 
-  public addWorkflow(step: WorkflowStep) {
-    return this.pushStep(step);
+  public addWorkflow(step: WorkflowStepType) {
+    return this.pushStep(new WorkflowStep(step));
   }
 
-  public addAgentWorkflow(step: AgentStep) {
-    return this.pushStep(step);
+  public addAgentWorkflow(step: AgentStepType) {
+    return this.pushStep(new AgentStep(step));
   }
 
-  public addSingleStepWorkflow(step: LlmStep) {
-    return this.pushStep(step);
+  public addSingleStepWorkflow(step: LlmStepType) {
+    return this.pushStep(new LlmStep(step));
   }
 
   private stepErrorMessage = 'A workflow needs to be created in order to add a step.';
 
-  private validWorkflow(errorMessage: string): StepWithChildren | null {
+  private validWorkflow(errorMessage: string): AWorkflow | null {
     if (this.currentWorkflow === null) {
       throw new Error(errorMessage);
     }
-
     return this.currentWorkflow
   }
 
-  public addLlmStep(step: LlmStep) {
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+  public addLlmStep(step: LlmStepType) {
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(new LlmStep(step));
   }
 
-  public addRetrieverStep(step: RetrieverStep) {
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+  public addRetrieverStep(step: RetrieverStepType) {
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(new RetrieverStep(step));
   }
 
-  public addToolStep(step: ToolStep) {
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+  public addToolStep(step: ToolStepType) {
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(new ToolStep(step));
   }
 
-  public addWorkflowStep(step: WorkflowStep) {
+  public addWorkflowStep(step: WorkflowStepType) {
     step.parent = this.currentWorkflow;
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(new WorkflowStep(step));
   }
 
-  public addAgentStep(step: AgentStep) {
+  public addAgentStep(step: AgentStepType) {
     step.parent = this.currentWorkflow;
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(step);
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(new AgentStep(step));
   }
 
   public concludeWorkflow(
     output?: StepIOType,
     durationNs?: number,
     statusCode?: number
-  ): StepWithChildren | null {
+  ): AWorkflow | null {
     const errorMessage = 'No existing workflow to conclude.';
     this.currentWorkflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
     return this.currentWorkflow;

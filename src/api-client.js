@@ -24,7 +24,9 @@ class GalileoApiClient {
         this.token = '';
     }
     async init(project_name) {
+        console.log(project_name);
         this.api_url = this.getApiUrl();
+        console.log(this.api_url);
         if (await this.healthCheck()) {
             this.token = await this.getToken();
             try {

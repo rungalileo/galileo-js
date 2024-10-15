@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkflowStep = exports.AgentStep = exports.StepWithChildren = exports.ToolStep = exports.RetrieverStep = exports.LlmStep = exports.StepType = void 0;
+exports.ToolStep = exports.RetrieverStep = exports.StepWithoutChildren = exports.WorkflowStep = exports.LlmStep = exports.AgentStep = exports.StepWithChildren = exports.StepType = void 0;
 var StepType;
 (function (StepType) {
     StepType["llm"] = "llm";
@@ -11,37 +11,17 @@ var StepType;
     StepType["retriever"] = "retriever";
     StepType["workflow"] = "workflow";
 })(StepType || (exports.StepType = StepType = {}));
-class LlmStep {
-    constructor() {
-        this.type = StepType.llm;
-    }
-}
-exports.LlmStep = LlmStep;
-class RetrieverStep {
-    constructor() {
-        this.type = StepType.retriever;
-    }
-}
-exports.RetrieverStep = RetrieverStep;
-class ToolStep {
-    constructor() {
-        this.type = StepType.tool;
-    }
-}
-exports.ToolStep = ToolStep;
 class StepWithChildren {
     constructor(step) {
-        this.step = step;
         this.parent = null;
         this.steps = [];
-        this.type = StepType.workflow;
-        this.createdAtNs = step.createdAtNs;
-        this.durationNs = step.durationNs;
+        this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+        this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
-        this.input = step.input;
-        this.metadata = step.metadata;
-        this.name = step.name;
-        this.output = step.output;
+        this.input = step.input ?? '';
+        this.metadata = step.metadata ?? {};
+        this.name = step.name ?? this.type;
+        this.output = step.output ?? '';
         this.statusCode = step.statusCode;
     }
     ;
@@ -60,17 +40,61 @@ class StepWithChildren {
 }
 exports.StepWithChildren = StepWithChildren;
 class AgentStep extends StepWithChildren {
-    constructor() {
-        super(...arguments);
+    constructor(step) {
+        super(step);
         this.type = StepType.agent;
     }
+    ;
 }
 exports.AgentStep = AgentStep;
+class LlmStep extends StepWithChildren {
+    constructor(step) {
+        super(step);
+        this.type = StepType.llm;
+        this.inputTokens = step.inputTokens;
+        this.model = step.model;
+        this.temperature = step.temperature;
+        this.totalTokens = step.totalTokens;
+    }
+    ;
+}
+exports.LlmStep = LlmStep;
 class WorkflowStep extends StepWithChildren {
-    constructor() {
-        super(...arguments);
+    constructor(step) {
+        super(step);
         this.type = StepType.workflow;
     }
+    ;
 }
 exports.WorkflowStep = WorkflowStep;
+class StepWithoutChildren {
+    constructor(step) {
+        this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+        this.durationNs = step.durationNs ?? 0;
+        this.groundTruth = step.groundTruth;
+        this.input = step.input ?? '';
+        this.metadata = step.metadata ?? {};
+        this.name = step.name ?? this.type;
+        this.output = step.output ?? '';
+        this.statusCode = step.statusCode;
+    }
+    ;
+}
+exports.StepWithoutChildren = StepWithoutChildren;
+class RetrieverStep extends StepWithoutChildren {
+    constructor(step) {
+        super(step);
+        this.type = StepType.retriever;
+    }
+    ;
+}
+exports.RetrieverStep = RetrieverStep;
+class ToolStep extends StepWithoutChildren {
+    constructor(step) {
+        super(step);
+        this.type = StepType.tool;
+    }
+    ;
+}
+exports.ToolStep = ToolStep;
 //# sourceMappingURL=step.types.js.map

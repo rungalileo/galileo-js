@@ -1,4 +1,4 @@
-
+import { Document } from "./document.types";
 import { Message } from "./message.types";
 
 export enum StepType {
@@ -11,92 +11,54 @@ export enum StepType {
     workflow = 'workflow'
 }
 
-export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
-
-export interface BaseStep {
+interface BaseStepType {
     createdAtNs: number;
     durationNs: number;
     groundTruth?: string;
-    input: StepIOType;
     metadata: { [key: string]: string };
     name: string;
-    output: StepIOType;
     statusCode?: number;
-    type: StepType;
 }
 
-type LlmStepAllowedIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
+export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
 
-export class LlmStep implements Omit<BaseStep, 'input' | 'output'> {
-    createdAtNs!: number;
-    durationNs!: number;
-    groundTruth?: string | undefined;
-    input!: LlmStepAllowedIOType;
-    inputTokens?: number;
-    metadata!: { [key: string]: string; };
-    model?: string;
-    name!: string;
-    output!: LlmStepAllowedIOType;
-    outputTokens?: number;
+type LlmStepIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
+
+interface StepWithChildrenType extends BaseStepType {
+    input: StepIOType | LlmStepIOType;
+    output: StepIOType | LlmStepIOType;
+    parent: StepWithChildren | null;
     statusCode?: number | undefined;
-    temperature?: number;
-    totalTokens?: number;
-    type = StepType.llm;
+    steps: AWorkflowStep[];
 }
 
-type RetrieverStepAllowedOutputType = (string | Document | { [key: string]: string })[];
-
-export class RetrieverStep implements Omit<BaseStep, 'input' | 'output'> {
-    createdAtNs!: number;
-    durationNs!: number;
-    groundTruth?: string | undefined;
-    input!: string;
-    metadata!: { [key: string]: string; };
-    name!: string;
-    output!: RetrieverStepAllowedOutputType;
-    statusCode?: number | undefined;
-    type = StepType.retriever;
-}
-
-export class ToolStep implements BaseStep {
-    createdAtNs!: number;
-    durationNs!: number;
-    groundTruth?: string | undefined;
-    input!: StepIOType;
-    metadata!: { [key: string]: string; };
-    name!: string;
-    output!: StepIOType;
-    statusCode?: number | undefined;
-    type = StepType.tool;
-}
-
-export class StepWithChildren implements BaseStep {
+export class StepWithChildren implements StepWithChildrenType {
     createdAtNs: number;
     durationNs: number;
-    groundTruth?: string | undefined;
-    input: StepIOType;
+    groundTruth?: string;
+    input: StepIOType | LlmStepIOType;
     metadata: { [key: string]: string; };
     name: string;
-    output: StepIOType;
-    parent: StepWithChildren | null = null;
+    output: StepIOType | LlmStepIOType;
+    parent: AWorkflow | null = null;
     statusCode?: number | undefined;
     steps: AWorkflowStep[] = [];
-    type: StepType = StepType.workflow;
-    constructor(public step: Omit<BaseStep, 'type'>) {
-        this.createdAtNs = step.createdAtNs;
-        this.durationNs = step.durationNs;
+    type?: StepType.agent | StepType.llm | StepType.workflow;
+    constructor(step: StepWithChildrenType) {
+        this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+        this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
-        this.input = step.input;
-        this.metadata = step.metadata;
-        this.name = step.name
-        this.output = step.output;
+        this.input = step.input ?? '';
+        this.metadata = step.metadata ?? {};
+        this.name = step.name ?? this.type;
+        this.output = step.output ?? '';
         this.statusCode = step.statusCode;
     };
     addStep(step: AWorkflowStep): AWorkflowStep {
         this.steps.push(step)
         return step
     };
-    conclude(output?: StepIOType, durationNs?: number, statusCode?: number): StepWithChildren | null {
+    conclude(output?: StepIOType, durationNs?: number, statusCode?: number): AWorkflow | null {
         this.output = output ?? this.output;
         this.durationNs = durationNs ?? this.durationNs;
         this.statusCode = statusCode;
@@ -104,14 +66,109 @@ export class StepWithChildren implements BaseStep {
     };
 }
 
+export interface AgentStepType extends StepWithChildrenType {
+    type: StepType.agent;
+}
+
 export class AgentStep extends StepWithChildren {
-    type = StepType.agent;
+    type: StepType.agent = StepType.agent;
+    constructor(step: AgentStepType) {
+        super(step);
+    };
+}
+
+export interface LlmStepType extends StepWithChildrenType {
+    input: LlmStepIOType;
+    inputTokens?: number;
+    model?: string;
+    output: LlmStepIOType;
+    outputTokens?: number;
+    temperature?: number;
+    totalTokens?: number;
+    type: StepType.llm;
+}
+
+export class LlmStep extends StepWithChildren {
+    inputTokens?: number;
+    model?: string;
+    outputTokens?: number;
+    temperature?: number;
+    totalTokens?: number;
+    type: StepType.llm = StepType.llm;
+    constructor(step: LlmStepType) {
+        super(step);
+        this.inputTokens = step.inputTokens;
+        this.model = step.model;
+        this.temperature = step.temperature;
+        this.totalTokens = step.totalTokens;
+    };
+}
+
+export interface WorkflowStepType extends StepWithChildrenType {
+    type: StepType.workflow;
 }
 
 export class WorkflowStep extends StepWithChildren {
-    type = StepType.workflow;
+    type: StepType.workflow = StepType.workflow;
+    constructor(step: WorkflowStepType) {
+        super(step);
+    };
+
+}
+
+type RetrieverStepOutputType = (string | Document | { [key: string]: string })[];
+
+interface StepWithoutChildrenType extends BaseStepType {
+    input: StepIOType | string;
+    output: StepIOType | RetrieverStepOutputType;
+}
+
+export class StepWithoutChildren implements StepWithoutChildrenType {
+    createdAtNs: number;
+    durationNs: number;
+    groundTruth?: string;
+    input: StepIOType | string;
+    metadata: { [key: string]: string; };
+    name: string;
+    output: StepIOType | RetrieverStepOutputType;
+    statusCode?: number | undefined;
+    type?: StepType.retriever | StepType.tool;
+    constructor(step: StepWithoutChildrenType) {
+        this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+        this.durationNs = step.durationNs ?? 0;
+        this.groundTruth = step.groundTruth;
+        this.input = step.input ?? '';
+        this.metadata = step.metadata ?? {};
+        this.name = step.name ?? this.type;
+        this.output = step.output ?? '';
+        this.statusCode = step.statusCode;
+    };
+}
+
+export interface RetrieverStepType extends StepWithoutChildrenType {
+    input: string;
+    output: RetrieverStepOutputType;
+    type: StepType.retriever;
+}
+
+export class RetrieverStep extends StepWithoutChildren {
+    type: StepType.retriever = StepType.retriever;
+    constructor(step: RetrieverStepType) {
+        super(step);
+    };
+}
+
+export interface ToolStepType extends StepWithoutChildrenType {
+    type: StepType.tool;
+}
+
+export class ToolStep extends StepWithoutChildren {
+    type: StepType.tool = StepType.tool;
+    constructor(step: ToolStepType) {
+        super(step);
+    };
 }
 
 export type AWorkflow = AgentStep | LlmStep | WorkflowStep;
 
-export type AWorkflowStep = AgentStep | LlmStep | RetrieverStep | ToolStep | WorkflowStep;
+export type AWorkflowStep = AWorkflow | RetrieverStep | ToolStep;

@@ -65,7 +65,9 @@ class GalileoEvaluateWorkflow extends workflow_1.default {
             nodes.push(...this.workflowToNode(workflow));
         });
         this.apiClient.run_id = await this.apiClient.createRun(run_name, run_tags);
+        console.log(this.apiClient.run_id);
         await this.apiClient.ingestChain(nodes, scorers_config, registered_scorers, customized_scorers);
+        console.log(this.workflows);
         const loggedWorkflows = this.workflows;
         this.workflows = [];
         return loggedWorkflows;
