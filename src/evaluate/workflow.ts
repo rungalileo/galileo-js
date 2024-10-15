@@ -61,7 +61,7 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
 
     if (step instanceof StepWithChildren) {
       step.steps.forEach(childStep => {
-        const childeNodes = this.workflowToNode(childStep, rootId, node_id, currentStepNumber)
+        const childeNodes = this.workflowToNode(childStep, chain_root_id, node_id, currentStepNumber)
         nodes.push(...childeNodes)
       });
     }

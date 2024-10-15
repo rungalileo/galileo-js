@@ -51,7 +51,7 @@ class GalileoEvaluateWorkflow extends workflow_1.default {
         currentStepNumber++;
         if (step instanceof step_types_1.StepWithChildren) {
             step.steps.forEach(childStep => {
-                const childeNodes = this.workflowToNode(childStep, rootId, node_id, currentStepNumber);
+                const childeNodes = this.workflowToNode(childStep, chain_root_id, node_id, currentStepNumber);
                 nodes.push(...childeNodes);
             });
         }
