@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { GalileoObserveWorkflow } from "@rungalileo/observe";
+import { GalileoObserveWorkflow } from "@rungalileo/galileo-js";
 
 // Initialize and create project
 const observeWorkflow = new GalileoObserveWorkflow("Observe Workflow Example");
