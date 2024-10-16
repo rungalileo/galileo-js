@@ -1,9 +1,9 @@
 {
-  "name": "observe-js-example",
+  "name": "galileo-js-examples",
   "version": "1.0.0",
   "type": "module",
   "description": "",
-  "main": "openai.js",
+  "main": "observe/callback.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,7 +13,7 @@
     "@langchain/community": "^0.0.35",
     "@langchain/core": "^0.1.43",
     "@langchain/openai": "^0.0.16",
-    "@rungalileo/observe": "file:..",
+    "@rungalileo/galileo-js": "file:..",
     "dotenv": "^16.4.5",
     "hnswlib-node": "^1.4.2",
     "langchain": "^0.1.25",

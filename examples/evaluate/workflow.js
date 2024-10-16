@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { GalileoEvaluateWorkflow } from "@rungalileo/observe";
+import { GalileoEvaluateWorkflow } from "@rungalileo/galileo-js";
 
 // Initialize and create project
 const evaluateWorkflow = new GalileoEvaluateWorkflow("Evaluate Workflow Example");
@@ -28,7 +28,7 @@ const myLlmApp = (input) => {
 
   // Log LLM step
   evaluateWorkflow.addLlmStep({
-    durationNs: (Math.random() * 3) / 1000000000,
+    durationNs: parseInt((Math.random() * 3) * 1000000000),
     input: prompt,
     output: llmResponse,
   })

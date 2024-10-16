@@ -27,7 +27,7 @@ const myLlmApp = (input) => {
 
   // Log LLM step
   observeWorkflow.addLlmStep({
-    durationNs: (Math.random() * 3) / 1000000000,
+    durationNs: parseInt((Math.random() * 3) * 1000000000),
     input: prompt,
     output: llmResponse,
   })

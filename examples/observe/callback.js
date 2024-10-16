@@ -1,4 +1,4 @@
-import { GalileoObserveCallback } from "@rungalileo/observe";
+import { GalileoObserveCallback } from "@rungalileo/galileo-js";
 
 const observe_callback = new GalileoObserveCallback("pegasus");
 await observe_callback.init();
