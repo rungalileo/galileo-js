@@ -47,10 +47,9 @@ export default class GalileoWorkflow {
   private stepErrorMessage =
     'A workflow needs to be created in order to add a step.';
 
-  private validWorkflow(errorMessage: string): AWorkflow | null {
-    if (this.currentWorkflow === null) {
-      throw new Error(errorMessage);
-    }
+  private validWorkflow(errorMessage: string): WorkflowStep | AgentStep | null {
+    if (this.currentWorkflow === null) throw new Error(errorMessage);
+    if (this.currentWorkflow instanceof LlmStep) throw new Error('A step cannot be added to an LLM workflow.');
     return this.currentWorkflow;
   }
 

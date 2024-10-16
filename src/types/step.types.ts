@@ -28,8 +28,8 @@ export type StepIOType =
   | (Document | Message | { [key: string]: unknown })[];
 
 interface StepWithChildrenType extends BaseStepType {
-  input: StepIOType | LlmStepIOType;
-  output: StepIOType | LlmStepIOType;
+  input: StepIOType;
+  output: StepIOType;
   parent: AWorkflow | null;
   statusCode?: number | undefined;
   steps: AWorkflowStep[];
@@ -39,14 +39,14 @@ export class StepWithChildren implements StepWithChildrenType {
   createdAtNs: number;
   durationNs: number;
   groundTruth?: string;
-  input: StepIOType | LlmStepIOType;
+  input: StepIOType;
   metadata: { [key: string]: string };
   name: string;
-  output: StepIOType | LlmStepIOType;
+  output: StepIOType;
   parent: AWorkflow | null;
   statusCode?: number | undefined;
   steps: AWorkflowStep[] = [];
-  type?: StepType.agent | StepType.llm | StepType.workflow;
+  type?: StepType.agent | StepType.workflow;
   constructor(step: StepWithChildrenType) {
     this.createdAtNs =
       step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
@@ -84,39 +84,6 @@ export class AgentStep extends StepWithChildren {
   }
 }
 
-type LlmStepIOType =
-  | string
-  | Message
-  | { [key: string]: string }
-  | (string | Message | { [key: string]: string })[];
-
-export interface LlmStepType extends StepWithChildrenType {
-  input: LlmStepIOType;
-  inputTokens?: number;
-  model?: string;
-  output: LlmStepIOType;
-  outputTokens?: number;
-  temperature?: number;
-  totalTokens?: number;
-}
-
-export class LlmStep extends StepWithChildren {
-  inputTokens?: number;
-  model?: string;
-  outputTokens?: number;
-  temperature?: number;
-  totalTokens?: number;
-  type: StepType.llm = StepType.llm;
-  constructor(step: LlmStepType) {
-    super(step);
-    this.inputTokens = step.inputTokens;
-    this.model = step.model;
-    this.outputTokens = step.outputTokens;
-    this.temperature = step.temperature;
-    this.totalTokens = step.totalTokens;
-  }
-}
-
 export type WorkflowStepType = StepWithChildrenType;
 
 export class WorkflowStep extends StepWithChildren {
@@ -133,20 +100,20 @@ type RetrieverStepOutputType = (
 )[];
 
 interface StepWithoutChildrenType extends BaseStepType {
-  input: StepIOType | string;
-  output: StepIOType | RetrieverStepOutputType;
+  input: StepIOType | LlmStepIOType | string;
+  output: StepIOType | LlmStepIOType | RetrieverStepOutputType;
 }
 
 export class StepWithoutChildren implements StepWithoutChildrenType {
   createdAtNs: number;
   durationNs: number;
   groundTruth?: string;
-  input: StepIOType | string;
+  input: StepIOType | LlmStepIOType | string;
   metadata: { [key: string]: string };
   name: string;
-  output: StepIOType | RetrieverStepOutputType;
+  output: StepIOType | LlmStepIOType | RetrieverStepOutputType;
   statusCode?: number | undefined;
-  type?: StepType.retriever | StepType.tool;
+  type?: StepType.llm | StepType.retriever | StepType.tool;
   constructor(step: StepWithoutChildrenType) {
     this.createdAtNs =
       step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
@@ -157,6 +124,39 @@ export class StepWithoutChildren implements StepWithoutChildrenType {
     this.name = step.name ?? this.type;
     this.output = step.output;
     this.statusCode = step.statusCode;
+  }
+}
+
+type LlmStepIOType =
+  | string
+  | Message
+  | { [key: string]: string }
+  | (string | Message | { [key: string]: string })[];
+
+export interface LlmStepType extends StepWithoutChildrenType {
+  input: LlmStepIOType;
+  inputTokens?: number;
+  model?: string;
+  output: LlmStepIOType;
+  outputTokens?: number;
+  temperature?: number;
+  totalTokens?: number;
+}
+
+export class LlmStep extends StepWithoutChildren {
+  inputTokens?: number;
+  model?: string;
+  outputTokens?: number;
+  temperature?: number;
+  totalTokens?: number;
+  type: StepType.llm = StepType.llm;
+  constructor(step: LlmStepType) {
+    super(step);
+    this.inputTokens = step.inputTokens;
+    this.model = step.model;
+    this.outputTokens = step.outputTokens;
+    this.temperature = step.temperature;
+    this.totalTokens = step.totalTokens;
   }
 }
 
