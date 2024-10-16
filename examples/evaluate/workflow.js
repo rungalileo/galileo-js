@@ -58,4 +58,4 @@ await evaluateWorkflow.uploadWorkflows(
     tone: true,
     toxicity: true,
   }
-});
+);
