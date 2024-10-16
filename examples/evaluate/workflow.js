@@ -42,16 +42,13 @@ evaluateSet.forEach((input) => myLlmApp(input));
 // Configure run and upload workflows to Galileo
 // Optional: Set run name, tags, registered scorers, and customized scorers
 // Note: If no run name is provided a timestamp will be used
-await evaluateWorkflow.uploadWorkflows({
-  scorers_config: {
+await evaluateWorkflow.uploadWorkflows(
+  {
     adherence_nli: true,
-    chunk_attribution_utilization_gpt: true,
     chunk_attribution_utilization_nli: true,
-    completeness_gpt: true,
     completeness_nli: true,
     context_relevance: true,
     factuality: true,
-    groundedness: true,
     instruction_adherence: true,
     ground_truth_adherence: true,
     pii: true,
