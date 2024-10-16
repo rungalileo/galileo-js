@@ -2,12 +2,8 @@
   "name": "galileo-js-examples",
   "version": "1.0.0",
   "type": "module",
-  "description": "",
-  "main": "observe/callback.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
+  "description": "Galileo-JS examples",
+  "author": "Galileo Technologies Inc. <team@rungalileo.io>",
   "license": "ISC",
   "dependencies": {
     "@langchain/community": "^0.0.35",
