@@ -1,8 +1,10 @@
 {
   "name": "galileo-js-examples",
   "version": "1.0.0",
-  "type": "module",
-  "description": "Galileo-JS examples",
+  "description": "Galileo",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "author": "Galileo Technologies Inc. <team@rungalileo.io>",
   "license": "ISC",
   "dependencies": {
