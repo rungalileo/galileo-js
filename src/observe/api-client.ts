@@ -1,7 +1,7 @@
-import { GalileoApiClient, RequestMethod } from "../api-client";
-import { ProjectTypes } from "../types/project.types";
-import { Routes } from "../types/routes.types";
-import { TransactionRecordBatch } from "../types/transaction.types";
+import { GalileoApiClient, RequestMethod } from '../api-client';
+import { ProjectTypes } from '../types/project.types';
+import { Routes } from '../types/routes.types';
+import { TransactionRecordBatch } from '../types/transaction.types';
 
 export default class GalileoObserveApiClient extends GalileoApiClient {
   constructor() {
@@ -62,14 +62,12 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   }
 
   // TODO: This should have a more accurate return type
-  public async deleteLoggedData(filters: Array<unknown> = []): Promise<Record<string, unknown>> {
-    return await this.makeRequest(
-      RequestMethod.POST,
-      Routes.observeDelete,
-      {
-        filters
-      }
-    );
+  public async deleteLoggedData(
+    filters: Array<unknown> = []
+  ): Promise<Record<string, unknown>> {
+    return await this.makeRequest(RequestMethod.POST, Routes.observeDelete, {
+      filters
+    });
   }
 
   public async ingestBatch(

@@ -50,22 +50,22 @@ class GalileoEvaluateWorkflow extends workflow_1.default {
         nodes.push(node);
         currentStepNumber++;
         if (step instanceof step_types_1.StepWithChildren) {
-            step.steps.forEach(childStep => {
+            step.steps.forEach((childStep) => {
                 const childeNodes = this.workflowToNode(childStep, chain_root_id, node_id, currentStepNumber);
                 nodes.push(...childeNodes);
             });
         }
         return nodes;
     }
-    async uploadWorkflows(scorers_config, run_name, run_tags, registered_scorers, customized_scorers) {
+    async uploadWorkflows(scorersConfig, runName, runTags, registeredScorers, customizedScorers) {
         if (!this.workflows.length)
-            throw new Error("Chain run must have at least 1 workflow.");
+            throw new Error('Chain run must have at least 1 workflow.');
         const nodes = [];
-        this.workflows.forEach(workflow => {
+        this.workflows.forEach((workflow) => {
             nodes.push(...this.workflowToNode(workflow));
         });
-        this.apiClient.run_id = await this.apiClient.createRun(run_name, run_tags);
-        await this.apiClient.ingestChain(nodes, scorers_config, registered_scorers, customized_scorers);
+        this.apiClient.runId = await this.apiClient.createRun(runName, runTags);
+        await this.apiClient.ingestChain(nodes, scorersConfig, registeredScorers, customizedScorers);
         const loggedWorkflows = this.workflows;
         this.workflows = [];
         return loggedWorkflows;

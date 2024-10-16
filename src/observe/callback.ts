@@ -121,7 +121,10 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     );
 
     const input_text = prompts[0];
-    const invocation_params = extraParams?.invocation_params as Record<string, unknown>;
+    const invocation_params = extraParams?.invocation_params as Record<
+      string,
+      unknown
+    >;
     const model = invocation_params?.model_name as string | undefined;
     const temperature = invocation_params?.temperature as number | undefined;
 
@@ -144,10 +147,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called if an LLM/ChatModel run encounters an error
    */
-  public async handleLLMError(
-    err: AxiosError,
-    runId: string,
-  ): Promise<void> {
+  public async handleLLMError(err: AxiosError, runId: string): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
 
     const record = this.records[node_id];
@@ -162,10 +162,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called at the end of an LLM/ChatModel run, with the output and the run ID.
    */
-  public async handleLLMEnd(
-    output: LLMResult,
-    runId: string,
-  ): Promise<void> {
+  public async handleLLMEnd(output: LLMResult, runId: string): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
 
     const generation = output.generations[0][0];
@@ -176,7 +173,8 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     let num_total_tokens: number | undefined;
 
     if (output.llmOutput) {
-      const usage = output.llmOutput.tokenUsage as Record<string, unknown> ?? {};
+      const usage =
+        (output.llmOutput.tokenUsage as Record<string, unknown>) ?? {};
 
       num_input_tokens = usage.promptTokens as number | undefined;
       num_output_tokens = usage.completionTokens as number | undefined;
@@ -201,7 +199,9 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     let finish_reason: string | undefined;
 
     if (generation.generationInfo) {
-      finish_reason = generation.generationInfo.finish_reason as string | undefined;
+      finish_reason = generation.generationInfo.finish_reason as
+        | string
+        | undefined;
     }
 
     const record = this.records[node_id];
@@ -228,7 +228,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     parentRunId?: string,
     extraParams?: Record<string, unknown>,
     tags?: string[],
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): void {
     const [node_id, chain_root_id, chain_id] = this._start_new_node(
       runId,
@@ -236,8 +236,13 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     );
 
     const chat_messages = new ChatPromptValue(messages[0]);
-    const invocation_params = extraParams?.invocation_params as Record<string, unknown>;
-    const model = (invocation_params?.model ?? invocation_params?._type) as string | undefined;
+    const invocation_params = extraParams?.invocation_params as Record<
+      string,
+      unknown
+    >;
+    const model = (invocation_params?.model ?? invocation_params?._type) as
+      | string
+      | undefined;
     const temperature = invocation_params?.temperature as number | undefined;
 
     this.records[node_id] = {
@@ -266,7 +271,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): void {
     const [node_id, chain_root_id, chain_id] = this._start_new_node(
       runId,
@@ -281,7 +286,10 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       node_input = inputs;
     } else if (typeof inputs === 'object') {
       node_input = Object.fromEntries(
-        Object.entries(inputs).filter(([key, value]: [string, unknown]) => key && value && typeof value === 'string')
+        Object.entries(inputs).filter(
+          ([key, value]: [string, unknown]) =>
+            key && value && typeof value === 'string'
+        )
       );
     } else if (
       (Array.isArray(inputs) as boolean) &&
@@ -312,10 +320,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called if a Chain run encounters an error
    */
-  public async handleChainError(
-    err: AxiosError,
-    runId: string,
-  ): Promise<void> {
+  public async handleChainError(err: AxiosError, runId: string): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
 
@@ -332,7 +337,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
    */
   public async handleChainEnd(
     outputs: ChainValues,
-    runId: string,
+    runId: string
   ): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
@@ -355,7 +360,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): void {
     const [node_id, chain_root_id, chain_id] = this._start_new_node(
       runId,
@@ -378,10 +383,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called if a Tool run encounters an error
    */
-  public async handleToolError(
-    err: AxiosError,
-    runId: string,
-  ): Promise<void> {
+  public async handleToolError(err: AxiosError, runId: string): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
 
@@ -395,10 +397,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called at the end of a Tool run, with the tool output and the run ID.
    */
-  public async handleToolEnd(
-    output: string,
-    runId: string,
-  ): Promise<void> {
+  public async handleToolEnd(output: string, runId: string): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
 
@@ -415,7 +414,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
    */
   public async handleAgentEnd(
     action: AgentFinish | undefined,
-    runId: string,
+    runId: string
   ): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
@@ -432,7 +431,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): void {
     const [node_id, chain_root_id, chain_id] = this._start_new_node(
       runId,
@@ -455,7 +454,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
 
   public async handleRetrieverEnd(
     documents: DocumentInterface<Record<string, unknown>>[],
-    runId: string,
+    runId: string
   ): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
@@ -475,7 +474,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
 
   public async handleRetrieverError(
     err: AxiosError,
-    runId: string,
+    runId: string
   ): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];

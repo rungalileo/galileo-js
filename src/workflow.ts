@@ -29,7 +29,7 @@ export default class GalileoWorkflow {
     this.workflows.push(step);
     this.currentWorkflow = hasSteps ? step : null;
 
-    return step
+    return step;
   }
 
   public addWorkflow(step: WorkflowStepType) {
@@ -44,35 +44,46 @@ export default class GalileoWorkflow {
     return this.pushStep(new LlmStep(step));
   }
 
-  private stepErrorMessage = 'A workflow needs to be created in order to add a step.';
+  private stepErrorMessage =
+    'A workflow needs to be created in order to add a step.';
 
   private validWorkflow(errorMessage: string): AWorkflow | null {
     if (this.currentWorkflow === null) {
       throw new Error(errorMessage);
     }
-    return this.currentWorkflow
+    return this.currentWorkflow;
   }
 
   public addLlmStep(step: LlmStepType) {
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(new LlmStep(step));
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(
+      new LlmStep(step)
+    );
   }
 
   public addRetrieverStep(step: RetrieverStepType) {
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(new RetrieverStep(step));
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(
+      new RetrieverStep(step)
+    );
   }
 
   public addToolStep(step: ToolStepType) {
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(new ToolStep(step));
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(
+      new ToolStep(step)
+    );
   }
 
   public addWorkflowStep(step: WorkflowStepType) {
     step.parent = this.currentWorkflow;
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(new WorkflowStep(step));
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(
+      new WorkflowStep(step)
+    );
   }
 
   public addAgentStep(step: AgentStepType) {
     step.parent = this.currentWorkflow;
-    return this.validWorkflow(this.stepErrorMessage)?.addStep(new AgentStep(step));
+    return this.validWorkflow(this.stepErrorMessage)?.addStep(
+      new AgentStep(step)
+    );
   }
 
   public concludeWorkflow(
@@ -81,7 +92,12 @@ export default class GalileoWorkflow {
     statusCode?: number
   ): AWorkflow | null {
     const errorMessage = 'No existing workflow to conclude.';
-    this.currentWorkflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
+    this.currentWorkflow =
+      this.validWorkflow(errorMessage)?.conclude(
+        output,
+        durationNs,
+        statusCode
+      ) ?? null;
     return this.currentWorkflow;
   }
 }

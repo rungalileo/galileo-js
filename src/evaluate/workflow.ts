@@ -1,10 +1,19 @@
-import { randomUUID } from "crypto";
-import { AWorkflow, AWorkflowStep, LlmStep, StepWithChildren } from "../types/step.types";
-import GalileoWorkflow from "../workflow";
-import GalileoEvaluateApiClient from "./api-client";
-import { Node } from "../types/node.types";
-import { RunTag } from "../types/tag.types";
-import { CustomizedScorer, RegisteredScorer, ScorersConfiguration } from "../types/scorer.types";
+import { randomUUID } from 'crypto';
+import {
+  AWorkflow,
+  AWorkflowStep,
+  LlmStep,
+  StepWithChildren
+} from '../types/step.types';
+import GalileoWorkflow from '../workflow';
+import GalileoEvaluateApiClient from './api-client';
+import { Node } from '../types/node.types';
+import { RunTag } from '../types/tag.types';
+import {
+  CustomizedScorer,
+  RegisteredScorer,
+  ScorersConfiguration
+} from '../types/scorer.types';
 
 export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
   private apiClient: GalileoEvaluateApiClient = new GalileoEvaluateApiClient();
@@ -25,7 +34,8 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
 
     const node_id = randomUUID();
     const chain_root_id = rootId ?? node_id;
-    const has_children = step instanceof StepWithChildren && step.steps.length > 0;
+    const has_children =
+      step instanceof StepWithChildren && step.steps.length > 0;
 
     const node: Node = {
       node_id,
@@ -46,51 +56,62 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
       query_output_tokens: 0,
       query_total_tokens: 0,
       finish_reason: ''
-    }
+    };
 
     if (step instanceof LlmStep) {
-      node.params.model = step.model
-      node.query_input_tokens = step.inputTokens ?? 0
-      node.query_output_tokens = step.outputTokens ?? 0
-      node.query_total_tokens = step.totalTokens ?? 0
+      node.params.model = step.model;
+      node.query_input_tokens = step.inputTokens ?? 0;
+      node.query_output_tokens = step.outputTokens ?? 0;
+      node.query_total_tokens = step.totalTokens ?? 0;
     }
 
-    nodes.push(node)
+    nodes.push(node);
 
-    currentStepNumber++
+    currentStepNumber++;
 
     if (step instanceof StepWithChildren) {
-      step.steps.forEach(childStep => {
-        const childeNodes = this.workflowToNode(childStep, chain_root_id, node_id, currentStepNumber)
-        nodes.push(...childeNodes)
+      step.steps.forEach((childStep) => {
+        const childeNodes = this.workflowToNode(
+          childStep,
+          chain_root_id,
+          node_id,
+          currentStepNumber
+        );
+        nodes.push(...childeNodes);
       });
     }
 
-    return nodes
+    return nodes;
   }
 
   public async uploadWorkflows(
-    scorers_config: ScorersConfiguration,
-    run_name?: string,
-    run_tags?: RunTag[],
-    registered_scorers?: RegisteredScorer[],
-    customized_scorers?: CustomizedScorer[],
+    scorersConfig: ScorersConfiguration,
+    runName?: string,
+    runTags?: RunTag[],
+    registeredScorers?: RegisteredScorer[],
+    customizedScorers?: CustomizedScorer[]
   ): Promise<AWorkflow[]> {
-    if (!this.workflows.length) throw new Error("Chain run must have at least 1 workflow.");
+    if (!this.workflows.length)
+      throw new Error('Chain run must have at least 1 workflow.');
 
     const nodes: Node[] = [];
 
-    this.workflows.forEach(workflow => {
-      nodes.push(...this.workflowToNode(workflow))
+    this.workflows.forEach((workflow) => {
+      nodes.push(...this.workflowToNode(workflow));
     });
 
-    this.apiClient.run_id = await this.apiClient.createRun(run_name, run_tags);
+    this.apiClient.runId = await this.apiClient.createRun(runName, runTags);
 
-    await this.apiClient.ingestChain(nodes, scorers_config, registered_scorers, customized_scorers)
+    await this.apiClient.ingestChain(
+      nodes,
+      scorersConfig,
+      registeredScorers,
+      customizedScorers
+    );
 
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    return loggedWorkflows
+    return loggedWorkflows;
   }
 }

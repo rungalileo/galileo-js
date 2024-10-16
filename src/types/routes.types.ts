@@ -9,5 +9,5 @@ export enum Routes {
   observeIngest = 'projects/{project_id}/observe/ingest',
   observeRows = 'projects/{project_id}/observe/rows',
   observeDelete = 'projects/{project_id}/observe/delete',
-  evaluateIngest = 'projects/{project_id}/runs/{run_id}/chains/ingest',
+  evaluateIngest = 'projects/{project_id}/runs/{run_id}/chains/ingest'
 }

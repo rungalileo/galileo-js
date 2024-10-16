@@ -48,7 +48,8 @@ class GalileoWorkflow {
     }
     concludeWorkflow(output, durationNs, statusCode) {
         const errorMessage = 'No existing workflow to conclude.';
-        this.currentWorkflow = this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
+        this.currentWorkflow =
+            this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
         return this.currentWorkflow;
     }
 }

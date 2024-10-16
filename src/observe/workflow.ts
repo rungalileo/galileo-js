@@ -1,9 +1,18 @@
-import { randomUUID } from "crypto";
-import { AWorkflow, AWorkflowStep, LlmStep, StepWithChildren } from "../types/step.types";
-import { TransactionLoggingMethod, TransactionRecord, TransactionRecordBatch } from "../types/transaction.types";
-import GalileoWorkflow from "../workflow";
+import { randomUUID } from 'crypto';
+import {
+  AWorkflow,
+  AWorkflowStep,
+  LlmStep,
+  StepWithChildren
+} from '../types/step.types';
+import {
+  TransactionLoggingMethod,
+  TransactionRecord,
+  TransactionRecordBatch
+} from '../types/transaction.types';
+import GalileoWorkflow from '../workflow';
 import { version } from '../../package.json';
-import GalileoObserveApiClient from "./api-client";
+import GalileoObserveApiClient from './api-client';
 
 export default class GalileoObserveWorkflow extends GalileoWorkflow {
   private apiClient: GalileoObserveApiClient = new GalileoObserveApiClient();
@@ -15,13 +24,14 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
   private workflowToRecords(
     step: AWorkflowStep,
     rootId?: string,
-    chainId?: string,
+    chainId?: string
   ): TransactionRecord[] {
     const rows: TransactionRecord[] = [];
 
     const node_id = randomUUID();
     const chain_root_id = rootId ?? node_id;
-    const has_children = step instanceof StepWithChildren && step.steps.length > 0;
+    const has_children =
+      step instanceof StepWithChildren && step.steps.length > 0;
 
     const row: TransactionRecord = {
       node_id,
@@ -34,49 +44,54 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       created_at: new Date(step.createdAtNs).toISOString(),
       latency_ms: step.durationNs / 1000000,
       status_code: step.statusCode,
-      user_metadata: step.metadata,
-    }
+      user_metadata: step.metadata
+    };
 
     if (step instanceof LlmStep) {
-      row.model = step.model
-      row.temperature = step.temperature
-      row.num_input_tokens = step.inputTokens ?? 0
-      row.num_output_tokens = step.outputTokens ?? 0
-      row.num_total_tokens = step.totalTokens ?? 0
+      row.model = step.model;
+      row.temperature = step.temperature;
+      row.num_input_tokens = step.inputTokens ?? 0;
+      row.num_output_tokens = step.outputTokens ?? 0;
+      row.num_total_tokens = step.totalTokens ?? 0;
     }
 
-    rows.push(row)
+    rows.push(row);
 
     if (step instanceof StepWithChildren) {
-      step.steps.forEach(childStep => {
-        const childRows = this.workflowToRecords(childStep, chain_root_id, node_id)
-        rows.push(...childRows)
+      step.steps.forEach((childStep) => {
+        const childRows = this.workflowToRecords(
+          childStep,
+          chain_root_id,
+          node_id
+        );
+        rows.push(...childRows);
       });
     }
 
-    return rows
+    return rows;
   }
 
   public async uploadWorkflows(): Promise<AWorkflow[]> {
-    if (!this.workflows.length) throw new Error("Batch must have at least 1 workflow.");
+    if (!this.workflows.length)
+      throw new Error('Batch must have at least 1 workflow.');
 
     const records: TransactionRecord[] = [];
 
-    this.workflows.forEach(workflow => {
-      records.push(...this.workflowToRecords(workflow))
+    this.workflows.forEach((workflow) => {
+      records.push(...this.workflowToRecords(workflow));
     });
 
     const transactionBatch: TransactionRecordBatch = {
       records,
       logging_method: TransactionLoggingMethod.js_logger,
       client_version: version
-    }
+    };
 
     await this.apiClient.ingestBatch(transactionBatch);
 
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    return loggedWorkflows
+    return loggedWorkflows;
   }
 }

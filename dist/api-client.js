@@ -18,25 +18,25 @@ var RequestMethod;
 class GalileoApiClient {
     constructor() {
         this.type = undefined;
-        this.project_id = '';
-        this.run_id = '';
-        this.api_url = '';
+        this.projectId = '';
+        this.runId = '';
+        this.apiUrl = '';
         this.token = '';
     }
-    async init(project_name) {
-        this.api_url = this.getApiUrl();
+    async init(projectName) {
+        this.apiUrl = this.getApiUrl();
         if (await this.healthCheck()) {
             this.token = await this.getToken();
             try {
-                this.project_id = await this.getProjectIdByName(project_name);
+                this.projectId = await this.getProjectIdByName(projectName);
             }
             catch (err) {
                 const error = err;
                 if (error.message.includes('not found')) {
-                    const project = await this.createProject(project_name);
-                    this.project_id = project.id;
+                    const project = await this.createProject(projectName);
+                    this.projectId = project.id;
                     // eslint-disable-next-line no-console
-                    console.log(`🚀 Creating new project… project ${project_name} created!`);
+                    console.log(`🚀 Creating new project… project ${projectName} created!`);
                 }
                 else {
                     throw err;
@@ -45,16 +45,15 @@ class GalileoApiClient {
         }
     }
     getApiUrl() {
-        const console_url = process.env.GALILEO_CONSOLE_URL;
-        if (!console_url) {
+        const consoleUrl = process.env.GALILEO_CONSOLE_URL;
+        if (!consoleUrl) {
             throw new Error('GALILEO_CONSOLE_URL must be set');
         }
-        if (console_url.includes('localhost') ||
-            console_url.includes('127.0.0.1')) {
+        if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
             return 'http://localhost:8088';
         }
         else {
-            return console_url.replace('console', 'api');
+            return consoleUrl.replace('console', 'api');
         }
     }
     async healthCheck() {
@@ -74,9 +73,9 @@ class GalileoApiClient {
         }
         throw new Error('GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set');
     }
-    async apiKeyLogin(apiKey) {
+    async apiKeyLogin(api_key) {
         return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.apiKeyLogin, {
-            api_key: apiKey
+            api_key
         });
     }
     async usernameLogin(username, password) {
@@ -129,7 +128,7 @@ class GalileoApiClient {
         }
         const config = {
             method: request_method,
-            url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id).replace('{run_id}', this.run_id)}`,
+            url: `${this.apiUrl}/${endpoint.replace('{project_id}', this.projectId).replace('{run_id}', this.runId)}`,
             params,
             headers,
             data

@@ -9,14 +9,14 @@ class GalileoEvaluateApiClient extends api_client_1.GalileoApiClient {
         super();
         this.type = project_types_1.ProjectTypes.evaluate;
     }
-    async createRun(run_name, run_tags) {
-        if (!this.project_id)
+    async createRun(runName, runTags) {
+        if (!this.projectId)
             throw new Error('Init a project to create a run.');
         const run = await this.makeRequest(api_client_1.RequestMethod.POST, routes_types_1.Routes.runs, {
-            name: run_name ?? (0, utils_1.timestampName)('run'),
-            project_id: this.project_id,
+            name: runName ?? (0, utils_1.timestampName)('run'),
+            project_id: this.projectId,
             task_type: 12,
-            run_tags: run_tags ?? []
+            run_tags: runTags ?? []
         });
         return run.id;
     }
@@ -25,7 +25,7 @@ class GalileoEvaluateApiClient extends api_client_1.GalileoApiClient {
             rows,
             prompt_scorers_configuration,
             prompt_registered_scorers_configuration,
-            prompt_customized_scorers_configuration,
+            prompt_customized_scorers_configuration
         });
     }
 }

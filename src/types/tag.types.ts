@@ -1,6 +1,6 @@
 enum TagType {
-  GENERIC = "generic",
-  RAG = "rag"
+  GENERIC = 'generic',
+  RAG = 'rag'
 }
 
 export interface RunTag {

@@ -33,7 +33,7 @@ class GalileoObserveWorkflow extends workflow_1.default {
             created_at: new Date(step.createdAtNs).toISOString(),
             latency_ms: step.durationNs / 1000000,
             status_code: step.statusCode,
-            user_metadata: step.metadata,
+            user_metadata: step.metadata
         };
         if (step instanceof step_types_1.LlmStep) {
             row.model = step.model;
@@ -44,7 +44,7 @@ class GalileoObserveWorkflow extends workflow_1.default {
         }
         rows.push(row);
         if (step instanceof step_types_1.StepWithChildren) {
-            step.steps.forEach(childStep => {
+            step.steps.forEach((childStep) => {
                 const childRows = this.workflowToRecords(childStep, chain_root_id, node_id);
                 rows.push(...childRows);
             });
@@ -53,9 +53,9 @@ class GalileoObserveWorkflow extends workflow_1.default {
     }
     async uploadWorkflows() {
         if (!this.workflows.length)
-            throw new Error("Batch must have at least 1 workflow.");
+            throw new Error('Batch must have at least 1 workflow.');
         const records = [];
-        this.workflows.forEach(workflow => {
+        this.workflows.forEach((workflow) => {
             records.push(...this.workflowToRecords(workflow));
         });
         const transactionBatch = {

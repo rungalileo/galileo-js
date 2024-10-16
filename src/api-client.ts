@@ -16,31 +16,29 @@ export enum RequestMethod {
 
 export class GalileoApiClient {
   public type: ProjectTypes | undefined = undefined;
-  public project_id: string = '';
-  public run_id: string = '';
-  private api_url: string = '';
+  public projectId: string = '';
+  public runId: string = '';
+  private apiUrl: string = '';
   private token: string = '';
 
-  public async init(project_name: string): Promise<void> {
-    this.api_url = this.getApiUrl();
+  public async init(projectName: string): Promise<void> {
+    this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
 
       try {
-        this.project_id = await this.getProjectIdByName(project_name);
-      }
-      catch (err: unknown) {
+        this.projectId = await this.getProjectIdByName(projectName);
+      } catch (err: unknown) {
         const error = err as Error;
 
         if (error.message.includes('not found')) {
-          const project = await this.createProject(project_name);
-          this.project_id = project.id;
+          const project = await this.createProject(projectName);
+          this.projectId = project.id;
           // eslint-disable-next-line no-console
           console.log(
-            `🚀 Creating new project… project ${project_name} created!`
+            `🚀 Creating new project… project ${projectName} created!`
           );
-        }
-        else {
+        } else {
           throw err;
         }
       }
@@ -48,24 +46,24 @@ export class GalileoApiClient {
   }
 
   private getApiUrl(): string {
-    const console_url = process.env.GALILEO_CONSOLE_URL;
+    const consoleUrl = process.env.GALILEO_CONSOLE_URL;
 
-    if (!console_url) {
+    if (!consoleUrl) {
       throw new Error('GALILEO_CONSOLE_URL must be set');
     }
 
-    if (
-      console_url.includes('localhost') ||
-      console_url.includes('127.0.0.1')
-    ) {
+    if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
       return 'http://localhost:8088';
     } else {
-      return console_url.replace('console', 'api');
+      return consoleUrl.replace('console', 'api');
     }
   }
 
   private async healthCheck(): Promise<boolean> {
-    return await this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
+    return await this.makeRequest<boolean>(
+      RequestMethod.GET,
+      Routes.healthCheck
+    );
   }
 
   private async getToken(): Promise<string> {
@@ -89,16 +87,19 @@ export class GalileoApiClient {
     );
   }
 
-  private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
-    return await this.makeRequest<{ access_token: string }>(RequestMethod.POST, Routes.apiKeyLogin, {
-      api_key: apiKey
-    })
+  private async apiKeyLogin(
+    api_key: string
+  ): Promise<{ access_token: string }> {
+    return await this.makeRequest<{ access_token: string }>(
+      RequestMethod.POST,
+      Routes.apiKeyLogin,
+      {
+        api_key
+      }
+    );
   }
 
-  private async usernameLogin(
-    username: string,
-    password: string
-  ) {
+  private async usernameLogin(username: string, password: string) {
     return await this.makeRequest<{ access_token: string }>(
       RequestMethod.POST,
       Routes.login,
@@ -106,7 +107,7 @@ export class GalileoApiClient {
         username,
         password
       })
-    )
+    );
   }
 
   private async getProjectIdByName(project_name: string): Promise<string> {
@@ -128,15 +129,17 @@ export class GalileoApiClient {
   }
 
   private async createProject(project_name: string): Promise<{ id: string }> {
-    return await this.makeRequest<{ id: string }>(RequestMethod.POST, Routes.projects, {
-      name: project_name,
-      type: this.type
-    })
+    return await this.makeRequest<{ id: string }>(
+      RequestMethod.POST,
+      Routes.projects,
+      {
+        name: project_name,
+        type: this.type
+      }
+    );
   }
 
-  private getAuthHeader(
-    token: string
-  ): { Authorization: string } {
+  private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
 
@@ -153,7 +156,7 @@ export class GalileoApiClient {
     endpoint: Routes,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: string | Record<string, any> | null,
-    params?: Record<string, unknown>,
+    params?: Record<string, unknown>
   ): Promise<T> {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
@@ -173,7 +176,7 @@ export class GalileoApiClient {
 
     const config: AxiosRequestConfig = {
       method: request_method,
-      url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id).replace('{run_id}', this.run_id)}`,
+      url: `${this.apiUrl}/${endpoint.replace('{project_id}', this.projectId).replace('{run_id}', this.runId)}`,
       params,
       headers,
       data

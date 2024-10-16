@@ -1,4 +1,4 @@
-import { Models } from "./models.types";
+import { Models } from './models.types';
 
 export interface ScorersConfiguration {
   adherence_nli?: boolean;
@@ -27,11 +27,11 @@ export interface RegisteredScorer {
 }
 
 enum CustomizedScorerName {
-  chunk_attribution_utilization_plus = "_customized_chunk_attribution_utilization_gpt",
-  completeness_plus = "_customized_completeness_gpt",
-  context_adherence_plus = "_customized_groundedness",
-  correctness = "_customized_factuality",
-  instruction_adherence = "_customized_instruction_adherence"
+  chunk_attribution_utilization_plus = '_customized_chunk_attribution_utilization_gpt',
+  completeness_plus = '_customized_completeness_gpt',
+  context_adherence_plus = '_customized_groundedness',
+  correctness = '_customized_factuality',
+  instruction_adherence = '_customized_instruction_adherence'
 }
 
 export interface CustomizedScorer {
