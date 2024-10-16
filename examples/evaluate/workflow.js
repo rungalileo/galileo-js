@@ -20,15 +20,15 @@ const myLlmApp = (input) => {
   // Add workflow
   evaluateWorkflow.addWorkflow({ input });
 
-  const prompt = template.replace('{context}', context).replace('{question}', input)
-
   // Get response from your LLM
   // Pseudo-code, replace with your LLM call
+  const prompt = template.replace('{context}', context).replace('{question}', input)
   const llmCall = (_prompt) => 'An LLM response…';
   const llmResponse = llmCall(prompt);
 
   // Log LLM step
   evaluateWorkflow.addLlmStep({
+    durationNs: (Math.random() * 3) / 1000000000,
     input: prompt,
     output: llmResponse,
   })

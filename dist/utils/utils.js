@@ -11,7 +11,7 @@ const timestampName = (prefix) => {
         second: '2-digit',
         hour12: false,
     }).replace(/,|:/g, '_').replace(' ', '_');
-    return `${prefix}-${tsString}`;
+    return `${prefix}_${tsString}`;
 };
 exports.timestampName = timestampName;
 //# sourceMappingURL=utils.js.map

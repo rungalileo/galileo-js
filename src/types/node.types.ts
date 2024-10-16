@@ -8,7 +8,7 @@ export interface Node {
   step: number;
   chain_id?: string;
   has_children: boolean;
-  inputs: Record<string, any>;
+  inputs: Record<string, unknown>;
   prompt?: string;
   response?: string;
   creation_timestamp: number;
@@ -17,6 +17,6 @@ export interface Node {
   query_input_tokens: number;
   query_output_tokens: number;
   query_total_tokens: number;
-  params: Record<string, any>;
+  params: Record<string, unknown>;
   target?: string;
 }

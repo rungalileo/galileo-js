@@ -24,9 +24,7 @@ class GalileoApiClient {
         this.token = '';
     }
     async init(project_name) {
-        console.log(project_name);
         this.api_url = this.getApiUrl();
-        console.log(this.api_url);
         if (await this.healthCheck()) {
             this.token = await this.getToken();
             try {
@@ -37,6 +35,7 @@ class GalileoApiClient {
                 if (error.message.includes('not found')) {
                     const project = await this.createProject(project_name);
                     this.project_id = project.id;
+                    // eslint-disable-next-line no-console
                     console.log(`🚀 Creating new project… project ${project_name} created!`);
                 }
                 else {
@@ -112,7 +111,9 @@ class GalileoApiClient {
             throw new Error(msg);
         }
     }
-    async makeRequest(request_method, endpoint, data, params) {
+    async makeRequest(request_method, endpoint, 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data, params) {
         // Check to see if our token is expired before making a request
         // and refresh token if it's expired
         if (endpoint !== routes_types_js_1.Routes.login && this.token) {
@@ -121,6 +122,7 @@ class GalileoApiClient {
                 this.token = await this.getToken();
             }
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let headers = {};
         if (this.token) {
             headers = this.getAuthHeader(this.token);

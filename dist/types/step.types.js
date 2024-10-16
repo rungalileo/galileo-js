@@ -13,30 +13,27 @@ var StepType;
 })(StepType || (exports.StepType = StepType = {}));
 class StepWithChildren {
     constructor(step) {
-        this.parent = null;
         this.steps = [];
         this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
         this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
-        this.input = step.input ?? '';
+        this.input = step.input;
         this.metadata = step.metadata ?? {};
         this.name = step.name ?? this.type;
-        this.output = step.output ?? '';
+        this.output = step.output;
+        this.parent = step.parent ?? null;
         this.statusCode = step.statusCode;
     }
-    ;
     addStep(step) {
         this.steps.push(step);
         return step;
     }
-    ;
     conclude(output, durationNs, statusCode) {
         this.output = output ?? this.output;
         this.durationNs = durationNs ?? this.durationNs;
         this.statusCode = statusCode;
         return this.parent;
     }
-    ;
 }
 exports.StepWithChildren = StepWithChildren;
 class AgentStep extends StepWithChildren {
@@ -44,7 +41,6 @@ class AgentStep extends StepWithChildren {
         super(step);
         this.type = StepType.agent;
     }
-    ;
 }
 exports.AgentStep = AgentStep;
 class LlmStep extends StepWithChildren {
@@ -53,10 +49,10 @@ class LlmStep extends StepWithChildren {
         this.type = StepType.llm;
         this.inputTokens = step.inputTokens;
         this.model = step.model;
+        this.outputTokens = step.outputTokens;
         this.temperature = step.temperature;
         this.totalTokens = step.totalTokens;
     }
-    ;
 }
 exports.LlmStep = LlmStep;
 class WorkflowStep extends StepWithChildren {
@@ -64,7 +60,6 @@ class WorkflowStep extends StepWithChildren {
         super(step);
         this.type = StepType.workflow;
     }
-    ;
 }
 exports.WorkflowStep = WorkflowStep;
 class StepWithoutChildren {
@@ -72,13 +67,12 @@ class StepWithoutChildren {
         this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
         this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
-        this.input = step.input ?? '';
+        this.input = step.input;
         this.metadata = step.metadata ?? {};
         this.name = step.name ?? this.type;
-        this.output = step.output ?? '';
+        this.output = step.output;
         this.statusCode = step.statusCode;
     }
-    ;
 }
 exports.StepWithoutChildren = StepWithoutChildren;
 class RetrieverStep extends StepWithoutChildren {
@@ -86,7 +80,6 @@ class RetrieverStep extends StepWithoutChildren {
         super(step);
         this.type = StepType.retriever;
     }
-    ;
 }
 exports.RetrieverStep = RetrieverStep;
 class ToolStep extends StepWithoutChildren {
@@ -94,7 +87,6 @@ class ToolStep extends StepWithoutChildren {
         super(step);
         this.type = StepType.tool;
     }
-    ;
 }
 exports.ToolStep = ToolStep;
 //# sourceMappingURL=step.types.js.map

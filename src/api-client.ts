@@ -22,9 +22,7 @@ export class GalileoApiClient {
   private token: string = '';
 
   public async init(project_name: string): Promise<void> {
-    console.log(project_name)
     this.api_url = this.getApiUrl();
-    console.log(this.api_url)
     if (await this.healthCheck()) {
       this.token = await this.getToken();
 
@@ -37,6 +35,7 @@ export class GalileoApiClient {
         if (error.message.includes('not found')) {
           const project = await this.createProject(project_name);
           this.project_id = project.id;
+          // eslint-disable-next-line no-console
           console.log(
             `🚀 Creating new project… project ${project_name} created!`
           );
@@ -152,8 +151,9 @@ export class GalileoApiClient {
   public async makeRequest<T>(
     request_method: Method,
     endpoint: Routes,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: string | Record<string, any> | null,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
   ): Promise<T> {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
@@ -164,6 +164,7 @@ export class GalileoApiClient {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let headers: Record<string, any> = {};
 
     if (this.token) {

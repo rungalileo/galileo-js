@@ -1,6 +1,6 @@
-# Observe-js
+# Galileo-JS
 
-NodeJS client for Galileo Observe.
+JS client for Galileo.
 
 ## Testing
 In the root directory, run:

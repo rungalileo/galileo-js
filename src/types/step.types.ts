@@ -20,7 +20,7 @@ interface BaseStepType {
     statusCode?: number;
 }
 
-export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
+export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: unknown })[];
 
 interface StepWithChildrenType extends BaseStepType {
     input: StepIOType | LlmStepIOType;
@@ -52,17 +52,17 @@ export class StepWithChildren implements StepWithChildrenType {
         this.output = step.output;
         this.parent = step.parent ?? null;
         this.statusCode = step.statusCode;
-    };
+    }
     addStep(step: AWorkflowStep): AWorkflowStep {
         this.steps.push(step)
         return step
-    };
+    }
     conclude(output?: StepIOType, durationNs?: number, statusCode?: number): AWorkflow | null {
         this.output = output ?? this.output;
         this.durationNs = durationNs ?? this.durationNs;
         this.statusCode = statusCode;
         return this.parent
-    };
+    }
 }
 
 export type AgentStepType = StepWithChildrenType;
@@ -71,7 +71,7 @@ export class AgentStep extends StepWithChildren {
     type: StepType.agent = StepType.agent;
     constructor(step: AgentStepType) {
         super(step);
-    };
+    }
 }
 
 type LlmStepIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
@@ -100,7 +100,7 @@ export class LlmStep extends StepWithChildren {
         this.outputTokens = step.outputTokens;
         this.temperature = step.temperature;
         this.totalTokens = step.totalTokens;
-    };
+    }
 }
 
 export type WorkflowStepType = StepWithChildrenType;
@@ -109,7 +109,7 @@ export class WorkflowStep extends StepWithChildren {
     type: StepType.workflow = StepType.workflow;
     constructor(step: WorkflowStepType) {
         super(step);
-    };
+    }
 }
 
 type RetrieverStepOutputType = (string | Document | { [key: string]: string })[];
@@ -138,7 +138,7 @@ export class StepWithoutChildren implements StepWithoutChildrenType {
         this.name = step.name ?? this.type;
         this.output = step.output;
         this.statusCode = step.statusCode;
-    };
+    }
 }
 
 export interface RetrieverStepType extends StepWithoutChildrenType {
@@ -150,7 +150,7 @@ export class RetrieverStep extends StepWithoutChildren {
     type: StepType.retriever = StepType.retriever;
     constructor(step: RetrieverStepType) {
         super(step);
-    };
+    }
 }
 
 export type ToolStepType = StepWithoutChildrenType;
@@ -159,7 +159,7 @@ export class ToolStep extends StepWithoutChildren {
     type: StepType.tool = StepType.tool;
     constructor(step: ToolStepType) {
         super(step);
-    };
+    }
 }
 
 export type AWorkflow = AgentStep | LlmStep | WorkflowStep;

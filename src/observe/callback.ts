@@ -273,7 +273,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       parentRunId
     );
 
-    let node_input: any = {};
+    let node_input: unknown = {};
 
     if (typeof inputs === 'string') {
       node_input = { input: inputs };
@@ -454,7 +454,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   }
 
   public async handleRetrieverEnd(
-    documents: DocumentInterface<Record<string, any>>[],
+    documents: DocumentInterface<Record<string, unknown>>[],
     runId: string,
   ): Promise<void> {
     const [node_id, latency_ms] = this._end_node(runId);

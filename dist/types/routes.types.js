@@ -15,5 +15,4 @@ var Routes;
     Routes["observeDelete"] = "projects/{project_id}/observe/delete";
     Routes["evaluateIngest"] = "projects/{project_id}/runs/{run_id}/chains/ingest";
 })(Routes || (exports.Routes = Routes = {}));
-;
 //# sourceMappingURL=routes.types.js.map

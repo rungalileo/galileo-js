@@ -13,8 +13,8 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   public async getLoggedData(
     start_time: string,
     end_time: string,
-    filters: Array<any> = [],
-    sort_spec: Array<any> = [],
+    filters: Array<unknown> = [],
+    sort_spec: Array<unknown> = [],
     limit?: number,
     offset?: number,
     include_chains?: boolean,
@@ -42,7 +42,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   public async getMetrics(
     start_time: string,
     end_time: string,
-    filters: Array<any> = [],
+    filters: Array<unknown> = [],
     interval?: number,
     group_by?: string
   ): Promise<Record<string, unknown>> {
@@ -62,7 +62,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   }
 
   // TODO: This should have a more accurate return type
-  public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
+  public async deleteLoggedData(filters: Array<unknown> = []): Promise<Record<string, unknown>> {
     return await this.makeRequest(
       RequestMethod.POST,
       Routes.observeDelete,

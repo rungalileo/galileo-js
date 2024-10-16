@@ -18,10 +18,10 @@ export interface TransactionRecord {
   node_id: string;
   chain_id?: string;
   chain_root_id?: string;
-  output_logprobs?: Record<string, any>;
+  output_logprobs?: Record<string, unknown>;
   created_at: string;
   tags?: string[];
-  user_metadata?: Record<string, any>;
+  user_metadata?: Record<string, unknown>;
   temperature?: number;
   node_type: StepType;
   has_children: boolean;

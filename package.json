@@ -4,7 +4,7 @@
   "description": "JS client for Galileo",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm run lint && tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
