@@ -22,12 +22,10 @@ interface BaseStepType {
 
 export type StepIOType = string | Document | Message | { [key: string]: string } | (Document | Message | { [key: string]: any })[];
 
-type LlmStepIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
-
 interface StepWithChildrenType extends BaseStepType {
     input: StepIOType | LlmStepIOType;
     output: StepIOType | LlmStepIOType;
-    parent: StepWithChildren | null;
+    parent: AWorkflow | null;
     statusCode?: number | undefined;
     steps: AWorkflowStep[];
 }
@@ -40,7 +38,7 @@ export class StepWithChildren implements StepWithChildrenType {
     metadata: { [key: string]: string; };
     name: string;
     output: StepIOType | LlmStepIOType;
-    parent: AWorkflow | null = null;
+    parent: AWorkflow | null;
     statusCode?: number | undefined;
     steps: AWorkflowStep[] = [];
     type?: StepType.agent | StepType.llm | StepType.workflow;
@@ -48,10 +46,11 @@ export class StepWithChildren implements StepWithChildrenType {
         this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
         this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
-        this.input = step.input ?? '';
+        this.input = step.input;
         this.metadata = step.metadata ?? {};
         this.name = step.name ?? this.type;
-        this.output = step.output ?? '';
+        this.output = step.output;
+        this.parent = step.parent ?? null;
         this.statusCode = step.statusCode;
     };
     addStep(step: AWorkflowStep): AWorkflowStep {
@@ -66,9 +65,7 @@ export class StepWithChildren implements StepWithChildrenType {
     };
 }
 
-export interface AgentStepType extends StepWithChildrenType {
-    type: StepType.agent;
-}
+export type AgentStepType = StepWithChildrenType;
 
 export class AgentStep extends StepWithChildren {
     type: StepType.agent = StepType.agent;
@@ -76,6 +73,8 @@ export class AgentStep extends StepWithChildren {
         super(step);
     };
 }
+
+type LlmStepIOType = string | Message | { [key: string]: string } | (string | Message | { [key: string]: string })[];
 
 export interface LlmStepType extends StepWithChildrenType {
     input: LlmStepIOType;
@@ -85,7 +84,6 @@ export interface LlmStepType extends StepWithChildrenType {
     outputTokens?: number;
     temperature?: number;
     totalTokens?: number;
-    type: StepType.llm;
 }
 
 export class LlmStep extends StepWithChildren {
@@ -99,21 +97,19 @@ export class LlmStep extends StepWithChildren {
         super(step);
         this.inputTokens = step.inputTokens;
         this.model = step.model;
+        this.outputTokens = step.outputTokens;
         this.temperature = step.temperature;
         this.totalTokens = step.totalTokens;
     };
 }
 
-export interface WorkflowStepType extends StepWithChildrenType {
-    type: StepType.workflow;
-}
+export type WorkflowStepType = StepWithChildrenType;
 
 export class WorkflowStep extends StepWithChildren {
     type: StepType.workflow = StepType.workflow;
     constructor(step: WorkflowStepType) {
         super(step);
     };
-
 }
 
 type RetrieverStepOutputType = (string | Document | { [key: string]: string })[];
@@ -137,10 +133,10 @@ export class StepWithoutChildren implements StepWithoutChildrenType {
         this.createdAtNs = step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
         this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
-        this.input = step.input ?? '';
+        this.input = step.input;
         this.metadata = step.metadata ?? {};
         this.name = step.name ?? this.type;
-        this.output = step.output ?? '';
+        this.output = step.output;
         this.statusCode = step.statusCode;
     };
 }
@@ -148,7 +144,6 @@ export class StepWithoutChildren implements StepWithoutChildrenType {
 export interface RetrieverStepType extends StepWithoutChildrenType {
     input: string;
     output: RetrieverStepOutputType;
-    type: StepType.retriever;
 }
 
 export class RetrieverStep extends StepWithoutChildren {
@@ -158,9 +153,7 @@ export class RetrieverStep extends StepWithoutChildren {
     };
 }
 
-export interface ToolStepType extends StepWithoutChildrenType {
-    type: StepType.tool;
-}
+export type ToolStepType = StepWithoutChildrenType;
 
 export class ToolStep extends StepWithoutChildren {
     type: StepType.tool = StepType.tool;

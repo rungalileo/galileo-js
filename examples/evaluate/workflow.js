@@ -31,7 +31,6 @@ const myLlmApp = (input) => {
   evaluateWorkflow.addLlmStep({
     input: prompt,
     output: llmResponse,
-    model: "ChatGPT (4K context)"
   })
 
   // Conclude workflow
