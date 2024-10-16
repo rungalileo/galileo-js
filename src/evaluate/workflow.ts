@@ -92,7 +92,7 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
     customizedScorers?: CustomizedScorer[]
   ): Promise<AWorkflow[]> {
     if (!this.workflows.length)
-      throw new Error('Chain run must have at least 1 workflow.');
+      throw new Error('❗ Chain run must have at least 1 workflow.');
 
     const nodes: Node[] = [];
 
@@ -111,6 +111,11 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
 
     const loggedWorkflows = this.workflows;
     this.workflows = [];
+
+    // eslint-disable-next-line no-console
+    console.log('🚀 Workflows uploaded!')
+    // eslint-disable-next-line no-console
+    console.log(loggedWorkflows)
 
     return loggedWorkflows;
   }

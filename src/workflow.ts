@@ -7,6 +7,7 @@ import {
   RetrieverStep,
   RetrieverStepType,
   StepIOType,
+  StepWithoutChildren,
   ToolStep,
   ToolStepType,
   WorkflowStep,
@@ -24,10 +25,14 @@ export default class GalileoWorkflow {
   private currentWorkflow: AWorkflow | null = null;
 
   private pushStep(step: AWorkflow) {
-    const hasSteps = step instanceof WorkflowStep || step instanceof AgentStep;
+    const nestedWorkflow =
+      step instanceof WorkflowStep || step instanceof AgentStep;
 
     this.workflows.push(step);
-    this.currentWorkflow = hasSteps ? step : null;
+    this.currentWorkflow = nestedWorkflow ? step : null;
+
+    // eslint-disable-next-line no-console
+    console.log(nestedWorkflow ? '' : '');
 
     return step;
   }
@@ -45,11 +50,14 @@ export default class GalileoWorkflow {
   }
 
   private stepErrorMessage =
-    'A workflow needs to be created in order to add a step.';
+    'No active workflows. Add a valid workflow to add a step.';
 
   private validWorkflow(errorMessage: string): WorkflowStep | AgentStep | null {
-    if (this.currentWorkflow === null) throw new Error(errorMessage);
-    if (this.currentWorkflow instanceof LlmStep) throw new Error('A step cannot be added to an LLM workflow.');
+    if (
+      this.currentWorkflow === null ||
+      this.currentWorkflow instanceof StepWithoutChildren
+    )
+      throw new Error(errorMessage);
     return this.currentWorkflow;
   }
 
@@ -90,7 +98,7 @@ export default class GalileoWorkflow {
     durationNs?: number,
     statusCode?: number
   ): AWorkflow | null {
-    const errorMessage = 'No existing workflow to conclude.';
+    const errorMessage = 'There is no workflow to conclude.';
     this.currentWorkflow =
       this.validWorkflow(errorMessage)?.conclude(
         output,

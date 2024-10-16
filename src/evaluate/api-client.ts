@@ -20,7 +20,7 @@ export default class GalileoEvaluateApiClient extends GalileoApiClient {
     runName?: string,
     runTags?: RunTag[]
   ): Promise<string> {
-    if (!this.projectId) throw new Error('Init a project to create a run.');
+    if (!this.projectId) throw new Error('❗ Init a project to create a run.');
 
     const run = await this.makeRequest<{ id: string }>(
       RequestMethod.POST,
@@ -32,6 +32,9 @@ export default class GalileoEvaluateApiClient extends GalileoApiClient {
         run_tags: runTags ?? []
       }
     );
+
+    // eslint-disable-next-line no-console
+    console.log(`✨ ${runName ?? timestampName('run')} created!`);
 
     return run.id;
   }

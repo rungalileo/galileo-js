@@ -73,7 +73,7 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
 
   public async uploadWorkflows(): Promise<AWorkflow[]> {
     if (!this.workflows.length)
-      throw new Error('Batch must have at least 1 workflow.');
+      throw new Error('❗ Batch must have at least 1 workflow.');
 
     const records: TransactionRecord[] = [];
 
@@ -91,6 +91,11 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
 
     const loggedWorkflows = this.workflows;
     this.workflows = [];
+
+    // eslint-disable-next-line no-console
+    console.log('🚀 Workflows uploaded!')
+    // eslint-disable-next-line no-console
+    console.log(loggedWorkflows)
 
     return loggedWorkflows;
   }
