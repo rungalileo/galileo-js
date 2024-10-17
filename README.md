@@ -2,16 +2,33 @@
 
 JS client for Galileo.
 
+## Setup
+
+_Note: Optional LangChain dependencies are only needed for Observe Callbacks and may be excluded if not being used._
+
+Without optional dependencies
+
+`npm i --no-optional`
+
+With optional dependencies
+
+`npm i`
+
 ## Making changes
+
 When updating the code, only modify the `*.ts` files in `src` and then run:
+
 - `npm run build`
 
 ## Examples Setup
+
 In the root directory, run:
+
 - `npm i`
 - `npm link`
 
 In the examples directory, run:
+
 - `npm i`
 - `npm link @rungalileo/galileo-js`
 
