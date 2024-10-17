@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "JS client for Galileo",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "npm run format && npm run lint && tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
