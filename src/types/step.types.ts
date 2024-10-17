@@ -60,6 +60,10 @@ export class StepWithChildren implements StepWithChildrenType {
   }
   addStep(step: AWorkflowStep): AWorkflowStep {
     this.steps.push(step);
+    // eslint-disable-next-line no-console
+    console.log(
+      `➕ ${step.type[0].toUpperCase() + step.type.slice(1)} step added…`
+    );
     return step;
   }
   conclude(

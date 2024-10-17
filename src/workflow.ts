@@ -24,7 +24,7 @@ export default class GalileoWorkflow {
   public workflows: AWorkflow[] = [];
   private currentWorkflow: AWorkflow | null = null;
 
-  private pushStep(step: AWorkflow) {
+  private pushWorkflow(step: AWorkflow) {
     const nestedWorkflow =
       step instanceof WorkflowStep || step instanceof AgentStep;
 
@@ -32,32 +32,33 @@ export default class GalileoWorkflow {
     this.currentWorkflow = nestedWorkflow ? step : null;
 
     // eslint-disable-next-line no-console
-    console.log(nestedWorkflow ? '' : '');
+    console.log('➕ New workflow added…');
 
     return step;
   }
 
   public addWorkflow(step: WorkflowStepType) {
-    return this.pushStep(new WorkflowStep(step));
+    return this.pushWorkflow(new WorkflowStep(step));
   }
 
   public addAgentWorkflow(step: AgentStepType) {
-    return this.pushStep(new AgentStep(step));
+    return this.pushWorkflow(new AgentStep(step));
   }
 
   public addSingleStepWorkflow(step: LlmStepType) {
-    return this.pushStep(new LlmStep(step));
+    return this.pushWorkflow(new LlmStep(step));
   }
 
   private stepErrorMessage =
-    'No active workflows. Add a valid workflow to add a step.';
+    '❗ No active workflows. Add a valid workflow to add a step.';
 
   private validWorkflow(errorMessage: string): WorkflowStep | AgentStep | null {
     if (
       this.currentWorkflow === null ||
       this.currentWorkflow instanceof StepWithoutChildren
-    )
+    ) {
       throw new Error(errorMessage);
+    }
     return this.currentWorkflow;
   }
 
@@ -98,7 +99,7 @@ export default class GalileoWorkflow {
     durationNs?: number,
     statusCode?: number
   ): AWorkflow | null {
-    const errorMessage = 'There is no workflow to conclude.';
+    const errorMessage = '❗ There is no workflow to conclude.';
     this.currentWorkflow =
       this.validWorkflow(errorMessage)?.conclude(
         output,

@@ -4,15 +4,15 @@ JS client for Galileo.
 
 ## Setup
 
-_Note: Optional LangChain dependencies are only needed for Observe Callbacks and may be excluded if not being used._
+_Note: Optional LangChain dependencies are only needed for Observe Callback and may be excluded if not being used._
 
 Without optional dependencies
 
-`npm i --no-optional`
+`npm i @rungalileo/galileo --no-optional`
 
 With optional dependencies
 
-`npm i`
+`npm i @rungalileo/galileo`
 
 ## Making changes
 

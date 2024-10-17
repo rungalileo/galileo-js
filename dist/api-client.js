@@ -38,7 +38,7 @@ class GalileoApiClient {
                     const project = await this.createProject(projectName);
                     this.projectId = project.id;
                     // eslint-disable-next-line no-console
-                    console.log(`✨ ${projectName} created!`);
+                    console.log(`✨ ${projectName} created.`);
                 }
                 else {
                     throw err;

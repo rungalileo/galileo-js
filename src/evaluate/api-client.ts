@@ -34,7 +34,7 @@ export default class GalileoEvaluateApiClient extends GalileoApiClient {
     );
 
     // eslint-disable-next-line no-console
-    console.log(`✨ ${runName ?? timestampName('run')} created!`);
+    console.log(`✨ ${runName ?? timestampName('run')} created.`);
 
     return run.id;
   }

@@ -19,7 +19,7 @@ class GalileoEvaluateApiClient extends api_client_1.GalileoApiClient {
             run_tags: runTags ?? []
         });
         // eslint-disable-next-line no-console
-        console.log(`✨ ${runName ?? (0, utils_1.timestampName)('run')} created!`);
+        console.log(`✨ ${runName ?? (0, utils_1.timestampName)('run')} created.`);
         return run.id;
     }
     async ingestChain(rows, prompt_scorers_configuration, prompt_registered_scorers_configuration, prompt_customized_scorers_configuration) {
