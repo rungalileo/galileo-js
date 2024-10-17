@@ -29,6 +29,8 @@ class GalileoApiClient {
             this.token = await this.getToken();
             try {
                 this.projectId = await this.getProjectIdByName(projectName);
+                // eslint-disable-next-line no-console
+                console.log(`✅ Using ${projectName}`);
             }
             catch (err) {
                 const error = err;
@@ -36,7 +38,7 @@ class GalileoApiClient {
                     const project = await this.createProject(projectName);
                     this.projectId = project.id;
                     // eslint-disable-next-line no-console
-                    console.log(`🚀 Creating new project… project ${projectName} created!`);
+                    console.log(`✨ ${projectName} created!`);
                 }
                 else {
                     throw err;
@@ -47,7 +49,7 @@ class GalileoApiClient {
     getApiUrl() {
         const consoleUrl = process.env.GALILEO_CONSOLE_URL;
         if (!consoleUrl) {
-            throw new Error('GALILEO_CONSOLE_URL must be set');
+            throw new Error('❗ GALILEO_CONSOLE_URL must be set');
         }
         if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
             return 'http://localhost:8088';
@@ -71,7 +73,7 @@ class GalileoApiClient {
             const loginResponse = await this.usernameLogin(username, password);
             return loginResponse.access_token || '';
         }
-        throw new Error('GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set');
+        throw new Error('❗ GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set');
     }
     async apiKeyLogin(api_key) {
         return await this.makeRequest(RequestMethod.POST, routes_types_js_1.Routes.apiKeyLogin, {
@@ -105,7 +107,7 @@ class GalileoApiClient {
     }
     validateResponse(response) {
         if (response.status >= 300) {
-            const msg = `Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
+            const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
             // TODO: Better error handling
             throw new Error(msg);
         }

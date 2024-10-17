@@ -5,13 +5,15 @@ class GalileoWorkflow {
     constructor(projectName) {
         this.workflows = [];
         this.currentWorkflow = null;
-        this.stepErrorMessage = 'A workflow needs to be created in order to add a step.';
+        this.stepErrorMessage = 'No active workflows. Add a valid workflow to add a step.';
         this.projectName = projectName;
     }
     pushStep(step) {
-        const hasSteps = step instanceof step_types_1.WorkflowStep || step instanceof step_types_1.AgentStep;
+        const nestedWorkflow = step instanceof step_types_1.WorkflowStep || step instanceof step_types_1.AgentStep;
         this.workflows.push(step);
-        this.currentWorkflow = hasSteps ? step : null;
+        this.currentWorkflow = nestedWorkflow ? step : null;
+        // eslint-disable-next-line no-console
+        console.log(nestedWorkflow ? '' : '');
         return step;
     }
     addWorkflow(step) {
@@ -24,9 +26,9 @@ class GalileoWorkflow {
         return this.pushStep(new step_types_1.LlmStep(step));
     }
     validWorkflow(errorMessage) {
-        if (this.currentWorkflow === null) {
+        if (this.currentWorkflow === null ||
+            this.currentWorkflow instanceof step_types_1.StepWithoutChildren)
             throw new Error(errorMessage);
-        }
         return this.currentWorkflow;
     }
     addLlmStep(step) {
@@ -47,7 +49,7 @@ class GalileoWorkflow {
         return this.validWorkflow(this.stepErrorMessage)?.addStep(new step_types_1.AgentStep(step));
     }
     concludeWorkflow(output, durationNs, statusCode) {
-        const errorMessage = 'No existing workflow to conclude.';
+        const errorMessage = 'There is no workflow to conclude.';
         this.currentWorkflow =
             this.validWorkflow(errorMessage)?.conclude(output, durationNs, statusCode) ?? null;
         return this.currentWorkflow;

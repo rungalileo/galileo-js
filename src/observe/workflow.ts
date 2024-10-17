@@ -93,9 +93,9 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
     this.workflows = [];
 
     // eslint-disable-next-line no-console
-    console.log('🚀 Workflows uploaded!')
+    console.log('🚀 Workflows uploaded!');
     // eslint-disable-next-line no-console
-    console.log(loggedWorkflows)
+    console.log(loggedWorkflows);
 
     return loggedWorkflows;
   }

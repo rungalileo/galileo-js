@@ -11,13 +11,15 @@ class GalileoEvaluateApiClient extends api_client_1.GalileoApiClient {
     }
     async createRun(runName, runTags) {
         if (!this.projectId)
-            throw new Error('Init a project to create a run.');
+            throw new Error('❗ Init a project to create a run.');
         const run = await this.makeRequest(api_client_1.RequestMethod.POST, routes_types_1.Routes.runs, {
             name: runName ?? (0, utils_1.timestampName)('run'),
             project_id: this.projectId,
             task_type: 12,
             run_tags: runTags ?? []
         });
+        // eslint-disable-next-line no-console
+        console.log(`✨ ${runName ?? (0, utils_1.timestampName)('run')} created!`);
         return run.id;
     }
     async ingestChain(rows, prompt_scorers_configuration, prompt_registered_scorers_configuration, prompt_customized_scorers_configuration) {

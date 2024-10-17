@@ -53,7 +53,7 @@ class GalileoObserveWorkflow extends workflow_1.default {
     }
     async uploadWorkflows() {
         if (!this.workflows.length)
-            throw new Error('Batch must have at least 1 workflow.');
+            throw new Error('❗ Batch must have at least 1 workflow.');
         const records = [];
         this.workflows.forEach((workflow) => {
             records.push(...this.workflowToRecords(workflow));
@@ -66,6 +66,10 @@ class GalileoObserveWorkflow extends workflow_1.default {
         await this.apiClient.ingestBatch(transactionBatch);
         const loggedWorkflows = this.workflows;
         this.workflows = [];
+        // eslint-disable-next-line no-console
+        console.log('🚀 Workflows uploaded!');
+        // eslint-disable-next-line no-console
+        console.log(loggedWorkflows);
         return loggedWorkflows;
     }
 }

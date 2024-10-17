@@ -59,7 +59,7 @@ class GalileoEvaluateWorkflow extends workflow_1.default {
     }
     async uploadWorkflows(scorersConfig, runName, runTags, registeredScorers, customizedScorers) {
         if (!this.workflows.length)
-            throw new Error('Chain run must have at least 1 workflow.');
+            throw new Error('❗ Chain run must have at least 1 workflow.');
         const nodes = [];
         this.workflows.forEach((workflow) => {
             nodes.push(...this.workflowToNode(workflow));
@@ -68,6 +68,10 @@ class GalileoEvaluateWorkflow extends workflow_1.default {
         await this.apiClient.ingestChain(nodes, scorersConfig, registeredScorers, customizedScorers);
         const loggedWorkflows = this.workflows;
         this.workflows = [];
+        // eslint-disable-next-line no-console
+        console.log('🚀 Workflows uploaded!');
+        // eslint-disable-next-line no-console
+        console.log(loggedWorkflows);
         return loggedWorkflows;
     }
 }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ToolStep = exports.RetrieverStep = exports.StepWithoutChildren = exports.WorkflowStep = exports.LlmStep = exports.AgentStep = exports.StepWithChildren = exports.StepType = void 0;
+exports.ToolStep = exports.RetrieverStep = exports.LlmStep = exports.StepWithoutChildren = exports.WorkflowStep = exports.AgentStep = exports.StepWithChildren = exports.StepType = void 0;
 var StepType;
 (function (StepType) {
     StepType["llm"] = "llm";
@@ -44,18 +44,6 @@ class AgentStep extends StepWithChildren {
     }
 }
 exports.AgentStep = AgentStep;
-class LlmStep extends StepWithChildren {
-    constructor(step) {
-        super(step);
-        this.type = StepType.llm;
-        this.inputTokens = step.inputTokens;
-        this.model = step.model;
-        this.outputTokens = step.outputTokens;
-        this.temperature = step.temperature;
-        this.totalTokens = step.totalTokens;
-    }
-}
-exports.LlmStep = LlmStep;
 class WorkflowStep extends StepWithChildren {
     constructor(step) {
         super(step);
@@ -77,6 +65,18 @@ class StepWithoutChildren {
     }
 }
 exports.StepWithoutChildren = StepWithoutChildren;
+class LlmStep extends StepWithoutChildren {
+    constructor(step) {
+        super(step);
+        this.type = StepType.llm;
+        this.inputTokens = step.inputTokens;
+        this.model = step.model;
+        this.outputTokens = step.outputTokens;
+        this.temperature = step.temperature;
+        this.totalTokens = step.totalTokens;
+    }
+}
+exports.LlmStep = LlmStep;
 class RetrieverStep extends StepWithoutChildren {
     constructor(step) {
         super(step);
