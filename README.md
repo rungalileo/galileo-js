@@ -1,4 +1,4 @@
-# Galileo-JS
+# Galileo
 
 JS client for Galileo.
 
