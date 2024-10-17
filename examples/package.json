@@ -1,19 +1,19 @@
 {
-  "name": "observe-js-example",
+  "name": "galileo-examples",
   "version": "1.0.0",
+  "description": "Galileo JS client examples",
   "type": "module",
-  "description": "",
-  "main": "openai.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Galileo Technologies Inc. <team@rungalileo.io>",
   "license": "ISC",
   "dependencies": {
     "@langchain/community": "^0.0.35",
     "@langchain/core": "^0.1.43",
     "@langchain/openai": "^0.0.16",
-    "@rungalileo/observe": "file:..",
+    "@rungalileo/galileo-js": "file:..",
+    "dotenv": "^16.4.5",
     "hnswlib-node": "^1.4.2",
     "langchain": "^0.1.25",
     "typecript": "^0.0.1-security"

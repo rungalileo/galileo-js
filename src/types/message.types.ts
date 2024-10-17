@@ -1,10 +1,10 @@
 enum MessageRole {
-  agent = "agent",
-  assistant = "assistant",
-  function = "function",
-  system = "system",
-  tool = "tool",
-  user = "user"
+  agent = 'agent',
+  assistant = 'assistant',
+  function = 'function',
+  system = 'system',
+  tool = 'tool',
+  user = 'user'
 }
 
 export interface Message {

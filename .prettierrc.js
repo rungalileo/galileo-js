@@ -4,7 +4,5 @@ module.exports = {
   jsxSingleQuote: true,
   tabWidth: 2,
   semi: true,
-  sortClassNamesUnknownClassesSeparator: '',
-  sortClassNamesSortFunctions: 'classNames,cx,clsxm',
   trailingComma: 'none'
 };

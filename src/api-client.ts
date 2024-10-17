@@ -2,54 +2,43 @@ import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
+import { Project, ProjectTypes } from './types/project.types.js';
 import { Routes } from './types/routes.types.js';
-import type { TransactionRecordBatch } from './types/transaction.types.js';
 
 import querystring from 'querystring';
 
-interface Project {
-  id: string;
-  name: string;
-  type: string;
-}
-
-enum RequestMethod {
+export enum RequestMethod {
   GET = 'GET',
   POST = 'POST',
   PUT = 'PUT',
   DELETE = 'DELETE'
 }
 
-export class ApiClient {
-  private project_id: string;
-  private api_url: string;
-  private token: string;
+export class GalileoApiClient {
+  public type: ProjectTypes | undefined = undefined;
+  public projectId: string = '';
+  public runId: string = '';
+  private apiUrl: string = '';
+  private token: string = '';
 
-  constructor() {
-    this.project_id = '';
-    this.api_url = '';
-    this.token = '';
-  }
-
-  public async init(project_name: string): Promise<void> {
-    this.api_url = this.getApiUrl();
+  public async init(projectName: string): Promise<void> {
+    this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
 
       try {
-        this.project_id = await this.getProjectIdByName(project_name);
-      }
-      catch (err: unknown) {
+        this.projectId = await this.getProjectIdByName(projectName);
+        // eslint-disable-next-line no-console
+        console.log(`✅ Using ${projectName}`);
+      } catch (err: unknown) {
         const error = err as Error;
 
         if (error.message.includes('not found')) {
-          const project = await this.createProject(project_name);
-          this.project_id = project.id;
-          console.log(
-            `🚀 Creating new project… project ${project_name} created!`
-          );
-        }
-        else {
+          const project = await this.createProject(projectName);
+          this.projectId = project.id;
+          // eslint-disable-next-line no-console
+          console.log(`✨ ${projectName} created.`);
+        } else {
           throw err;
         }
       }
@@ -57,20 +46,24 @@ export class ApiClient {
   }
 
   private getApiUrl(): string {
-    const console_url = process.env.GALILEO_CONSOLE_URL;
+    const consoleUrl = process.env.GALILEO_CONSOLE_URL;
 
-    if (!console_url) {
-      throw new Error('GALILEO_CONSOLE_URL must be set');
+    if (!consoleUrl) {
+      throw new Error('❗ GALILEO_CONSOLE_URL must be set');
     }
 
-    if (
-      console_url.includes('localhost') ||
-      console_url.includes('127.0.0.1')
-    ) {
+    if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
       return 'http://localhost:8088';
     } else {
-      return console_url.replace('console', 'api');
+      return consoleUrl.replace('console', 'api');
     }
+  }
+
+  private async healthCheck(): Promise<boolean> {
+    return await this.makeRequest<boolean>(
+      RequestMethod.GET,
+      Routes.healthCheck
+    );
   }
 
   private async getToken(): Promise<string> {
@@ -90,18 +83,23 @@ export class ApiClient {
     }
 
     throw new Error(
-      'GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set'
+      '❗ GALILEO_API_KEY or GALILEO_USERNAME and GALILEO_PASSWORD must be set'
     );
   }
 
-  private async healthCheck(): Promise<boolean> {
-    return await this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
+  private async apiKeyLogin(
+    api_key: string
+  ): Promise<{ access_token: string }> {
+    return await this.makeRequest<{ access_token: string }>(
+      RequestMethod.POST,
+      Routes.apiKeyLogin,
+      {
+        api_key
+      }
+    );
   }
 
-  private async usernameLogin(
-    username: string,
-    password: string
-  ) {
+  private async usernameLogin(username: string, password: string) {
     return await this.makeRequest<{ access_token: string }>(
       RequestMethod.POST,
       Routes.login,
@@ -109,82 +107,17 @@ export class ApiClient {
         username,
         password
       })
-    )
-  }
-
-  private async apiKeyLogin(apiKey: string): Promise<{ access_token: string }> {
-    return await this.makeRequest<{ access_token: string }>(RequestMethod.POST, Routes.apiKeyLogin, {
-      api_key: apiKey
-    })
-  }
-
-
-  private getAuthHeader(
-    token: string
-  ): { Authorization: string } {
-    return { Authorization: `Bearer ${token}` };
-  }
-
-  private validateResponse(response: AxiosResponse): void {
-    if (response.status >= 300) {
-      const msg = `Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
-      // TODO: Better error handling
-      throw new Error(msg);
-    }
-  }
-
-  private async makeRequest<T>(
-    request_method: Method,
-    endpoint: Routes,
-    data?: string | Record<string, any> | null,
-    params?: Record<string, any>,
-  ): Promise<T> {
-    // Check to see if our token is expired before making a request
-    // and refresh token if it's expired
-    if (endpoint !== Routes.login && this.token) {
-      const payload = decode(this.token, { json: true });
-      if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        this.token = await this.getToken();
-      }
-    }
-
-    let headers: Record<string, any> = {};
-
-    if (this.token) {
-      headers = this.getAuthHeader(this.token);
-    }
-
-    const config: AxiosRequestConfig = {
-      method: request_method,
-      url: `${this.api_url}/${endpoint.replace('{project_id}', this.project_id)}`,
-      params,
-      headers,
-      data
-    };
-
-    const response = await axios.request<T>(config);
-    this.validateResponse(response);
-    return response.data;
-  }
-
-  public async ingestBatch(
-    transaction_batch: TransactionRecordBatch
-  ): Promise<string> {
-    return await this.makeRequest<string>(
-      RequestMethod.POST,
-      Routes.ingest,
-      transaction_batch
     );
   }
 
-  public async getProjectIdByName(project_name: string): Promise<string> {
+  private async getProjectIdByName(project_name: string): Promise<string> {
     const projects = await this.makeRequest<Project[]>(
       RequestMethod.GET,
       Routes.projects,
       null,
       {
         project_name,
-        type: 'llm_monitor'
+        type: this.type
       }
     );
 
@@ -196,72 +129,63 @@ export class ApiClient {
   }
 
   private async createProject(project_name: string): Promise<{ id: string }> {
-    return await this.makeRequest<{ id: string }>(RequestMethod.POST, Routes.projects, {
-      name: project_name,
-      type: 'llm_monitor'
-    })
-  }
-
-  // TODO: This should have a more accurate return type
-  public async getLoggedData(
-    start_time: string,
-    end_time: string,
-    filters: Array<any> = [],
-    sort_spec: Array<any> = [],
-    limit?: number,
-    offset?: number,
-    include_chains?: boolean,
-    chain_id?: string
-  ): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
+    return await this.makeRequest<{ id: string }>(
       RequestMethod.POST,
-      Routes.rows,
+      Routes.projects,
       {
-        filters,
-        sort_spec
-      },
-      {
-        start_time,
-        end_time,
-        chain_id,
-        limit,
-        offset,
-        include_chains
+        name: project_name,
+        type: this.type
       }
     );
   }
 
-  // TODO: This should have a more accurate return type
-  public async getMetrics(
-    start_time: string,
-    end_time: string,
-    filters: Array<any> = [],
-    interval?: number,
-    group_by?: string
-  ): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
-      RequestMethod.POST,
-      Routes.metrics,
-      {
-        filters
-      },
-      {
-        start_time,
-        end_time,
-        interval,
-        group_by
-      }
-    );
+  private getAuthHeader(token: string): { Authorization: string } {
+    return { Authorization: `Bearer ${token}` };
   }
 
-  // TODO: This should have a more accurate return type
-  public async deleteLoggedData(filters: Array<any> = []): Promise<Record<string, unknown>> {
-    return await this.makeRequest<Record<string, unknown>>(
-      RequestMethod.POST,
-      Routes.delete,
-      {
-        filters
+  private validateResponse(response: AxiosResponse): void {
+    if (response.status >= 300) {
+      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
+      // TODO: Better error handling
+      throw new Error(msg);
+    }
+  }
+
+  public async makeRequest<T>(
+    request_method: Method,
+    endpoint: Routes,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data?: string | Record<string, any> | null,
+    params?: Record<string, unknown>
+  ): Promise<T> {
+    // Check to see if our token is expired before making a request
+    // and refresh token if it's expired
+    if (endpoint !== Routes.login && this.token) {
+      const payload = decode(this.token, { json: true });
+      if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        this.token = await this.getToken();
       }
-    );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let headers: Record<string, any> = {};
+
+    if (this.token) {
+      headers = this.getAuthHeader(this.token);
+    }
+
+    const config: AxiosRequestConfig = {
+      method: request_method,
+      url: `${this.apiUrl}/${endpoint.replace('{project_id}', this.projectId).replace('{run_id}', this.runId)}`,
+      params,
+      headers,
+      data
+    };
+
+    const response = await axios.request<T>(config);
+
+    this.validateResponse(response);
+
+    return response.data;
   }
 }
