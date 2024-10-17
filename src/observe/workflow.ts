@@ -41,7 +41,7 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       chain_root_id,
       chain_id: chainId,
       has_children,
-      created_at: new Date(step.createdAtNs).toISOString(),
+      created_at: new Date(step.createdAtNs / 1000000).toISOString(),
       latency_ms: step.durationNs / 1000000,
       status_code: step.statusCode,
       user_metadata: step.metadata

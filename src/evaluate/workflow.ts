@@ -40,7 +40,7 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
     const node: Node = {
       node_id,
       node_type: step.type,
-      node_name: step.name,
+      node_name: step.name ?? step.type,
       node_input: JSON.stringify(step.input),
       node_output: JSON.stringify(step.output),
       chain_root_id,

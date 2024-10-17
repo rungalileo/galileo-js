@@ -14,13 +14,12 @@ var StepType;
 class StepWithChildren {
     constructor(step) {
         this.steps = [];
-        this.createdAtNs =
-            step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+        this.createdAtNs = step.createdAtNs ?? new Date().getTime() * 1000000;
         this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
         this.input = step.input;
         this.metadata = step.metadata ?? {};
-        this.name = step.name ?? this.type;
+        this.name = step.name;
         this.output = step.output;
         this.parent = step.parent ?? null;
         this.statusCode = step.statusCode;
@@ -53,13 +52,12 @@ class WorkflowStep extends StepWithChildren {
 exports.WorkflowStep = WorkflowStep;
 class StepWithoutChildren {
     constructor(step) {
-        this.createdAtNs =
-            step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+        this.createdAtNs = step.createdAtNs ?? new Date().getTime() * 1000000;
         this.durationNs = step.durationNs ?? 0;
         this.groundTruth = step.groundTruth;
         this.input = step.input;
         this.metadata = step.metadata ?? {};
-        this.name = step.name ?? this.type;
+        this.name = step.name;
         this.output = step.output;
         this.statusCode = step.statusCode;
     }

@@ -16,7 +16,7 @@ interface BaseStepType {
   durationNs: number;
   groundTruth?: string;
   metadata: { [key: string]: string };
-  name: string;
+  name?: string;
   statusCode?: number;
 }
 
@@ -41,20 +41,19 @@ export class StepWithChildren implements StepWithChildrenType {
   groundTruth?: string;
   input: StepIOType;
   metadata: { [key: string]: string };
-  name: string;
+  name?: string;
   output: StepIOType;
   parent: AWorkflow | null;
   statusCode?: number | undefined;
   steps: AWorkflowStep[] = [];
   type?: StepType.agent | StepType.workflow;
   constructor(step: StepWithChildrenType) {
-    this.createdAtNs =
-      step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+    this.createdAtNs = step.createdAtNs ?? new Date().getTime() * 1000000;
     this.durationNs = step.durationNs ?? 0;
     this.groundTruth = step.groundTruth;
     this.input = step.input;
     this.metadata = step.metadata ?? {};
-    this.name = step.name ?? this.type;
+    this.name = step.name;
     this.output = step.output;
     this.parent = step.parent ?? null;
     this.statusCode = step.statusCode;
@@ -110,18 +109,17 @@ export class StepWithoutChildren implements StepWithoutChildrenType {
   groundTruth?: string;
   input: StepIOType | LlmStepIOType | string;
   metadata: { [key: string]: string };
-  name: string;
+  name?: string;
   output: StepIOType | LlmStepIOType | RetrieverStepOutputType;
   statusCode?: number | undefined;
   type?: StepType.llm | StepType.retriever | StepType.tool;
   constructor(step: StepWithoutChildrenType) {
-    this.createdAtNs =
-      step.createdAtNs ?? new Date().getMilliseconds() * 1000000;
+    this.createdAtNs = step.createdAtNs ?? new Date().getTime() * 1000000;
     this.durationNs = step.durationNs ?? 0;
     this.groundTruth = step.groundTruth;
     this.input = step.input;
     this.metadata = step.metadata ?? {};
-    this.name = step.name ?? this.type;
+    this.name = step.name;
     this.output = step.output;
     this.statusCode = step.statusCode;
   }
