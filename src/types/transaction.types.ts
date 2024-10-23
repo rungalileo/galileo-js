@@ -10,6 +10,7 @@ export interface TransactionRecord {
   status_code?: number;
   input_text: string;
   output_text?: string;
+  tools?: string;
   model?: string;
   num_input_tokens?: number;
   num_output_tokens?: number;

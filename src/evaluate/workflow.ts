@@ -63,6 +63,7 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
       node.query_input_tokens = step.inputTokens ?? 0;
       node.query_output_tokens = step.outputTokens ?? 0;
       node.query_total_tokens = step.totalTokens ?? 0;
+      node.tools = JSON.stringify(step.tools);
     }
 
     nodes.push(node);

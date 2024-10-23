@@ -53,6 +53,7 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       row.num_input_tokens = step.inputTokens ?? 0;
       row.num_output_tokens = step.outputTokens ?? 0;
       row.num_total_tokens = step.totalTokens ?? 0;
+      row.tools = JSON.stringify(step.tools);
     }
 
     rows.push(row);

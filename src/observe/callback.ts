@@ -6,9 +6,8 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { BaseMessage } from '@langchain/core/messages';
 import { ChatPromptValue } from '@langchain/core/prompt_values';
 import { Document, DocumentInterface } from '@langchain/core/documents';
-import { encoding_for_model } from 'tiktoken/init';
+import { encoding_for_model, TiktokenModel } from 'tiktoken/init';
 import { Serialized } from '@langchain/core/dist/load/serializable.js';
-import { TiktokenModel } from '@langchain/openai';
 import {
   TransactionLoggingMethod,
   TransactionRecord,
@@ -166,7 +165,16 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     const [node_id, latency_ms] = this._end_node(runId);
 
     const generation = output.generations[0][0];
-    const output_text = generation.text;
+    /**
+     * We have to convert this to a JSON object because LLMResult uses Generation
+     * which is a base class that doesn't contain the props we need to access. Depending on
+     * the context, it could be a ChatGeneration, a ChatGenerationChunk, or something else.
+     */
+    const gen_json = JSON.parse(JSON.stringify(generation));
+    const message = gen_json?.message;
+    const message_kwargs = message?.kwargs;
+    const tool_calls = message_kwargs?.tool_calls;
+    const output_text = generation.text ?? tool_calls;
 
     let num_input_tokens: number | undefined;
     let num_output_tokens: number | undefined;
@@ -244,12 +252,14 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       | string
       | undefined;
     const temperature = invocation_params?.temperature as number | undefined;
+    const tools = invocation_params?.tools as Record<string, unknown>[] | undefined;
 
     this.records[node_id] = {
       node_id: node_id,
       chain_id: chain_id,
       chain_root_id: chain_root_id,
       input_text: chat_messages.toString(),
+      tools: JSON.stringify(tools),
       model: model,
       created_at: new Date().toISOString(),
       temperature: temperature,
