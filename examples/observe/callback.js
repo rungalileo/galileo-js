@@ -1,4 +1,4 @@
-import { GalileoObserveCallback } from "@rungalileo/galileo-js";
+import { GalileoObserveCallback } from "@rungalileo/galileo";
 
 const observe_callback = new GalileoObserveCallback("pegasus");
 await observe_callback.init();
@@ -20,7 +20,7 @@ import {
 } from "@langchain/core/prompts";
 
 // Initialize the LLM to use to answer the question.
-const model = new ChatOpenAI({});
+const model = new ChatOpenAI({streaming: true});
 const text = fs.readFileSync("state_of_the_union.txt", "utf8");
 const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
 const docs = await textSplitter.createDocuments([text]);

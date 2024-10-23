@@ -19,4 +19,5 @@ export interface Node {
   query_total_tokens: number;
   params: Record<string, unknown>;
   target?: string;
+  tools?: string;
 }

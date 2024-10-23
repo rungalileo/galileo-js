@@ -37,6 +37,11 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
     const has_children =
       step instanceof StepWithChildren && step.steps.length > 0;
 
+    let tools: object[] | undefined;
+    if (step.type === 'llm') {
+      tools = step.tools;
+    }
+
     const node: Node = {
       node_id,
       node_type: step.type,
@@ -55,7 +60,8 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
       query_input_tokens: 0,
       query_output_tokens: 0,
       query_total_tokens: 0,
-      finish_reason: ''
+      finish_reason: '',
+      tools: tools ? JSON.stringify(tools) : undefined
     };
 
     if (step instanceof LlmStep) {

@@ -143,11 +143,13 @@ export interface LlmStepType extends StepWithoutChildrenType {
   outputTokens?: number;
   temperature?: number;
   totalTokens?: number;
+  tools?: object[];
 }
 
 export class LlmStep extends StepWithoutChildren {
   inputTokens?: number;
   model?: string;
+  tools?: object[];
   outputTokens?: number;
   temperature?: number;
   totalTokens?: number;
@@ -156,6 +158,7 @@ export class LlmStep extends StepWithoutChildren {
     super(step);
     this.inputTokens = step.inputTokens;
     this.model = step.model;
+    this.tools = step.tools;
     this.outputTokens = step.outputTokens;
     this.temperature = step.temperature;
     this.totalTokens = step.totalTokens;
