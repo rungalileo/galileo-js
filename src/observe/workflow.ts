@@ -44,7 +44,7 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       created_at: new Date(step.createdAtNs / 1000000).toISOString(),
       latency_ms: step.durationNs / 1000000,
       status_code: step.statusCode,
-      user_metadata: step.metadata,
+      user_metadata: step.metadata
     };
 
     if (step instanceof LlmStep) {

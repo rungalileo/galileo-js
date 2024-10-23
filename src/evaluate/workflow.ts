@@ -55,7 +55,7 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
       query_input_tokens: 0,
       query_output_tokens: 0,
       query_total_tokens: 0,
-      finish_reason: '',
+      finish_reason: ''
     };
 
     if (step instanceof LlmStep) {
