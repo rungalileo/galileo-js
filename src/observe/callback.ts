@@ -174,12 +174,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     const message = gen_json?.message;
     const message_kwargs = message?.kwargs;
     const tool_calls = message_kwargs?.tool_calls;
-
-    let output_text = generation.text;
-
-    if (!output_text && tool_calls) {
-      output_text = tool_calls;
-    }
+    const output_text = generation.text ?? tool_calls;
 
     let num_input_tokens: number | undefined;
     let num_output_tokens: number | undefined;
@@ -257,7 +252,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       | string
       | undefined;
     const temperature = invocation_params?.temperature as number | undefined;
-    const tools = invocation_params?.tools as object[] | undefined;
+    const tools = invocation_params?.tools as Record<string, unknown>[] | undefined;
 
     this.records[node_id] = {
       node_id: node_id,

@@ -33,11 +33,6 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
     const has_children =
       step instanceof StepWithChildren && step.steps.length > 0;
 
-    let tools: object[] | undefined;
-    if (step.type === 'llm') {
-      tools = step.tools;
-    }
-
     const row: TransactionRecord = {
       node_id,
       node_type: step.type,
@@ -50,7 +45,6 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       latency_ms: step.durationNs / 1000000,
       status_code: step.statusCode,
       user_metadata: step.metadata,
-      tools: tools ? JSON.stringify(tools) : undefined
     };
 
     if (step instanceof LlmStep) {
@@ -59,6 +53,7 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       row.num_input_tokens = step.inputTokens ?? 0;
       row.num_output_tokens = step.outputTokens ?? 0;
       row.num_total_tokens = step.totalTokens ?? 0;
+      row.tools = JSON.stringify(step.tools);
     }
 
     rows.push(row);
