@@ -101,7 +101,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
         client_version: version
       };
 
-      this.api_client.ingestBatch(transaction_batch);
+      await this.api_client.ingestBatch(transaction_batch);
     }
   }
 

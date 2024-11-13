@@ -88,7 +88,7 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
       client_version: version
     };
 
-    this.apiClient.ingestBatch(transactionBatch);
+    await this.apiClient.ingestBatch(transactionBatch);
 
     const loggedWorkflows = this.workflows;
     this.workflows = [];
