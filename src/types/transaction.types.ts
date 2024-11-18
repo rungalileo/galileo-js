@@ -26,6 +26,7 @@ export interface TransactionRecord {
   temperature?: number;
   node_type: StepType;
   has_children: boolean;
+  time_to_first_token?: number;
   version?: string;
 }
 

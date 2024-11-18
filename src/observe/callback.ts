@@ -2,7 +2,11 @@ import { AxiosError } from 'axios';
 import { ChainValues } from '@langchain/core/utils/types';
 import { LLMResult } from '@langchain/core/outputs';
 
-import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
+import {
+  BaseCallbackHandler,
+  HandleLLMNewTokenCallbackFields,
+  NewTokenIndices
+} from '@langchain/core/callbacks/base';
 import { BaseMessage } from '@langchain/core/messages';
 import { ChatPromptValue } from '@langchain/core/prompt_values';
 import { Document, DocumentInterface } from '@langchain/core/documents';
@@ -269,6 +273,29 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       version: this.version,
       has_children: false
     };
+  }
+
+  /**
+   * Called when LLM generates a new token.
+   */
+  public handleLLMNewToken(
+    token: string,
+    idx: NewTokenIndices,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[],
+    fields?: HandleLLMNewTokenCallbackFields
+  ): void {
+    const node_id = runId;
+    if (!this.records[node_id].time_to_first_token) {
+      const chain_root_id = this.records[node_id].chain_root_id;
+      if (chain_root_id !== undefined) {
+        const start_time = this.timers[chain_root_id]['start'];
+        const now = performance.now();
+        // Time to first token in milliseconds
+        this.records[node_id].time_to_first_token = Math.round(now - start_time);
+      }
+    }
   }
 
   /**
