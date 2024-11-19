@@ -287,13 +287,13 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     fields?: HandleLLMNewTokenCallbackFields
   ): void {
     const node_id = runId;
-    if (!this.records[node_id].time_to_first_token) {
+    if (!this.records[node_id].time_to_first_token_ms) {
       const chain_root_id = this.records[node_id].chain_root_id;
       if (chain_root_id !== undefined) {
         const start_time = this.timers[chain_root_id]['start'];
         const now = performance.now();
         // Time to first token in milliseconds
-        this.records[node_id].time_to_first_token = Math.round(now - start_time);
+        this.records[node_id].time_to_first_token_ms = Math.round(now - start_time);
       }
     }
   }
