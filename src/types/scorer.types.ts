@@ -16,6 +16,8 @@ export interface ScorersConfiguration {
   prompt_perplexity?: boolean;
   sexist?: boolean;
   tone?: boolean;
+  tool_selection_quality?: boolean;
+  tool_error_rate?: boolean;
   toxicity?: boolean;
 }
 
@@ -31,7 +33,9 @@ enum CustomizedScorerName {
   completeness_plus = '_customized_completeness_gpt',
   context_adherence_plus = '_customized_groundedness',
   correctness = '_customized_factuality',
-  instruction_adherence = '_customized_instruction_adherence'
+  instruction_adherence = '_customized_instruction_adherence',
+  tool_selection_quality = '_customized_ tool_selection_quality',
+  tool_error_rate = '_customized_tool_error_rate',
 }
 
 export interface CustomizedScorer {
