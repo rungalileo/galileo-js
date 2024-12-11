@@ -282,9 +282,6 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     token: string,
     idx: NewTokenIndices,
     runId: string,
-    parentRunId?: string,
-    tags?: string[],
-    fields?: HandleLLMNewTokenCallbackFields
   ): void {
     const node_id = runId;
     if (!this.records[node_id].time_to_first_token_ms) {
