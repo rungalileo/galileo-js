@@ -255,7 +255,9 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       | string
       | undefined;
     const temperature = invocation_params?.temperature as number | undefined;
-    const tools = invocation_params?.tools as Record<string, unknown>[] | undefined;
+    const tools = invocation_params?.tools as
+      | Record<string, unknown>[]
+      | undefined;
 
     this.records[node_id] = {
       node_id: node_id,
@@ -280,7 +282,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   public handleLLMNewToken(
     token: string,
     idx: NewTokenIndices,
-    runId: string,
+    runId: string
   ): void {
     const node_id = runId;
     if (!this.records[node_id].time_to_first_token_ms) {
@@ -289,7 +291,9 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
         const start_time = this.timers[chain_root_id]['start'];
         const now = performance.now();
         // Time to first token in milliseconds
-        this.records[node_id].time_to_first_token_ms = Math.round(now - start_time);
+        this.records[node_id].time_to_first_token_ms = Math.round(
+          now - start_time
+        );
       }
     }
   }

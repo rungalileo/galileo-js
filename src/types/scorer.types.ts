@@ -35,7 +35,7 @@ enum CustomizedScorerName {
   correctness = '_customized_factuality',
   instruction_adherence = '_customized_instruction_adherence',
   tool_selection_quality = '_customized_ tool_selection_quality',
-  tool_errors = '_customized_tool_errors',
+  tool_errors = '_customized_tool_errors'
 }
 
 export interface CustomizedScorer {

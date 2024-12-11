@@ -55,7 +55,7 @@ await evaluateWorkflow.init();
 
 ### Adding workflows
 
-Workflows can be added using  `addWorkflow`, `addAgentWorkflow`, and `addSingleStepWorkflow`.
+Workflows can be added using `addWorkflow`, `addAgentWorkflow`, and `addSingleStepWorkflow`.
 
 _Note: Steps and nested workflows can only be added on `addWorkflow` and `addAgentWorkflow`._
 
@@ -65,16 +65,15 @@ evaluateWorkflow.addWorkflow(new WorkflowStep({input, output, ...step}));
 
 ### Adding steps and nested workflows
 
-Workflow steps can be added using   `addLlmStep`, `addRetrieverStep`, `addToolStep`, `addWorkflow`, and `addAgentWorkflow`.
+Workflow steps can be added using `addLlmStep`, `addRetrieverStep`, `addToolStep`, `addWorkflow`, and `addAgentWorkflow`.
 
 ```
 evaluateWorkflow.addLlmStep(new LlmStep({input, output, ...step}));
 ```
 
-Nested workflows can be added using  `addWorkflowStep` and `addAgentStep`.
+Nested workflows can be added using `addWorkflowStep` and `addAgentStep`.
 
 _The next step you add will be a child of this workflow._
-
 
 ```
 evaluateWorkflow.addWorkflowStep(new WorkflowStep({input, output, ...step}));
@@ -117,7 +116,7 @@ await observeWorkflow.init();
 
 ### Adding workflows
 
-Workflows can be added using  `addWorkflow`, `addAgentWorkflow`, and `addSingleStepWorkflow`.
+Workflows can be added using `addWorkflow`, `addAgentWorkflow`, and `addSingleStepWorkflow`.
 
 _Note: Steps and nested workflows can only be added on `addWorkflow` and `addAgentWorkflow`._
 
@@ -127,16 +126,15 @@ observeWorkflow.addWorkflow(new WorkflowStep({input, output, ...step}));
 
 ### Adding steps and nested workflows
 
-Workflow steps can be added using   `addLlmStep`, `addRetrieverStep`, `addToolStep`, `addWorkflow`, and `addAgentWorkflow`.
+Workflow steps can be added using `addLlmStep`, `addRetrieverStep`, `addToolStep`, `addWorkflow`, and `addAgentWorkflow`.
 
 ```
 observeWorkflow.addLlmStep(new LlmStep({input, output, ...step}));
 ```
 
-Nested workflows can be added using  `addWorkflowStep` and `addAgentStep`.
+Nested workflows can be added using `addWorkflowStep` and `addAgentStep`.
 
 _The next step you add will be a child of this workflow._
-
 
 ```
 observeWorkflows.addWorkflowStep(new WorkflowStep({input, output, ...step}));

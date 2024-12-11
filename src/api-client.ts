@@ -176,7 +176,9 @@ export class GalileoApiClient {
 
     const config: AxiosRequestConfig = {
       method: request_method,
-      url: `${this.apiUrl}/${endpoint.replace('{project_id}', this.projectId).replace('{run_id}', this.runId)}`,
+      url: `${this.apiUrl}/${endpoint
+        .replace('{project_id}', this.projectId)
+        .replace('{run_id}', this.runId)}`,
       params,
       headers,
       data
