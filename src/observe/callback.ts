@@ -4,7 +4,6 @@ import { LLMResult } from '@langchain/core/outputs';
 
 import {
   BaseCallbackHandler,
-  HandleLLMNewTokenCallbackFields,
   NewTokenIndices
 } from '@langchain/core/callbacks/base';
 import { BaseMessage } from '@langchain/core/messages';
