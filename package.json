@@ -42,8 +42,5 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rungalileo/galileo-js.git"
-  },
-  "bugs": {
-    "url": "https://github.com/rungalileo/galileo-js/issues"
   }
 }
