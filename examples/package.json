@@ -9,7 +9,7 @@
   "author": "Galileo Technologies Inc. <team@rungalileo.io>",
   "license": "ISC",
   "dependencies": {
-    "@langchain/community": "^0.0.35",
+    "@langchain/community": "^0.3.17",
     "@langchain/core": "^0.1.43",
     "@langchain/openai": "^0.0.16",
     "@rungalileo/galileo-js": "file:..",
