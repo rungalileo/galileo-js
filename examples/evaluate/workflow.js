@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { GalileoEvaluateWorkflow } from '@rungalileo/galileo-js';
+import { GalileoEvaluateWorkflow } from '@rungalileo/galileo';
 
 // Initialize and create project
 const evaluateWorkflow = new GalileoEvaluateWorkflow(
