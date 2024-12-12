@@ -30,7 +30,7 @@ In the root directory, run:
 In the examples directory, run:
 
 - `npm i`
-- `npm link @rungalileo/galileo-js`
+- `npm link @rungalileo/galileo`
 
 Copy `examples/.env.example` as `examples/.env` and set all variables.
 
@@ -46,7 +46,7 @@ _Note: If the given project name exists, workflows will be logged to that existi
 if the project name does not exist. A timestamped generic name will be created if no project name is set._
 
 ```
-import { GalileoEvaluateWorkflow } from "@rungalileo/galileo-js";
+import { GalileoEvaluateWorkflow } from "@rungalileo/galileo";
 
 const evaluateWorkflow = new GalileoEvaluateWorkflow("Evaluate Example Project"); // Accepts project name
 
@@ -107,7 +107,7 @@ _Note: If the given project name exists, workflows will be logged to that existi
 if the project name does not exist. A timestamped generic name will be created if no project name is set._
 
 ```
-import { GalileoObserveWorkflow } from "@rungalileo/galileo-js";
+import { GalileoObserveWorkflow } from "@rungalileo/galileo";
 
 const observeWorkflow = new GalileoObserveWorkflow("Observe Example Project"); // Accepts project name
 
@@ -161,7 +161,7 @@ await observeWorkflows.uploadWorkflows();
 Initialize callbacks.
 
 ```
-import { GalileoObserveCallback } from "@rungalileo/galileo-js";
+import { GalileoObserveCallback } from "@rungalileo/galileo";
 
 const observe_callback = new GalileoObserveCallback("Observe Example Project")
 
