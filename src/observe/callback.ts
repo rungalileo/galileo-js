@@ -83,7 +83,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     return [node_id, latency_ms];
   }
 
-  private async _finalize_node(record: TransactionRecord): Promise<void> {
+  private _finalize_node(record: TransactionRecord): void {
     const batch_records: TransactionRecord[] = [];
 
     this.records[record.node_id] = record;
@@ -104,7 +104,8 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
         client_version: version
       };
 
-      await this.api_client.ingestBatch(transaction_batch);
+      // fire and forget
+      this.api_client.ingestBatch(transaction_batch);
     }
   }
 
@@ -149,7 +150,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called if an LLM/ChatModel run encounters an error
    */
-  public async handleLLMError(err: AxiosError, runId: string): Promise<void> {
+  public handleLLMError(err: AxiosError, runId: string): void {
     const [node_id, latency_ms] = this._end_node(runId);
 
     const record = this.records[node_id];
@@ -158,7 +159,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.output_text = `ERROR: ${err.message}`;
     record.latency_ms = latency_ms;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   /**
@@ -225,7 +226,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.latency_ms = latency_ms;
     record.status_code = 200;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   /**
@@ -357,7 +358,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called if a Chain run encounters an error
    */
-  public async handleChainError(err: AxiosError, runId: string): Promise<void> {
+  public handleChainError(err: AxiosError, runId: string): void {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
 
@@ -366,16 +367,13 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.latency_ms = latency_ms;
     record.status_code = err.response?.status;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   /**
    * Called at the end of a Chain run, with the outputs and the run ID.
    */
-  public async handleChainEnd(
-    outputs: ChainValues,
-    runId: string
-  ): Promise<void> {
+  public handleChainEnd(outputs: ChainValues, runId: string): void {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
 
@@ -384,7 +382,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.latency_ms = latency_ms;
     record.status_code = 200;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   /**
@@ -420,7 +418,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   /**
    * Called if a Tool run encounters an error
    */
-  public async handleToolError(err: AxiosError, runId: string): Promise<void> {
+  public handleToolError(err: AxiosError, runId: string): void {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
 
@@ -428,7 +426,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.latency_ms = latency_ms;
     record.status_code = err.response?.status;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   /**
@@ -442,24 +440,21 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.latency_ms = latency_ms;
     record.status_code = 200;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   /**
    * Called when an agent finishes execution, before it exits.
    * with the final output and the run ID.
    */
-  public async handleAgentEnd(
-    action: AgentFinish | undefined,
-    runId: string
-  ): Promise<void> {
+  public handleAgentEnd(action: AgentFinish | undefined, runId: string): void {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
     record.latency_ms = latency_ms;
     record.node_type = StepType.agent;
     record.status_code = 200;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
   public handleRetrieverStart(
@@ -489,10 +484,10 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     };
   }
 
-  public async handleRetrieverEnd(
+  public handleRetrieverEnd(
     documents: DocumentInterface<Record<string, unknown>>[],
     runId: string
-  ): Promise<void> {
+  ): void {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
     const formatted_docs = documents.map((doc) => {
@@ -506,19 +501,16 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     record.latency_ms = latency_ms;
     record.status_code = 200;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 
-  public async handleRetrieverError(
-    err: AxiosError,
-    runId: string
-  ): Promise<void> {
+  public handleRetrieverError(err: AxiosError, runId: string): void {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
     record.output_text = `ERROR: ${err.message}`;
     record.latency_ms = latency_ms;
     record.status_code = err.response?.status;
 
-    await this._finalize_node(record);
+    this._finalize_node(record);
   }
 }

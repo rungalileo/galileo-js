@@ -60,10 +60,7 @@ export class GalileoApiClient {
   }
 
   private async healthCheck(): Promise<boolean> {
-    return await this.makeRequest<boolean>(
-      RequestMethod.GET,
-      Routes.healthCheck
-    );
+    return this.makeRequest<boolean>(RequestMethod.GET, Routes.healthCheck);
   }
 
   private async getToken(): Promise<string> {
@@ -90,7 +87,7 @@ export class GalileoApiClient {
   private async apiKeyLogin(
     api_key: string
   ): Promise<{ access_token: string }> {
-    return await this.makeRequest<{ access_token: string }>(
+    return this.makeRequest<{ access_token: string }>(
       RequestMethod.POST,
       Routes.apiKeyLogin,
       {
@@ -100,7 +97,7 @@ export class GalileoApiClient {
   }
 
   private async usernameLogin(username: string, password: string) {
-    return await this.makeRequest<{ access_token: string }>(
+    return this.makeRequest<{ access_token: string }>(
       RequestMethod.POST,
       Routes.login,
       querystring.stringify({
@@ -129,7 +126,7 @@ export class GalileoApiClient {
   }
 
   private async createProject(project_name: string): Promise<{ id: string }> {
-    return await this.makeRequest<{ id: string }>(
+    return this.makeRequest<{ id: string }>(
       RequestMethod.POST,
       Routes.projects,
       {
