@@ -57,6 +57,8 @@ jobs:
           git config --global user.name "galileo-automation"
           git checkout -b $BRANCH_NAME
           npm run fetch-api-types
+          npm run lint-fix
+          npm run format
           git add .
           git commit -m "Update API Types"
           git push --force origin $BRANCH_NAME --no-verify
