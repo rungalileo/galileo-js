@@ -1,11 +1,14 @@
 import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
-
+import FormData from 'form-data';
+import { createReadStream } from 'fs';
 import { Project, ProjectTypes } from './types/project.types.js';
 import { Routes } from './types/routes.types.js';
 
 import querystring from 'querystring';
+import { Dataset, DatasetResponse } from './types/dataset.types';
+import { PaginatedResponse } from './types/api.types';
 
 export enum RequestMethod {
   GET = 'GET',
@@ -21,25 +24,27 @@ export class GalileoApiClient {
   private apiUrl: string = '';
   private token: string = '';
 
-  public async init(projectName: string): Promise<void> {
+  public async init(projectName: string | undefined): Promise<void> {
     this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
 
-      try {
-        this.projectId = await this.getProjectIdByName(projectName);
-        // eslint-disable-next-line no-console
-        console.log(`✅ Using ${projectName}`);
-      } catch (err: unknown) {
-        const error = err as Error;
-
-        if (error.message.includes('not found')) {
-          const project = await this.createProject(projectName);
-          this.projectId = project.id;
+      if (projectName) {
+        try {
+          this.projectId = await this.getProjectIdByName(projectName);
           // eslint-disable-next-line no-console
-          console.log(`✨ ${projectName} created.`);
-        } else {
-          throw err;
+          console.log(`✅ Using ${projectName}`);
+        } catch (err: unknown) {
+          const error = err as Error;
+
+          if (error.message.includes('not found')) {
+            const project = await this.createProject(projectName);
+            this.projectId = project.id;
+            // eslint-disable-next-line no-console
+            console.log(`✨ ${projectName} created.`);
+          } else {
+            throw err;
+          }
         }
       }
     }
@@ -137,6 +142,76 @@ export class GalileoApiClient {
         type: this.type
       }
     );
+  }
+
+  public async createDataset(
+    filePath: string,
+    format: string
+  ): Promise<Dataset> {
+    const formData = new FormData();
+    formData.append('file', createReadStream(filePath));
+
+    try {
+      const dataset = await this.makeRequest<Dataset>(
+        RequestMethod.POST,
+        Routes.datasets,
+        formData,
+        { format }
+      );
+
+      // eslint-disable-next-line no-console
+      console.log(
+        `✅  Dataset '${dataset.name}' with ${dataset.num_rows} rows uploaded.`
+      );
+
+      return dataset;
+    } catch (error: unknown) {
+      const err = error as Error;
+      // eslint-disable-next-line no-console
+      console.error(`❗ Failed to upload dataset: ${err.message}`);
+      throw error;
+    }
+  }
+
+  private async fetchAllPaginatedItems<T, R extends PaginatedResponse>(
+    endpoint: Routes,
+    extractItems: (response: R) => T[],
+    params: Record<string, unknown> = {},
+    limit = 100
+  ): Promise<T[]> {
+    let items: T[] = [];
+    let startingToken: number | null = 0;
+
+    do {
+      const response: R = await this.makeRequest<R>(
+        RequestMethod.GET,
+        endpoint,
+        null,
+        { ...params, starting_token: startingToken, limit }
+      );
+
+      items = items.concat(extractItems(response));
+      startingToken = response.next_starting_token;
+    } while (startingToken !== null);
+
+    return items;
+  }
+
+  public async getDatasets(): Promise<Dataset[]> {
+    return (
+      await this.fetchAllPaginatedItems<Dataset, DatasetResponse>(
+        Routes.datasets,
+        (response) => response.datasets
+      )
+    ).map((dataset: Dataset) => ({
+      id: dataset.id,
+      name: dataset.name,
+      created_at: dataset.created_at,
+      updated_at: dataset.updated_at,
+      project_count: dataset.project_count,
+      num_rows: dataset.num_rows,
+      column_names: dataset.column_names
+    }));
   }
 
   private getAuthHeader(token: string): { Authorization: string } {

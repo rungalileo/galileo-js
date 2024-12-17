@@ -4,10 +4,14 @@ import GalileoObserveApiClient from './observe/api-client';
 import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
 
+import { getDatasets, createDataset } from './utils/datasets';
+
 export {
   GalileoObserveApiClient,
   GalileoObserveCallback,
   GalileoObserveWorkflow,
   GalileoEvaluateApiClient,
-  GalileoEvaluateWorkflow
+  GalileoEvaluateWorkflow,
+  getDatasets,
+  createDataset
 };
