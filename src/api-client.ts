@@ -7,7 +7,12 @@ import { Project, ProjectTypes } from './types/project.types.js';
 import { Routes } from './types/routes.types.js';
 
 import querystring from 'querystring';
-import { Dataset, DatasetResponse } from './types/dataset.types';
+import {
+  Dataset,
+  DatasetResponse,
+  DatasetRow,
+  DatasetContentResponse
+} from './types/dataset.types';
 import { PaginatedResponse } from './types/api.types';
 
 export enum RequestMethod {
@@ -21,10 +26,14 @@ export class GalileoApiClient {
   public type: ProjectTypes | undefined = undefined;
   public projectId: string = '';
   public runId: string = '';
+  private datasetId: string = '';
   private apiUrl: string = '';
   private token: string = '';
 
-  public async init(projectName: string | undefined): Promise<void> {
+  public async init(
+    projectName: string | undefined = undefined,
+    datasetId: string | undefined = undefined
+  ): Promise<void> {
     this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
@@ -46,6 +55,10 @@ export class GalileoApiClient {
             throw err;
           }
         }
+      }
+
+      if (datasetId) {
+        this.datasetId = datasetId;
       }
     }
   }
@@ -214,6 +227,18 @@ export class GalileoApiClient {
     }));
   }
 
+  public async getDatasetRows(): Promise<DatasetRow[]> {
+    return (
+      await this.fetchAllPaginatedItems<DatasetRow, DatasetContentResponse>(
+        Routes.datasetContent,
+        (response) => response.rows
+      )
+    ).map((row: DatasetRow) => ({
+      index: row.index,
+      values: row.values
+    }));
+  }
+
   private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
@@ -253,7 +278,8 @@ export class GalileoApiClient {
       method: request_method,
       url: `${this.apiUrl}/${endpoint
         .replace('{project_id}', this.projectId)
-        .replace('{run_id}', this.runId)}`,
+        .replace('{run_id}', this.runId)
+        .replace('{dataset_id}', this.datasetId)}`,
       params,
       headers,
       data
