@@ -1,4 +1,4 @@
-import { Dataset } from '../types/dataset.types';
+import { Dataset, DatasetRow } from '../types/dataset.types';
 import { GalileoApiClient } from '../api-client';
 
 import { existsSync, PathLike, writeFileSync } from 'fs';
@@ -84,12 +84,20 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
 export const createDataset = async (dataset: DatasetType): Promise<Dataset> => {
   const [datasetPath, datasetFormat] = parseDataset(dataset);
   const apiClient = new GalileoApiClient();
-  await apiClient.init(undefined);
+  await apiClient.init();
   return await apiClient.createDataset(datasetPath.toString(), datasetFormat);
 };
 
 export const getDatasets = async (): Promise<Dataset[]> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init(undefined);
+  await apiClient.init();
   return await apiClient.getDatasets();
+};
+
+export const getDatasetContent = async (
+  datasetId: string
+): Promise<DatasetRow[]> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init(undefined, datasetId);
+  return await apiClient.getDatasetRows();
 };
