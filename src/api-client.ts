@@ -160,7 +160,7 @@ export class GalileoApiClient {
   ): Promise<T> {
     // Check to see if our token is expired before making a request
     // and refresh token if it's expired
-    if (endpoint !== Routes.login && this.token) {
+    if (![Routes.login, Routes.apiKeyLogin].includes(endpoint) && this.token) {
       const payload = decode(this.token, { json: true });
       if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
         this.token = await this.getToken();
