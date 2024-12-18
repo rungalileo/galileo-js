@@ -291,9 +291,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
         const start_time = this.timers[chain_root_id]['start'];
         const now = performance.now();
         // Time to first token in milliseconds
-        this.records[node_id].time_to_first_token_ms = Math.round(
-          now - start_time
-        );
+        this.records[node_id].time_to_first_token_ms = now - start_time;
       }
     }
   }
