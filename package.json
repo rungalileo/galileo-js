@@ -1,6 +1,6 @@
 {
   "name": "@rungalileo/galileo",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "JS client for Galileo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
