@@ -3,7 +3,7 @@ import { decode } from 'jsonwebtoken';
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
 import { Project, ProjectTypes } from './types/project.types.js';
-import { Routes } from './types/routes.types.js';
+import { Routes } from './types/routes.types';
 
 import querystring from 'querystring';
 
@@ -18,7 +18,7 @@ export enum RequestMethod {
   DELETE = 'DELETE'
 }
 
-type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
+export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
 type CollectionResponse = ListDatasetResponse;
 export type Dataset = components['schemas']['DatasetDB'];
 
