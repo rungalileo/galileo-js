@@ -3,9 +3,13 @@ import { decode } from 'jsonwebtoken';
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
 import { Project, ProjectTypes } from './types/project.types.js';
-import { Routes } from './types/routes.types.js';
+import { Routes } from './types/routes.types';
 
 import querystring from 'querystring';
+
+import createClient, { Client } from 'openapi-fetch';
+import type { components, paths } from './types/api.types';
+import { PathsWithMethod } from 'openapi-typescript-helpers';
 
 export enum RequestMethod {
   GET = 'GET',
@@ -14,35 +18,101 @@ export enum RequestMethod {
   DELETE = 'DELETE'
 }
 
+export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
+type CollectionResponse = ListDatasetResponse;
+export type Dataset = components['schemas']['DatasetDB'];
+
 export class GalileoApiClient {
   public type: ProjectTypes | undefined = undefined;
   public projectId: string = '';
   public runId: string = '';
+  public datasetId: string = '';
   private apiUrl: string = '';
   private token: string = '';
+  private client: Client<paths> | undefined = undefined;
 
-  public async init(projectName: string): Promise<void> {
+  public async init(
+    projectName?: string | undefined,
+    datasetId?: string
+  ): Promise<void> {
     this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
+      this.client = createClient({
+        baseUrl: this.apiUrl,
+        headers: { Authorization: `Bearer ${this.token}` }
+      });
 
-      try {
-        this.projectId = await this.getProjectIdByName(projectName);
-        // eslint-disable-next-line no-console
-        console.log(`✅ Using ${projectName}`);
-      } catch (err: unknown) {
-        const error = err as Error;
+      if (datasetId) {
+        this.datasetId = datasetId;
+      }
 
-        if (error.message.includes('not found')) {
-          const project = await this.createProject(projectName);
-          this.projectId = project.id;
+      if (projectName) {
+        try {
+          this.projectId = await this.getProjectIdByName(projectName);
           // eslint-disable-next-line no-console
-          console.log(`✨ ${projectName} created.`);
-        } else {
-          throw err;
+          console.log(`✅ Using ${projectName}`);
+        } catch (err: unknown) {
+          const error = err as Error;
+
+          if (error.message.includes('not found')) {
+            const project = await this.createProject(projectName);
+            this.projectId = project.id;
+            // eslint-disable-next-line no-console
+            console.log(`✨ ${projectName} created.`);
+          } else {
+            throw err;
+          }
         }
       }
     }
+  }
+
+  private processResponse<T>(data: T | undefined, error: object | unknown): T {
+    if (data) {
+      return data;
+    }
+
+    if (error) {
+      if (typeof error === 'object' && 'detail' in error) {
+        throw new Error(`Request failed: ${JSON.stringify(error.detail)}`);
+      }
+
+      throw new Error(`Request failed: ${JSON.stringify(error)}`);
+    }
+
+    throw new Error('Request failed');
+  }
+
+  public async fetchAllPaginatedItems<T>(
+    endpoint: PathsWithMethod<paths, 'get'>, // Paths that support GET
+    extractItems: (response: CollectionResponse) => T[],
+    params: Record<string, unknown> = {},
+    limit = 100
+  ): Promise<T[]> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    let items: T[] = [];
+    let startingToken: number | null = 0;
+
+    do {
+      const query = { ...params, starting_token: startingToken, limit };
+
+      const { data, error } = await this.client.GET(endpoint, {
+        params: { query }
+      });
+
+      const collection = this.processResponse(
+        data,
+        error
+      ) as CollectionResponse;
+      items = items.concat(extractItems(collection));
+      startingToken = collection.next_starting_token ?? null;
+    } while (startingToken !== null);
+
+    return items;
   }
 
   private getApiUrl(): string {
@@ -138,6 +208,13 @@ export class GalileoApiClient {
       }
     );
   }
+
+  public getDatasets = async (): Promise<Dataset[]> => {
+    return await this.fetchAllPaginatedItems<Dataset>(
+      '/datasets',
+      (response) => response.datasets ?? []
+    );
+  };
 
   private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };

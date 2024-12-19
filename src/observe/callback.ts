@@ -15,11 +15,11 @@ import {
   TransactionLoggingMethod,
   TransactionRecord,
   TransactionRecordBatch
-} from '../types/transaction.types.js';
+} from '../types/transaction.types';
 import { version } from '../../package.json';
 import { AgentFinish } from '@langchain/core/dist/agents.js';
-import GalileoObserveApiClient from './api-client.js';
-import { StepType } from '../types/step.types.js';
+import GalileoObserveApiClient from './api-client';
+import { StepType } from '../types/step.types';
 
 export default class GalileoObserveCallback extends BaseCallbackHandler {
   public name = 'GalileoObserveCallback';
