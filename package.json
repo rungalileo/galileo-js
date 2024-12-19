@@ -17,7 +17,9 @@
   "homepage": "https://www.rungalileo.io/",
   "dependencies": {
     "axios": "^1.6.7",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "openapi-fetch": "^0.13.3",
+    "openapi-typescript-helpers": "^0.0.15"
   },
   "optionalDependencies": {
     "@langchain/core": "^0.3.13",

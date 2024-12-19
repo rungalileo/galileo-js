@@ -3,11 +3,12 @@ import GalileoEvaluateWorkflow from './evaluate/workflow';
 import GalileoObserveApiClient from './observe/api-client';
 import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
-
+import { getDatasets } from './utils/datasets';
 export {
   GalileoObserveApiClient,
   GalileoObserveCallback,
   GalileoObserveWorkflow,
   GalileoEvaluateApiClient,
-  GalileoEvaluateWorkflow
+  GalileoEvaluateWorkflow,
+  getDatasets
 };
