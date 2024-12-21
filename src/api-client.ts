@@ -1,23 +1,22 @@
 import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
-
 import { Project, ProjectTypes } from './types/project.types.js';
 import { Routes } from './types/routes.types';
 
 import querystring from 'querystring';
-
 import createClient, { Client } from 'openapi-fetch';
 import type { components, paths } from './types/api.types';
 import { PathsWithMethod } from 'openapi-typescript-helpers';
-
 export enum RequestMethod {
   GET = 'GET',
   POST = 'POST',
   PUT = 'PUT',
   DELETE = 'DELETE'
 }
+import { promises as fs } from 'fs';
 
+type DatasetFormat = components['schemas']['DatasetFormat'];
 export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
 type CollectionResponse = ListDatasetResponse;
 export type Dataset = components['schemas']['DatasetDB'];
@@ -215,6 +214,38 @@ export class GalileoApiClient {
       (response) => response.datasets ?? []
     );
   };
+
+  public async createDataset(
+    name: string,
+    filePath: string,
+    format: DatasetFormat
+  ): Promise<Dataset> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    const fileBuffer: Buffer = await fs.readFile(filePath);
+    const blob: Blob = new Blob([fileBuffer]);
+    const formdata = new FormData();
+    formdata.append('file', blob, name);
+
+    const { data, error } = await this.client.POST('/datasets', {
+      params: { query: { format } },
+      // @ts-expect-error openapi-typescript does not properly translate FormData for uploading files - https://github.com/openapi-ts/openapi-typescript/issues/1214
+      body: formdata,
+      bodySerializer: (body) => {
+        // define a custom serializer to prevent openapi-fetch from serializing the FormData object as JSON
+        return body;
+      }
+    });
+
+    const dataset = this.processResponse(data, error) as Dataset;
+    // eslint-disable-next-line no-console
+    console.log(
+      `✅  Dataset '${dataset.name}' with ${dataset.num_rows} rows uploaded.`
+    );
+    return dataset;
+  }
 
   private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
