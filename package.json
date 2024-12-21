@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "npm run format && npm run lint && tsc",
-    "test": "jest",
+    "test": "jest --detectOpenHandles --forceExit",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
     "format": "prettier --config .prettierrc.js 'src/**/*.ts' --write",
