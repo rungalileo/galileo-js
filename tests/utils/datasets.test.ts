@@ -1,8 +1,12 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { getDatasets, createDataset } from '../../src';
+import { getDatasets, createDataset, getDatasetContent } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
-import { Dataset, ListDatasetResponse } from '../../src/api-client';
+import {
+  Dataset,
+  DatasetContent,
+  ListDatasetResponse
+} from '../../src/api-client';
 
 const EXAMPLE_DATASET: Dataset = {
   id: 'c7b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3d',
@@ -14,21 +18,37 @@ const EXAMPLE_DATASET: Dataset = {
   num_rows: 1
 };
 
-const postDatasetHandler = jest.fn().mockImplementation(() => {
+const EXAMPLE_DATASET_ROW = {
+  index: 0,
+  values: ['John', 'Doe']
+};
+
+const postDatasetsHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(EXAMPLE_DATASET);
 });
 
-const getDatasetHandler = jest.fn().mockImplementation(() => {
+const getDatasetsHandler = jest.fn().mockImplementation(() => {
   const response: ListDatasetResponse = {
     datasets: [EXAMPLE_DATASET]
   };
   return HttpResponse.json(response);
 });
 
+const getDatasetContentHandler = jest.fn().mockImplementation(() => {
+  const response: DatasetContent = {
+    rows: [EXAMPLE_DATASET_ROW]
+  };
+  return HttpResponse.json(response);
+});
+
 export const handlers = [
   ...commonHandlers,
-  http.post(`${TEST_HOST}/datasets`, postDatasetHandler),
-  http.get(`${TEST_HOST}/datasets`, getDatasetHandler)
+  http.post(`${TEST_HOST}/datasets`, postDatasetsHandler),
+  http.get(`${TEST_HOST}/datasets`, getDatasetsHandler),
+  http.get(
+    `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
+    getDatasetContentHandler
+  )
 ];
 
 const server = setupServer(...handlers);
@@ -46,11 +66,16 @@ afterAll(() => server.close());
 test('create dataset', async () => {
   const dataset = await createDataset({ col1: ['val1', 'val2'] }, 'My Dataset');
   expect(dataset).toEqual(EXAMPLE_DATASET);
-  expect(postDatasetHandler).toHaveBeenCalled();
+  expect(postDatasetsHandler).toHaveBeenCalled();
 });
 
 test('test get datasets', async () => {
   const datasets = await getDatasets();
   expect(datasets).toEqual([EXAMPLE_DATASET]);
-  expect(getDatasetHandler).toHaveBeenCalled();
+  expect(getDatasetsHandler).toHaveBeenCalled();
+});
+
+test('test get dataset content', async () => {
+  const rows = await getDatasetContent(EXAMPLE_DATASET.id);
+  expect(rows).toEqual([EXAMPLE_DATASET_ROW]);
 });
