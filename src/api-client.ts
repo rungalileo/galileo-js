@@ -7,7 +7,6 @@ import { Routes } from './types/routes.types';
 import querystring from 'querystring';
 import createClient, { Client } from 'openapi-fetch';
 import type { components, paths } from './types/api.types';
-import { PathsWithMethod } from 'openapi-typescript-helpers';
 export enum RequestMethod {
   GET = 'GET',
   POST = 'POST',
@@ -18,8 +17,14 @@ import { promises as fs } from 'fs';
 
 type DatasetFormat = components['schemas']['DatasetFormat'];
 export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
-type CollectionResponse = ListDatasetResponse;
+export type DatasetContent = components['schemas']['DatasetContent'];
 export type Dataset = components['schemas']['DatasetDB'];
+export type DatasetRow = components['schemas']['DatasetRow'];
+
+type CollectionPaths =
+  | paths['/datasets']
+  | paths['/datasets/{dataset_id}/content'];
+type CollectionResponse = ListDatasetResponse | DatasetContent;
 
 export class GalileoApiClient {
   public type: ProjectTypes | undefined = undefined;
@@ -83,30 +88,33 @@ export class GalileoApiClient {
     throw new Error('Request failed');
   }
 
-  public async fetchAllPaginatedItems<T>(
-    endpoint: PathsWithMethod<paths, 'get'>, // Paths that support GET
-    extractItems: (response: CollectionResponse) => T[],
-    params: Record<string, unknown> = {},
-    limit = 100
-  ): Promise<T[]> {
+  private async fetchAllPaginatedItems<
+    Path extends CollectionPaths,
+    Response extends CollectionResponse,
+    Item
+  >(
+    path: '/datasets' | '/datasets/{dataset_id}/content',
+    extractItems: (response: Response) => Item[],
+    params: Path['get']['parameters']
+  ): Promise<Item[]> {
     if (!this.client) {
       throw new Error('Client not initialized');
     }
 
-    let items: T[] = [];
+    let items: Item[] = [];
     let startingToken: number | null = 0;
 
     do {
-      const query = { ...params, starting_token: startingToken, limit };
+      const updatedParams: Record<string, unknown> = {
+        path: params.path,
+        query: { ...params.query, starting_token: startingToken }
+      };
 
-      const { data, error } = await this.client.GET(endpoint, {
-        params: { query }
+      const { data, error } = await this.client.GET(path, {
+        params: updatedParams
       });
 
-      const collection = this.processResponse(
-        data,
-        error
-      ) as CollectionResponse;
+      const collection = this.processResponse(data as Response, error);
       items = items.concat(extractItems(collection));
       startingToken = collection.next_starting_token ?? null;
     } while (startingToken !== null);
@@ -209,9 +217,14 @@ export class GalileoApiClient {
   }
 
   public getDatasets = async (): Promise<Dataset[]> => {
-    return await this.fetchAllPaginatedItems<Dataset>(
+    return await this.fetchAllPaginatedItems<
+      paths['/datasets'],
+      ListDatasetResponse,
+      Dataset
+    >(
       '/datasets',
-      (response) => response.datasets ?? []
+      (response: ListDatasetResponse) => response.datasets ?? [],
+      {}
     );
   };
 
@@ -245,6 +258,22 @@ export class GalileoApiClient {
       `✅  Dataset '${dataset.name}' with ${dataset.num_rows} rows uploaded.`
     );
     return dataset;
+  }
+
+  public async getDatasetContent(datasetId: string): Promise<DatasetRow[]> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    return await this.fetchAllPaginatedItems<
+      paths['/datasets/{dataset_id}/content'],
+      DatasetContent,
+      DatasetRow
+    >(
+      `/datasets/{dataset_id}/content`,
+      (response: DatasetContent) => response.rows ?? [],
+      { path: { dataset_id: datasetId } }
+    );
   }
 
   private getAuthHeader(token: string): { Authorization: string } {

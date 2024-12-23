@@ -1,5 +1,9 @@
 import 'dotenv/config';
-import { getDatasets, createDataset } from '@rungalileo/galileo';
+import {
+  getDatasets,
+  createDataset,
+  getDatasetContent
+} from '@rungalileo/galileo';
 
 // Create a dataset
 const dataset = await createDataset(
@@ -15,3 +19,7 @@ console.log('Created dataset:', dataset);
 console.log('Listing datasets...');
 const datasets = await getDatasets();
 datasets.forEach((dataset) => console.log(dataset));
+
+// Get dataset content
+const content = await getDatasetContent(dataset.id);
+console.log('Dataset content:', content);
