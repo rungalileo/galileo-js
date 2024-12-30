@@ -116,6 +116,23 @@ export interface paths {
     patch: operations['update_dataset_datasets__dataset_id__patch'];
     trace?: never;
   };
+  '/datasets/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Query Datasets */
+    post: operations['query_datasets_datasets_query_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/prompt_datasets/{dataset_id}': {
     parameters: {
       query?: never;
@@ -359,6 +376,25 @@ export interface components {
       /** Rows */
       rows?: components['schemas']['DatasetRow'][];
     };
+    /** DatasetCreatedAtSort */
+    DatasetCreatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'created_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
     /** DatasetDB */
     DatasetDB: {
       /**
@@ -389,6 +425,7 @@ export interface components {
       num_rows: number | null;
       /** Column Names */
       column_names: string[] | null;
+      created_by_user: components['schemas']['UserInfo'] | null;
     };
     /** DatasetDeleteColumn */
     DatasetDeleteColumn: {
@@ -415,6 +452,64 @@ export interface components {
      * @enum {string}
      */
     DatasetFormat: 'csv' | 'feather' | 'jsonl';
+    /** DatasetNameFilter */
+    DatasetNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /** Value */
+      value: string;
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains';
+    };
+    /** DatasetNameSort */
+    DatasetNameSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** DatasetProjectLastUsedAtSort */
+    DatasetProjectLastUsedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'project_last_used_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default custom_uuid
+       * @constant
+       */
+      sort_type?: 'custom_uuid';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
     /** DatasetRenameColumn */
     DatasetRenameColumn: {
       /**
@@ -448,6 +543,38 @@ export interface components {
         [key: string]: string | number | null;
       };
     };
+    /** DatasetUpdatedAtSort */
+    DatasetUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** DatasetUsedInProjectFilter */
+    DatasetUsedInProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'used_in_project';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
     /**
      * GeneratedScorerAction
      * @enum {string}
@@ -476,6 +603,30 @@ export interface components {
       message: string;
       /** Version */
       version: string;
+    };
+    /** ListDatasetParams */
+    ListDatasetParams: {
+      /** Filters */
+      filters?: (
+        | components['schemas']['DatasetNameFilter']
+        | components['schemas']['DatasetUsedInProjectFilter']
+      )[];
+      /**
+       * Sort
+       * @default {
+       *       "name": "created_at",
+       *       "ascending": false,
+       *       "sort_type": "column"
+       *     }
+       */
+      sort?:
+        | (
+            | components['schemas']['DatasetNameSort']
+            | components['schemas']['DatasetCreatedAtSort']
+            | components['schemas']['DatasetUpdatedAtSort']
+            | components['schemas']['DatasetProjectLastUsedAtSort']
+          )
+        | null;
     };
     /** ListDatasetResponse */
     ListDatasetResponse: {
@@ -686,6 +837,26 @@ export interface components {
        * Format: uuid4
        */
       user_id: string;
+    };
+    /**
+     * UserInfo
+     * @description A user's basic information, used for display purposes.
+     */
+    UserInfo: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** First Name */
+      first_name?: string | null;
+      /** Last Name */
+      last_name?: string | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -1013,6 +1184,42 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['DatasetDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  query_datasets_datasets_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListDatasetParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListDatasetResponse'];
         };
       };
       /** @description Validation Error */
