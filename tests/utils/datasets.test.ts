@@ -15,7 +15,8 @@ const EXAMPLE_DATASET: Dataset = {
   project_count: 1,
   created_at: '2021-09-10T00:00:00Z',
   updated_at: '2021-09-10T00:00:00Z',
-  num_rows: 1
+  num_rows: 1,
+  created_by_user: null
 };
 
 const EXAMPLE_DATASET_ROW = {
