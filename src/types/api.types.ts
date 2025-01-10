@@ -323,6 +323,18 @@ export interface components {
      * @enum {string}
      */
     DatasetAction: 'update' | 'delete' | 'share' | 'export' | 'rename';
+    /** DatasetAddColumn */
+    DatasetAddColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'add_column';
+      /** New Column Name */
+      new_column_name: string;
+      /** Column Values */
+      column_values: (string | number | null)[];
+    };
     /** DatasetAppendRow */
     DatasetAppendRow: {
       /**
@@ -774,8 +786,6 @@ export interface components {
        * Format: uuid4
        */
       dataset_id: string;
-      /** Project Id */
-      project_id?: string | null;
       /** File Name */
       file_name?: string | null;
       /** Message */
@@ -809,6 +819,7 @@ export interface components {
         | components['schemas']['DatasetDeleteRow']
         | components['schemas']['DatasetDeleteColumn']
         | components['schemas']['DatasetRenameColumn']
+        | components['schemas']['DatasetAddColumn']
       )[];
     };
     /** UpdateDatasetRequest */
