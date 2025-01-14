@@ -461,6 +461,11 @@ export interface components {
        * @enum {string}
        */
       operator: 'eq' | 'ne' | 'contains';
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** DatasetNameSort */
     DatasetNameSort: {
@@ -1070,6 +1075,8 @@ export interface operations {
   list_datasets_datasets_get: {
     parameters: {
       query?: {
+        /** @description Actions to include in the 'permissions' field. */
+        actions?: components['schemas']['DatasetAction'][];
         starting_token?: number;
         limit?: number;
       };
@@ -1234,6 +1241,8 @@ export interface operations {
   query_datasets_datasets_query_post: {
     parameters: {
       query?: {
+        /** @description Actions to include in the 'permissions' field. */
+        actions?: components['schemas']['DatasetAction'][];
         starting_token?: number;
         limit?: number;
       };
