@@ -254,6 +254,23 @@ export interface paths {
     patch: operations['update_user_dataset_collaborator_datasets__dataset_id__users__user_id__patch'];
     trace?: never;
   };
+  '/datasets/{dataset_id}/versions/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Query Dataset Versions */
+    post: operations['query_dataset_versions_datasets__dataset_id__versions_query_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -613,6 +630,54 @@ export interface components {
        */
       value: string;
     };
+    /** DatasetVersionDB */
+    DatasetVersionDB: {
+      /** Version Index */
+      version_index: number;
+      /** Name */
+      name: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by_user: components['schemas']['UserInfo'] | null;
+      /** Num Rows */
+      num_rows: number;
+      /** Column Names */
+      column_names: string[];
+      /** Rows Added */
+      rows_added: number;
+      /** Rows Removed */
+      rows_removed: number;
+      /** Rows Edited */
+      rows_edited: number;
+      /** Columns Added */
+      columns_added: number;
+      /** Columns Removed */
+      columns_removed: number;
+      /** Columns Renamed */
+      columns_renamed: number;
+    };
+    /** DatasetVersionIndexSort */
+    DatasetVersionIndexSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'version_index';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
     /**
      * GeneratedScorerAction
      * @enum {string}
@@ -689,6 +754,33 @@ export interface components {
       next_starting_token?: number | null;
       /** Datasets */
       datasets?: components['schemas']['DatasetDB'][];
+    };
+    /** ListDatasetVersionParams */
+    ListDatasetVersionParams: {
+      /** Sort */
+      sort?: components['schemas']['DatasetVersionIndexSort'] | null;
+    };
+    /** ListDatasetVersionResponse */
+    ListDatasetVersionResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Versions */
+      versions: components['schemas']['DatasetVersionDB'][];
     };
     /** ListPromptDatasetResponse */
     ListPromptDatasetResponse: {
@@ -1608,6 +1700,44 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['UserCollaborator'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  query_dataset_versions_datasets__dataset_id__versions_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        dataset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListDatasetVersionParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListDatasetVersionResponse'];
         };
       };
       /** @description Validation Error */
