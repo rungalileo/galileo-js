@@ -170,7 +170,11 @@ export interface paths {
     };
     /** Get Dataset Content */
     get: operations['get_dataset_content_datasets__dataset_id__content_get'];
-    put?: never;
+    /**
+     * Rollback Dataset Content
+     * @description Rollback the content of a dataset to a previous version.
+     */
+    put: operations['rollback_dataset_content_datasets__dataset_id__content_put'];
     post?: never;
     delete?: never;
     options?: never;
@@ -203,6 +207,23 @@ export interface paths {
     get: operations['download_dataset_datasets__dataset_id__download_get'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/datasets/{dataset_id}/content/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Query Dataset Content */
+    post: operations['query_dataset_content_datasets__dataset_id__content_query_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -252,6 +273,40 @@ export interface paths {
      * @description Update the sharing permissions of a user on a dataset.
      */
     patch: operations['update_user_dataset_collaborator_datasets__dataset_id__users__user_id__patch'];
+    trace?: never;
+  };
+  '/datasets/{dataset_id}/versions/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Query Dataset Versions */
+    post: operations['query_dataset_versions_datasets__dataset_id__versions_query_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/datasets/{dataset_id}/versions/{version_index}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Dataset Version Content */
+    get: operations['get_dataset_version_content_datasets__dataset_id__versions__version_index__content_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
 }
@@ -371,6 +426,30 @@ export interface components {
       /** Rows */
       rows?: components['schemas']['DatasetRow'][];
     };
+    /** DatasetContentFilter */
+    DatasetContentFilter: {
+      /** Column Name */
+      column_name: string;
+      /** Value */
+      value: string;
+      /** @default contains */
+      operator?: components['schemas']['DatasetContentFilterOperator'];
+    };
+    /**
+     * DatasetContentFilterOperator
+     * @enum {string}
+     */
+    DatasetContentFilterOperator: 'eq' | 'ne' | 'contains';
+    /** DatasetContentSortClause */
+    DatasetContentSortClause: {
+      /** Column Name */
+      column_name: string;
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+    };
     /** DatasetCreatedAtSort */
     DatasetCreatedAtSort: {
       /**
@@ -421,6 +500,8 @@ export interface components {
       /** Column Names */
       column_names: string[] | null;
       created_by_user: components['schemas']['UserInfo'] | null;
+      /** Current Version Index */
+      current_version_index: number;
     };
     /** DatasetDeleteColumn */
     DatasetDeleteColumn: {
@@ -613,6 +694,54 @@ export interface components {
        */
       value: string;
     };
+    /** DatasetVersionDB */
+    DatasetVersionDB: {
+      /** Version Index */
+      version_index: number;
+      /** Name */
+      name: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by_user: components['schemas']['UserInfo'] | null;
+      /** Num Rows */
+      num_rows: number;
+      /** Column Names */
+      column_names: string[];
+      /** Rows Added */
+      rows_added: number;
+      /** Rows Removed */
+      rows_removed: number;
+      /** Rows Edited */
+      rows_edited: number;
+      /** Columns Added */
+      columns_added: number;
+      /** Columns Removed */
+      columns_removed: number;
+      /** Columns Renamed */
+      columns_renamed: number;
+    };
+    /** DatasetVersionIndexSort */
+    DatasetVersionIndexSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'version_index';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
     /**
      * GeneratedScorerAction
      * @enum {string}
@@ -689,6 +818,33 @@ export interface components {
       next_starting_token?: number | null;
       /** Datasets */
       datasets?: components['schemas']['DatasetDB'][];
+    };
+    /** ListDatasetVersionParams */
+    ListDatasetVersionParams: {
+      /** Sort */
+      sort?: components['schemas']['DatasetVersionIndexSort'] | null;
+    };
+    /** ListDatasetVersionResponse */
+    ListDatasetVersionResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Versions */
+      versions: components['schemas']['DatasetVersionDB'][];
     };
     /** ListPromptDatasetResponse */
     ListPromptDatasetResponse: {
@@ -800,11 +956,22 @@ export interface components {
       /** Rows */
       rows?: number | null;
     };
+    /** QueryDatasetParams */
+    QueryDatasetParams: {
+      /** Filters */
+      filters?: components['schemas']['DatasetContentFilter'][];
+      sort?: components['schemas']['DatasetContentSortClause'] | null;
+    };
     /**
      * RegisteredScorerAction
      * @enum {string}
      */
     RegisteredScorerAction: 'update' | 'delete';
+    /** RollbackRequest */
+    RollbackRequest: {
+      /** Rollback Version */
+      rollback_version: number;
+    };
     /** Token */
     Token: {
       /** Access Token */
@@ -1412,6 +1579,39 @@ export interface operations {
       };
     };
   };
+  rollback_dataset_content_datasets__dataset_id__content_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        dataset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RollbackRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   update_dataset_content_datasets__dataset_id__content_patch: {
     parameters: {
       query?: never;
@@ -1471,6 +1671,44 @@ export interface operations {
         };
         content: {
           'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  query_dataset_content_datasets__dataset_id__content_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        dataset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['QueryDatasetParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DatasetContent'];
         };
       };
       /** @description Validation Error */
@@ -1608,6 +1846,79 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['UserCollaborator'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  query_dataset_versions_datasets__dataset_id__versions_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        dataset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListDatasetVersionParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListDatasetVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_dataset_version_content_datasets__dataset_id__versions__version_index__content_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        dataset_id: string;
+        version_index: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DatasetContent'];
         };
       };
       /** @description Validation Error */
