@@ -9,4 +9,5 @@ export interface Dataset {
   updated_at: string;
   num_rows: number | null;
   created_by_user: User | null;
+  current_version_index: number;
 }
