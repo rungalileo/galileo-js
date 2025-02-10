@@ -251,6 +251,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/datasets/{dataset_id}/groups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Group Dataset Collaborators
+     * @description List the groups with which the dataset has been shared.
+     */
+    get: operations['list_group_dataset_collaborators_datasets__dataset_id__groups_get'];
+    put?: never;
+    /**
+     * Create Group Dataset Collaborators
+     * @description Share a dataset with groups.
+     */
+    post: operations['create_group_dataset_collaborators_datasets__dataset_id__groups_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/datasets/{dataset_id}/users/{user_id}': {
     parameters: {
       query?: never;
@@ -273,6 +297,30 @@ export interface paths {
      * @description Update the sharing permissions of a user on a dataset.
      */
     patch: operations['update_user_dataset_collaborator_datasets__dataset_id__users__user_id__patch'];
+    trace?: never;
+  };
+  '/datasets/{dataset_id}/groups/{group_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Group Dataset Collaborator
+     * @description Remove a group's access to a dataset.
+     */
+    delete: operations['delete_group_dataset_collaborator_datasets__dataset_id__groups__group_id__delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update Group Dataset Collaborator
+     * @description Update the sharing permissions of a group on a dataset.
+     */
+    patch: operations['update_group_dataset_collaborator_datasets__dataset_id__groups__group_id__patch'];
     trace?: never;
   };
   '/datasets/{dataset_id}/versions/query': {
@@ -752,6 +800,42 @@ export interface components {
      * @enum {string}
      */
     GroupAction: 'update' | 'list_members' | 'join' | 'request_to_join';
+    /** GroupCollaborator */
+    GroupCollaborator: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Permissions
+       * @default []
+       */
+      permissions?: components['schemas']['Permission'][];
+      role: components['schemas']['CollaboratorRole'];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Group Id
+       * Format: uuid4
+       */
+      group_id: string;
+      /** Group Name */
+      group_name: string;
+    };
+    /** GroupCollaboratorCreate */
+    GroupCollaboratorCreate: {
+      /** @default viewer */
+      role?: components['schemas']['CollaboratorRole'];
+      /**
+       * Group Id
+       * Format: uuid4
+       */
+      group_id: string;
+    };
     /**
      * GroupMemberAction
      * @enum {string}
@@ -845,6 +929,28 @@ export interface components {
       next_starting_token?: number | null;
       /** Versions */
       versions: components['schemas']['DatasetVersionDB'][];
+    };
+    /** ListGroupCollaboratorsResponse */
+    ListGroupCollaboratorsResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Collaborators */
+      collaborators: components['schemas']['GroupCollaborator'][];
     };
     /** ListPromptDatasetResponse */
     ListPromptDatasetResponse: {
@@ -1791,6 +1897,75 @@ export interface operations {
       };
     };
   };
+  list_group_dataset_collaborators_datasets__dataset_id__groups_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        dataset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListGroupCollaboratorsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_group_dataset_collaborators_datasets__dataset_id__groups_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        dataset_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GroupCollaboratorCreate'][];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupCollaborator'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   delete_user_dataset_collaborator_datasets__dataset_id__users__user_id__delete: {
     parameters: {
       query?: never;
@@ -1846,6 +2021,74 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['UserCollaborator'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_group_dataset_collaborator_datasets__dataset_id__groups__group_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        dataset_id: string;
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_group_dataset_collaborator_datasets__dataset_id__groups__group_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        dataset_id: string;
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CollaboratorUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupCollaborator'];
         };
       };
       /** @description Validation Error */
