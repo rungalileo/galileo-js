@@ -576,6 +576,30 @@ export interface components {
      * @enum {string}
      */
     DatasetFormat: 'csv' | 'feather' | 'jsonl';
+    /** DatasetLastEditedByUserAtSort */
+    DatasetLastEditedByUserAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'last_edited_by_user_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default custom_uuid
+       * @constant
+       */
+      sort_type?: 'custom_uuid';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
     /** DatasetNameFilter */
     DatasetNameFilter: {
       /**
@@ -878,6 +902,7 @@ export interface components {
             | components['schemas']['DatasetProjectLastUsedAtSort']
             | components['schemas']['DatasetProjectsSort']
             | components['schemas']['DatasetRowsSort']
+            | components['schemas']['DatasetLastEditedByUserAtSort']
           )
         | null;
     };
