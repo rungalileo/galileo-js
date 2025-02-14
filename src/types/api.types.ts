@@ -357,6 +357,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/datasets/{dataset_id}/versions/{version_index}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Dataset Version */
+    patch: operations['update_dataset_version_datasets__dataset_id__versions__version_index__patch'];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1130,6 +1147,11 @@ export interface components {
       /** Name */
       name?: string | null;
     };
+    /** UpdateDatasetVersionRequest */
+    UpdateDatasetVersionRequest: {
+      /** Name */
+      name?: string | null;
+    };
     /**
      * UserAction
      * @enum {string}
@@ -1726,11 +1748,13 @@ export interface operations {
     };
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': unknown;
+        };
       };
       /** @description Validation Error */
       422: {
@@ -2187,6 +2211,42 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['DatasetContent'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_dataset_version_datasets__dataset_id__versions__version_index__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        dataset_id: string;
+        version_index: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateDatasetVersionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DatasetVersionDB'];
         };
       };
       /** @description Validation Error */
