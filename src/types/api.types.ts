@@ -466,6 +466,8 @@ export interface components {
       values: {
         [key: string]: string | number | null;
       };
+      /** Row Id */
+      row_id?: string | null;
     };
     /** DatasetContent */
     DatasetContent: {
@@ -580,13 +582,15 @@ export interface components {
     };
     /** DatasetDeleteRow */
     DatasetDeleteRow: {
+      /** Index */
+      index?: number | null;
+      /** Row Id */
+      row_id?: string | null;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       edit_type: 'delete_row';
-      /** Index */
-      index: number;
     };
     /**
      * DatasetFormat
@@ -713,6 +717,11 @@ export interface components {
     };
     /** DatasetRow */
     DatasetRow: {
+      /**
+       * Row Id
+       * Format: uuid4
+       */
+      row_id: string;
       /** Index */
       index: number;
       /** Values */
@@ -739,13 +748,15 @@ export interface components {
     };
     /** DatasetUpdateRow */
     DatasetUpdateRow: {
+      /** Index */
+      index?: number | null;
+      /** Row Id */
+      row_id?: string | null;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       edit_type: 'update_row';
-      /** Index */
-      index: number;
       /** Values */
       values: {
         [key: string]: string | number | null;
