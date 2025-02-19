@@ -5,6 +5,7 @@ import { commonHandlers, TEST_HOST } from '../common';
 import {
   Dataset,
   DatasetContent,
+  DatasetRow,
   ListDatasetResponse
 } from '../../src/api-client';
 
@@ -20,8 +21,9 @@ const EXAMPLE_DATASET: Dataset = {
   current_version_index: 1
 };
 
-const EXAMPLE_DATASET_ROW = {
+const EXAMPLE_DATASET_ROW: DatasetRow = {
   index: 0,
+  row_id: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
   values: ['John', 'Doe']
 };
 
