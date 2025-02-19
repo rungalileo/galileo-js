@@ -20,7 +20,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
     include_chains?: boolean,
     chain_id?: string
   ): Promise<Record<string, unknown>> {
-    return await this.makeRequest(
+    return this.makeRequest(
       RequestMethod.POST,
       Routes.observeRows,
       {
@@ -46,7 +46,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
     interval?: number,
     group_by?: string
   ): Promise<Record<string, unknown>> {
-    return await this.makeRequest(
+    return this.makeRequest(
       RequestMethod.POST,
       Routes.observeMetrics,
       {
@@ -65,7 +65,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   public async deleteLoggedData(
     filters: Array<unknown> = []
   ): Promise<Record<string, unknown>> {
-    return await this.makeRequest(RequestMethod.POST, Routes.observeDelete, {
+    return this.makeRequest(RequestMethod.POST, Routes.observeDelete, {
       filters
     });
   }
@@ -73,7 +73,7 @@ export default class GalileoObserveApiClient extends GalileoApiClient {
   public async ingestBatch(
     transaction_batch: TransactionRecordBatch
   ): Promise<string> {
-    return await this.makeRequest(
+    return this.makeRequest(
       RequestMethod.POST,
       Routes.observeIngest,
       transaction_batch
