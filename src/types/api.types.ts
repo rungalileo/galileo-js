@@ -1224,10 +1224,7 @@ export interface components {
        * Format: uuid4
        */
       id: string;
-      /**
-       * Email
-       * Format: email
-       */
+      /** Email */
       email: string;
       /** First Name */
       first_name?: string | null;
