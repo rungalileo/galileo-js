@@ -907,6 +907,11 @@ export interface components {
       /** Version */
       version: string;
     };
+    /**
+     * IntegrationAction
+     * @enum {string}
+     */
+    IntegrationAction: 'update' | 'delete' | 'share';
     /** ListDatasetParams */
     ListDatasetParams: {
       /** Filters */
@@ -1066,6 +1071,7 @@ export interface components {
         | components['schemas']['ApiKeyAction']
         | components['schemas']['GeneratedScorerAction']
         | components['schemas']['DatasetAction']
+        | components['schemas']['IntegrationAction']
         | components['schemas']['OrganizationAction'];
       /** Allowed */
       allowed: boolean;
@@ -1224,10 +1230,7 @@ export interface components {
        * Format: uuid4
        */
       id: string;
-      /**
-       * Email
-       * Format: email
-       */
+      /** Email */
       email: string;
       /** First Name */
       first_name?: string | null;
