@@ -628,13 +628,13 @@ export interface components {
        * @enum {string}
        */
       name: 'name';
-      /** Value */
-      value: string;
       /**
        * Operator
        * @enum {string}
        */
-      operator: 'eq' | 'ne' | 'contains';
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
       /**
        * Case Sensitive
        * @default true
