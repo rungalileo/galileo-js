@@ -16,7 +16,8 @@ export const getDatasets = async (): Promise<Dataset[]> => {
     updated_at: dataset.updated_at,
     num_rows: dataset.num_rows,
     created_by_user: dataset.created_by_user,
-    current_version_index: dataset.current_version_index
+    current_version_index: dataset.current_version_index,
+    draft: dataset.draft
   }));
 };
 
@@ -125,7 +126,8 @@ export const createDataset = async (
     updated_at: createdDataset.updated_at,
     num_rows: createdDataset.num_rows,
     created_by_user: createdDataset.created_by_user,
-    current_version_index: createdDataset.current_version_index
+    current_version_index: createdDataset.current_version_index,
+    draft: createdDataset.draft
   };
 };
 
