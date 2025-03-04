@@ -15,12 +15,16 @@ import {
   createLogStream,
   getLogStream
 } from './utils/log-streams';
+import { GalileoLogger } from './utils/galileo-logger';
 export {
+  // Legacy clients
   GalileoObserveApiClient,
   GalileoObserveCallback,
   GalileoObserveWorkflow,
   GalileoEvaluateApiClient,
   GalileoEvaluateWorkflow,
+  // Galileo 2.0 client and methods
+  GalileoLogger,
   getDatasets,
   createDataset,
   getDatasetContent,
