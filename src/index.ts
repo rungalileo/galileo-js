@@ -6,8 +6,15 @@ import GalileoObserveWorkflow from './observe/workflow';
 import {
   getDatasets,
   createDataset,
-  getDatasetContent
+  getDatasetContent,
+  getDataset
 } from './utils/datasets';
+import { getProjects, createProject, getProject } from './utils/projects';
+import {
+  getLogStreams,
+  createLogStream,
+  getLogStream
+} from './utils/log-streams';
 export {
   GalileoObserveApiClient,
   GalileoObserveCallback,
@@ -16,5 +23,12 @@ export {
   GalileoEvaluateWorkflow,
   getDatasets,
   createDataset,
-  getDatasetContent
+  getDatasetContent,
+  getDataset,
+  getProjects,
+  createProject,
+  getProject,
+  getLogStreams,
+  createLogStream,
+  getLogStream
 };
