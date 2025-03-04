@@ -10,4 +10,5 @@ export interface Dataset {
   num_rows: number | null;
   created_by_user: User | null;
   current_version_index: number;
+  draft: boolean;
 }
