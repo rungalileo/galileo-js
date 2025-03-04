@@ -5,7 +5,7 @@ export enum Routes {
   getToken = 'get-token',
   projects = 'projects',
   project = 'projects/{project_id}',
-  projects_all = '/projects/all',
+  projects_all = 'projects/all',
   logStreams = 'projects/{project_id}/log_streams',
   logStream = 'projects/{project_id}/log_streams/{log_stream_id}',
   runs = 'projects/{project_id}/runs',
