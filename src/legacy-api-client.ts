@@ -1,8 +1,8 @@
 import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
-import { Project, ProjectTypes } from './types/project.types.js';
-import { Routes } from './types/routes.types.js';
+import { Project, ProjectTypes } from './types/project.types';
+import { Routes } from './types/routes.types';
 
 import querystring from 'querystring';
 export enum RequestMethod {
