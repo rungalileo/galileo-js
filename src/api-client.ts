@@ -1,8 +1,10 @@
 import { decode } from 'jsonwebtoken';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
-import { Project, ProjectTypes } from './types/project.types.js';
+import { LogStream } from './types/log-stream.types';
+import { Project, ProjectTypes } from './types/project.types';
 import { Routes } from './types/routes.types';
+import { Trace } from './types/log.types';
 
 import querystring from 'querystring';
 import createClient, { Client } from 'openapi-fetch';
@@ -26,9 +28,20 @@ type CollectionPaths =
   | paths['/datasets/{dataset_id}/content'];
 type CollectionResponse = ListDatasetResponse | DatasetContent;
 
+class GalileoApiClientParams {
+  public projectType: ProjectTypes = ProjectTypes.genAI;
+  public projectName?: string | undefined = process.env.GALILEO_PROJECT;
+  public projectId?: string | undefined = undefined;
+  public logStreamName?: string | undefined = process.env.GALILEO_LOG_STREAM;
+  public logStreamId?: string | undefined = undefined;
+  public runId?: string | undefined = undefined;
+  public datasetId?: string | undefined = undefined;
+}
+
 export class GalileoApiClient {
-  public type: ProjectTypes | undefined = undefined;
+  public projectType: ProjectTypes = ProjectTypes.genAI;
   public projectId: string = '';
+  public logStreamId: string = '';
   public runId: string = '';
   public datasetId: string = '';
   private apiUrl: string = '';
@@ -36,9 +49,29 @@ export class GalileoApiClient {
   private client: Client<paths> | undefined = undefined;
 
   public async init(
-    projectName?: string | undefined,
-    datasetId?: string
+    params: Partial<GalileoApiClientParams> = {}
   ): Promise<void> {
+    const defaultParams = new GalileoApiClientParams();
+    const {
+      projectType = defaultParams.projectType,
+      projectId = defaultParams.projectId,
+      projectName = defaultParams.projectName,
+      logStreamId = defaultParams.logStreamId,
+      logStreamName = defaultParams.logStreamName,
+      runId = defaultParams.runId,
+      datasetId = defaultParams.datasetId
+    } = params;
+
+    this.projectType = projectType;
+
+    if (runId) {
+      this.runId = runId;
+    }
+
+    if (datasetId) {
+      this.datasetId = datasetId;
+    }
+
     this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
@@ -47,11 +80,9 @@ export class GalileoApiClient {
         headers: { Authorization: `Bearer ${this.token}` }
       });
 
-      if (datasetId) {
-        this.datasetId = datasetId;
-      }
-
-      if (projectName) {
+      if (projectId) {
+        this.projectId = projectId;
+      } else if (projectName) {
         try {
           this.projectId = await this.getProjectIdByName(projectName);
           // eslint-disable-next-line no-console
@@ -64,6 +95,28 @@ export class GalileoApiClient {
             this.projectId = project.id;
             // eslint-disable-next-line no-console
             console.log(`✨ ${projectName} created.`);
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      if (logStreamId) {
+        this.logStreamId = logStreamId;
+      } else if (logStreamName) {
+        try {
+          const logStream = await this.getLogStreamByName(logStreamName);
+          this.logStreamId = logStream.id;
+          // eslint-disable-next-line no-console
+          console.log(`✅ Using ${logStreamName}`);
+        } catch (err: unknown) {
+          const error = err as Error;
+
+          if (error.message.includes('not found')) {
+            const logStream = await this.createLogStream(logStreamName);
+            this.logStreamId = logStream.id;
+            // eslint-disable-next-line no-console
+            console.log(`✨ ${logStreamName} created.`);
           } else {
             throw err;
           }
@@ -124,6 +177,10 @@ export class GalileoApiClient {
 
   private getApiUrl(): string {
     const consoleUrl = process.env.GALILEO_CONSOLE_URL;
+
+    if (!consoleUrl && this.projectType === ProjectTypes.genAI) {
+      return 'https://api.galileo.ai';
+    }
 
     if (!consoleUrl) {
       throw new Error('❗ GALILEO_CONSOLE_URL must be set');
@@ -187,31 +244,103 @@ export class GalileoApiClient {
     );
   }
 
-  private async getProjectIdByName(project_name: string): Promise<string> {
+  public async getProjects(): Promise<Project[]> {
+    return await this.makeRequest<Project[]>(
+      RequestMethod.GET,
+      Routes.projects_all,
+      null,
+      this.projectType ? { project_type: this.projectType } : {}
+    );
+  }
+
+  public async getProject(id: string): Promise<Project> {
+    return await this.makeRequest<Project>(
+      RequestMethod.GET,
+      Routes.project,
+      null,
+      {
+        project_id: id
+      }
+    );
+  }
+
+  public async getProjectByName(name: string): Promise<Project> {
     const projects = await this.makeRequest<Project[]>(
       RequestMethod.GET,
       Routes.projects,
       null,
       {
-        project_name,
-        type: this.type
+        project_name: name,
+        type: this.projectType
       }
     );
 
     if (projects.length < 1) {
-      throw new Error(`Galileo project ${project_name} not found`);
+      throw new Error(`Galileo project ${name} not found`);
     }
 
-    return projects[0].id;
+    return projects[0];
   }
 
-  private async createProject(project_name: string): Promise<{ id: string }> {
-    return await this.makeRequest<{ id: string }>(
+  public async getProjectIdByName(name: string): Promise<string> {
+    return (await this.getProjectByName(name)).id;
+  }
+
+  public async createProject(project_name: string): Promise<Project> {
+    return await this.makeRequest<Project>(
       RequestMethod.POST,
       Routes.projects,
       {
         name: project_name,
-        type: this.type
+        type: this.projectType
+      }
+    );
+  }
+
+  public async getLogStreams(): Promise<LogStream[]> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+    return await this.makeRequest<LogStream[]>(
+      RequestMethod.GET,
+      Routes.logStreams
+    );
+  }
+
+  public async getLogStream(id: string): Promise<LogStream> {
+    return await this.makeRequest<LogStream>(
+      RequestMethod.GET,
+      Routes.logStream,
+      null,
+      {
+        log_stream_id: id
+      }
+    );
+  }
+
+  public async getLogStreamByName(logStreamName: string): Promise<LogStream> {
+    const logStreams = await this.getLogStreams();
+
+    if (!logStreams.length) {
+      throw new Error(`Galileo log stream ${logStreamName} not found`);
+    }
+
+    // Return the first matching log stream by name (`logStreams` contains all of the log streams)
+    const logStream = logStreams.find((ls) => ls.name === logStreamName)!;
+
+    if (!logStream) {
+      throw new Error(`Galileo log stream ${logStreamName} not found`);
+    }
+
+    return logStream;
+  }
+
+  public async createLogStream(logStreamName: string): Promise<LogStream> {
+    return await this.makeRequest<LogStream>(
+      RequestMethod.POST,
+      Routes.logStreams,
+      {
+        name: logStreamName
       }
     );
   }
@@ -226,6 +355,24 @@ export class GalileoApiClient {
       (response: ListDatasetResponse) => response.datasets ?? [],
       {}
     );
+  };
+
+  public getDataset = async (id: string): Promise<Dataset> => {
+    return await this.makeRequest<Dataset>(RequestMethod.GET, Routes.dataset, {
+      dataset_id: id
+    });
+  };
+
+  public getDatasetByName = async (name: string): Promise<Dataset> => {
+    const datasets = await this.getDatasets();
+
+    const matchingDatasets = datasets.filter((ds) => ds.name === name);
+
+    if (!matchingDatasets.length) {
+      throw new Error(`Galileo dataset ${name} not found`);
+    }
+
+    return matchingDatasets[0];
   };
 
   public async createDataset(
@@ -288,6 +435,21 @@ export class GalileoApiClient {
     }
   }
 
+  public async ingestTraces(traces: Trace[]): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+    this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.traces,
+      { traces, log_stream_id: this.logStreamId },
+      { project_id: this.projectId }
+    );
+    console.log(
+      `${traces.length} Traces ingested for project ${this.projectId}. `
+    );
+  }
+
   public async makeRequest<T>(
     request_method: Method,
     endpoint: Routes,
@@ -314,12 +476,34 @@ export class GalileoApiClient {
     const config: AxiosRequestConfig = {
       method: request_method,
       url: `${this.apiUrl}/${endpoint
-        .replace('{project_id}', this.projectId)
-        .replace('{run_id}', this.runId)}`,
+        .replace(
+          '{project_id}',
+          params && 'project_id' in params
+            ? (params.project_id as string)
+            : this.projectId
+        )
+        .replace(
+          '{log_stream_id}',
+          params && 'log_stream_id' in params
+            ? (params.log_stream_id as string)
+            : this.logStreamId
+        )
+        .replace(
+          '{run_id}',
+          params && 'run_id' in params ? (params.run_id as string) : this.runId
+        )
+        .replace(
+          '{dataset_id}',
+          params && 'dataset_id' in params
+            ? (params.dataset_id as string)
+            : this.datasetId
+        )}`,
       params,
       headers,
       data
     };
+
+    console.log(config);
 
     const response = await axios.request<T>(config);
 

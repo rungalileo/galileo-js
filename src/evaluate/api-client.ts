@@ -1,4 +1,4 @@
-import { GalileoApiClient, RequestMethod } from '../api-client';
+import { GalileoLegacyApiClient, RequestMethod } from '../legacy-api-client';
 import { Node } from '../types/node.types';
 import { Routes } from '../types/routes.types';
 import { RunTag } from './../types/tag.types';
@@ -10,7 +10,7 @@ import {
 import { timestampName } from '../utils/utils';
 import { ProjectTypes } from '../types/project.types';
 
-export default class GalileoEvaluateApiClient extends GalileoApiClient {
+export default class GalileoEvaluateApiClient extends GalileoLegacyApiClient {
   constructor() {
     super();
     this.type = ProjectTypes.evaluate;

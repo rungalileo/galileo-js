@@ -1,4 +1,4 @@
-import { StepType } from './step.types';
+import { StepType } from './legacy-step.types';
 
 export enum TransactionLoggingMethod {
   js_langchain = 'js_langchain',

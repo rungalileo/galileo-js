@@ -4,7 +4,7 @@ import {
   AWorkflowStep,
   LlmStep,
   StepWithChildren
-} from '../types/step.types';
+} from '../types/legacy-step.types';
 import GalileoWorkflow from '../workflow';
 import GalileoEvaluateApiClient from './api-client';
 import { Node } from '../types/node.types';
