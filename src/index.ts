@@ -16,6 +16,8 @@ import {
   getLogStream
 } from './utils/log-streams';
 import { GalileoLogger } from './utils/galileo-logger';
+import { init, flush } from './galileo-config';
+import { log } from './wrappers';
 export {
   // Legacy clients
   GalileoObserveApiClient,
@@ -34,5 +36,8 @@ export {
   getProject,
   getLogStreams,
   createLogStream,
-  getLogStream
+  getLogStream,
+  log,
+  init,
+  flush
 };

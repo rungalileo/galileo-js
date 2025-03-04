@@ -13,16 +13,22 @@ import {
 } from '../types/log.types';
 import { ProjectTypes } from '../types/project.types';
 
+class GalileoLoggerConfig {
+  public projectName?: string | undefined;
+  public logStreamName?: string | undefined;
+}
+
 class GalileoLogger {
-  private projectName?: string;
-  private logStreamName?: string;
+  private projectName?: string | undefined;
+  private logStreamName?: string | undefined;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   private traces: Trace[] = [];
 
-  constructor(projectName?: string, logStreamName?: string) {
-    this.projectName = projectName || process.env.GALILEO_PROJECT || '';
-    this.logStreamName = logStreamName || process.env.GALILEO_LOG_STREAM || '';
+  constructor(config: GalileoLoggerConfig) {
+    this.projectName = config.projectName || process.env.GALILEO_PROJECT || '';
+    this.logStreamName =
+      config.logStreamName || process.env.GALILEO_LOG_STREAM || '';
 
     if (!this.projectName || !this.logStreamName) {
       throw new Error(
@@ -360,6 +366,7 @@ class GalileoLogger {
 
 export {
   GalileoLogger,
+  GalileoLoggerConfig,
   Trace,
   Span,
   StepWithChildSpans,
