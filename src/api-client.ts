@@ -372,6 +372,10 @@ export class GalileoApiClient {
       throw new Error(`Galileo dataset ${name} not found`);
     }
 
+    if (matchingDatasets.length > 1) {
+      throw new Error(`Multiple Galileo datasets found with name: ${name}`);
+    }
+
     return matchingDatasets[0];
   };
 
