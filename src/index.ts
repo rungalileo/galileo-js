@@ -16,7 +16,7 @@ import {
   getLogStream
 } from './utils/log-streams';
 import { GalileoLogger } from './utils/galileo-logger';
-import { init, flush } from './galileo-config';
+import { init, flush } from './singleton';
 import { log } from './wrappers';
 export {
   // Legacy clients

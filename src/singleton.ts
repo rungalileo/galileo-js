@@ -1,12 +1,12 @@
 import { GalileoLogger } from './utils/galileo-logger';
 
-export class GalileoConfig {
-  private static instance: GalileoConfig;
+export class GalileoSingleton {
+  private static instance: GalileoSingleton;
   private client: GalileoLogger | undefined;
   private constructor() {}
-  public static getInstance(): GalileoConfig {
+  public static getInstance(): GalileoSingleton {
     if (!this.instance) {
-      this.instance = new GalileoConfig();
+      this.instance = new GalileoSingleton();
     }
     return this.instance;
   }
@@ -35,9 +35,9 @@ export const init = (options: {
   projectName?: string | undefined;
   logStreamName?: string | undefined;
 }) => {
-  GalileoConfig.getInstance().init(options);
+  GalileoSingleton.getInstance().init(options);
 };
 
 export const flush = () => {
-  GalileoConfig.getInstance().getClient().flush();
+  GalileoSingleton.getInstance().getClient().flush();
 };

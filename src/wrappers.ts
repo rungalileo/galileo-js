@@ -1,5 +1,5 @@
 import { GalileoLogger } from './utils/galileo-logger';
-import { GalileoConfig } from './galileo-config';
+import { GalileoSingleton } from './singleton';
 import { MessageRole } from './types/message.types';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
@@ -13,18 +13,15 @@ export interface LogOptions {
 /**
  * Wraps a function to log its execution as a span in Galileo.
  */
-// export function log(options: LogOptions) {
-//   return function <T extends (...args: unknown[]) => unknown>(fn: T): T {
-//     const wrapper = async function (this: unknown, ...args: Parameters<T>) {
 export function log<T extends unknown[], R>(
   options: LogOptions,
   fn: (...args: T) => Promise<R>
 ): (...args: T) => Promise<R> {
   return async (...args: T): Promise<R> => {
     let logger: GalileoLogger | undefined = undefined;
-    let result: R = {} as R; //ReturnType<R> | undefined = undefined;
+    let result: R = {} as R;
     let concludeSpan = false;
-    const argsToString = JSON.stringify(args); // args.map((arg) => JSON.stringify(arg));
+    const argsToString = JSON.stringify(args);
     const name = options?.name || fn.name || 'Function';
 
     const conclude = (result: R) => {
@@ -41,7 +38,7 @@ export function log<T extends unknown[], R>(
     };
 
     try {
-      logger = GalileoConfig.getInstance().getClient();
+      logger = GalileoSingleton.getInstance().getClient();
 
       if (!logger.currentParent()) {
         console.log('Starting new trace.');
@@ -58,7 +55,7 @@ export function log<T extends unknown[], R>(
     }
 
     try {
-      result = await fn(...args); //result = (await fn.apply(this, args)) as unknown as ReturnType<T>; // await func(...args);
+      result = await fn(...args);
 
       const resultToString = JSON.stringify(result);
 
@@ -70,6 +67,7 @@ export function log<T extends unknown[], R>(
         logger?.addLlmSpan({
           input: [{ role: MessageRole.user, content: argsToString }],
           output: { role: MessageRole.user, content: resultToString }
+          // TODO: add a param mapper to apply span values
           //   model: options.model,
           //   tools: options.tools,
           //   numInputTokens: options.numInputTokens,
