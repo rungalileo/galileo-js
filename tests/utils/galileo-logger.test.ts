@@ -51,7 +51,7 @@ describe('GalileoLogger', () => {
       process.env.GALILEO_PROJECT = 'test-project';
       delete process.env.GALILEO_LOG_STREAM;
       expect(() => new GalileoLogger()).toThrow(
-        'Project and logStream are required'
+        'User must provide projectName and logStreamName to GalileoLogger.'
       );
     });
 
