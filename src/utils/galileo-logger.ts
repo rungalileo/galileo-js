@@ -26,7 +26,7 @@ class GalileoLogger {
 
     if (!this.projectName || !this.logStreamName) {
       throw new Error(
-        'Project and logStream are required to initialize GalileoLogger.'
+        'User must provide projectName and logStreamName to GalileoLogger.'
       );
     }
   }
