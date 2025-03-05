@@ -4,7 +4,7 @@ import {
   AWorkflowStep,
   LlmStep,
   StepWithChildren
-} from '../types/step.types';
+} from '../types/legacy-step.types';
 import {
   TransactionLoggingMethod,
   TransactionRecord,

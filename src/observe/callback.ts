@@ -19,7 +19,7 @@ import {
 import { version } from '../../package.json';
 import { AgentFinish } from '@langchain/core/dist/agents.js';
 import GalileoObserveApiClient from './api-client';
-import { StepType } from '../types/step.types';
+import { StepType } from '../types/legacy-step.types';
 
 export default class GalileoObserveCallback extends BaseCallbackHandler {
   public name = 'GalileoObserveCallback';

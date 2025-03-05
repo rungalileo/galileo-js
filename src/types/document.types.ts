@@ -1,10 +1,31 @@
 type ChunkMetaDataValueType = boolean | string | number;
 
-interface DocumentMetadata {
-  [key: string]: ChunkMetaDataValueType;
-}
-
-export interface Document {
+export class Document {
   content: string;
-  metadata: DocumentMetadata;
+  metadata: Record<string, ChunkMetaDataValueType>;
+
+  constructor(data: {
+    content: string;
+    metadata?: Record<string, ChunkMetaDataValueType>;
+  }) {
+    this.content = data.content;
+    this.metadata = this.filterMetadata(data.metadata || {});
+  }
+
+  toJSON(): Record<string, unknown> {
+    return {
+      content: this.content,
+      metadata: this.metadata
+    };
+  }
+
+  private filterMetadata(
+    metadata: Record<string, ChunkMetaDataValueType>
+  ): Record<string, ChunkMetaDataValueType> {
+    return Object.fromEntries(
+      Object.entries(metadata).filter(([, value]) =>
+        ['boolean', 'string', 'number'].includes(typeof value)
+      )
+    );
+  }
 }

@@ -12,7 +12,7 @@ import {
   ToolStepType,
   WorkflowStep,
   WorkflowStepType
-} from './types/step.types';
+} from './types/legacy-step.types';
 
 export default class GalileoWorkflow {
   public projectName: string;
