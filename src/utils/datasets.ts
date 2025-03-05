@@ -131,10 +131,45 @@ export const createDataset = async (
   };
 };
 
-export const getDatasetContent = async (
-  datasetId: string
-): Promise<DatasetRow[]> => {
+/*
+ * Gets a dataset by id or name.
+ */
+export const getDataset = async (
+  id?: string,
+  name?: string
+): Promise<Dataset> => {
+  if (!id && !name) {
+    throw new Error('Either id or name must be provided');
+  }
+
   const apiClient = new GalileoApiClient();
   await apiClient.init();
-  return await apiClient.getDatasetContent(datasetId);
+
+  if (id) {
+    return await apiClient.getDataset(id);
+  }
+
+  return await apiClient.getDatasetByName(name!);
+};
+
+export const getDatasetContent = async (
+  datasetId?: string,
+  datasetName?: string
+): Promise<DatasetRow[]> => {
+  if (!datasetId && !datasetName) {
+    throw new Error('Either datasetId or datasetName must be provided');
+  }
+
+  if (datasetName) {
+    const datasets = await getDatasets();
+    const dataset = datasets.find((d) => d.name === datasetName);
+    if (!dataset) {
+      throw new Error(`Dataset not found: ${datasetName}`);
+    }
+    datasetId = dataset.id;
+  }
+
+  const apiClient = new GalileoApiClient();
+  await apiClient.init();
+  return await apiClient.getDatasetContent(datasetId!);
 };

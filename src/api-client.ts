@@ -364,19 +364,29 @@ export class GalileoApiClient {
   };
 
   public getDatasetByName = async (name: string): Promise<Dataset> => {
-    const datasets = await this.getDatasets();
+    const { datasets } = await this.makeRequest<{ datasets: Dataset[] }>(
+      RequestMethod.POST,
+      Routes.datasetsQuery,
+      {
+        filters: [
+          {
+            name: 'name',
+            value: name,
+            operator: 'eq'
+          }
+        ]
+      }
+    );
 
-    const matchingDatasets = datasets.filter((ds) => ds.name === name);
-
-    if (!matchingDatasets.length) {
+    if (!datasets.length) {
       throw new Error(`Galileo dataset ${name} not found`);
     }
 
-    if (matchingDatasets.length > 1) {
+    if (datasets.length > 1) {
       throw new Error(`Multiple Galileo datasets found with name: ${name}`);
     }
 
-    return matchingDatasets[0];
+    return datasets[0];
   };
 
   public async createDataset(
