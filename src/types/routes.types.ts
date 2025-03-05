@@ -15,6 +15,7 @@ export enum Routes {
   observeDelete = 'projects/{project_id}/observe/delete',
   evaluateIngest = 'projects/{project_id}/runs/{run_id}/chains/ingest',
   datasets = 'datasets',
+  datasetsQuery = 'datasets/query',
   dataset = 'datasets/{dataset_id}',
   traces = 'projects/{project_id}/traces'
 }

@@ -27,7 +27,9 @@ export const getProject = async (
   name?: string
 ): Promise<Project> => {
   if (!id && !name) {
-    throw new Error('Either id or name must be provided');
+    throw new Error(
+      'To fetch a project with `getProject`, either id or name must be provided'
+    );
   }
 
   const apiClient = new GalileoApiClient();
