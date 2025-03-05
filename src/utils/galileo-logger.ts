@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GalileoApiClient } from '../api-client';
-import { Document } from '../types/document.types';
-import { Message } from '../types/message.types';
 import {
   LlmSpan,
   RetrieverSpan,
@@ -11,6 +9,10 @@ import {
   Trace,
   WorkflowSpan
 } from '../types/log.types';
+import {
+  LlmStepAllowedIOType,
+  RetrieverStepAllowedOutputType
+} from '../types/step.types';
 import { ProjectTypes } from '../types/project.types';
 
 class GalileoLoggerConfig {
@@ -60,15 +62,6 @@ class GalileoLogger {
     userMetadata?: Record<string, string>,
     tags?: string[]
   ): Trace {
-    /**
-     * Create a new trace and add it to the list of traces.
-     * Simple usage:
-     * ```
-     * myTraces.addTrace("input");
-     * myTraces.addLlmSpan("input", "output", model: "<my_model>");
-     * myTraces.conclude("output");
-     * ```
-     */
     if (this.currentParent() !== undefined) {
       throw new Error(
         'You must conclude the existing trace before adding a new one.'
@@ -91,8 +84,8 @@ class GalileoLogger {
   }
 
   addSingleLlmSpanTrace(
-    input: Message[],
-    output: Message,
+    input: LlmStepAllowedIOType,
+    output: LlmStepAllowedIOType,
     model?: string,
     tools?: any[],
     name?: string,
@@ -165,8 +158,8 @@ class GalileoLogger {
     temperature,
     statusCode
   }: {
-    input: Message[];
-    output: Message;
+    input: LlmStepAllowedIOType;
+    output: LlmStepAllowedIOType;
     model?: string;
     tools?: any[];
     name?: string;
@@ -206,7 +199,7 @@ class GalileoLogger {
 
   addRetrieverSpan(
     input: string,
-    documents: Document[],
+    output: RetrieverStepAllowedOutputType,
     name?: string,
     durationNs?: number,
     createdAt?: number,
@@ -219,7 +212,7 @@ class GalileoLogger {
      */
     const span = new RetrieverSpan({
       input,
-      output: documents,
+      output: output,
       name,
       createdAtNs: createdAt,
       metadata: userMetadata,

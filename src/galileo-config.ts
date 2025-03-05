@@ -1,4 +1,3 @@
-// import { AsyncLocalStorage } from 'async_hooks';
 import { GalileoLogger } from './utils/galileo-logger';
 
 export class GalileoConfig {
@@ -6,15 +5,6 @@ export class GalileoConfig {
   private client: GalileoLogger | undefined;
   private constructor() {}
   public static getInstance(): GalileoConfig {
-    // Ensure singleton instance across environments
-    // const globalRef = (
-    //   typeof globalThis !== 'undefined' ? globalThis : window
-    // ) as any;
-    // if (!globalRef.__GALILEO_CONFIG__) {
-    //   globalRef.__GALILEO_CONFIG__ = new GalileoConfig();
-    // }
-    // this.instance = globalRef.__GALILEO_CONFIG__;
-
     if (!this.instance) {
       this.instance = new GalileoConfig();
     }
