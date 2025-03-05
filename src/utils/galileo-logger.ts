@@ -336,7 +336,6 @@ class GalileoLogger {
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
-      //// @ts-expect-error - FIXME: Type this
       await this.client.ingestTraces(loggedTraces);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);

@@ -75,6 +75,7 @@ export class GalileoApiClient {
     this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
+
       this.client = createClient({
         baseUrl: this.apiUrl,
         headers: { Authorization: `Bearer ${this.token}` }
@@ -502,8 +503,6 @@ export class GalileoApiClient {
       headers,
       data
     };
-
-    console.log(config);
 
     const response = await axios.request<T>(config);
 
