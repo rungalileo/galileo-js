@@ -117,7 +117,7 @@ export function wrapOpenAI(
                       if (startTrace) {
                         // If a trace was started, conclude it
                         logger!.conclude({
-                          output,
+                          output: JSON.stringify(output),
                           durationNs: Number(endTime - startTime)
                         });
                       }

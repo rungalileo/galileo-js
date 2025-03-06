@@ -16,13 +16,13 @@ import {
 import { ProjectTypes } from '../types/project.types';
 
 class GalileoLoggerConfig {
-  public projectName?: string | undefined;
-  public logStreamName?: string | undefined;
+  public projectName?: string;
+  public logStreamName?: string;
 }
 
 class GalileoLogger {
-  private projectName?: string | undefined;
-  private logStreamName?: string | undefined;
+  private projectName?: string;
+  private logStreamName?: string;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
