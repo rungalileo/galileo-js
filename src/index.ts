@@ -9,6 +9,10 @@ import {
   getDatasetContent,
   getDataset
 } from './utils/datasets';
+import {
+  createPromptTemplate,
+  getPromptTemplates
+} from './utils/prompt-templates';
 import { getProjects, createProject, getProject } from './utils/projects';
 import {
   getLogStreams,
@@ -29,16 +33,23 @@ export {
   // Galileo 2.0 client and methods
   GalileoLogger,
   wrapOpenAI,
+  // Datasets
   getDatasets,
   createDataset,
   getDatasetContent,
   getDataset,
+  // Prompt templates
+  getPromptTemplates,
+  createPromptTemplate,
+  // Projects
   getProjects,
   createProject,
   getProject,
+  // Log streams
   getLogStreams,
   createLogStream,
   getLogStream,
+  // Logging
   log,
   init,
   flush

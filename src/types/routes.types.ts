@@ -17,5 +17,7 @@ export enum Routes {
   datasets = 'datasets',
   datasetsQuery = 'datasets/query',
   dataset = 'datasets/{dataset_id}',
+  promptTemplates = 'projects/{project_id}/templates',
+  promptTemplateVersions = 'projects/{project_id}/templates/versions',
   traces = 'projects/{project_id}/traces'
 }
