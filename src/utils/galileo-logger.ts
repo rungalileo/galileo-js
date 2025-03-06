@@ -27,7 +27,7 @@ class GalileoLogger {
   private parentStack: StepWithChildSpans[] = [];
   private traces: Trace[] = [];
 
-  constructor(config: GalileoLoggerConfig) {
+  constructor(config: GalileoLoggerConfig = {}) {
     this.projectName = config.projectName || process.env.GALILEO_PROJECT || '';
     this.logStreamName =
       config.logStreamName || process.env.GALILEO_LOG_STREAM || '';
@@ -150,7 +150,7 @@ class GalileoLogger {
     name,
     createdAt,
     durationNs,
-    userMetadata,
+    metadata,
     tags,
     numInputTokens,
     numOutputTokens,
@@ -165,7 +165,7 @@ class GalileoLogger {
     name?: string;
     createdAt?: number;
     durationNs?: number;
-    userMetadata?: Record<string, string>;
+    metadata?: Record<string, string>;
     tags?: string[];
     numInputTokens?: number;
     numOutputTokens?: number;
@@ -183,7 +183,7 @@ class GalileoLogger {
       tools,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags,
       durationNs,
       inputTokens: numInputTokens,

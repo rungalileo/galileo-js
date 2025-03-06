@@ -56,9 +56,7 @@ export function wrapOpenAI(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     return async function wrappedCreate(...args: any[]) {
                       const [requestData] = args;
-                      const trace = logger.addTrace(
-                        JSON.stringify(requestData.messages)
-                      );
+                      logger.addTrace(JSON.stringify(requestData.messages));
 
                       const startTime = process.hrtime.bigint();
                       let response;
@@ -86,17 +84,18 @@ export function wrapOpenAI(
                         ?.map((choice: any) => JSON.stringify(choice.message))
                         .join('\n');
 
-                      trace.addLlmSpan({
+                      logger.addLlmSpan({
                         input: JSON.stringify(requestData.messages),
                         output,
                         model: requestData.model || 'unknown',
-                        inputTokens: response?.usage?.prompt_tokens || 0,
-                        outputTokens: response?.usage?.completion_tokens || 0,
+                        numInputTokens: response?.usage?.prompt_tokens || 0,
+                        numOutputTokens:
+                          response?.usage?.completion_tokens || 0,
                         durationNs: Number(process.hrtime.bigint() - startTime),
                         metadata: requestData.metadata || {}
                       });
 
-                      trace.conclude({
+                      logger.conclude({
                         output,
                         durationNs: Number(process.hrtime.bigint() - startTime)
                       });

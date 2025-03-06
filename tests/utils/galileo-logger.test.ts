@@ -56,7 +56,10 @@ describe('GalileoLogger', () => {
     });
 
     it('should allow custom project and log stream names', () => {
-      logger = new GalileoLogger('custom-project', 'custom-log-stream');
+      logger = new GalileoLogger({
+        projectName: 'custom-project',
+        logStreamName: 'custom-log-stream'
+      });
       expect(logger).toBeTruthy();
     });
   });
