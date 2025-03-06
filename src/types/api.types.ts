@@ -1176,6 +1176,40 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AgenticSessionSuccessScorer */
+    AgenticSessionSuccessScorer: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'agentic_session_success';
+      /**
+       * Filters
+       * @description List of filters to apply to the scorer.
+       */
+      filters?:
+        | (
+            | components['schemas']['NodeNameFilter']
+            | components['schemas']['MetadataFilter']
+          )[]
+        | null;
+      /**
+       * Type
+       * @default plus
+       * @constant
+       */
+      type?: 'plus';
+      /**
+       * Model Name
+       * @description Alias of the model to use for the scorer.
+       */
+      model_name?: string | null;
+      /**
+       * Num Judges
+       * @description Number of judges for the scorer.
+       */
+      num_judges?: number | null;
+    };
     /**
      * AgenticSessionSuccessTemplate
      * @description Template for the agentic session success metric,
@@ -1605,8 +1639,11 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'] | null;
       chainpoll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** Model Alias */
+      model_alias?: string | null;
+      /** Num Judges */
+      num_judges?: number | null;
       /**
        * Regex Field
        * @default
@@ -1652,8 +1689,11 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'] | null;
       chainpoll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** Model Alias */
+      model_alias?: string | null;
+      /** Num Judges */
+      num_judges?: number | null;
       /**
        * Regex Field
        * @default
@@ -2218,6 +2258,7 @@ export interface components {
         | components['schemas']['ScorerConfig'][]
         | (
             | components['schemas']['AgenticWorkflowSuccessScorer']
+            | components['schemas']['AgenticSessionSuccessScorer']
             | components['schemas']['BleuScorer']
             | components['schemas']['ChunkAttributionUtilizationScorer']
             | components['schemas']['CompletenessScorer']
@@ -2279,7 +2320,7 @@ export interface components {
        */
       epoch?: number;
       metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration-Input']
+        | components['schemas']['MetricCritiqueJobConfiguration']
         | null;
     };
     /** CreateJobResponse */
@@ -2359,6 +2400,7 @@ export interface components {
         | components['schemas']['ScorerConfig'][]
         | (
             | components['schemas']['AgenticWorkflowSuccessScorer']
+            | components['schemas']['AgenticSessionSuccessScorer']
             | components['schemas']['BleuScorer']
             | components['schemas']['ChunkAttributionUtilizationScorer']
             | components['schemas']['CompletenessScorer']
@@ -2422,7 +2464,7 @@ export interface components {
        */
       epoch?: number;
       metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration-Output']
+        | components['schemas']['MetricCritiqueJobConfiguration']
         | null;
       /** Message */
       message: string;
@@ -2452,14 +2494,14 @@ export interface components {
       scorer_name: '_customized_agentic_session_success';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default agentic_session_success
@@ -2494,20 +2536,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      /** @default {
-       *       "logprobs": true,
-       *       "top_logprobs": 5,
-       *       "echo": false,
-       *       "n": 3,
-       *       "model_alias": "GPT-4o",
-       *       "temperature": 1,
-       *       "max_tokens": -1,
-       *       "top_p": 1,
-       *       "top_k": 40,
-       *       "frequency_penalty": 0,
-       *       "presence_penalty": 0
-       *     } */
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "You will receive the complete chat history from a chatbot application between a user and an assistant.\n\nIn the chat history, the user will ask questions, which are answered with words, or make requests that require calling tools and resolving actions. Sometimes these are given as orders; treat them as if they were questions or requests. Each assistant turn may involve several steps that combine internal reflections, planning steps, selecting tools, and calling tools, and should always end with the assistant replying back to the user.\n\nYou will analyze the entire chat history and will respond back in the following JSON format:\n```json\n{\n    \"all_user_asks\": list[string],\n    \"tasks\": list[dict],\n    \"ai_answered_all_asks\": boolean,\n    \"explanation\": string\n}\n```\nwhere I will now explain how to populate each field.\n\n# Populating: all_user_asks\n\nPopulate `all_user_asks` with a list containing every user ask from the chat history. Review the chat history and generate a list with one entry for each user question, request, order, follow-up, clarification, etc. Ensure that every user ask is a separate item, even if this requires splitting the text mid-sentence. Each item should include enough context to be understandable on its own. It is acceptable to have shared context between items and to incorporate parts of sentences as needed.\n\n# Populating: Tasks\n\nThis is the most complex field to populate. You will write a JSON array where each element is called a task and follows the schema:\n\n```json\n{\n    \"initial_user_ask\": string,\n    \"user_ask_refinements\": list[string],\n    \"final_user_ask\": string,\n    \"direct_answer\": string,\n    \"indirect_answer\": string,\n    \"tools_input_output\": list[string],\n    \"properties\" : {\n        \"coherent\": boolean,\n        \"factually_correct\": boolean,\n        \"comprehensively_answers_final_user_ask\": boolean,\n        \"does_not_contradict_tools_output\": boolean,\n        \"tools_output_summary_is_accurate\": boolean,\n    },\n    \"boolean_properties\": list[boolean],\n    \"answer_satisfies_properties\": boolean\n}\n```\n\nThe high-level goal is to list all tasks and their resolutions and to determine whether each task has been successfully accomplished.\n\n## Step 1: initial_user_ask, user_ask_refinements and final_user_ask\n\nFirst, identify the `initial_user_ask` that starts the task, as well as any `user_ask_refinements` related to the same task. To do this, first loop through the entries in `all_user_asks`. If an entry already appears in a previous task, ignore it; otherwise, consider it as the `initial_user_ask`. Next, examine the remaining entries in `all_user_asks` and fill `user_ask_refinements` with all those related to the `initial_user_ask`, meaning they either refine it or continue the same ask.\n\nFinally, create a coherent `final_user_ask` containing the most updated version of the ask by starting with the initial one and incorporating or replacing any parts with their refinements. This will be the ask that the assistant will attempt to answer.\n\n## Step 2: direct_answer and indirect_answer\n\nExtract every direct and indirect answer that responds to the `final_user_ask`.\n\nAn indirect answer is a part of the assistant's reponse that tries to respond to `final_user_ask` and satisfies any of the following:\n- it mentions limitations or the inability to complete the `final_user_ask`,\n- it references a failed attempt to complete the `final_user_ask`,\n- it suggests offering help with a different ask than the `final_user_ask`,\n- it requests further information or clarifications from the user.\nAdd any piece of the assistant's response looking like an indirect answer to `indirect_answer`.\n\nA direct answer is a part of an assistant's response that either:\n- directly responds to the `final_user_ask`,\n- confirms a successful resolution of the `final_user_ask`.\nIf there are multiple direct answers, simply concatenate them into a longer answer. If there are no direct answers satisfying the above conditions, leave the field `direct_answer` empty.\n\nNote that a piece of an answer cannot be both direct and indirect, you should pick the field in which to add it.\n\n## Step 3: tools_input_output\n\nIf `direct_answer` is empty, skip this step.\n\nExamine each assistant step and identify which tool or function output seemingly contributed to creating any part of the answer from `direct_answer`. If an assistant step immediately before or after the tool call mentions using or having used the tool for answering the `final_user_ask`, the tool call should be associated with this ask. Additionally, if any part of the answer closely aligns with the output of a tool, the tool call should also be associated with this ask.\n\nCreate a list containing the concatenated input and output of each tool used in formulating any part of the answer from `direct_answer`. The tool input is noted as an assistant step before calling the tool, and the tool output is recorded as a tool step.\n\n## Step 4: properties, boolean_properties and answer_satisfies_properties\n\nIf `direct_answer` is empty, set every boolean in `properties`, `boolean_properties` and `answer_satisfies_properties` to `false`.\n\nFor each part of the answer from `direct_answer`, evaluate the following properties one by one to determine which are satisfied and which are not:\n\n- **coherent**: The answer is coherent with itself and does not contain internal contradictions.\n- **factually_correct**: The parts of the answer that do not come from the output of a tool are factually correct.\n- **comprehensively_answers_final_user_ask**: The answer specifically responds to the `final_user_ask`, carefully addressing every aspect of the ask without deviation or omission, ensuring that no details or parts of the ask are left unanswered.\n- **does_not_contradict_tools_output**: No citation of a tool's output contradict any text from `tools_input_output`.\n- **tools_output_summary_is_accurate**: Every summary of a tool's output is accurate with the tool's output from `tools_input_output`. In particular it does not omit critical information relevant to the `final_user_ask` and does not contain made-up information.\n\nAfter assessing each of these properties, copy the resulting boolean values into the list `boolean_properties`.\n\nFinally, set `answer_satisfies_properties` to `false` if any entry in `boolean_properties` is set to `false`; otherwise, set `answer_satisfies_properties` to `true`.\n\n# Populating: ai_answered_all_asks\n\nRespond `true` if every task has `answer_satisfies_properties` set to `true`, otherwise respond `false`. If `all_user_asks` is empty, set `answer_satisfies_properties` to `true`.\n\n# Populating: explanation\n\nIf any user ask has `answer_satisfies_properties` set to `false`, explain why it didn't satisfy all the properties. Otherwise summarize in a few words each ask and the provided answer.\n\nIf `all_user_asks` is empty, mention that you did not find any user ask. If `direct_answer` is empty, mention that no resultion to the `final_user_ask` was provided.\n\nYou must respond with a valid JSON object; be sure to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. I want a metric that assesses whether the session should be considered successful, in the sense that the assistant fully answered or resolved all user queries and requests.",
@@ -2545,14 +2573,14 @@ export interface components {
       scorer_name: '_customized_agentic_session_success';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default agentic_session_success
@@ -2587,20 +2615,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      /** @default {
-       *       "logprobs": true,
-       *       "top_logprobs": 5,
-       *       "echo": false,
-       *       "n": 3,
-       *       "model_alias": "GPT-4o",
-       *       "temperature": 1,
-       *       "max_tokens": -1,
-       *       "top_p": 1,
-       *       "top_k": 40,
-       *       "frequency_penalty": 0,
-       *       "presence_penalty": 0
-       *     } */
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "You will receive the complete chat history from a chatbot application between a user and an assistant.\n\nIn the chat history, the user will ask questions, which are answered with words, or make requests that require calling tools and resolving actions. Sometimes these are given as orders; treat them as if they were questions or requests. Each assistant turn may involve several steps that combine internal reflections, planning steps, selecting tools, and calling tools, and should always end with the assistant replying back to the user.\n\nYou will analyze the entire chat history and will respond back in the following JSON format:\n```json\n{\n    \"all_user_asks\": list[string],\n    \"tasks\": list[dict],\n    \"ai_answered_all_asks\": boolean,\n    \"explanation\": string\n}\n```\nwhere I will now explain how to populate each field.\n\n# Populating: all_user_asks\n\nPopulate `all_user_asks` with a list containing every user ask from the chat history. Review the chat history and generate a list with one entry for each user question, request, order, follow-up, clarification, etc. Ensure that every user ask is a separate item, even if this requires splitting the text mid-sentence. Each item should include enough context to be understandable on its own. It is acceptable to have shared context between items and to incorporate parts of sentences as needed.\n\n# Populating: Tasks\n\nThis is the most complex field to populate. You will write a JSON array where each element is called a task and follows the schema:\n\n```json\n{\n    \"initial_user_ask\": string,\n    \"user_ask_refinements\": list[string],\n    \"final_user_ask\": string,\n    \"direct_answer\": string,\n    \"indirect_answer\": string,\n    \"tools_input_output\": list[string],\n    \"properties\" : {\n        \"coherent\": boolean,\n        \"factually_correct\": boolean,\n        \"comprehensively_answers_final_user_ask\": boolean,\n        \"does_not_contradict_tools_output\": boolean,\n        \"tools_output_summary_is_accurate\": boolean,\n    },\n    \"boolean_properties\": list[boolean],\n    \"answer_satisfies_properties\": boolean\n}\n```\n\nThe high-level goal is to list all tasks and their resolutions and to determine whether each task has been successfully accomplished.\n\n## Step 1: initial_user_ask, user_ask_refinements and final_user_ask\n\nFirst, identify the `initial_user_ask` that starts the task, as well as any `user_ask_refinements` related to the same task. To do this, first loop through the entries in `all_user_asks`. If an entry already appears in a previous task, ignore it; otherwise, consider it as the `initial_user_ask`. Next, examine the remaining entries in `all_user_asks` and fill `user_ask_refinements` with all those related to the `initial_user_ask`, meaning they either refine it or continue the same ask.\n\nFinally, create a coherent `final_user_ask` containing the most updated version of the ask by starting with the initial one and incorporating or replacing any parts with their refinements. This will be the ask that the assistant will attempt to answer.\n\n## Step 2: direct_answer and indirect_answer\n\nExtract every direct and indirect answer that responds to the `final_user_ask`.\n\nAn indirect answer is a part of the assistant's reponse that tries to respond to `final_user_ask` and satisfies any of the following:\n- it mentions limitations or the inability to complete the `final_user_ask`,\n- it references a failed attempt to complete the `final_user_ask`,\n- it suggests offering help with a different ask than the `final_user_ask`,\n- it requests further information or clarifications from the user.\nAdd any piece of the assistant's response looking like an indirect answer to `indirect_answer`.\n\nA direct answer is a part of an assistant's response that either:\n- directly responds to the `final_user_ask`,\n- confirms a successful resolution of the `final_user_ask`.\nIf there are multiple direct answers, simply concatenate them into a longer answer. If there are no direct answers satisfying the above conditions, leave the field `direct_answer` empty.\n\nNote that a piece of an answer cannot be both direct and indirect, you should pick the field in which to add it.\n\n## Step 3: tools_input_output\n\nIf `direct_answer` is empty, skip this step.\n\nExamine each assistant step and identify which tool or function output seemingly contributed to creating any part of the answer from `direct_answer`. If an assistant step immediately before or after the tool call mentions using or having used the tool for answering the `final_user_ask`, the tool call should be associated with this ask. Additionally, if any part of the answer closely aligns with the output of a tool, the tool call should also be associated with this ask.\n\nCreate a list containing the concatenated input and output of each tool used in formulating any part of the answer from `direct_answer`. The tool input is noted as an assistant step before calling the tool, and the tool output is recorded as a tool step.\n\n## Step 4: properties, boolean_properties and answer_satisfies_properties\n\nIf `direct_answer` is empty, set every boolean in `properties`, `boolean_properties` and `answer_satisfies_properties` to `false`.\n\nFor each part of the answer from `direct_answer`, evaluate the following properties one by one to determine which are satisfied and which are not:\n\n- **coherent**: The answer is coherent with itself and does not contain internal contradictions.\n- **factually_correct**: The parts of the answer that do not come from the output of a tool are factually correct.\n- **comprehensively_answers_final_user_ask**: The answer specifically responds to the `final_user_ask`, carefully addressing every aspect of the ask without deviation or omission, ensuring that no details or parts of the ask are left unanswered.\n- **does_not_contradict_tools_output**: No citation of a tool's output contradict any text from `tools_input_output`.\n- **tools_output_summary_is_accurate**: Every summary of a tool's output is accurate with the tool's output from `tools_input_output`. In particular it does not omit critical information relevant to the `final_user_ask` and does not contain made-up information.\n\nAfter assessing each of these properties, copy the resulting boolean values into the list `boolean_properties`.\n\nFinally, set `answer_satisfies_properties` to `false` if any entry in `boolean_properties` is set to `false`; otherwise, set `answer_satisfies_properties` to `true`.\n\n# Populating: ai_answered_all_asks\n\nRespond `true` if every task has `answer_satisfies_properties` set to `true`, otherwise respond `false`. If `all_user_asks` is empty, set `answer_satisfies_properties` to `true`.\n\n# Populating: explanation\n\nIf any user ask has `answer_satisfies_properties` set to `false`, explain why it didn't satisfy all the properties. Otherwise summarize in a few words each ask and the provided answer.\n\nIf `all_user_asks` is empty, mention that you did not find any user ask. If `direct_answer` is empty, mention that no resultion to the `final_user_ask` was provided.\n\nYou must respond with a valid JSON object; be sure to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. I want a metric that assesses whether the session should be considered successful, in the sense that the assistant fully answered or resolved all user queries and requests.",
@@ -2638,14 +2652,14 @@ export interface components {
       scorer_name: '_customized_agentic_workflow_success';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 5
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default agentic_workflow_success
@@ -2680,20 +2694,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      /** @default {
-       *       "logprobs": true,
-       *       "top_logprobs": 5,
-       *       "echo": false,
-       *       "n": 5,
-       *       "model_alias": "GPT-4o mini",
-       *       "temperature": 1,
-       *       "max_tokens": -1,
-       *       "top_p": 1,
-       *       "top_k": 40,
-       *       "frequency_penalty": 0,
-       *       "presence_penalty": 0
-       *     } */
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "You will receive the chat history from a chatbot application between a user and an AI. At the end of the chat history, it is AI’s turn to act.\n\nIn the chat history, the user can either ask questions, which are answered with words, or make requests that require calling tools and actions to resolve. Sometimes these are given as orders, and these should be treated as questions or requests. The AI's turn may involve several steps which are a combination of internal reflections, planning, selecting tools, calling tools, and ends with the AI replying to the user. \nYour task involves the following steps:\n\n########################\n\nStep 1: user_last_input and user_ask\n\nFirst, identify the user's last input in the chat history. From this input, create a list with one entry for each user question, request, or order. If there are no user asks in the user's last input, leave the list empty and skip ahead, considering the AI's turn successful.\n\n########################\n\nStep 2: ai_final_response and answer_or_resolution\n\nIdentify the AI's final response to the user: it is the very last step in the AI's turn.\n\nFor every user_ask, focus on ai_final_response and try to extract either an answer or a resolution using the following definitions:\n- An answer is a part of the AI's final response that directly responds to all or part of a user's question, or asks for further information or clarification.\n- A resolution is a part of the AI's final response that confirms a successful resolution, or asks for further information or clarification in order to answer a user's request.\n\nIf the AI's final response does not address the user ask, simply write \"No answer or resolution provided in the final response\". Do not shorten the answer or resolution; provide the entire relevant part.\n\n########################\n\nStep 3: tools_input_output\n\nExamine every step in the AI's turn and identify which tool/function step seemingly contributed to creating the answer or resolution. Every tool call should be linked to a user ask. If an AI step immediately before or after the tool call mentions planning or using a tool for answering a user ask, the tool call should be associated with that user ask. If the answer or resolution strongly resembles the output of a tool, the tool call should also be associated with that user ask.\n\nCreate a list containing the concatenation of the entire input and output of every tool used in formulating the answer or resolution. The tool input is listed as an AI step before calling the tool, and the tool output is listed as a tool step.\n\n########################\n\nStep 4: properties, boolean_properties and answer_successful\n\nFor every answer or resolution from Step 2, check the following properties one by one to determine which are satisfied:\n- factually_wrong: the answer contains factual errors.\n- addresses_different_ask: the answer or resolution addresses a slightly different user ask (make sure to differentiate this from asking clarifying questions related to the current ask).\n- not_adherent_to_tools_output: the answer or resolution includes citations from a tool's output, but some are wrongly copied or attributed.\n- mentions_inability: the answer or resolution mentions an inability to complete the user ask.\n- mentions_unsuccessful_attempt: the answer or resolution mentions an unsuccessful or failed attempt to complete the user ask.\n\nThen copy all the properties (only the boolean value) in the list boolean_properties.\n\nFinally, set answer_successful to `false` if any entry in boolean_properties is set to `true`, otherwise set answer_successful to `true`.\n\n########################\n\nYou must respond in the following JSON format:\n```\n{\n    \"user_last_input\": string,\n    \"ai_final_response\": string,\n    \"asks_and_answers\": list[dict],\n    \"ai_turn_is_successful\": boolean,\n    \"explanation\": string\n}\n```\n\nYour tasks are defined as follows:\n\n- **\"asks_and_answers\"**: Perform all the tasks described in the steps above. Your answer should be a list where each user ask appears as:\n\n```\n{\n    \"user_ask\": string,\n    \"answer_or_resolution\": string,\n    \"tools_input_output\": list[string],\n    \"properties\" : {\n        \"factually_wrong\": boolean,\n        \"addresses_different_ask\": boolean,\n        \"not_adherent_to_tools_output\": boolean,\n        \"mentions_inability\": boolean,\n        \"mentions_unsuccessful_attempt\": boolean\n    },\n    \"boolean_properties\": list[boolean],\n    \"answer_successful\": boolean\n}\n```\n\n- **\"ai_turn_is_successful\"**: Respond `true` if at least one answer_successful is True, otherwise respond `false`.\n\n- **\"explanation\"**: If at least one answer was considered successful, explain why. Otherwise explain why all answers were not successful.\n\nYou must respond with a valid JSON object; be sure to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. An assistant workflow can involves possibly multiple tool selections steps, tool calls steps, and finally a reply to the user. I want a metric that assesses whether each assistant's workflow was thoughtfully planned and ended up helping answer the queries.\n",
@@ -2731,14 +2731,14 @@ export interface components {
       scorer_name: '_customized_agentic_workflow_success';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 5
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default agentic_workflow_success
@@ -2773,20 +2773,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      /** @default {
-       *       "logprobs": true,
-       *       "top_logprobs": 5,
-       *       "echo": false,
-       *       "n": 5,
-       *       "model_alias": "GPT-4o mini",
-       *       "temperature": 1,
-       *       "max_tokens": -1,
-       *       "top_p": 1,
-       *       "top_k": 40,
-       *       "frequency_penalty": 0,
-       *       "presence_penalty": 0
-       *     } */
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "You will receive the chat history from a chatbot application between a user and an AI. At the end of the chat history, it is AI’s turn to act.\n\nIn the chat history, the user can either ask questions, which are answered with words, or make requests that require calling tools and actions to resolve. Sometimes these are given as orders, and these should be treated as questions or requests. The AI's turn may involve several steps which are a combination of internal reflections, planning, selecting tools, calling tools, and ends with the AI replying to the user. \nYour task involves the following steps:\n\n########################\n\nStep 1: user_last_input and user_ask\n\nFirst, identify the user's last input in the chat history. From this input, create a list with one entry for each user question, request, or order. If there are no user asks in the user's last input, leave the list empty and skip ahead, considering the AI's turn successful.\n\n########################\n\nStep 2: ai_final_response and answer_or_resolution\n\nIdentify the AI's final response to the user: it is the very last step in the AI's turn.\n\nFor every user_ask, focus on ai_final_response and try to extract either an answer or a resolution using the following definitions:\n- An answer is a part of the AI's final response that directly responds to all or part of a user's question, or asks for further information or clarification.\n- A resolution is a part of the AI's final response that confirms a successful resolution, or asks for further information or clarification in order to answer a user's request.\n\nIf the AI's final response does not address the user ask, simply write \"No answer or resolution provided in the final response\". Do not shorten the answer or resolution; provide the entire relevant part.\n\n########################\n\nStep 3: tools_input_output\n\nExamine every step in the AI's turn and identify which tool/function step seemingly contributed to creating the answer or resolution. Every tool call should be linked to a user ask. If an AI step immediately before or after the tool call mentions planning or using a tool for answering a user ask, the tool call should be associated with that user ask. If the answer or resolution strongly resembles the output of a tool, the tool call should also be associated with that user ask.\n\nCreate a list containing the concatenation of the entire input and output of every tool used in formulating the answer or resolution. The tool input is listed as an AI step before calling the tool, and the tool output is listed as a tool step.\n\n########################\n\nStep 4: properties, boolean_properties and answer_successful\n\nFor every answer or resolution from Step 2, check the following properties one by one to determine which are satisfied:\n- factually_wrong: the answer contains factual errors.\n- addresses_different_ask: the answer or resolution addresses a slightly different user ask (make sure to differentiate this from asking clarifying questions related to the current ask).\n- not_adherent_to_tools_output: the answer or resolution includes citations from a tool's output, but some are wrongly copied or attributed.\n- mentions_inability: the answer or resolution mentions an inability to complete the user ask.\n- mentions_unsuccessful_attempt: the answer or resolution mentions an unsuccessful or failed attempt to complete the user ask.\n\nThen copy all the properties (only the boolean value) in the list boolean_properties.\n\nFinally, set answer_successful to `false` if any entry in boolean_properties is set to `true`, otherwise set answer_successful to `true`.\n\n########################\n\nYou must respond in the following JSON format:\n```\n{\n    \"user_last_input\": string,\n    \"ai_final_response\": string,\n    \"asks_and_answers\": list[dict],\n    \"ai_turn_is_successful\": boolean,\n    \"explanation\": string\n}\n```\n\nYour tasks are defined as follows:\n\n- **\"asks_and_answers\"**: Perform all the tasks described in the steps above. Your answer should be a list where each user ask appears as:\n\n```\n{\n    \"user_ask\": string,\n    \"answer_or_resolution\": string,\n    \"tools_input_output\": list[string],\n    \"properties\" : {\n        \"factually_wrong\": boolean,\n        \"addresses_different_ask\": boolean,\n        \"not_adherent_to_tools_output\": boolean,\n        \"mentions_inability\": boolean,\n        \"mentions_unsuccessful_attempt\": boolean\n    },\n    \"boolean_properties\": list[boolean],\n    \"answer_successful\": boolean\n}\n```\n\n- **\"ai_turn_is_successful\"**: Respond `true` if at least one answer_successful is True, otherwise respond `false`.\n\n- **\"explanation\"**: If at least one answer was considered successful, explain why. Otherwise explain why all answers were not successful.\n\nYou must respond with a valid JSON object; be sure to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. An assistant workflow can involves possibly multiple tool selections steps, tool calls steps, and finally a reply to the user. I want a metric that assesses whether each assistant's workflow was thoughtfully planned and ended up helping answer the queries.\n",
@@ -2824,14 +2810,14 @@ export interface components {
       scorer_name: '_customized_chunk_attribution_utilization_gpt';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 1
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default chunk_attribution_utilization
@@ -2867,7 +2853,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "value_field_name": "rating",
        *       "explanation_field_name": "explanation",
@@ -2894,14 +2879,14 @@ export interface components {
       scorer_name: '_customized_chunk_attribution_utilization_gpt';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 1
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default chunk_attribution_utilization
@@ -2937,7 +2922,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "value_field_name": "rating",
        *       "explanation_field_name": "explanation",
@@ -2964,14 +2948,14 @@ export interface components {
       scorer_name: '_customized_completeness_gpt';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default completeness
@@ -3006,7 +2990,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "value_field_name": "completeness",
        *       "explanation_field_name": "explanation",
@@ -3033,14 +3016,14 @@ export interface components {
       scorer_name: '_customized_completeness_gpt';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default completeness
@@ -3075,7 +3058,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "value_field_name": "completeness",
        *       "explanation_field_name": "explanation",
@@ -3102,14 +3084,14 @@ export interface components {
       scorer_name: '_customized_factuality';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default correctness
@@ -3144,7 +3126,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "# Task\n\nYou will be given a prompt that was sent to a large language model (LLM), and the LLM's response. Your task is to assess whether the response is factually correct.\n\n## Task output format\n\nYou must respond in the following JSON format:\n\n```\n{\n    \"explanation\": string\n    \"was_factual\": boolean\n}\n```\n\n\"explanation\": Your step-by-step reasoning process. List out the claims made in the response, and for each claim, provide a detailed explanation of why that claim is or is not factual.\n\n\"was_factual\": `true` if the response was completely factually correct according to the instructions above, `false` otherwise.\n\nYou must respond with a valid JSON string.\n\n## Task guidelines\n\n### Input format\n\nIn some cases, the prompt may include multiple messages of chat history. If so, each message will begin with one of the following prefixes:\n\n- \"System: \"\n- \"Human: \"\n- \"AI: \"\n\n### How to determine the value of `was_factual`\n\n- was_factual should be false if anything in the response is factually incorrect, and true otherwise.\n- If the response omits some useful information, but does not include any falsehoods, was_factual should be true.\n- The prompt itself may contain false information. If the response repeats this false information, was_factual should be false. In other words, do not assume that the prompt is factually correct when evaluating the response.\n- If the prompt and response involve a domain where the concept of \"factual accuracy\" doesn't strictly apply, assess whatever quality of the response is most intuitively similar to factual accuracy. For example, if the prompt asks the LLM to write code, assess whether the code is free of syntax errors and implements the intended logic.\n\n### Writing the explanation\n\n- As stated above, a typical explanation should list out the claims made in the response, and for each claim, provide a detailed explanation of why that claim is or is not factual.\n- If the response doesn't make claims per se, break down the response into constituent parts in the most natural way given its content. For example, in code generation tasks, you might break down the response into individual functions or lines of code.\n- Work step by step, and do not give an overall assessment of the response until the end of your explanation.",
        *       "value_field_name": "was_factual",
@@ -3186,14 +3167,14 @@ export interface components {
       scorer_name: '_customized_factuality';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default correctness
@@ -3228,7 +3209,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "# Task\n\nYou will be given a prompt that was sent to a large language model (LLM), and the LLM's response. Your task is to assess whether the response is factually correct.\n\n## Task output format\n\nYou must respond in the following JSON format:\n\n```\n{\n    \"explanation\": string\n    \"was_factual\": boolean\n}\n```\n\n\"explanation\": Your step-by-step reasoning process. List out the claims made in the response, and for each claim, provide a detailed explanation of why that claim is or is not factual.\n\n\"was_factual\": `true` if the response was completely factually correct according to the instructions above, `false` otherwise.\n\nYou must respond with a valid JSON string.\n\n## Task guidelines\n\n### Input format\n\nIn some cases, the prompt may include multiple messages of chat history. If so, each message will begin with one of the following prefixes:\n\n- \"System: \"\n- \"Human: \"\n- \"AI: \"\n\n### How to determine the value of `was_factual`\n\n- was_factual should be false if anything in the response is factually incorrect, and true otherwise.\n- If the response omits some useful information, but does not include any falsehoods, was_factual should be true.\n- The prompt itself may contain false information. If the response repeats this false information, was_factual should be false. In other words, do not assume that the prompt is factually correct when evaluating the response.\n- If the prompt and response involve a domain where the concept of \"factual accuracy\" doesn't strictly apply, assess whatever quality of the response is most intuitively similar to factual accuracy. For example, if the prompt asks the LLM to write code, assess whether the code is free of syntax errors and implements the intended logic.\n\n### Writing the explanation\n\n- As stated above, a typical explanation should list out the claims made in the response, and for each claim, provide a detailed explanation of why that claim is or is not factual.\n- If the response doesn't make claims per se, break down the response into constituent parts in the most natural way given its content. For example, in code generation tasks, you might break down the response into individual functions or lines of code.\n- Work step by step, and do not give an overall assessment of the response until the end of your explanation.",
        *       "value_field_name": "was_factual",
@@ -3270,14 +3250,14 @@ export interface components {
       scorer_name: '_customized_ground_truth_adherence';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default ground_truth_adherence
@@ -3312,7 +3292,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "I will give you two different texts, called the \"ground truth\" and the \"response.\"\n\nRead both texts, then tell me whether they are \"equivalent,\" in the sense that they basically mean the same thing.\n\nKeep the following guidelines in mind.\n\n- Two texts can be equivalent if they use different phrasing, as long as the phrasing doesn't affect meaning.\n- Two texts can be equivalent if there are _slight_ differences in meaning that wouldn't affect the conclusions that a reasonable reader would draw upon reading them.\n- Imagine that you are grading a free-response exam.  The ground truth given in the answer key for an exam question, and the response is a student's answer to the same question. If you would give the student full marks for this question, that means the two texts are equivalent. If you wouldn't, that means the two texts are not equivalent.\n\nRespond in the following JSON format:\n\n```\n{{\n    \"explanation\": string,\n    \"equivalent\": boolean\n}}\n```\n\n\"explanation\": A step-by-step breakdown of the similarities and differences between the text. For each difference you note (if any), consider why the difference might or might not make the texts non-equivalent, note down your reasoning clearly and explicitly, and ultimately draw a conclusion about whether that difference makes the text non-equivalent.\n\n\"equivalent\": `true` if the texts are equivalent in the sense given above, `false` if they are non-equivalent.\n\nYou must respond with valid JSON.",
        *       "metric_description": "This metric computes whether a response from a large language model matches a provided ground truth text.",
@@ -3341,14 +3320,14 @@ export interface components {
       scorer_name: '_customized_ground_truth_adherence';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default ground_truth_adherence
@@ -3383,7 +3362,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "I will give you two different texts, called the \"ground truth\" and the \"response.\"\n\nRead both texts, then tell me whether they are \"equivalent,\" in the sense that they basically mean the same thing.\n\nKeep the following guidelines in mind.\n\n- Two texts can be equivalent if they use different phrasing, as long as the phrasing doesn't affect meaning.\n- Two texts can be equivalent if there are _slight_ differences in meaning that wouldn't affect the conclusions that a reasonable reader would draw upon reading them.\n- Imagine that you are grading a free-response exam.  The ground truth given in the answer key for an exam question, and the response is a student's answer to the same question. If you would give the student full marks for this question, that means the two texts are equivalent. If you wouldn't, that means the two texts are not equivalent.\n\nRespond in the following JSON format:\n\n```\n{{\n    \"explanation\": string,\n    \"equivalent\": boolean\n}}\n```\n\n\"explanation\": A step-by-step breakdown of the similarities and differences between the text. For each difference you note (if any), consider why the difference might or might not make the texts non-equivalent, note down your reasoning clearly and explicitly, and ultimately draw a conclusion about whether that difference makes the text non-equivalent.\n\n\"equivalent\": `true` if the texts are equivalent in the sense given above, `false` if they are non-equivalent.\n\nYou must respond with valid JSON.",
        *       "metric_description": "This metric computes whether a response from a large language model matches a provided ground truth text.",
@@ -3412,14 +3390,14 @@ export interface components {
       scorer_name: '_customized_groundedness';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default context_adherence
@@ -3454,7 +3432,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "The user will provide you with a prompt that was sent to an automatic question-answering system, and that system's response. Both will be provided as JSON strings.\n\nThe prompt will contain one or more documents intended as context which the question-answering system was given as reference material.\n\nYour task is to determine whether the answer was supported by the documents.\n\nThink step by step, and explain your reasoning carefully.\nState your observations first, before drawing any conclusions.\n\nRespond in the following JSON format:\n\n```\n{\n    \"explanation\": string,\n    \"was_supported\": boolean\n}\n```\n\n\"explanation\": Your step-by-step reasoning process. List out the claims made in the response, and for each claim, provide a detailed explanation of why that claim is or is not supported by the documents.\n\n\"was_supported\": `true` if the response was supported by the documents, `false` otherwise.\n\nYou must respond with valid JSON.",
        *       "metric_description": "I have a RAG (retrieval-augmented generation) system that generates text based on one or more documents that I always include in my prompts. I want a metric that checks whether the generated text was supported by information in the documents. The metric should exhaustively check each claim in the response against the documents, one by one, listing them out explicitly.",
@@ -3488,14 +3465,14 @@ export interface components {
       scorer_name: '_customized_groundedness';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default context_adherence
@@ -3530,7 +3507,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "The user will provide you with a prompt that was sent to an automatic question-answering system, and that system's response. Both will be provided as JSON strings.\n\nThe prompt will contain one or more documents intended as context which the question-answering system was given as reference material.\n\nYour task is to determine whether the answer was supported by the documents.\n\nThink step by step, and explain your reasoning carefully.\nState your observations first, before drawing any conclusions.\n\nRespond in the following JSON format:\n\n```\n{\n    \"explanation\": string,\n    \"was_supported\": boolean\n}\n```\n\n\"explanation\": Your step-by-step reasoning process. List out the claims made in the response, and for each claim, provide a detailed explanation of why that claim is or is not supported by the documents.\n\n\"was_supported\": `true` if the response was supported by the documents, `false` otherwise.\n\nYou must respond with valid JSON.",
        *       "metric_description": "I have a RAG (retrieval-augmented generation) system that generates text based on one or more documents that I always include in my prompts. I want a metric that checks whether the generated text was supported by information in the documents. The metric should exhaustively check each claim in the response against the documents, one by one, listing them out explicitly.",
@@ -3564,14 +3540,14 @@ export interface components {
       scorer_name: '_customized_instruction_adherence';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default instruction_adherence
@@ -3606,7 +3582,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "The user will provide you with a prompt that was sent to a chatbot system, and the chatbot's latest response. Both will be provided as JSON strings.\n\nIn some cases, the prompt may be split up into multiple messages. If so, each message will begin with one of the following prefixes:\n\n- \"System: \"\n- \"Human: \"\n- \"AI: \"\n\nIf you see these prefixes, pay attention to them because they indicate where messages begin and end. Messages prefixed with \"System: \" contain system instructions which the chatbot should follow. Messages prefixed with \"Human: \" are user input. Messages prefixed with \"AI: \" are system responses to user input.\nIf you do not see these prefixes, treat the prompt as though it was a single user input message prefixed with \"Human: \".\n\nYour task is to determine whether the latest response from the chatbot is consistent with the instructions provided in the system prompt (if there is one) or in the first user message (if there is no system prompt).\n\nFocus only on the latest response and the instructions. Do not consider the chat history or any previous messages from the chatbot.\n\nThink step by step, and explain your reasoning carefully.\nState your observations first, before drawing any conclusions.\n\nRespond in the following JSON format:\n\n```\n{\n    \"explanation\": string,\n    \"is_consistent\": boolean\n}\n```\n\n\"explanation\": Your step-by-step reasoning process. List out the relevant instructions and explain whether the latest response adheres to each of them.\n\n\"is_consistent\": `true` if the latest response is consistent with the instructions, `false` otherwise.\n\nYou must respond with a valid JSON string.",
        *       "metric_description": "I have a chatbot application.\nMy system prompt contains a list of instructions for what the chatbot should and should not do in every interaction. I want a metric that checks whether the latest response from the chatbot is consistent with the instructions.\n\nThe metric should only evaluate the latest message (the response), not the chat history. It should return false only if the latest message violates one or more instructions. Violations earlier in the chat history should not affect whether the value is true or false. The value should only depend on whether the latest message was consistent with the instructions, considered in context. The metric should only consider instructions that are applicable to the latest message.",
@@ -3645,14 +3620,14 @@ export interface components {
       scorer_name: '_customized_instruction_adherence';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default instruction_adherence
@@ -3687,7 +3662,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "The user will provide you with a prompt that was sent to a chatbot system, and the chatbot's latest response. Both will be provided as JSON strings.\n\nIn some cases, the prompt may be split up into multiple messages. If so, each message will begin with one of the following prefixes:\n\n- \"System: \"\n- \"Human: \"\n- \"AI: \"\n\nIf you see these prefixes, pay attention to them because they indicate where messages begin and end. Messages prefixed with \"System: \" contain system instructions which the chatbot should follow. Messages prefixed with \"Human: \" are user input. Messages prefixed with \"AI: \" are system responses to user input.\nIf you do not see these prefixes, treat the prompt as though it was a single user input message prefixed with \"Human: \".\n\nYour task is to determine whether the latest response from the chatbot is consistent with the instructions provided in the system prompt (if there is one) or in the first user message (if there is no system prompt).\n\nFocus only on the latest response and the instructions. Do not consider the chat history or any previous messages from the chatbot.\n\nThink step by step, and explain your reasoning carefully.\nState your observations first, before drawing any conclusions.\n\nRespond in the following JSON format:\n\n```\n{\n    \"explanation\": string,\n    \"is_consistent\": boolean\n}\n```\n\n\"explanation\": Your step-by-step reasoning process. List out the relevant instructions and explain whether the latest response adheres to each of them.\n\n\"is_consistent\": `true` if the latest response is consistent with the instructions, `false` otherwise.\n\nYou must respond with a valid JSON string.",
        *       "metric_description": "I have a chatbot application.\nMy system prompt contains a list of instructions for what the chatbot should and should not do in every interaction. I want a metric that checks whether the latest response from the chatbot is consistent with the instructions.\n\nThe metric should only evaluate the latest message (the response), not the chat history. It should return false only if the latest message violates one or more instructions. Violations earlier in the chat history should not affect whether the value is true or false. The value should only depend on whether the latest message was consistent with the instructions, considered in context. The metric should only consider instructions that are applicable to the latest message.",
@@ -3726,14 +3700,14 @@ export interface components {
       scorer_name: '_customized_tool_error_rate';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 1
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default tool_error_rate
@@ -3768,20 +3742,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      /** @default {
-       *       "logprobs": true,
-       *       "top_logprobs": 5,
-       *       "echo": false,
-       *       "n": 1,
-       *       "model_alias": "GPT-4o mini",
-       *       "temperature": 1,
-       *       "max_tokens": -1,
-       *       "top_p": 1,
-       *       "top_k": 40,
-       *       "frequency_penalty": 0,
-       *       "presence_penalty": 0
-       *     } */
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "One or more functions have been called, and you will receive their output. The output format could be a string containing the tool's result, it could be in JSON or XML format with additional metadata and information, or it could be a list of the outputs in any such format.\n\nYour task is to determine whether at least one function call didn't execute correctly and errored out. If at least one call failed, then you should consider the entire call as a failure. \nYou should NOT evaluate any other aspect of the tool call. In particular you should not evaluate whether the output is well formatted, coherent or contains spelling mistakes.\n\nIf you conclude that the call failed, provide an explanation as to why. You may summarize any error message you encounter. If the call was successful, no explanation is needed.\n\nRespond in the following JSON format:\n\n```\n{\n   \"function_errored_out\": boolean,\n   \"explanation\": string\n}\n```\n\n- **\"function_errored_out\"**: Use `false` if all tool calls were successful, and `true` if at least one errored out.\n\n- **\"explanation\"**: If a tool call failed, provide your step-by-step reasoning to determine why it might have failed. If all tool calls were succesful, leave this blank.\n\nYou must respond with a valid JSON object; don't forget to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. I want a metric to evaluate whether a tool invocation was successful or if it resulted in an error.",
@@ -3819,14 +3779,14 @@ export interface components {
       scorer_name: '_customized_tool_error_rate';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 1
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default tool_error_rate
@@ -3861,20 +3821,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      /** @default {
-       *       "logprobs": true,
-       *       "top_logprobs": 5,
-       *       "echo": false,
-       *       "n": 1,
-       *       "model_alias": "GPT-4o mini",
-       *       "temperature": 1,
-       *       "max_tokens": -1,
-       *       "top_p": 1,
-       *       "top_k": 40,
-       *       "frequency_penalty": 0,
-       *       "presence_penalty": 0
-       *     } */
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "One or more functions have been called, and you will receive their output. The output format could be a string containing the tool's result, it could be in JSON or XML format with additional metadata and information, or it could be a list of the outputs in any such format.\n\nYour task is to determine whether at least one function call didn't execute correctly and errored out. If at least one call failed, then you should consider the entire call as a failure. \nYou should NOT evaluate any other aspect of the tool call. In particular you should not evaluate whether the output is well formatted, coherent or contains spelling mistakes.\n\nIf you conclude that the call failed, provide an explanation as to why. You may summarize any error message you encounter. If the call was successful, no explanation is needed.\n\nRespond in the following JSON format:\n\n```\n{\n   \"function_errored_out\": boolean,\n   \"explanation\": string\n}\n```\n\n- **\"function_errored_out\"**: Use `false` if all tool calls were successful, and `true` if at least one errored out.\n\n- **\"explanation\"**: If a tool call failed, provide your step-by-step reasoning to determine why it might have failed. If all tool calls were succesful, leave this blank.\n\nYou must respond with a valid JSON object; don't forget to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. I want a metric to evaluate whether a tool invocation was successful or if it resulted in an error.",
@@ -3912,14 +3858,14 @@ export interface components {
       scorer_name: '_customized_tool_selection_quality';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default tool_selection_quality
@@ -3954,7 +3900,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Input'];
       /** @default {
        *       "metric_system_prompt": "You will receive the chat history from a chatbot application. At the end of the  conversation, it will be the bot’s turn to act. The bot has several options: it can reflect and plan its next steps, choose to call tools, or respond directly to the user. If the bot opts to use tools, the tools execute separately, and the bot will subsequently review the output from those tools. Ultimately, the bot should reply to the user, choosing the relevant parts of the tools' output.\n\nYour task is to evaluate the bot's decision-making process and ensure it follows these guidelines:\n- If all user queries have already been answered and can be found in the chat history, the bot should not call tools.\n- If no suitable tools are available to assist with user queries, the bot should not call tools.\n- If the chat history contains all the necessary information to directly answer all user queries, the bot should not call tools.\n- If the bot decided to call tools, the tools and argument values selected must relate to at least part of one user query.\n- If the bot decided to call tools, all arguments marked as \"required\" in the tools' schema must be provided with values.\n\nRemember that there are many ways the bot's actions can comply with these rules. Your role is to determine whether the bot fundamentally violated any of these rules, not whether it chose the most optimal response.\n\nRespond in the following JSON format:\n```\n{\n    \"explanation\": string,\n    \"bot_answer_follows_rules\": boolean\n}\n```\n\n- **\"explanation\"**: Provide your step-by-step reasoning to determine whether the bot's reply follows the above-mentioned guidelines.\n\n- **\"bot_answer_follows_rules\"**: Respond `true` if you believe the bot followed the above guidelines, respond `false` otherwise.\n\nYou must respond with a valid JSON object; don't forget to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. I want a metric that assesses whether the assistant made the correct decision in choosing to either use tools or to directly respond, and in cases where it uses tools, whether it selected the correct tools with the correct arguments.",
@@ -3988,14 +3933,14 @@ export interface components {
       scorer_name: '_customized_tool_selection_quality';
       /**
        * Model Alias
-       * @description Model alias to use for scoring.
+       * @default GPT-4o mini
        */
-      model_alias?: string | null;
+      model_alias?: string;
       /**
        * Num Judges
-       * @description Number of judges for the scorer.
+       * @default 3
        */
-      num_judges?: number | null;
+      num_judges?: number;
       /**
        * Name
        * @default tool_selection_quality
@@ -4030,7 +3975,6 @@ export interface components {
       metric_name?: string | null;
       /** Description */
       description?: string | null;
-      gpt_settings?: components['schemas']['PromptRunSettings-Output'];
       /** @default {
        *       "metric_system_prompt": "You will receive the chat history from a chatbot application. At the end of the  conversation, it will be the bot’s turn to act. The bot has several options: it can reflect and plan its next steps, choose to call tools, or respond directly to the user. If the bot opts to use tools, the tools execute separately, and the bot will subsequently review the output from those tools. Ultimately, the bot should reply to the user, choosing the relevant parts of the tools' output.\n\nYour task is to evaluate the bot's decision-making process and ensure it follows these guidelines:\n- If all user queries have already been answered and can be found in the chat history, the bot should not call tools.\n- If no suitable tools are available to assist with user queries, the bot should not call tools.\n- If the chat history contains all the necessary information to directly answer all user queries, the bot should not call tools.\n- If the bot decided to call tools, the tools and argument values selected must relate to at least part of one user query.\n- If the bot decided to call tools, all arguments marked as \"required\" in the tools' schema must be provided with values.\n\nRemember that there are many ways the bot's actions can comply with these rules. Your role is to determine whether the bot fundamentally violated any of these rules, not whether it chose the most optimal response.\n\nRespond in the following JSON format:\n```\n{\n    \"explanation\": string,\n    \"bot_answer_follows_rules\": boolean\n}\n```\n\n- **\"explanation\"**: Provide your step-by-step reasoning to determine whether the bot's reply follows the above-mentioned guidelines.\n\n- **\"bot_answer_follows_rules\"**: Respond `true` if you believe the bot followed the above guidelines, respond `false` otherwise.\n\nYou must respond with a valid JSON object; don't forget to escape special characters.",
        *       "metric_description": "I have a multi-turn chatbot application where the assistant is an agent that has access to tools. I want a metric that assesses whether the assistant made the correct decision in choosing to either use tools or to directly respond, and in cases where it uses tools, whether it selected the correct tools with the correct arguments.",
@@ -6037,35 +5981,15 @@ export interface components {
      * MetricCritiqueJobConfiguration
      * @description Info necessary to execute a metric critique job.
      */
-    'MetricCritiqueJobConfiguration-Input': {
+    MetricCritiqueJobConfiguration: {
       /** Project Type */
-      project_type: 'prompt_evaluation' | 'llm_monitor';
+      project_type: 'prompt_evaluation' | 'llm_monitor' | 'gen_ai';
       /** Metric Name */
       metric_name: string;
+      /** Scorer Id */
+      scorer_id?: string | null;
       /** Critique Ids */
       critique_ids: string[];
-      llm_settings?: components['schemas']['PromptRunSettings-Input'];
-      /** Recompute Settings */
-      recompute_settings?:
-        | (
-            | components['schemas']['RecomputeSettingsRuns']
-            | components['schemas']['RecomputeSettingsProject']
-            | components['schemas']['RecomputeSettingsObserve']
-          )
-        | null;
-    };
-    /**
-     * MetricCritiqueJobConfiguration
-     * @description Info necessary to execute a metric critique job.
-     */
-    'MetricCritiqueJobConfiguration-Output': {
-      /** Project Type */
-      project_type: 'prompt_evaluation' | 'llm_monitor';
-      /** Metric Name */
-      metric_name: string;
-      /** Critique Ids */
-      critique_ids: string[];
-      llm_settings?: components['schemas']['PromptRunSettings-Output'];
       /** Recompute Settings */
       recompute_settings?:
         | (
@@ -6242,7 +6166,7 @@ export interface components {
       [key: string]: unknown;
     };
     /** Model */
-    'Model-Input': {
+    Model: {
       /** Name */
       name: string;
       /** Alias */
@@ -6301,75 +6225,6 @@ export interface components {
       params_map?: components['schemas']['RunParamsMap'];
       output_map?: components['schemas']['OutputMap'] | null;
       input_map?: components['schemas']['InputMap'] | null;
-    };
-    /** Model */
-    'Model-Output': {
-      /** Name */
-      name: string;
-      /** Alias */
-      alias: string;
-      /** @default openai */
-      integration?: components['schemas']['LLMIntegration'];
-      /** User Role */
-      user_role?: string | null;
-      /** Assistant Role */
-      assistant_role?: string | null;
-      /**
-       * System Supported
-       * @default false
-       */
-      system_supported?: boolean;
-      /** Input Token Limit */
-      input_token_limit?: number | null;
-      /** Output Token Limit */
-      output_token_limit?: number | null;
-      /** Token Limit */
-      token_limit?: number | null;
-      /**
-       * Output Price
-       * @default 0
-       */
-      output_price?: number;
-      /**
-       * Input Price
-       * @default 0
-       */
-      input_price?: number;
-      /** @default tokens */
-      cost_by?: components['schemas']['ModelCostBy'];
-      /**
-       * Is Chat
-       * @default false
-       */
-      is_chat?: boolean;
-      /**
-       * Provides Log Probs
-       * @default false
-       */
-      provides_log_probs?: boolean;
-      /**
-       * Formatting Tokens
-       * @default 0
-       */
-      formatting_tokens?: number;
-      /**
-       * Response Prefix Tokens
-       * @default 0
-       */
-      response_prefix_tokens?: number;
-      /** Api Version */
-      api_version?: string | null;
-      params_map?: components['schemas']['RunParamsMap'];
-      output_map?: components['schemas']['OutputMap'] | null;
-      input_map?: components['schemas']['InputMap'] | null;
-      /**
-       * Completion Only
-       * @description Check if the model is completion only.
-       *
-       *     Completion only models are not designed to handle message formats, and only work
-       *     with completion requests.
-       */
-      readonly completion_only: boolean;
     };
     /**
      * ModelCostBy
@@ -7108,7 +6963,7 @@ export interface components {
       deployment_name?: string | null;
       /**
        * Model Alias
-       * @default ChatGPT (4K context)
+       * @default GPT-4o mini
        */
       model_alias?: string;
       /**
@@ -7152,7 +7007,7 @@ export interface components {
         [key: string]: string;
       } | null;
       /** Known Models */
-      known_models?: components['schemas']['Model-Input'][];
+      known_models?: components['schemas']['Model'][];
     };
     /**
      * PromptRunSettings
@@ -7183,7 +7038,7 @@ export interface components {
       deployment_name?: string | null;
       /**
        * Model Alias
-       * @default ChatGPT (4K context)
+       * @default GPT-4o mini
        */
       model_alias?: string;
       /**
