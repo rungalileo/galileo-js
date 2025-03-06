@@ -5,7 +5,7 @@ export enum Routes {
   getToken = 'get-token',
   projects = 'projects',
   project = 'projects/{project_id}',
-  projects_all = '/projects/all',
+  projects_all = 'projects/all',
   logStreams = 'projects/{project_id}/log_streams',
   logStream = 'projects/{project_id}/log_streams/{log_stream_id}',
   runs = 'projects/{project_id}/runs',
@@ -15,6 +15,7 @@ export enum Routes {
   observeDelete = 'projects/{project_id}/observe/delete',
   evaluateIngest = 'projects/{project_id}/runs/{run_id}/chains/ingest',
   datasets = 'datasets',
+  datasetsQuery = 'datasets/query',
   dataset = 'datasets/{dataset_id}',
   traces = 'projects/{project_id}/traces'
 }

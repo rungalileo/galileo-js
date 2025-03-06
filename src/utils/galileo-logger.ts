@@ -26,7 +26,7 @@ class GalileoLogger {
 
     if (!this.projectName || !this.logStreamName) {
       throw new Error(
-        'Project and logStream are required to initialize GalileoLogger.'
+        'User must provide projectName and logStreamName to GalileoLogger, or set them as environment variables.'
       );
     }
   }
@@ -105,7 +105,7 @@ class GalileoLogger {
      */
     if (this.currentParent() !== undefined) {
       throw new Error(
-        'A trace cannot be created within a parent trace or span, it must always be the root.'
+        'A trace cannot be created within a parent trace or span, it must always be the root. You must conclude the existing trace before adding a new one.'
       );
     }
 
@@ -336,7 +336,6 @@ class GalileoLogger {
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
-      //// @ts-expect-error - FIXME: Type this
       await this.client.ingestTraces(loggedTraces);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);
