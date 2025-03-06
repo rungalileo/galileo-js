@@ -9,6 +9,25 @@ try {
   console.warn('openai package is not installed. Some features may not work.');
 }
 
+/**
+ * Wraps an OpenAI instance with logging.
+ * @param openAIClient The OpenAI instance to wrap.
+ * @param logger The logger to use. Defaults to a new GalileoLogger instance.
+ * @returns The wrapped OpenAI instance.
+ *
+ * Usage:
+ *
+ * ```typescript
+ * import { wrapOpenAI } from 'galileo'
+ *
+ * const openai = wrapOpenAI(new OpenAI({apiKey: process.env.OPENAI_API_KEY}));
+ *
+ * await openai.chat.completions.create({
+ *   model: "gpt-4o",
+ *   messages: [{ content: "Say hello world!", role: "user" }],
+ * });
+ * ```
+ */
 export function wrapOpenAI(
   openAIClient: OpenAI,
   logger: GalileoLogger = new GalileoLogger()
