@@ -1,6 +1,6 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
-import { argsToDict, extractParamNames } from './utils/serialization';
+import { argsToDict, extractParamsInfo } from './utils/serialization';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -17,12 +17,15 @@ export function log<T extends unknown[], R>(
   options: LogOptions,
   fn: (...args: T) => Promise<R>
 ): (...args: T) => Promise<R> {
+  // Extract default parameters when wrapping the function
+  const paramsInfo = extractParamsInfo(fn);
+
   return async (...args: T): Promise<R> => {
     let logger: GalileoLogger | undefined = undefined;
     let result: R = {} as R;
     let concludeSpan = false;
-    const paramNames = extractParamNames(fn);
-    const argsDict: Record<string, string> = argsToDict(paramNames, args);
+
+    const argsDict: Record<string, string> = argsToDict(paramsInfo, args);
     const argsToString = JSON.stringify(argsDict);
     const name = options?.name || fn.name || 'Function';
 

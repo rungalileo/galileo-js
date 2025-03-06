@@ -28,12 +28,13 @@ export const toStringValue = (value: unknown): string => {
 };
 
 /**
- * Extracts parameter names from a function
+ * Extracts parameter names and their default values from a function
  */
-export const extractParamNames = <T extends unknown[], R>(
+export const extractParamsInfo = <T extends unknown[], R>(
   fn: (...args: T) => Promise<R>
-): string[] => {
+): { name: string; defaultValue?: unknown }[] => {
   const fnStr = fn.toString();
+
   // Match the function parameters within the first parentheses
   const paramMatch = fnStr.match(/\(([^)]*)\)/);
 
@@ -41,28 +42,77 @@ export const extractParamNames = <T extends unknown[], R>(
     return [];
   }
 
-  // Split the parameters and clean them up
+  // Split the parameters and process each one
   return paramMatch[1].split(',').map((param) => {
-    // Extract just the parameter name (before any type annotation)
-    const paramName = param.trim().split(':')[0].trim();
-    return paramName;
+    param = param.trim();
+
+    // Check if parameter has a default value (contains "=")
+    const defaultValueMatch = param.match(/(\w+)\s*=\s*([^,]+)/);
+
+    if (defaultValueMatch) {
+      const paramName = defaultValueMatch[1].trim();
+      const defaultValueStr = defaultValueMatch[2].trim();
+
+      // Parse the default value
+      let defaultValue: unknown;
+      try {
+        // For string literals with quotes
+        if (
+          defaultValueStr.startsWith("'") ||
+          defaultValueStr.startsWith('"')
+        ) {
+          // Remove quotes and handle escaping
+          defaultValue = defaultValueStr
+            .slice(1, -1)
+            .replace(/\\"/g, '"')
+            .replace(/\\'/g, "'");
+        }
+        // For numeric, boolean, null, undefined
+        else if (
+          defaultValueStr === 'null' ||
+          defaultValueStr === 'undefined' ||
+          defaultValueStr === 'true' ||
+          defaultValueStr === 'false' ||
+          !isNaN(Number(defaultValueStr))
+        ) {
+          defaultValue = eval(defaultValueStr);
+        }
+        // For object/array literals or other expressions (less reliable)
+        else {
+          // This is simplistic and may not work for complex expressions
+          defaultValue = defaultValueStr;
+        }
+      } catch (e) {
+        defaultValue = defaultValueStr; // Fallback to string representation
+      }
+
+      return { name: paramName, defaultValue };
+    } else {
+      // Extract just the parameter name (before any type annotation)
+      const paramName = param.split(':')[0].trim();
+      return { name: paramName };
+    }
   });
 };
 
 /**
- * Converts function arguments to a dictionary with string values
+ * Converts function arguments to a dictionary using parameter names and default values
  */
 export const argsToDict = <T extends unknown[]>(
-  paramNames: string[],
+  paramsInfo: { name: string; defaultValue?: unknown }[],
   args: T
 ): Record<string, string> => {
-  return paramNames.reduce(
-    (dict, paramName, index) => {
-      if (index < args.length) {
-        dict[paramName] = toStringValue(args[index]);
-      }
-      return dict;
-    },
-    {} as Record<string, string>
-  );
+  const result: Record<string, string> = {};
+
+  paramsInfo.forEach((param, index) => {
+    if (index < args.length) {
+      // Use the provided argument
+      result[param.name] = toStringValue(args[index]);
+    } else if (param.defaultValue !== undefined) {
+      // Use the default value when no argument is provided
+      result[param.name] = toStringValue(param.defaultValue);
+    }
+  });
+
+  return result;
 };
