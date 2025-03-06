@@ -31,13 +31,35 @@ export class GalileoSingleton {
   }
 }
 
-export const init = (options: {
-  projectName?: string | undefined;
-  logStreamName?: string | undefined;
-}) => {
+/*
+ * Initializes the singleton client with the provided options.
+ * If no options are provided, defaults to the following environment variables:
+ * - GALILEO_PROJECT_NAME
+ * - GALILEO_LOG_STREAM_NAME
+ * 
+ * Example:
+ * 
+ * ```typescript
+ * import { init } from 'galileo';
+
+ * init({
+ *   projectName: 'my-project',
+ *   logStreamName: 'my-log-stream'
+ * });
+ * ```
+ */
+export const init = (
+  options: {
+    projectName?: string | undefined;
+    logStreamName?: string | undefined;
+  } = {}
+) => {
   GalileoSingleton.getInstance().init(options);
 };
 
+/*
+ * Uploads all captured traces to the Galileo platform
+ */
 export const flush = () => {
   GalileoSingleton.getInstance().getClient().flush();
 };

@@ -37,12 +37,6 @@ export function wrapOpenAI(
     get(target, prop: keyof OpenAI) {
       const originalMethod = target[prop];
 
-      if (!logger) {
-        logger = GalileoSingleton.getInstance().getClient();
-      }
-
-      const startTrace = logger.currentParent() === undefined;
-
       if (
         prop === 'chat' &&
         typeof originalMethod === 'object' &&
@@ -63,13 +57,22 @@ export function wrapOpenAI(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     return async function wrappedCreate(...args: any[]) {
                       const [requestData] = args;
+                      const startTime = Date.now();
+                      if (!logger) {
+                        logger = GalileoSingleton.getInstance().getClient();
+                      }
+
+                      const startTrace = logger.currentParent() === undefined;
+
                       if (startTrace) {
                         logger!.startTrace(
-                          JSON.stringify(requestData.messages)
+                          JSON.stringify(requestData.messages),
+                          undefined,
+                          'openai-client-generation',
+                          startTime
                         );
                       }
 
-                      const startTime = process.hrtime.bigint();
                       let response;
                       try {
                         response = await completionsTarget[completionsProp](
@@ -86,27 +89,28 @@ export function wrapOpenAI(
                           // If a trace was started, conclude it
                           logger!.conclude({
                             output: `Error: ${errorMessage}`,
-                            durationNs: Number(
-                              process.hrtime.bigint() - startTime
-                            )
+                            durationNs: Number(startTime - startTime)
                           });
                         }
                         throw error;
                       }
 
+                      const endTime = Date.now();
                       const output = response?.choices
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        ?.map((choice: any) => JSON.stringify(choice.message))
-                        .join('\n');
+                        ?.map((choice: any) =>
+                          JSON.parse(JSON.stringify(choice.message))
+                        );
 
                       logger!.addLlmSpan({
-                        input: JSON.stringify(requestData.messages),
+                        input: JSON.parse(JSON.stringify(requestData.messages)),
                         output,
+                        name: 'openai-client-generation',
                         model: requestData.model || 'unknown',
                         numInputTokens: response?.usage?.prompt_tokens || 0,
                         numOutputTokens:
                           response?.usage?.completion_tokens || 0,
-                        durationNs: Number(process.hrtime.bigint() - startTime),
+                        durationNs: Number(endTime - startTime),
                         metadata: requestData.metadata || {}
                       });
 
@@ -114,9 +118,7 @@ export function wrapOpenAI(
                         // If a trace was started, conclude it
                         logger!.conclude({
                           output,
-                          durationNs: Number(
-                            process.hrtime.bigint() - startTime
-                          )
+                          durationNs: Number(endTime - startTime)
                         });
                       }
 

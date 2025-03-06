@@ -1,6 +1,6 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
-import { MessageRole } from './types/message.types';
+import { argsToDict, extractParamNames } from './utils/serialization';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -21,7 +21,9 @@ export function log<T extends unknown[], R>(
     let logger: GalileoLogger | undefined = undefined;
     let result: R = {} as R;
     let concludeSpan = false;
-    const argsToString = JSON.stringify(args);
+    const paramNames = extractParamNames(fn);
+    const argsDict: Record<string, string> = argsToDict(paramNames, args);
+    const argsToString = JSON.stringify(argsDict);
     const name = options?.name || fn.name || 'Function';
 
     const conclude = (result: R) => {
@@ -59,8 +61,9 @@ export function log<T extends unknown[], R>(
 
       if (options.spanType === 'llm') {
         logger?.addLlmSpan({
-          input: [{ role: MessageRole.user, content: argsToString }],
-          output: { role: MessageRole.user, content: resultToString }
+          input: argsDict,
+          output: resultToString,
+          model: 'model' in argsDict ? argsDict['model'] : undefined
           // TODO: add a param mapper to apply span values
           //   model: options.model,
           //   tools: options.tools,

@@ -25,7 +25,7 @@ class GalileoLogger {
   private logStreamName?: string | undefined;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
-  private traces: Trace[] = [];
+  public traces: Trace[] = [];
 
   constructor(config: GalileoLoggerConfig = {}) {
     this.projectName = config.projectName || process.env.GALILEO_PROJECT || '';
