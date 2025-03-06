@@ -1,7 +1,10 @@
 import 'dotenv/config';
 import { GalileoLogger } from '@rungalileo/galileo';
 
-const logger = new GalileoLogger('SDK_test_project', 'rodrigo_test');
+const logger = new GalileoLogger({
+  projectName: 'SDK_test_project',
+  logStreamName: 'rodrigo_test'
+});
 
 // Create a new trace
 const trace = logger.startTrace(
