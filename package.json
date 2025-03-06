@@ -25,6 +25,7 @@
   "optionalDependencies": {
     "@langchain/core": "^0.3.13",
     "@langchain/openai": "^0.3.11",
+    "openai": "^4.85.2",
     "tiktoken": "^1.0.13"
   },
   "devDependencies": {

@@ -16,6 +16,7 @@ import {
   getLogStream
 } from './utils/log-streams';
 import { GalileoLogger } from './utils/galileo-logger';
+import { wrapOpenAI } from './openai';
 export {
   // Legacy clients
   GalileoObserveApiClient,
@@ -25,6 +26,7 @@ export {
   GalileoEvaluateWorkflow,
   // Galileo 2.0 client and methods
   GalileoLogger,
+  wrapOpenAI,
   getDatasets,
   createDataset,
   getDatasetContent,

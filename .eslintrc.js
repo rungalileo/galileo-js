@@ -1,5 +1,8 @@
 module.exports = {
   env: { node: true, jest: true },
+  globals: {
+    Proxy: 'readonly'
+  },
   root: true,
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
