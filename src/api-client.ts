@@ -16,6 +16,7 @@ export enum RequestMethod {
   DELETE = 'DELETE'
 }
 import { promises as fs } from 'fs';
+import { Experiment } from './types/experiment.types';
 
 type DatasetFormat = components['schemas']['DatasetFormat'];
 export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
@@ -30,12 +31,13 @@ type CollectionResponse = ListDatasetResponse | DatasetContent;
 
 class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
-  public projectName?: string | undefined = process.env.GALILEO_PROJECT;
-  public projectId?: string | undefined = undefined;
-  public logStreamName?: string | undefined = process.env.GALILEO_LOG_STREAM;
-  public logStreamId?: string | undefined = undefined;
-  public runId?: string | undefined = undefined;
-  public datasetId?: string | undefined = undefined;
+  public projectName?: string = process.env.GALILEO_PROJECT;
+  public projectId?: string = undefined;
+  public logStreamName?: string = process.env.GALILEO_LOG_STREAM;
+  public logStreamId?: string = undefined;
+  public runId?: string = undefined;
+  public datasetId?: string = undefined;
+  public experimentId?: string = undefined;
 }
 
 export class GalileoApiClient {
@@ -44,9 +46,10 @@ export class GalileoApiClient {
   public logStreamId: string = '';
   public runId: string = '';
   public datasetId: string = '';
+  public experimentId: string = '';
   private apiUrl: string = '';
   private token: string = '';
-  private client: Client<paths> | undefined = undefined;
+  private client?: Client<paths> = undefined;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -59,7 +62,8 @@ export class GalileoApiClient {
       logStreamId = defaultParams.logStreamId,
       logStreamName = defaultParams.logStreamName,
       runId = defaultParams.runId,
-      datasetId = defaultParams.datasetId
+      datasetId = defaultParams.datasetId,
+      experimentId = defaultParams.experimentId
     } = params;
 
     this.projectType = projectType;
@@ -70,6 +74,10 @@ export class GalileoApiClient {
 
     if (datasetId) {
       this.datasetId = datasetId;
+    }
+
+    if (experimentId) {
+      this.experimentId = experimentId;
     }
 
     this.apiUrl = this.getApiUrl();
@@ -438,6 +446,41 @@ export class GalileoApiClient {
     );
   }
 
+  public getExperiment = async (id: string): Promise<Experiment> => {
+    return await this.makeRequest<Experiment>(
+      RequestMethod.GET,
+      Routes.experiment,
+      null,
+      {
+        experiment_id: id
+      }
+    );
+  };
+
+  public getExperiments = async (): Promise<Experiment[]> => {
+    return await this.makeRequest<Experiment[]>(
+      RequestMethod.GET,
+      Routes.experiments,
+      null,
+      {
+        project_id: this.projectId
+      }
+    );
+  };
+
+  public createExperiment = async (name: string): Promise<Experiment> => {
+    return await this.makeRequest<Experiment>(
+      RequestMethod.POST,
+      Routes.experiments,
+      {
+        name
+      },
+      {
+        project_id: this.projectId
+      }
+    );
+  };
+
   private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
@@ -516,6 +559,12 @@ export class GalileoApiClient {
           params && 'dataset_id' in params
             ? (params.dataset_id as string)
             : this.datasetId
+        )
+        .replace(
+          '{experiment_id}',
+          params && 'experiment_id' in params
+            ? (params.experiment_id as string)
+            : this.experimentId
         )}`,
       params,
       headers,
