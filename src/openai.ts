@@ -1,14 +1,13 @@
-try {
-  require.resolve('openai');
-} catch (e) {
-  console.warn('openai package is not installed. Some features may not work.');
-}
-
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 
 import { GalileoLogger } from './utils/galileo-logger';
 
-// let openai: OpenAI | undefined = undefined;
+try {
+  require.resolve('openai');
+} catch (e) {
+  // eslint-disable-next-line no-console
+  console.warn('openai package is not installed. Some features may not work.');
+}
 
 export function wrapOpenAI(
   openAIClient: OpenAI,
@@ -49,9 +48,13 @@ export function wrapOpenAI(
                           ...args
                         );
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      } catch (error: any) {
+                      } catch (error: Error | unknown) {
+                        const errorMessage =
+                          error instanceof Error
+                            ? error.message
+                            : String(error);
                         logger.conclude({
-                          output: `Error: ${error.message}`,
+                          output: `Error: ${errorMessage}`,
                           durationNs: Number(
                             process.hrtime.bigint() - startTime
                           )
@@ -59,17 +62,17 @@ export function wrapOpenAI(
                         throw error;
                       }
 
-                      const output = response.choices
+                      const output = response?.choices
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        .map((choice: any) => JSON.stringify(choice.message))
+                        ?.map((choice: any) => JSON.stringify(choice.message))
                         .join('\n');
 
                       trace.addLlmSpan({
                         input: JSON.stringify(requestData.messages),
                         output,
                         model: requestData.model || 'unknown',
-                        inputTokens: response.usage?.prompt_tokens || 0,
-                        outputTokens: response.usage?.completion_tokens || 0,
+                        inputTokens: response?.usage?.prompt_tokens || 0,
+                        outputTokens: response?.usage?.completion_tokens || 0,
                         durationNs: Number(process.hrtime.bigint() - startTime),
                         metadata: requestData.metadata || {}
                       });
