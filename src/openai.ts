@@ -56,7 +56,7 @@ export function wrapOpenAI(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     return async function wrappedCreate(...args: any[]) {
                       const [requestData] = args;
-                      logger.addTrace(JSON.stringify(requestData.messages));
+                      logger.startTrace(JSON.stringify(requestData.messages));
 
                       const startTime = process.hrtime.bigint();
                       let response;

@@ -53,7 +53,7 @@ class GalileoLogger {
     currentParent.addChildSpan(span);
   }
 
-  addTrace(
+  startTrace(
     input: string,
     output?: string,
     name?: string,

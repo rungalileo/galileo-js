@@ -4,7 +4,7 @@ import { GalileoLogger } from '@rungalileo/galileo';
 const logger = new GalileoLogger('SDK_test_project', 'rodrigo_test');
 
 // Create a new trace
-const trace = logger.addTrace(
+const trace = logger.startTrace(
   'Example trace input', // input
   undefined, // output (will be set later)
   'Example Trace', // name

@@ -42,7 +42,7 @@ export function log<T extends unknown[], R>(
 
       if (!logger.currentParent()) {
         console.log('Starting new trace.');
-        logger.addTrace(argsToString, undefined, name);
+        logger.startTrace(argsToString, undefined, name);
       }
 
       if (!options.spanType || options.spanType === 'workflow') {

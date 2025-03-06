@@ -69,21 +69,21 @@ describe('GalileoLogger', () => {
       logger = new GalileoLogger();
     });
 
-    it('should add a trace', () => {
-      const trace = logger.addTrace('test input');
+    it('should start a trace', () => {
+      const trace = logger.startTrace('test input');
       expect(trace).toBeInstanceOf(Trace);
       expect(logger['traces'].length).toBe(1);
     });
 
     it('should throw error when adding trace while another is in progress', () => {
-      logger.addTrace('first input');
-      expect(() => logger.addTrace('second input')).toThrow(
+      logger.startTrace('first input');
+      expect(() => logger.startTrace('second input')).toThrow(
         'You must conclude the existing trace'
       );
     });
 
     it('should add LLM span to trace', () => {
-      logger.addTrace('test input');
+      logger.startTrace('test input');
       const input: Message[] = [{ role: MessageRole.user, content: 'Hello' }];
       const output: Message = {
         role: MessageRole.assistant,
@@ -100,7 +100,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should add retriever span', () => {
-      logger.addTrace('test input');
+      logger.startTrace('test input');
       const document = new Document({ content: 'test content' });
 
       const retrieverSpan = logger.addRetrieverSpan('search query', [document]);
@@ -108,14 +108,14 @@ describe('GalileoLogger', () => {
     });
 
     it('should add tool span', () => {
-      logger.addTrace('test input');
+      logger.startTrace('test input');
 
       const toolSpan = logger.addToolSpan('tool input', 'tool output');
       expect(toolSpan).toBeInstanceOf(ToolSpan);
     });
 
     it('should add workflow span', () => {
-      logger.addTrace('test input');
+      logger.startTrace('test input');
 
       const workflowSpan = logger.addWorkflowSpan('workflow input');
       expect(workflowSpan).toBeInstanceOf(WorkflowSpan);
@@ -128,7 +128,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should conclude trace', () => {
-      logger.addTrace('test input');
+      logger.startTrace('test input');
       const concluded = logger.conclude({ output: 'test output' });
 
       expect(concluded).toBeUndefined();
@@ -149,7 +149,7 @@ describe('GalileoLogger', () => {
 
     it('should flush traces', async () => {
       // Add a trace
-      const trace = logger.addTrace('test input');
+      const trace = logger.startTrace('test input');
       const input: Message[] = [{ role: MessageRole.user, content: 'Hello' }];
       const output: Message = {
         role: MessageRole.assistant,
@@ -223,7 +223,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should throw error when creating single LLM span trace with active parent', () => {
-      logger.addTrace('parent trace');
+      logger.startTrace('parent trace');
 
       const input: Message[] = [{ role: MessageRole.user, content: 'Hello' }];
       const output: Message = {
