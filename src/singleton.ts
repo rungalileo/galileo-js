@@ -36,9 +36,9 @@ export class GalileoSingleton {
  * If no options are provided, defaults to the following environment variables:
  * - GALILEO_PROJECT_NAME
  * - GALILEO_LOG_STREAM_NAME
- * 
+ *
  * Example:
- * 
+ *
  * ```typescript
  * import { init } from 'galileo';
 
