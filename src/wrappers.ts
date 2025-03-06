@@ -41,12 +41,10 @@ export function log<T extends unknown[], R>(
       logger = GalileoSingleton.getInstance().getClient();
 
       if (!logger.currentParent()) {
-        console.log('Starting new trace.');
         logger.startTrace(argsToString, undefined, name);
       }
 
       if (!options.spanType || options.spanType === 'workflow') {
-        console.log('Starting new workflow span.');
         logger.addWorkflowSpan(argsToString, undefined, name);
         concludeSpan = true;
       }
@@ -58,10 +56,6 @@ export function log<T extends unknown[], R>(
       result = await fn(...args);
 
       const resultToString = JSON.stringify(result);
-
-      console.log('🔵 Result:', resultToString);
-
-      console.log('🔵 Ending span.');
 
       if (options.spanType === 'llm') {
         logger?.addLlmSpan({

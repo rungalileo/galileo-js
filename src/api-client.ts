@@ -454,15 +454,19 @@ export class GalileoApiClient {
     if (!this.client) {
       throw new Error('Client not initialized');
     }
-    this.makeRequest<void>(
+
+    await this.makeRequest<void>(
       RequestMethod.POST,
       Routes.traces,
       { traces, log_stream_id: this.logStreamId },
       { project_id: this.projectId }
     );
+    // eslint-disable-next-line no-console
     console.log(
-      `${traces.length} Traces ingested for project ${this.projectId}. `
+      `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
     );
+    // eslint-disable-next-line no-console
+    console.log(JSON.stringify(traces));
   }
 
   public async makeRequest<T>(
