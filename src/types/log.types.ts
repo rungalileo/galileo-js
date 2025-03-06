@@ -49,6 +49,7 @@ interface IStepWithChildSpans {
   children(): BaseStep[];
   addChildSpan(...spans: Span[]): void;
 }
+
 export class StepWithChildSpans
   extends BaseStepWithChildren
   implements IStepWithChildSpans
@@ -127,7 +128,6 @@ export class Trace extends StepWithChildSpans {
 }
 
 export class WorkflowSpan extends StepWithChildSpans {
-  //   implements IStepWithChildSpans
   type: NodeType = NodeType.workflow;
   parent?: StepWithChildSpans;
 
@@ -160,7 +160,6 @@ export class WorkflowSpan extends StepWithChildSpans {
 
   addChild(...spans: Span[]): void {
     for (const span of spans) {
-      //   span.parent = this;
       this.spans.push(span);
     }
   }
@@ -268,6 +267,7 @@ export class RetrieverSpan extends BaseStep {
 export class ToolSpan extends BaseStep {
   input: string;
   output: string;
+
   type: NodeType = NodeType.tool;
   toolCallId?: string;
 

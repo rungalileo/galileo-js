@@ -28,7 +28,9 @@ export const getLogStream = async (
   name?: string
 ): Promise<LogStream> => {
   if (!id && !name) {
-    throw new Error('Either id or name must be provided');
+    throw new Error(
+      'To fetch a log stream with `getLogStream`, either id or name must be provided'
+    );
   }
 
   const apiClient = new GalileoApiClient();
