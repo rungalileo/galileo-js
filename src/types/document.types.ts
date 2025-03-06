@@ -1,4 +1,4 @@
-type ChunkMetaDataValueType = boolean | string | number;
+export type ChunkMetaDataValueType = boolean | string | number;
 
 export class Document {
   content: string;

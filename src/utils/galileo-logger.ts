@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GalileoApiClient } from '../api-client';
-import { Document } from '../types/document.types';
-import { Message } from '../types/message.types';
 import {
   LlmSpan,
   RetrieverSpan,
@@ -11,18 +9,28 @@ import {
   Trace,
   WorkflowSpan
 } from '../types/log.types';
+import {
+  LlmStepAllowedIOType,
+  RetrieverStepAllowedOutputType
+} from '../types/step.types';
 import { ProjectTypes } from '../types/project.types';
+
+class GalileoLoggerConfig {
+  public projectName?: string;
+  public logStreamName?: string;
+}
 
 class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
-  private traces: Trace[] = [];
+  public traces: Trace[] = [];
 
-  constructor(projectName?: string, logStreamName?: string) {
-    this.projectName = projectName || process.env.GALILEO_PROJECT || '';
-    this.logStreamName = logStreamName || process.env.GALILEO_LOG_STREAM || '';
+  constructor(config: GalileoLoggerConfig = {}) {
+    this.projectName = config.projectName || process.env.GALILEO_PROJECT || '';
+    this.logStreamName =
+      config.logStreamName || process.env.GALILEO_LOG_STREAM || '';
 
     if (!this.projectName || !this.logStreamName) {
       throw new Error(
@@ -45,7 +53,7 @@ class GalileoLogger {
     currentParent.addChildSpan(span);
   }
 
-  addTrace(
+  startTrace(
     input: string,
     output?: string,
     name?: string,
@@ -54,15 +62,6 @@ class GalileoLogger {
     userMetadata?: Record<string, string>,
     tags?: string[]
   ): Trace {
-    /**
-     * Create a new trace and add it to the list of traces.
-     * Simple usage:
-     * ```
-     * myTraces.addTrace("input");
-     * myTraces.addLlmSpan("input", "output", model: "<my_model>");
-     * myTraces.conclude("output");
-     * ```
-     */
     if (this.currentParent() !== undefined) {
       throw new Error(
         'You must conclude the existing trace before adding a new one.'
@@ -85,8 +84,8 @@ class GalileoLogger {
   }
 
   addSingleLlmSpanTrace(
-    input: Message[],
-    output: Message,
+    input: LlmStepAllowedIOType,
+    output: LlmStepAllowedIOType,
     model?: string,
     tools?: any[],
     name?: string,
@@ -151,7 +150,7 @@ class GalileoLogger {
     name,
     createdAt,
     durationNs,
-    userMetadata,
+    metadata,
     tags,
     numInputTokens,
     numOutputTokens,
@@ -159,14 +158,14 @@ class GalileoLogger {
     temperature,
     statusCode
   }: {
-    input: Message[];
-    output: Message;
+    input: LlmStepAllowedIOType;
+    output: LlmStepAllowedIOType;
     model?: string;
     tools?: any[];
     name?: string;
     createdAt?: number;
     durationNs?: number;
-    userMetadata?: Record<string, string>;
+    metadata?: Record<string, string>;
     tags?: string[];
     numInputTokens?: number;
     numOutputTokens?: number;
@@ -184,7 +183,7 @@ class GalileoLogger {
       tools,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags,
       durationNs,
       inputTokens: numInputTokens,
@@ -200,7 +199,7 @@ class GalileoLogger {
 
   addRetrieverSpan(
     input: string,
-    documents: Document[],
+    output: RetrieverStepAllowedOutputType,
     name?: string,
     durationNs?: number,
     createdAt?: number,
@@ -213,7 +212,7 @@ class GalileoLogger {
      */
     const span = new RetrieverSpan({
       input,
-      output: documents,
+      output,
       name,
       createdAtNs: createdAt,
       metadata: userMetadata,
@@ -336,6 +335,7 @@ class GalileoLogger {
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
+      //// @ts-expect-error - FIXME: Type this
       await this.client.ingestTraces(loggedTraces);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);
@@ -359,6 +359,7 @@ class GalileoLogger {
 
 export {
   GalileoLogger,
+  GalileoLoggerConfig,
   Trace,
   Span,
   StepWithChildSpans,

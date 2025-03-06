@@ -1,6 +1,7 @@
 import type OpenAI from 'openai';
 
 import { GalileoLogger } from './utils/galileo-logger';
+import { GalileoSingleton } from './singleton';
 
 try {
   require.resolve('openai');
@@ -30,7 +31,7 @@ try {
  */
 export function wrapOpenAI(
   openAIClient: OpenAI,
-  logger: GalileoLogger = new GalileoLogger()
+  logger?: GalileoLogger
 ): OpenAI {
   const handler: ProxyHandler<OpenAI> = {
     get(target, prop: keyof OpenAI) {
@@ -56,11 +57,22 @@ export function wrapOpenAI(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     return async function wrappedCreate(...args: any[]) {
                       const [requestData] = args;
-                      const trace = logger.addTrace(
-                        JSON.stringify(requestData.messages)
-                      );
+                      const startTime = Date.now();
+                      if (!logger) {
+                        logger = GalileoSingleton.getInstance().getClient();
+                      }
 
-                      const startTime = process.hrtime.bigint();
+                      const startTrace = logger.currentParent() === undefined;
+
+                      if (startTrace) {
+                        logger!.startTrace(
+                          JSON.stringify(requestData.messages),
+                          undefined,
+                          'openai-client-generation',
+                          startTime
+                        );
+                      }
+
                       let response;
                       try {
                         response = await completionsTarget[completionsProp](
@@ -72,36 +84,43 @@ export function wrapOpenAI(
                           error instanceof Error
                             ? error.message
                             : String(error);
-                        logger.conclude({
-                          output: `Error: ${errorMessage}`,
-                          durationNs: Number(
-                            process.hrtime.bigint() - startTime
-                          )
-                        });
+
+                        if (startTrace) {
+                          // If a trace was started, conclude it
+                          logger!.conclude({
+                            output: `Error: ${errorMessage}`,
+                            durationNs: Number(startTime - startTime)
+                          });
+                        }
                         throw error;
                       }
 
+                      const endTime = Date.now();
                       const output = response?.choices
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        ?.map((choice: any) => JSON.stringify(choice.message))
-                        .join('\n');
+                        ?.map((choice: any) =>
+                          JSON.parse(JSON.stringify(choice.message))
+                        );
 
-                      trace.addLlmSpan({
-                        input: JSON.stringify(requestData.messages),
+                      logger!.addLlmSpan({
+                        input: JSON.parse(JSON.stringify(requestData.messages)),
                         output,
+                        name: 'openai-client-generation',
                         model: requestData.model || 'unknown',
-                        inputTokens: response?.usage?.prompt_tokens || 0,
-                        outputTokens: response?.usage?.completion_tokens || 0,
-                        durationNs: Number(process.hrtime.bigint() - startTime),
+                        numInputTokens: response?.usage?.prompt_tokens || 0,
+                        numOutputTokens:
+                          response?.usage?.completion_tokens || 0,
+                        durationNs: Number(endTime - startTime),
                         metadata: requestData.metadata || {}
                       });
 
-                      trace.conclude({
-                        output,
-                        durationNs: Number(process.hrtime.bigint() - startTime)
-                      });
-
-                      logger.flush();
+                      if (startTrace) {
+                        // If a trace was started, conclude it
+                        logger!.conclude({
+                          output: JSON.stringify(output),
+                          durationNs: Number(endTime - startTime)
+                        });
+                      }
 
                       return response;
                     };

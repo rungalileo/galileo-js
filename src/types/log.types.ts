@@ -13,12 +13,11 @@ import { Document } from './document.types';
 import {
   BaseStep,
   BaseStepWithChildren,
-  LlmStep,
-  RetrieverStep,
-  ToolStep,
   LlmStepAllowedIOType,
   RetrieverStepAllowedOutputType
 } from './step.types';
+import { Message, MessageRole } from '../types/message.types';
+import { convertLlmInputOutput, convertRetrieverOutput } from '../utils/span';
 
 export class SpanWithParentStep extends BaseStep {
   parent?: StepWithChildSpans;
@@ -48,56 +47,13 @@ export class SpanWithParentStep extends BaseStep {
 interface IStepWithChildSpans {
   spans: Span[];
   children(): BaseStep[];
-  addChild(...spans: Span[]): void;
-  addLlmSpan(params: {
-    input: LlmStepAllowedIOType;
-    output: LlmStepAllowedIOType;
-    model: string;
-    tools?: Record<string, any>[];
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-    temperature?: number;
-    statusCode?: number;
-    groundTruth?: string;
-  }): LlmSpan;
-  addRetrieverSpan(params: {
-    input: StepIOType;
-    documents: RetrieverStepAllowedOutputType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-  }): RetrieverSpan;
-  addToolSpan(params: {
-    input: StepIOType;
-    output: StepIOType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-  }): ToolSpan;
-  addWorkflowSpan(params: {
-    input: StepIOType;
-    output?: StepIOType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-  }): WorkflowSpan;
-  conclude(params?: {
-    output?: StepIOType;
-    durationNs?: number;
-    statusCode?: number;
-  }): StepWithChildSpans | null;
+  addChildSpan(...spans: Span[]): void;
 }
-export class StepWithChildSpans extends BaseStepWithChildren {
+
+export class StepWithChildSpans
+  extends BaseStepWithChildren
+  implements IStepWithChildSpans
+{
   spans: Span[] = [];
 
   constructor(data: {
@@ -129,139 +85,16 @@ export class StepWithChildSpans extends BaseStepWithChildren {
 
   addChildSpan(...spans: Span[]): void {
     for (const span of spans) {
-      span.parent = this;
+      //   span.parent = this;
       this.spans.push(span);
     }
-  }
-
-  addLlmSpan(params: {
-    input: LlmStepAllowedIOType;
-    output: LlmStepAllowedIOType;
-    model: string;
-    tools?: Record<string, any>[];
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-    temperature?: number;
-    statusCode?: number;
-    groundTruth?: string;
-  }): LlmSpan {
-    const span = new LlmSpan({
-      parent: this,
-      input: params.input,
-      output: params.output,
-      model: params.model,
-      tools: params.tools,
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata,
-      inputTokens: params.inputTokens,
-      outputTokens: params.outputTokens,
-      totalTokens: params.totalTokens,
-      temperature: params.temperature,
-      statusCode: params.statusCode,
-      groundTruth: params.groundTruth
-    });
-    this.addChildSpan(span);
-    return span;
-  }
-
-  addRetrieverSpan(params: {
-    input: StepIOType;
-    documents: RetrieverStepAllowedOutputType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-  }): RetrieverSpan {
-    const span = new RetrieverSpan({
-      parent: this,
-      input: params.input,
-      output: params.documents,
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata,
-      statusCode: params.statusCode
-    });
-    this.addChildSpan(span);
-    return span;
-  }
-
-  addToolSpan(params: {
-    input: StepIOType;
-    output: StepIOType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-  }): ToolSpan {
-    const span = new ToolSpan({
-      parent: this,
-      input: params.input,
-      output: params.output,
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata,
-      statusCode: params.statusCode
-    });
-    this.addChildSpan(span);
-    return span;
-  }
-
-  addWorkflowSpan(params: {
-    input: StepIOType;
-    output?: StepIOType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-  }): WorkflowSpan {
-    const span = new WorkflowSpan({
-      parent: this,
-      input: params.input,
-      output: params.output || '',
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata
-    });
-    this.addChildSpan(span);
-    return span;
-  }
-
-  conclude(params?: {
-    output?: StepIOType;
-    durationNs?: number;
-    statusCode?: number;
-  }): StepWithChildSpans | null {
-    if (params?.output !== undefined) {
-      this.output = params.output;
-    }
-    if (params?.statusCode !== undefined) {
-      this.statusCode = params.statusCode;
-    }
-    if (params?.durationNs !== undefined) {
-      this.durationNs = params.durationNs;
-    }
-
-    if (this instanceof SpanWithParentStep) {
-      return (this as SpanWithParentStep).parent || null;
-    }
-    return null;
   }
 }
 
 export class Trace extends StepWithChildSpans {
   type: NodeType = NodeType.trace;
+  input: string;
+  output: string;
 
   constructor(data: {
     input: StepIOType;
@@ -276,6 +109,14 @@ export class Trace extends StepWithChildSpans {
     tags?: string[];
   }) {
     super({ ...data, type: NodeType.trace });
+    this.input =
+      typeof data.input === 'string'
+        ? (data.input ?? '')
+        : JSON.stringify(data.input);
+    this.output =
+      typeof data.output === 'string'
+        ? (data.output ?? '')
+        : JSON.stringify(data.output);
   }
 
   toJSON(): Record<string, any> {
@@ -286,10 +127,7 @@ export class Trace extends StepWithChildSpans {
   }
 }
 
-export class WorkflowSpan
-  extends StepWithChildSpans
-  implements StepWithChildSpans, IStepWithChildSpans
-{
+export class WorkflowSpan extends StepWithChildSpans {
   type: NodeType = NodeType.workflow;
   parent?: StepWithChildSpans;
 
@@ -307,6 +145,12 @@ export class WorkflowSpan
     tags?: string[];
   }) {
     super({ ...data, type: NodeType.workflow });
+    this.input =
+      typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
+    this.output =
+      typeof data.output === 'string'
+        ? data.output
+        : JSON.stringify(data.output);
     this.spans = data.spans || [];
   }
 
@@ -316,115 +160,8 @@ export class WorkflowSpan
 
   addChild(...spans: Span[]): void {
     for (const span of spans) {
-      span.parent = this;
       this.spans.push(span);
     }
-  }
-
-  // Include implementations from StepWithChildSpans
-  // In TypeScript, we need to duplicate these methods due to limitations with multiple inheritance
-  addLlmSpan(params: {
-    input: LlmStepAllowedIOType;
-    output: LlmStepAllowedIOType;
-    model: string;
-    tools?: Record<string, any>[];
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-    temperature?: number;
-    statusCode?: number;
-    groundTruth?: string;
-  }): LlmSpan {
-    const span = new LlmSpan({
-      parent: this,
-      input: params.input,
-      output: params.output,
-      model: params.model,
-      tools: params.tools,
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata,
-      inputTokens: params.inputTokens,
-      outputTokens: params.outputTokens,
-      totalTokens: params.totalTokens,
-      temperature: params.temperature,
-      statusCode: params.statusCode,
-      groundTruth: params.groundTruth
-    });
-    this.addChild(span);
-    return span;
-  }
-
-  addRetrieverSpan(params: {
-    input: StepIOType;
-    documents: RetrieverStepAllowedOutputType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-  }): RetrieverSpan {
-    const span = new RetrieverSpan({
-      parent: this,
-      input: params.input,
-      output: params.documents,
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata,
-      statusCode: params.statusCode
-    });
-    this.addChild(span);
-    return span;
-  }
-
-  addToolSpan(params: {
-    input: StepIOType;
-    output: StepIOType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-  }): ToolSpan {
-    const span = new ToolSpan({
-      parent: this,
-      input: params.input,
-      output: params.output,
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata,
-      statusCode: params.statusCode
-    });
-    this.addChild(span);
-    return span;
-  }
-
-  addWorkflowSpan(params: {
-    input: StepIOType;
-    output?: StepIOType;
-    name?: string;
-    durationNs?: number;
-    createdAtNs?: number;
-    metadata?: Record<string, string>;
-  }): WorkflowSpan {
-    const span = new WorkflowSpan({
-      parent: this,
-      input: params.input,
-      output: params.output || '',
-      name: params.name,
-      durationNs: params.durationNs,
-      createdAtNs: params.createdAtNs,
-      metadata: params.metadata
-    });
-    this.addChild(span);
-    return span;
   }
 
   toJSON(): Record<string, any> {
@@ -435,10 +172,10 @@ export class WorkflowSpan
   }
 }
 
-export class LlmSpan extends SpanWithParentStep implements LlmStep {
+export class LlmSpan extends BaseStep {
   type: NodeType = NodeType.llm;
-  input: LlmStepAllowedIOType;
-  output: LlmStepAllowedIOType = '';
+  input: Message[];
+  output: Message;
   tools?: Record<string, any>[];
   model?: string;
   inputTokens?: number;
@@ -465,8 +202,8 @@ export class LlmSpan extends SpanWithParentStep implements LlmStep {
     tags?: string[];
   }) {
     super({ ...data, type: NodeType.llm });
-    this.input = data.input;
-    this.output = data.output;
+    this.input = convertLlmInputOutput(data.input);
+    this.output = convertLlmInputOutput(data.output, MessageRole.assistant)[0];
     this.tools = data.tools;
     this.model = data.model;
     this.inputTokens = data.inputTokens;
@@ -493,16 +230,16 @@ export class LlmSpan extends SpanWithParentStep implements LlmStep {
   }
 }
 
-export class RetrieverSpan extends RetrieverStep {
+export class RetrieverSpan extends BaseStep {
   type: NodeType = NodeType.retriever;
   parent?: StepWithChildSpans;
-  input: StepIOType;
+  input: string;
   output: Document[] = [];
 
   constructor(data: {
     parent?: StepWithChildSpans;
     input: StepIOType;
-    output: string[] | Record<string, string>[] | Document[];
+    output: RetrieverStepAllowedOutputType;
     name?: string;
     durationNs?: number;
     createdAtNs?: number;
@@ -512,8 +249,11 @@ export class RetrieverSpan extends RetrieverStep {
     tags?: string[];
   }) {
     super({ ...data });
-    this.input = data.input;
-    this.output = this.setOutput(data.output);
+    this.input =
+      typeof data.input === 'string'
+        ? (data.input ?? '')
+        : JSON.stringify(data.input);
+    this.output = convertRetrieverOutput(data.output);
   }
 
   toJSON(): Record<string, any> {
@@ -524,7 +264,10 @@ export class RetrieverSpan extends RetrieverStep {
   }
 }
 
-export class ToolSpan extends SpanWithParentStep implements ToolStep {
+export class ToolSpan extends BaseStep {
+  input: string;
+  output: string;
+
   type: NodeType = NodeType.tool;
   toolCallId?: string;
 
@@ -541,7 +284,18 @@ export class ToolSpan extends SpanWithParentStep implements ToolStep {
     tags?: string[];
     toolCallId?: string;
   }) {
-    super({ ...data, type: NodeType.tool });
+    super({
+      ...data,
+      type: NodeType.tool
+    });
+    this.input =
+      typeof data.input === 'string'
+        ? (data.input ?? '')
+        : JSON.stringify(data.input);
+    this.output =
+      typeof data.output === 'string'
+        ? (data.output ?? '')
+        : JSON.stringify(data.output);
   }
 }
 
