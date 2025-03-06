@@ -1,4 +1,4 @@
-enum MessageRole {
+export enum MessageRole {
   agent = 'agent',
   assistant = 'assistant',
   function = 'function',

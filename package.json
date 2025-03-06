@@ -41,8 +41,8 @@
     "msw": "^2.7.0",
     "openapi-typescript": "^7.4.4",
     "prettier": "^3.2.5",
-    "ts-jest": "^29.2.5",
-    "typescript": "^5.7.2"
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2"
   },
   "directories": {
     "example": "examples"
