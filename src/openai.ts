@@ -1,6 +1,7 @@
 import type OpenAI from 'openai';
 
 import { GalileoLogger } from './utils/galileo-logger';
+import { GalileoSingleton } from './singleton';
 
 try {
   require.resolve('openai');
@@ -30,11 +31,17 @@ try {
  */
 export function wrapOpenAI(
   openAIClient: OpenAI,
-  logger: GalileoLogger = new GalileoLogger()
+  logger?: GalileoLogger
 ): OpenAI {
   const handler: ProxyHandler<OpenAI> = {
     get(target, prop: keyof OpenAI) {
       const originalMethod = target[prop];
+
+      if (!logger) {
+        logger = GalileoSingleton.getInstance().getClient();
+      }
+
+      const startTrace = logger.currentParent() === undefined;
 
       if (
         prop === 'chat' &&
@@ -56,7 +63,11 @@ export function wrapOpenAI(
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     return async function wrappedCreate(...args: any[]) {
                       const [requestData] = args;
-                      logger.startTrace(JSON.stringify(requestData.messages));
+                      if (startTrace) {
+                        logger!.startTrace(
+                          JSON.stringify(requestData.messages)
+                        );
+                      }
 
                       const startTime = process.hrtime.bigint();
                       let response;
@@ -70,12 +81,16 @@ export function wrapOpenAI(
                           error instanceof Error
                             ? error.message
                             : String(error);
-                        logger.conclude({
-                          output: `Error: ${errorMessage}`,
-                          durationNs: Number(
-                            process.hrtime.bigint() - startTime
-                          )
-                        });
+
+                        if (startTrace) {
+                          // If a trace was started, conclude it
+                          logger!.conclude({
+                            output: `Error: ${errorMessage}`,
+                            durationNs: Number(
+                              process.hrtime.bigint() - startTime
+                            )
+                          });
+                        }
                         throw error;
                       }
 
@@ -84,7 +99,7 @@ export function wrapOpenAI(
                         ?.map((choice: any) => JSON.stringify(choice.message))
                         .join('\n');
 
-                      logger.addLlmSpan({
+                      logger!.addLlmSpan({
                         input: JSON.stringify(requestData.messages),
                         output,
                         model: requestData.model || 'unknown',
@@ -95,12 +110,15 @@ export function wrapOpenAI(
                         metadata: requestData.metadata || {}
                       });
 
-                      logger.conclude({
-                        output,
-                        durationNs: Number(process.hrtime.bigint() - startTime)
-                      });
-
-                      logger.flush();
+                      if (startTrace) {
+                        // If a trace was started, conclude it
+                        logger!.conclude({
+                          output,
+                          durationNs: Number(
+                            process.hrtime.bigint() - startTime
+                          )
+                        });
+                      }
 
                       return response;
                     };
