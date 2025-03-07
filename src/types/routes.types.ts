@@ -19,5 +19,8 @@ export enum Routes {
   datasets = 'datasets',
   datasetsQuery = 'datasets/query',
   dataset = 'datasets/{dataset_id}',
-  traces = 'projects/{project_id}/traces'
+  datasetContent = 'datasets/{dataset_id}/content',
+  traces = 'projects/{project_id}/traces',
+  scorers = 'scorers/list',
+  runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings'
 }

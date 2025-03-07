@@ -12,3 +12,7 @@ export interface Dataset {
   current_version_index: number;
   draft: boolean;
 }
+
+export interface DatasetAppendRow {
+  [key: string]: string | number | null;
+}

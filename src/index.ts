@@ -19,7 +19,8 @@ import {
 import {
   getExperiments,
   createExperiment,
-  getExperiment
+  getExperiment,
+  runExperiment
 } from './utils/experiments';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush } from './singleton';
@@ -37,6 +38,7 @@ export {
   getExperiments,
   createExperiment,
   getExperiment,
+  runExperiment,
   GalileoLogger,
   wrapOpenAI,
   getDatasets,

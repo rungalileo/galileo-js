@@ -1,5 +1,5 @@
 import { DatasetRow, GalileoApiClient } from '../api-client';
-import { Dataset } from '../types/dataset.types';
+import { Dataset, DatasetAppendRow } from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -172,4 +172,31 @@ export const getDatasetContent = async (
   const apiClient = new GalileoApiClient();
   await apiClient.init();
   return await apiClient.getDatasetContent(datasetId!);
+};
+
+/*
+ * Appends rows to a dataset.
+ *
+ * @param datasetId - The ID of the dataset to which rows will be appended.
+ * @param rows - An array of rows to append to the dataset.
+ * @returns A Promise that resolves when the rows have been appended.
+ *
+ * @example
+ * ```typescript
+ * await addRowsToDataset('datasetId', [{ column1: 'value1', column2: 'value2' }]);
+ * ```
+ */
+export const addRowsToDataset = async (
+  datasetId: string,
+  rows: DatasetAppendRow[]
+): Promise<void> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init();
+  await apiClient.appendRowsToDatasetContent(
+    datasetId,
+    rows.map((row) => ({
+      edit_type: 'append_row',
+      values: row
+    }))
+  );
 };

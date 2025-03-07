@@ -23,6 +23,7 @@ export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
 export type DatasetContent = components['schemas']['DatasetContent'];
 export type Dataset = components['schemas']['DatasetDB'];
 export type DatasetRow = components['schemas']['DatasetRow'];
+export type DatasetAppendRow = components['schemas']['DatasetAppendRow'];
 
 type CollectionPaths =
   | paths['/datasets']
@@ -76,10 +77,6 @@ export class GalileoApiClient {
       this.datasetId = datasetId;
     }
 
-    if (experimentId) {
-      this.experimentId = experimentId;
-    }
-
     this.apiUrl = this.getApiUrl();
     if (await this.healthCheck()) {
       this.token = await this.getToken();
@@ -108,9 +105,13 @@ export class GalileoApiClient {
             throw err;
           }
         }
+      } else {
+        throw new Error('Project not initialized');
       }
 
-      if (logStreamId) {
+      if (experimentId) {
+        this.experimentId = experimentId;
+      } else if (logStreamId) {
         this.logStreamId = logStreamId;
       } else if (logStreamName) {
         try {
@@ -446,6 +447,22 @@ export class GalileoApiClient {
     );
   }
 
+  public async appendRowsToDatasetContent(
+    datasetId: string,
+    rows: DatasetAppendRow[]
+  ): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    await this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.datasetContent,
+      { rows },
+      { dataset_id: datasetId }
+    );
+  }
+
   public getExperiment = async (id: string): Promise<Experiment> => {
     return await this.makeRequest<Experiment>(
       RequestMethod.GET,
@@ -498,10 +515,33 @@ export class GalileoApiClient {
       throw new Error('Client not initialized');
     }
 
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    if (!this.logStreamId && !this.experimentId) {
+      throw new Error('Log stream or experiment not initialized');
+    }
+
+    console.log(this.logStreamId, this.experimentId);
+
+    // if (this.logStreamId !== undefined && this.experimentId !== undefined) {
+    //   throw new Error('Log stream and experiment cannot be both initialized');
+    // }
+
     await this.makeRequest<void>(
       RequestMethod.POST,
       Routes.traces,
-      { traces, log_stream_id: this.logStreamId },
+      {
+        traces,
+        ...(this.experimentId && {
+          experiment_id: this.experimentId
+        }),
+        ...(!this.experimentId &&
+          this.logStreamId && {
+            log_stream_id: this.logStreamId
+          })
+      },
       { project_id: this.projectId }
     );
     // eslint-disable-next-line no-console
