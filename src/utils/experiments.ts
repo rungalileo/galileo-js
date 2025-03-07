@@ -1,20 +1,9 @@
 import { Experiment } from '../types/experiment.types';
-// import { Dataset } from '../types/dataset.types';
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
 import { Scorer, ScorerTypes } from '../types/scorer.types';
 import { getScorers, createRunScorerSettings } from '../utils/scorers';
-
-// class RunExperimentParams {
-//   public experimentId: string = '';
-//   public experimentName: string = '';
-//   public datasetId: string = '';
-//   public datasetName: string = '';
-//   public dataset: Dataset | undefined = undefined;
-//   public projectId: string = '';
-//   public projectName: string = '';
-// }
 
 /*
  * Gets all experiments.
