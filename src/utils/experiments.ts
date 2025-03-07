@@ -26,10 +26,11 @@ export const createExperiment = async (name: string): Promise<Experiment> => {
 /*
  * Gets an experiment by id or name.
  */
-export const getExperiment = async (
-  id?: string,
-  name?: string
-): Promise<Experiment> => {
+export const getExperiment = async (options: {
+  id?: string;
+  name?: string;
+}): Promise<Experiment> => {
+  const { id, name } = options;
   if (!id && !name) {
     throw new Error(
       'To fetch an experiment with `getExperiment`, either id or name must be provided'
@@ -77,7 +78,6 @@ export async function runExperiment<T extends Record<string, unknown>>({
   metrics: string[];
   projectName?: string;
 }): Promise<string[]> {
-  // Array to collect the outputs
   const outputs: string[] = [];
 
   const apiClient = new GalileoApiClient();
@@ -85,9 +85,9 @@ export async function runExperiment<T extends Record<string, unknown>>({
 
   const projectId = apiClient.projectId;
 
-  const scorers = await getScorers(ScorerTypes.preset);
-
   const run_scorer_settings: Scorer[] = [];
+
+  const scorers = await getScorers(ScorerTypes.preset);
 
   for (const metric of metrics) {
     const scorer = scorers.find((scorer) => scorer.name === metric);
@@ -101,13 +101,29 @@ export async function runExperiment<T extends Record<string, unknown>>({
     throw new Error('No scorers found');
   }
 
-  const experiment = await apiClient.createExperiment(name);
+  let experiment: Experiment | undefined = undefined;
+
+  // Check if experiment with the same name already exists
+  if (await getExperiment({ name })) {
+    console.warn(
+      `Experiment with name '${name}' already exists, adding a timestamp`
+    );
+    const timestamp = new Date()
+      .toISOString()
+      .replace('T', ' ')
+      .replace('Z', '');
+    name = `${name} ${timestamp}`;
+  }
+
+  experiment = await createExperiment(name);
+
   console.log(`🚀 Experiment ${name} created.`);
 
   apiClient.experimentId = experiment.id;
 
   await createRunScorerSettings(experiment.id, projectId, run_scorer_settings);
 
+  // Initialize the singleton logger
   init({ experimentId: experiment.id, projectName });
 
   // Wrap the processing function with the log wrapper
@@ -122,7 +138,6 @@ export async function runExperiment<T extends Record<string, unknown>>({
 
   // Process each row in the dataset
   for (const row of dataset) {
-    // Create metadata object
     const metadata: Record<string, string> = {
       timestamp: new Date().toISOString()
     };
@@ -130,11 +145,10 @@ export async function runExperiment<T extends Record<string, unknown>>({
     let output: string = '';
 
     try {
-      // Process the row using the logged function and store the result
+      // Process the row with logging
       const result = await loggedProcessFn(row, metadata);
       output = JSON.stringify(result);
     } catch (error) {
-      // Handle errors gracefully
       console.error(`Error processing row:`, row, error);
       output = `Error: ${error instanceof Error ? error.message : String(error)}`;
     }
@@ -144,6 +158,7 @@ export async function runExperiment<T extends Record<string, unknown>>({
       throw new Error('An error occurred while creating a trace');
     }
 
+    // Conclude the trace
     const startTime = logger.traces[0].createdAtNs;
     logger.conclude({
       output,
@@ -153,6 +168,7 @@ export async function runExperiment<T extends Record<string, unknown>>({
     outputs.push(output);
   }
 
+  // Flush the logger
   await flush();
 
   console.log(
