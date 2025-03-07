@@ -5,6 +5,7 @@ import { LogStream } from './types/log-stream.types';
 import { Project, ProjectTypes } from './types/project.types';
 import { Routes } from './types/routes.types';
 import { Trace } from './types/log.types';
+import { ScorerTypes } from './types/scorer.types';
 
 import querystring from 'querystring';
 import createClient, { Client } from 'openapi-fetch';
@@ -16,12 +17,15 @@ export enum RequestMethod {
   DELETE = 'DELETE'
 }
 import { promises as fs } from 'fs';
+import { Experiment } from './types/experiment.types';
+import { Scorer } from './types/scorer.types';
 
 type DatasetFormat = components['schemas']['DatasetFormat'];
 export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
 export type DatasetContent = components['schemas']['DatasetContent'];
 export type Dataset = components['schemas']['DatasetDB'];
 export type DatasetRow = components['schemas']['DatasetRow'];
+export type DatasetAppendRow = components['schemas']['DatasetAppendRow'];
 
 type CollectionPaths =
   | paths['/datasets']
@@ -30,12 +34,13 @@ type CollectionResponse = ListDatasetResponse | DatasetContent;
 
 class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
-  public projectName?: string | undefined = process.env.GALILEO_PROJECT;
-  public projectId?: string | undefined = undefined;
-  public logStreamName?: string | undefined = process.env.GALILEO_LOG_STREAM;
-  public logStreamId?: string | undefined = undefined;
-  public runId?: string | undefined = undefined;
-  public datasetId?: string | undefined = undefined;
+  public projectName?: string = process.env.GALILEO_PROJECT;
+  public projectId?: string = undefined;
+  public logStreamName?: string = process.env.GALILEO_LOG_STREAM;
+  public logStreamId?: string = undefined;
+  public runId?: string = undefined;
+  public datasetId?: string = undefined;
+  public experimentId?: string = undefined;
 }
 
 export class GalileoApiClient {
@@ -44,9 +49,10 @@ export class GalileoApiClient {
   public logStreamId: string = '';
   public runId: string = '';
   public datasetId: string = '';
+  public experimentId: string = '';
   private apiUrl: string = '';
   private token: string = '';
-  private client: Client<paths> | undefined = undefined;
+  private client?: Client<paths> = undefined;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -59,7 +65,8 @@ export class GalileoApiClient {
       logStreamId = defaultParams.logStreamId,
       logStreamName = defaultParams.logStreamName,
       runId = defaultParams.runId,
-      datasetId = defaultParams.datasetId
+      datasetId = defaultParams.datasetId,
+      experimentId = defaultParams.experimentId
     } = params;
 
     this.projectType = projectType;
@@ -102,7 +109,9 @@ export class GalileoApiClient {
         }
       }
 
-      if (logStreamId) {
+      if (experimentId) {
+        this.experimentId = experimentId;
+      } else if (logStreamId) {
         this.logStreamId = logStreamId;
       } else if (logStreamName) {
         try {
@@ -438,6 +447,93 @@ export class GalileoApiClient {
     );
   }
 
+  public async appendRowsToDatasetContent(
+    datasetId: string,
+    rows: DatasetAppendRow[]
+  ): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    await this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.datasetContent,
+      { rows },
+      { dataset_id: datasetId }
+    );
+  }
+
+  public getExperiment = async (id: string): Promise<Experiment> => {
+    return await this.makeRequest<Experiment>(
+      RequestMethod.GET,
+      Routes.experiment,
+      null,
+      {
+        experiment_id: id
+      }
+    );
+  };
+
+  public getExperiments = async (): Promise<Experiment[]> => {
+    return await this.makeRequest<Experiment[]>(
+      RequestMethod.GET,
+      Routes.experiments,
+      null,
+      {
+        project_id: this.projectId
+      }
+    );
+  };
+
+  public createExperiment = async (name: string): Promise<Experiment> => {
+    return await this.makeRequest<Experiment>(
+      RequestMethod.POST,
+      Routes.experiments,
+      {
+        name
+      },
+      {
+        project_id: this.projectId
+      }
+    );
+  };
+
+  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+    const response = await this.makeRequest<{ scorers: Scorer[] }>(
+      RequestMethod.POST,
+      Routes.scorers,
+      type
+        ? {
+            filters: [
+              {
+                name: 'scorer_type',
+                value: type,
+                operator: 'eq'
+              }
+            ]
+          }
+        : {}
+    );
+
+    return response.scorers;
+  };
+
+  public createRunScorerSettings = async (
+    experimentId: string,
+    projectId: string,
+    scorers: Scorer[]
+  ): Promise<void> => {
+    return await this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.runScorerSettings,
+      { run_id: experimentId, scorers },
+      {
+        project_id: projectId,
+        experiment_id: experimentId
+      }
+    );
+  };
+
   private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
@@ -455,10 +551,27 @@ export class GalileoApiClient {
       throw new Error('Client not initialized');
     }
 
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    if (!this.logStreamId && !this.experimentId) {
+      throw new Error('Log stream or experiment not initialized');
+    }
+
     await this.makeRequest<void>(
       RequestMethod.POST,
       Routes.traces,
-      { traces, log_stream_id: this.logStreamId },
+      {
+        traces,
+        ...(this.experimentId && {
+          experiment_id: this.experimentId
+        }),
+        ...(!this.experimentId &&
+          this.logStreamId && {
+            log_stream_id: this.logStreamId
+          })
+      },
       { project_id: this.projectId }
     );
     // eslint-disable-next-line no-console
@@ -516,13 +629,17 @@ export class GalileoApiClient {
           params && 'dataset_id' in params
             ? (params.dataset_id as string)
             : this.datasetId
+        )
+        .replace(
+          '{experiment_id}',
+          params && 'experiment_id' in params
+            ? (params.experiment_id as string)
+            : this.experimentId
         )}`,
       params,
       headers,
       data
     };
-
-    console.log(config);
 
     const response = await axios.request<T>(config);
 

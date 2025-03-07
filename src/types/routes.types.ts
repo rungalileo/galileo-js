@@ -2,6 +2,8 @@ export enum Routes {
   healthCheck = 'healthcheck',
   login = 'login',
   apiKeyLogin = 'login/api_key',
+  experiment = 'projects/{project_id}/experiments/{experiment_id}',
+  experiments = 'projects/{project_id}/experiments',
   getToken = 'get-token',
   projects = 'projects',
   project = 'projects/{project_id}',
@@ -17,5 +19,8 @@ export enum Routes {
   datasets = 'datasets',
   datasetsQuery = 'datasets/query',
   dataset = 'datasets/{dataset_id}',
-  traces = 'projects/{project_id}/traces'
+  datasetContent = 'datasets/{dataset_id}/content',
+  traces = 'projects/{project_id}/traces',
+  scorers = 'scorers/list',
+  runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings'
 }

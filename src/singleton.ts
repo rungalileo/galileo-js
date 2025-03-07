@@ -23,10 +23,12 @@ export class GalileoSingleton {
   public init(options: {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
+    experimentId?: string | undefined;
   }) {
     this.client = new GalileoLogger({
       projectName: options.projectName,
-      logStreamName: options.logStreamName
+      logStreamName: options.logStreamName,
+      experimentId: options.experimentId
     });
   }
 }
@@ -52,6 +54,7 @@ export const init = (
   options: {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
+    experimentId?: string | undefined;
   } = {}
 ) => {
   GalileoSingleton.getInstance().init(options);
@@ -60,6 +63,6 @@ export const init = (
 /*
  * Uploads all captured traces to the Galileo platform
  */
-export const flush = () => {
-  GalileoSingleton.getInstance().getClient().flush();
+export const flush = async () => {
+  await GalileoSingleton.getInstance().getClient().flush();
 };
