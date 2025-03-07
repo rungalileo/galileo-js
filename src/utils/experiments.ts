@@ -3,6 +3,8 @@ import { Experiment } from '../types/experiment.types';
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
+import { Scorer, ScorerTypes } from '../types/scorer.types';
+import { getScorers, createRunScorerSettings } from '../utils/scorers';
 
 // class RunExperimentParams {
 //   public experimentId: string = '';
@@ -77,11 +79,13 @@ export async function runExperiment<T extends Record<string, unknown>>({
   name,
   dataset,
   function: processFn,
+  metrics,
   projectName
 }: {
   name: string;
   dataset: T[];
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>;
+  metrics: string[];
   projectName?: string;
 }): Promise<string[]> {
   // Array to collect the outputs
@@ -90,10 +94,30 @@ export async function runExperiment<T extends Record<string, unknown>>({
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
 
+  const projectId = apiClient.projectId;
+
+  const scorers = await getScorers(ScorerTypes.preset);
+
+  const run_scorer_settings: Scorer[] = [];
+
+  for (const metric of metrics) {
+    const scorer = scorers.find((scorer) => scorer.name === metric);
+    if (!scorer) {
+      throw new Error(`Scorer ${metric} not found`);
+    }
+    run_scorer_settings.push(scorer);
+  }
+
+  if (!run_scorer_settings.length) {
+    throw new Error('No scorers found');
+  }
+
   const experiment = await apiClient.createExperiment(name);
   console.log(`🚀 Experiment ${name} created.`);
 
   apiClient.experimentId = experiment.id;
+
+  await createRunScorerSettings(experiment.id, projectId, run_scorer_settings);
 
   init({ experimentId: experiment.id, projectName });
 
@@ -141,6 +165,10 @@ export async function runExperiment<T extends Record<string, unknown>>({
   }
 
   await flush();
+
+  console.log(
+    `🚀 Experiment ${name} completed. ${outputs.length} rows processed.`
+  );
 
   return outputs;
 }

@@ -22,6 +22,7 @@ import {
   getExperiment,
   runExperiment
 } from './utils/experiments';
+import { getScorers } from './utils/scorers';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush } from './singleton';
 import { log } from './wrappers';
@@ -51,6 +52,7 @@ export {
   getLogStreams,
   createLogStream,
   getLogStream,
+  getScorers,
   log,
   init,
   flush

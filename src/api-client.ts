@@ -5,6 +5,7 @@ import { LogStream } from './types/log-stream.types';
 import { Project, ProjectTypes } from './types/project.types';
 import { Routes } from './types/routes.types';
 import { Trace } from './types/log.types';
+import { ScorerTypes } from './types/scorer.types';
 
 import querystring from 'querystring';
 import createClient, { Client } from 'openapi-fetch';
@@ -17,6 +18,7 @@ export enum RequestMethod {
 }
 import { promises as fs } from 'fs';
 import { Experiment } from './types/experiment.types';
+import { Scorer } from './types/scorer.types';
 
 type DatasetFormat = components['schemas']['DatasetFormat'];
 export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
@@ -498,6 +500,42 @@ export class GalileoApiClient {
     );
   };
 
+  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+    const response = await this.makeRequest<{ scorers: Scorer[] }>(
+      RequestMethod.POST,
+      Routes.scorers,
+      type
+        ? {
+            filters: [
+              {
+                name: 'scorer_type',
+                value: type,
+                operator: 'eq'
+              }
+            ]
+          }
+        : {}
+    );
+
+    return response.scorers;
+  };
+
+  public createRunScorerSettings = async (
+    experimentId: string,
+    projectId: string,
+    scorers: Scorer[]
+  ): Promise<void> => {
+    return await this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.runScorerSettings,
+      { run_id: experimentId, scorers },
+      {
+        project_id: projectId,
+        experiment_id: experimentId
+      }
+    );
+  };
+
   private getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
@@ -522,12 +560,6 @@ export class GalileoApiClient {
     if (!this.logStreamId && !this.experimentId) {
       throw new Error('Log stream or experiment not initialized');
     }
-
-    console.log(this.logStreamId, this.experimentId);
-
-    // if (this.logStreamId !== undefined && this.experimentId !== undefined) {
-    //   throw new Error('Log stream and experiment cannot be both initialized');
-    // }
 
     await this.makeRequest<void>(
       RequestMethod.POST,

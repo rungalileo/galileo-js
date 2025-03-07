@@ -43,3 +43,15 @@ export interface CustomizedScorer {
   model_alias?: Models;
   num_judges?: number;
 }
+
+export enum ScorerTypes {
+  llm = 'llm',
+  code = 'code',
+  preset = 'preset'
+}
+
+export interface Scorer {
+  id: string;
+  name: string;
+  scorer_type: ScorerTypes;
+}
