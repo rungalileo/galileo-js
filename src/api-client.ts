@@ -107,8 +107,6 @@ export class GalileoApiClient {
             throw err;
           }
         }
-      } else {
-        throw new Error('Project not initialized');
       }
 
       if (experimentId) {
@@ -642,8 +640,6 @@ export class GalileoApiClient {
       headers,
       data
     };
-
-    console.log(config);
 
     const response = await axios.request<T>(config);
 
