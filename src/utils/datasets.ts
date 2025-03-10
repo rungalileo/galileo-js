@@ -200,3 +200,20 @@ export const addRowsToDataset = async (
     }))
   );
 };
+
+// TODO: Remove this once the datasets team adds a dictionary field to DatasetRow
+export const convertDatasetContentToRecords = async (
+  dataset: Dataset,
+  datasetContent: DatasetRow[]
+): Promise<Record<string, string>[]> => {
+  if (!dataset.column_names) {
+    throw new Error('Column names not found in dataset');
+  }
+  return datasetContent.map((row) => {
+    const record: Record<string, string> = {};
+    for (let i = 0; i < dataset.column_names!.length; i++) {
+      record[dataset.column_names![i]] = (row.values[i] || '') as string;
+    }
+    return record;
+  });
+};

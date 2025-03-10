@@ -5,7 +5,11 @@ import { init, flush, GalileoSingleton } from '../singleton';
 import { Scorer, ScorerTypes } from '../types/scorer.types';
 import { getScorers, createRunScorerSettings } from '../utils/scorers';
 import { Dataset } from '../types/dataset.types';
-import { getDataset } from '../utils/datasets';
+import {
+  getDataset,
+  getDatasetContent,
+  convertDatasetContentToRecords
+} from '../utils/datasets';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplate = unknown; // TODO: Implement prompt run experiments
@@ -147,10 +151,11 @@ const processRow = async <T extends Record<string, unknown>>(
 
   try {
     // Process the row with logging
+    console.log(`Processing dataset row: ${JSON.stringify(row as T)}`);
     const result = await processFn(row as T, metadata);
     output = JSON.stringify(result);
   } catch (error) {
-    console.error(`Error processing row:`, row, error);
+    console.error(`Error processing dataset row:`, row, error);
     output = `Error: ${error instanceof Error ? error.message : String(error)}`;
   }
 
@@ -309,11 +314,36 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   // Determine the dataset source
   let dataset: DatasetType;
   if ('dataset' in params) {
-    dataset = params.dataset;
+    if (!(params.dataset instanceof Array)) {
+      // If dataset is a Dataset object, convert it to an array of records
+      const columnNames = (params.dataset as Dataset).column_names;
+      if (!columnNames) {
+        throw new Error('Column names not found in dataset');
+      }
+      const datasetContent = await getDatasetContent(params.dataset.id);
+      dataset = datasetContent.map((row) => {
+        const record: Record<string, string> = {};
+        for (let i = 0; i < columnNames.length; i++) {
+          record[columnNames[i]] = (row.values[i] || '') as string;
+        }
+        return record;
+      });
+    } else {
+      dataset = params.dataset as Record<string, unknown>[];
+    }
   } else if ('datasetId' in params) {
-    dataset = await getDataset(params.datasetId);
+    // If datasetId is provided, get the dataset and its content as an array of records
+    const dataset_ = await getDataset(params.datasetId);
+    const datasetContent = await getDatasetContent(params.datasetId);
+    dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
   } else if ('datasetName' in params) {
-    dataset = await getDataset(undefined, params.datasetName);
+    // If datasetName is provided, get the dataset and its content as an array of records
+    const dataset_ = await getDataset(undefined, params.datasetName);
+    const datasetContent = await getDatasetContent(
+      undefined,
+      params.datasetName
+    );
+    dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
   } else {
     throw new Error(
       'One of dataset, datasetId, or datasetName must be provided'

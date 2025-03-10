@@ -94,7 +94,7 @@ export class GalileoApiClient {
         try {
           this.projectId = await this.getProjectIdByName(projectName);
           // eslint-disable-next-line no-console
-          console.log(`✅ Using ${projectName}`);
+          // console.log(`✅ Using ${projectName}`);
         } catch (err: unknown) {
           const error = err as Error;
 
@@ -118,7 +118,7 @@ export class GalileoApiClient {
           const logStream = await this.getLogStreamByName(logStreamName);
           this.logStreamId = logStream.id;
           // eslint-disable-next-line no-console
-          console.log(`✅ Using ${logStreamName}`);
+          // console.log(`✅ Using ${logStreamName}`);
         } catch (err: unknown) {
           const error = err as Error;
 
@@ -368,9 +368,12 @@ export class GalileoApiClient {
   };
 
   public getDataset = async (id: string): Promise<Dataset> => {
-    return await this.makeRequest<Dataset>(RequestMethod.GET, Routes.dataset, {
-      dataset_id: id
-    });
+    return await this.makeRequest<Dataset>(
+      RequestMethod.GET,
+      Routes.dataset,
+      null,
+      { dataset_id: id }
+    );
   };
 
   public getDatasetByName = async (name: string): Promise<Dataset> => {
