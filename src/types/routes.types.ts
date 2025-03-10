@@ -22,5 +22,7 @@ export enum Routes {
   datasetContent = 'datasets/{dataset_id}/content',
   traces = 'projects/{project_id}/traces',
   scorers = 'scorers/list',
-  runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings'
+  runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings',
+  promptTemplates = 'projects/{project_id}/templates',
+  promptTemplateVersions = 'projects/{project_id}/templates/versions'
 }

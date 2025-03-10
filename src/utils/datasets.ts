@@ -1,4 +1,4 @@
-import { DatasetRow, GalileoApiClient } from '../api-client';
+import { GalileoApiClient, DatasetRow } from '../api-client';
 import { Dataset, DatasetAppendRow } from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -7,7 +7,9 @@ import { join } from 'path';
 export const getDatasets = async (): Promise<Dataset[]> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init();
-  return (await apiClient.getDatasets()).map((dataset) => ({
+
+  const datasets = await apiClient.getDatasets();
+  return datasets.map((dataset) => ({
     id: dataset.id,
     name: dataset.name,
     column_names: dataset.column_names,
