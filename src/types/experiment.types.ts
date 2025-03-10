@@ -1,3 +1,5 @@
+import type { components } from './api.types';
+
 export interface Experiment {
   id: string;
   name: string;
@@ -6,3 +8,6 @@ export interface Experiment {
   project_id: string;
   created_by: string | null;
 }
+type PromptRunSettingsInput = components['schemas']['PromptRunSettings-Input'];
+
+export interface PromptRunSettings extends PromptRunSettingsInput {}
