@@ -285,6 +285,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 ): Promise<RunExperimentOutput> => {
   const { name, metrics, projectName } = params;
 
+  console.log(`Preparing to run experiment '${name}'...`);
+
   if (!projectName) {
     throw new Error('Project name is required');
   }
@@ -316,6 +318,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
   const scorersToUse: Scorer[] = [];
 
+  console.log('Retrieving metrics...');
+
   if (metrics && metrics.length > 0) {
     const scorers = await getScorers(ScorerTypes.preset);
 
@@ -327,6 +331,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       scorersToUse.push(scorer);
     }
   }
+
+  console.log('Retrieving the dataset...');
 
   // Determine the dataset source
   let dataset: DatasetType;
