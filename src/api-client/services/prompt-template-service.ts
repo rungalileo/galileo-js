@@ -19,10 +19,6 @@ export class PromptTemplateService extends BaseClient {
   }
 
   public getPromptTemplates = async (): Promise<PromptTemplate[]> => {
-    console.log(
-      '🚀 ~ TraceService ~ ingestTraces ~ this.projectI:',
-      this.projectId
-    );
     return await this.makeRequest<ListTemplatesResponse>(
       RequestMethod.GET,
       Routes.promptTemplates,

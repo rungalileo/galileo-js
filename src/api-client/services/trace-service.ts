@@ -24,10 +24,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId || !this.logStreamId) {
       throw new Error('Project ID and Log Stream ID must be set');
     }
-    console.log(
-      '🚀 ~ TraceService ~ ingestTraces ~ this.projectI:',
-      this.projectId
-    );
+
     await this.makeRequest<void>(
       RequestMethod.POST,
       Routes.traces,

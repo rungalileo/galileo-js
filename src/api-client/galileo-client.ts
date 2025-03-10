@@ -142,93 +142,91 @@ export class GalileoApiClient extends BaseClient {
         this.token,
         this.projectId
       );
-
-      console.log('🚀 ~ GalileoApiClient ~ this.projectId:', this.projectId);
     }
   }
 
   // Project methods - delegate to ProjectService
   public async getProjects() {
-    this.ensureService(this.projectService, 'Project');
+    this.ensureService(this.projectService);
     return this.projectService!.getProjects();
   }
 
   public async getProject(id: string) {
-    this.ensureService(this.projectService, 'Project');
+    this.ensureService(this.projectService);
     return this.projectService!.getProject(id);
   }
 
   public async getProjectByName(name: string) {
-    this.ensureService(this.projectService, 'Project');
+    this.ensureService(this.projectService);
     return this.projectService!.getProjectByName(name);
   }
 
   public async getProjectIdByName(name: string) {
-    this.ensureService(this.projectService, 'Project');
+    this.ensureService(this.projectService);
     return this.projectService!.getProjectIdByName(name);
   }
 
   public async createProject(name: string) {
-    this.ensureService(this.projectService, 'Project');
+    this.ensureService(this.projectService);
     return this.projectService!.createProject(name);
   }
 
   // LogStream methods - delegate to LogStreamService
   public async getLogStreams() {
-    this.ensureService(this.logStreamService, 'LogStream');
+    this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStreams();
   }
 
   public async getLogStream(id: string) {
-    this.ensureService(this.logStreamService, 'LogStream');
+    this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStream(id);
   }
 
   public async getLogStreamByName(name: string) {
-    this.ensureService(this.logStreamService, 'LogStream');
+    this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStreamByName(name);
   }
 
   public async createLogStream(name: string) {
-    this.ensureService(this.logStreamService, 'LogStream');
+    this.ensureService(this.logStreamService);
     return this.logStreamService!.createLogStream(name);
   }
 
   // Dataset methods - delegate to DatasetService
   public async getDatasets() {
-    this.ensureService(this.datasetService, 'Dataset');
+    this.ensureService(this.datasetService);
     return this.datasetService!.getDatasets();
   }
 
   public async getDataset(id: string) {
-    this.ensureService(this.datasetService, 'Dataset');
+    this.ensureService(this.datasetService);
     return this.datasetService!.getDataset(id);
   }
 
   public async getDatasetByName(name: string) {
-    this.ensureService(this.datasetService, 'Dataset');
+    this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetByName(name);
   }
 
   public async createDataset(name: string, filePath: string, format: any) {
-    this.ensureService(this.datasetService, 'Dataset');
+    this.ensureService(this.datasetService);
     return this.datasetService!.createDataset(name, filePath, format);
   }
 
   public async getDatasetContent(datasetId: string) {
-    this.ensureService(this.datasetService, 'Dataset');
+    this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetContent(datasetId);
   }
 
   // Trace methods - delegate to TraceService
   public async ingestTraces(traces: any[]) {
-    this.ensureService(this.traceService, 'Trace');
+    this.ensureService(this.traceService);
     return this.traceService!.ingestTraces(traces);
   }
 
   // PromptTemplate methods - delegate to PromptTemplateService
   public async getPromptTemplates() {
-    this.ensureService(this.promptTemplateService, 'PromptTemplate');
+    this.ensureService(this.promptTemplateService);
     return this.promptTemplateService!.getPromptTemplates();
   }
 
@@ -237,8 +235,7 @@ export class GalileoApiClient extends BaseClient {
     version: string,
     name: string
   ) {
-    console.log('🚀 ~ GalileoApiClient ~ template:', template);
-    this.ensureService(this.promptTemplateService, 'PromptTemplate');
+    this.ensureService(this.promptTemplateService);
     return this.promptTemplateService!.createPromptTemplate({
       template,
       version,
@@ -247,11 +244,15 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Helper to ensure service is initialized
-  private ensureService(service: any, serviceName: string): void {
+  private ensureService<T>(service: T | undefined): asserts service is T {
     if (!service) {
-      throw new Error(
-        `${serviceName} service not initialized. Did you call init()?`
+      // If serviceName is not provided, try to infer it from the constructor name
+      const name = (service?.constructor?.name || 'Unknown').replace(
+        'Service',
+        ''
       );
+
+      throw new Error(`${name} service not initialized. Did you call init()?`);
     }
   }
 }
