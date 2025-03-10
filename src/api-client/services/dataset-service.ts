@@ -8,6 +8,7 @@ export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
 export type DatasetContent = components['schemas']['DatasetContent'];
 export type Dataset = components['schemas']['DatasetDB'];
 export type DatasetRow = components['schemas']['DatasetRow'];
+export type DatasetAppendRow = components['schemas']['DatasetAppendRow'];
 
 type CollectionPaths =
   | paths['/datasets']
@@ -148,6 +149,22 @@ export class DatasetService extends BaseClient {
       `/datasets/{dataset_id}/content`,
       (response: DatasetContent) => response.rows ?? [],
       { path: { dataset_id: datasetId } }
+    );
+  }
+
+  public async appendRowsToDatasetContent(
+    datasetId: string,
+    rows: DatasetAppendRow[]
+  ): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    await this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.datasetContent,
+      { rows },
+      { dataset_id: datasetId }
     );
   }
 }

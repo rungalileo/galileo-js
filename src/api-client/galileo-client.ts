@@ -1,21 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Scorer, ScorerTypes } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
 import { PromptTemplateService } from './services/prompt-template-service';
-import { DatasetService } from './services/dataset-service';
+import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
+import { ExperimentService } from './services/experiment-service';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
-  public projectName?: string | undefined = process.env.GALILEO_PROJECT;
-  public projectId?: string | undefined = undefined;
-  public logStreamName?: string | undefined = process.env.GALILEO_LOG_STREAM;
-  public logStreamId?: string | undefined = undefined;
-  public runId?: string | undefined = undefined;
-  public datasetId?: string | undefined = undefined;
+  public projectName?: string = process.env.GALILEO_PROJECT;
+  public projectId?: string = undefined;
+  public logStreamName?: string = process.env.GALILEO_LOG_STREAM;
+  public logStreamId?: string = undefined;
+  public runId?: string = undefined;
+  public datasetId?: string = undefined;
+  public experimentId?: string = undefined;
 }
 
 export class GalileoApiClient extends BaseClient {
@@ -24,6 +27,7 @@ export class GalileoApiClient extends BaseClient {
   public logStreamId: string = '';
   public runId: string = '';
   public datasetId: string = '';
+  public experimentId: string = '';
 
   // Service instances
   private authService?: AuthService;
@@ -32,6 +36,7 @@ export class GalileoApiClient extends BaseClient {
   private promptTemplateService?: PromptTemplateService;
   private datasetService?: DatasetService;
   private traceService?: TraceService;
+  private experimentService?: ExperimentService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -44,7 +49,8 @@ export class GalileoApiClient extends BaseClient {
       logStreamId = defaultParams.logStreamId,
       logStreamName = defaultParams.logStreamName,
       runId = defaultParams.runId,
-      datasetId = defaultParams.datasetId
+      datasetId = defaultParams.datasetId,
+      experimentId = defaultParams.experimentId
     } = params;
 
     this.projectType = projectType;
@@ -81,7 +87,7 @@ export class GalileoApiClient extends BaseClient {
           this.projectId =
             await this.projectService.getProjectIdByName(projectName);
           // eslint-disable-next-line no-console
-          console.log(`✅ Using ${projectName}`);
+          // console.log(`✅ Using ${projectName}`);
         } catch (err: unknown) {
           const error = err as Error;
 
@@ -104,7 +110,9 @@ export class GalileoApiClient extends BaseClient {
         this.projectId
       );
 
-      if (logStreamId) {
+      if (experimentId) {
+        this.experimentId = experimentId;
+      } else if (logStreamId) {
         this.logStreamId = logStreamId;
       } else if (logStreamName) {
         try {
@@ -112,7 +120,7 @@ export class GalileoApiClient extends BaseClient {
             await this.logStreamService.getLogStreamByName(logStreamName);
           this.logStreamId = logStream.id;
           // eslint-disable-next-line no-console
-          console.log(`✅ Using ${logStreamName}`);
+          // console.log(`✅ Using ${logStreamName}`);
         } catch (err: unknown) {
           const error = err as Error;
 
@@ -171,7 +179,7 @@ export class GalileoApiClient extends BaseClient {
     return this.projectService!.createProject(name);
   }
 
-  // LogStream methods - delegate to LogStreamService
+  // Log Stream methods - delegate to LogStreamService
   public async getLogStreams() {
     this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStreams();
@@ -218,6 +226,14 @@ export class GalileoApiClient extends BaseClient {
     return this.datasetService!.getDatasetContent(datasetId);
   }
 
+  public async appendRowsToDatasetContent(
+    datasetId: string,
+    rows: DatasetAppendRow[]
+  ): Promise<void> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.appendRowsToDatasetContent(datasetId, rows);
+  }
+
   // Trace methods - delegate to TraceService
   public async ingestTraces(traces: any[]) {
     this.ensureService(this.traceService);
@@ -241,6 +257,40 @@ export class GalileoApiClient extends BaseClient {
       version,
       name
     });
+  }
+
+  // Experiment methods - delegate to ExperimentService
+  public async getExperiments() {
+    this.ensureService(this.experimentService);
+    return this.experimentService!.getExperiments();
+  }
+
+  public async getExperiment(id: string) {
+    this.ensureService(this.experimentService);
+    return this.experimentService!.getExperiment(id);
+  }
+
+  public async createExperiment(name: string) {
+    this.ensureService(this.experimentService);
+    return this.experimentService!.createExperiment(name);
+  }
+
+  public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
+    this.ensureService(this.experimentService);
+    return this.experimentService!.getScorers(type);
+  }
+
+  public async createRunScorerSettings(
+    experimentId: string,
+    projectId: string,
+    scorers: Scorer[]
+  ): Promise<void> {
+    this.ensureService(this.experimentService);
+    return this.experimentService!.createRunScorerSettings(
+      experimentId,
+      projectId,
+      scorers
+    );
   }
 
   // Helper to ensure service is initialized

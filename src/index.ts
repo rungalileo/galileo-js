@@ -3,6 +3,7 @@ import GalileoEvaluateWorkflow from './evaluate/workflow';
 import GalileoObserveApiClient from './observe/api-client';
 import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
+import { GalileoApiClient } from './api-client';
 import {
   getDatasets,
   createDataset,
@@ -19,6 +20,12 @@ import {
   createLogStream,
   getLogStream
 } from './utils/log-streams';
+import {
+  getExperiments,
+  createExperiment,
+  getExperiment,
+  runExperiment
+} from './utils/experiments';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush } from './singleton';
 import { log } from './wrappers';
@@ -31,6 +38,7 @@ export {
   GalileoEvaluateApiClient,
   GalileoEvaluateWorkflow,
   // Galileo 2.0 client and methods
+  GalileoApiClient,
   GalileoLogger,
   wrapOpenAI,
   // Datasets
@@ -41,6 +49,11 @@ export {
   // Prompt templates
   getPromptTemplates,
   createPromptTemplate,
+  // Experiments
+  getExperiments,
+  createExperiment,
+  getExperiment,
+  runExperiment,
   // Projects
   getProjects,
   createProject,

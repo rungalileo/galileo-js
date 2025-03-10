@@ -1,5 +1,5 @@
 import { GalileoApiClient, DatasetRow } from '../api-client';
-import { Dataset } from '../types/dataset.types';
+import { Dataset, DatasetAppendRow } from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -174,4 +174,48 @@ export const getDatasetContent = async (
   const apiClient = new GalileoApiClient();
   await apiClient.init();
   return await apiClient.getDatasetContent(datasetId!);
+};
+
+/*
+ * Appends rows to a dataset.
+ *
+ * @param datasetId - The ID of the dataset to which rows will be appended.
+ * @param rows - An array of rows to append to the dataset.
+ * @returns A Promise that resolves when the rows have been appended.
+ *
+ * @example
+ * ```typescript
+ * await addRowsToDataset('datasetId', [{ column1: 'value1', column2: 'value2' }]);
+ * ```
+ */
+export const addRowsToDataset = async (
+  datasetId: string,
+  rows: DatasetAppendRow[]
+): Promise<void> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init();
+  await apiClient.appendRowsToDatasetContent(
+    datasetId,
+    rows.map((row) => ({
+      edit_type: 'append_row',
+      values: row
+    }))
+  );
+};
+
+// TODO: Remove this once the datasets team adds a dictionary field to DatasetRow
+export const convertDatasetContentToRecords = async (
+  dataset: Dataset,
+  datasetContent: DatasetRow[]
+): Promise<Record<string, string>[]> => {
+  if (!dataset.column_names) {
+    throw new Error('Column names not found in dataset');
+  }
+  return datasetContent.map((row) => {
+    const record: Record<string, string> = {};
+    for (let i = 0; i < dataset.column_names!.length; i++) {
+      record[dataset.column_names![i]] = (row.values[i] || '') as string;
+    }
+    return record;
+  });
 };

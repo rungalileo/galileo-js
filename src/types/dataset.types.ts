@@ -1,4 +1,5 @@
 import { User } from './user.types';
+import { components } from './api.types';
 
 export interface Dataset {
   id: string;
@@ -12,3 +13,9 @@ export interface Dataset {
   current_version_index: number;
   draft: boolean;
 }
+
+export interface DatasetAppendRow {
+  [key: string]: string | number | null;
+}
+
+export type DatasetRow = components['schemas']['DatasetRow'];

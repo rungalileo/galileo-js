@@ -45,7 +45,7 @@ describe('GalileoLogger', () => {
     it('should throw error if project or log stream is missing', () => {
       delete process.env.GALILEO_PROJECT;
       expect(() => new GalileoLogger()).toThrow(
-        'User must provide projectName and logStreamName to GalileoLogger, or set them as environment variables.'
+        'User must provide projectName to GalileoLogger, or set it as an environment variable.'
       );
 
       process.env.GALILEO_PROJECT = 'test-project';

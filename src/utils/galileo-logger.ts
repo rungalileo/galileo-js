@@ -18,24 +18,43 @@ import { ProjectTypes } from '../types/project.types';
 class GalileoLoggerConfig {
   public projectName?: string;
   public logStreamName?: string;
+  public experimentId?: string;
 }
 
 class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
+  private experimentId?: string;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
 
   constructor(config: GalileoLoggerConfig = {}) {
     this.projectName = config.projectName || process.env.GALILEO_PROJECT || '';
-    this.logStreamName =
-      config.logStreamName || process.env.GALILEO_LOG_STREAM || '';
 
-    if (!this.projectName || !this.logStreamName) {
+    if (!this.projectName) {
       throw new Error(
-        'User must provide projectName and logStreamName to GalileoLogger, or set them as environment variables.'
+        'User must provide projectName to GalileoLogger, or set it as an environment variable.'
       );
+    }
+
+    if (config.experimentId && config.logStreamName) {
+      throw new Error(
+        'User must provide either experimentId or logStreamName, not both.'
+      );
+    }
+
+    if (config.experimentId) {
+      this.experimentId = config.experimentId;
+    } else {
+      this.logStreamName =
+        config.logStreamName || process.env.GALILEO_LOG_STREAM || '';
+
+      if (!this.projectName || !this.logStreamName) {
+        throw new Error(
+          'User must provide projectName and logStreamName to GalileoLogger, or set them as environment variables.'
+        );
+      }
     }
   }
 
@@ -331,7 +350,8 @@ class GalileoLogger {
       await this.client.init({
         projectType: ProjectTypes.genAI,
         projectName: this.projectName,
-        logStreamName: this.logStreamName
+        logStreamName: this.logStreamName,
+        experimentId: this.experimentId
       });
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
@@ -349,9 +369,9 @@ class GalileoLogger {
     }
   }
 
-  terminate(): void {
+  async terminate(): Promise<void> {
     try {
-      this.flush();
+      await this.flush();
     } catch (error) {
       console.error(error);
     }
