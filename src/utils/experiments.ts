@@ -139,6 +139,13 @@ export const getExperiment = async ({
   return experiments.find((experiment) => experiment.name === name!);
 };
 
+/*
+ * Processes a dataset row using a runner function.
+ *
+ * @param row - The dataset row to process
+ * @param processFn - The runner function to use for processing
+ * @returns The processed output as a string
+ */
 const processRow = async <T extends Record<string, unknown>>(
   row: T,
   processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>
@@ -174,6 +181,16 @@ const processRow = async <T extends Record<string, unknown>>(
   return output;
 };
 
+/*
+ * Runs an experiment by processing each row of a dataset using a runner function.
+ *
+ * @param experiment - The experiment to run
+ * @param projectName - The name of the project
+ * @param datasetContent - The content of the dataset
+ * @param processFn - The runner function to use for processing
+ * @param metrics - The metrics to use for evaluation
+ * @returns The processed outputs as an array of strings
+ */
 const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   experiment: Experiment,
   projectName: string,
