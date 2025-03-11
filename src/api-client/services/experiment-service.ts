@@ -45,7 +45,8 @@ export class ExperimentService extends BaseClient {
       RequestMethod.POST,
       Routes.experiments,
       {
-        name
+        name,
+        task_type: 16
       },
       {
         project_id: this.projectId
@@ -101,14 +102,14 @@ export class ExperimentService extends BaseClient {
       RequestMethod.POST,
       Routes.jobs,
       {
-        name: 'playground_run',
+        job_name: 'playground_run',
         project_id: projectId,
         run_id: experimentId,
-        prompt_template_id: promptTemplateVersionId,
+        prompt_template_version_id: promptTemplateVersionId,
         prompt_settings: promptSettings || {},
         dataset_id: datasetId,
-        scorers: scorers || null,
-        task_type: 16
+        // scorers: scorers || null,
+        task_type: 17
       }
     );
   };
