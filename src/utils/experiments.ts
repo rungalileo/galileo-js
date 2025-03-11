@@ -203,16 +203,6 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
 ): Promise<string[]> => {
   const outputs: string[] = [];
 
-  // const apiClient = new GalileoApiClient();
-  // await apiClient.init({ projectName });
-  // const projectId = apiClient.projectId;
-
-  // apiClient.experimentId = experiment.id;
-
-  // if (metrics.length > 0) {
-  //   await createRunScorerSettings(experiment.id, projectId, metrics);
-  // }
-
   // Initialize the singleton logger
   init({ experimentId: experiment.id, projectName });
 
