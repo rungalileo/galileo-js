@@ -21,7 +21,10 @@ export class BaseClient {
     if (this.apiUrl && this.token) {
       this.client = createClient({
         baseUrl: this.apiUrl,
-        headers: { Authorization: `Bearer ${this.token}` }
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'client-type': 'sdk-js'
+        }
       });
     }
   }
@@ -110,7 +113,7 @@ export class BaseClient {
   ): Promise<T> {
     await this.refreshTokenIfNeeded(endpoint);
 
-    let headers: Record<string, any> = {};
+    let headers: Record<string, any> = { 'client-type': 'sdk-js' };
     if (this.token) {
       headers = this.getAuthHeader(this.token);
     }
