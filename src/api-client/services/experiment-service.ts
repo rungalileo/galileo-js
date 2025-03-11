@@ -105,7 +105,7 @@ export class ExperimentService extends BaseClient {
         project_id: projectId,
         run_id: experimentId,
         prompt_template_id: promptTemplateVersionId,
-        prompt_settings: promptSettings || null,
+        prompt_settings: promptSettings || {},
         dataset_id: datasetId,
         scorers: scorers || null,
         task_type: 16
