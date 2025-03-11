@@ -108,8 +108,6 @@ export class GalileoApiClient extends BaseClient {
         }
       }
 
-      console.log(`Using projectId: ${this.projectId}`);
-
       // Initialize log stream service
       this.logStreamService = new LogStreamService(
         this.apiUrl,
@@ -142,10 +140,6 @@ export class GalileoApiClient extends BaseClient {
           }
         }
       }
-
-      console.log(`Using logStreamId: ${this.logStreamId}`);
-
-      console.log(`Using experimentId: ${this.experimentId}`);
 
       // Initialize dataset and trace services
       this.datasetService = new DatasetService(this.apiUrl, this.token);
