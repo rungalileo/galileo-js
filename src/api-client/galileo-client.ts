@@ -9,6 +9,11 @@ import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import {
+  CreateJobResponse,
+  PromptRunSettings
+} from '../types/experiment.types';
+import { Message } from '../types/message.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -246,15 +251,28 @@ export class GalileoApiClient extends BaseClient {
     return this.promptTemplateService!.getPromptTemplates();
   }
 
-  public async createPromptTemplate(
-    template: string,
-    version: string,
-    name: string
-  ) {
+  public async getPromptTemplate(id: string) {
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplate(id);
+  }
+
+  public async getPromptTemplateVersion(id: string, version: number) {
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplateVersion(id, version);
+  }
+
+  public async getPromptTemplateVersionByName(name: string, version?: number) {
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplateVersionByName(
+      name,
+      version
+    );
+  }
+
+  public async createPromptTemplate(template: Message[], name: string) {
     this.ensureService(this.promptTemplateService);
     return this.promptTemplateService!.createPromptTemplate({
       template,
-      version,
       name
     });
   }
@@ -290,6 +308,25 @@ export class GalileoApiClient extends BaseClient {
       experimentId,
       projectId,
       scorers
+    );
+  }
+
+  public async createPromptRunJob(
+    experimentId: string,
+    projectId: string,
+    promptTemplateVersionId: string,
+    datasetId: string,
+    scorers?: Scorer[],
+    promptSettings?: PromptRunSettings
+  ): Promise<CreateJobResponse> {
+    this.ensureService(this.experimentService);
+    return this.experimentService!.createPromptRunJob(
+      experimentId,
+      projectId,
+      promptTemplateVersionId,
+      datasetId,
+      scorers,
+      promptSettings
     );
   }
 

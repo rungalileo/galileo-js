@@ -1,4 +1,5 @@
 import { Experiment, PromptRunSettings } from '../types/experiment.types';
+import { PromptTemplate } from '../types/prompt-template.types';
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
@@ -12,7 +13,6 @@ import {
 } from '../utils/datasets';
 
 type DatasetType = Dataset | Record<string, unknown>[];
-type PromptTemplate = unknown; // TODO: Implement prompt run experiments
 
 // Define possible parameter combinations
 type DatasetWithFunction<T extends Record<string, unknown>> = {
@@ -120,7 +120,7 @@ export const getExperiment = async ({
 }: {
   id?: string;
   name?: string;
-  projectName?: string;
+  projectName: string;
 }): Promise<Experiment | undefined> => {
   if (!id && !name) {
     throw new Error(
@@ -195,23 +195,19 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   experiment: Experiment,
   projectName: string,
   datasetContent: Record<string, unknown>[],
-  processFn: (
-    input: T,
-    metadata?: Record<string, string>
-  ) => Promise<unknown[]>,
-  metrics: Scorer[]
+  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>
 ): Promise<string[]> => {
   const outputs: string[] = [];
 
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectName });
-  const projectId = apiClient.projectId;
+  // const apiClient = new GalileoApiClient();
+  // await apiClient.init({ projectName });
+  // const projectId = apiClient.projectId;
 
-  apiClient.experimentId = experiment.id;
+  // apiClient.experimentId = experiment.id;
 
-  if (metrics.length > 0) {
-    await createRunScorerSettings(experiment.id, projectId, metrics);
-  }
+  // if (metrics.length > 0) {
+  //   await createRunScorerSettings(experiment.id, projectId, metrics);
+  // }
 
   // Initialize the singleton logger
   init({ experimentId: experiment.id, projectName });
@@ -332,10 +328,20 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     }
   }
 
+  if (scorersToUse.length > 0) {
+    console.log('Adding metrics to the experiment...');
+    await createRunScorerSettings({
+      experimentId: experiment.id,
+      projectName,
+      scorers: scorersToUse
+    });
+  }
+
   console.log('Retrieving the dataset...');
 
   // Determine the dataset source
   let dataset: DatasetType;
+  let datasetId: string | undefined = undefined;
   if ('dataset' in params) {
     if (!(params.dataset instanceof Array)) {
       // If dataset is a Dataset object, convert it to an array of records
@@ -356,12 +362,14 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     }
   } else if ('datasetId' in params) {
     // If datasetId is provided, get the dataset and its content as an array of records
-    const dataset_ = await getDataset(params.datasetId);
-    const datasetContent = await getDatasetContent(params.datasetId);
+    datasetId = params.datasetId;
+    const dataset_ = await getDataset(datasetId);
+    const datasetContent = await getDatasetContent(datasetId);
     dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
   } else if ('datasetName' in params) {
     // If datasetName is provided, get the dataset and its content as an array of records
     const dataset_ = await getDataset(undefined, params.datasetName);
+    datasetId = dataset_.id;
     const datasetContent = await getDatasetContent(
       undefined,
       params.datasetName
@@ -373,7 +381,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     );
   }
 
-  // Process using either function or promptTemplate
+  // Process using either a runner function or a prompt template
   if ('function' in params) {
     const processFn = params.function;
 
@@ -383,15 +391,25 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       experiment,
       projectName,
       dataset as Record<string, unknown>[],
-      processFn,
-      scorersToUse
+      processFn
     );
     const link = '';
     return { results, experiment, link, message: 'Experiment completed.' };
   } else if ('promptTemplate' in params) {
-    // const template = params.promptTemplate;
-    // TODO: Implement prompt run experiments
-    throw new Error('Prompt run experiments are not implemented yet');
+    const apiClient = new GalileoApiClient();
+    await apiClient.init({ projectName });
+    const projectId = apiClient.projectId;
+    apiClient.experimentId = experiment.id;
+    const response = await apiClient.createPromptRunJob(
+      experiment.id,
+      projectId,
+      (params.promptTemplate as PromptTemplate).selected_version_id,
+      datasetId!,
+      scorersToUse,
+      params.promptSettings
+    );
+
+    return { experiment, link: response.link, message: response.message };
   } else {
     throw new Error('One of function or promptTemplate must be provided');
   }

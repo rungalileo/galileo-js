@@ -12,7 +12,8 @@ import {
 } from './utils/datasets';
 import {
   createPromptTemplate,
-  getPromptTemplates
+  getPromptTemplates,
+  getPromptTemplate
 } from './utils/prompt-templates';
 import { getProjects, createProject, getProject } from './utils/projects';
 import {
@@ -48,6 +49,7 @@ export {
   getDataset,
   // Prompt templates
   getPromptTemplates,
+  getPromptTemplate,
   createPromptTemplate,
   // Experiments
   getExperiments,
