@@ -2,7 +2,11 @@ import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { Scorer } from '../../types/scorer.types';
 import { ScorerTypes } from '../../types/scorer.types';
-import { Experiment } from '../../types/experiment.types';
+import {
+  Experiment,
+  PromptRunSettings,
+  CreateJobResponse
+} from '../../types/experiment.types';
 
 export class ExperimentService extends BaseClient {
   private projectId: string;
@@ -81,6 +85,30 @@ export class ExperimentService extends BaseClient {
       {
         project_id: projectId,
         experiment_id: experimentId
+      }
+    );
+  };
+
+  public createPromptRunJob = async (
+    experimentId: string,
+    projectId: string,
+    promptTemplateVersionId: string,
+    datasetId: string,
+    scorers?: Scorer[],
+    promptSettings?: PromptRunSettings
+  ): Promise<CreateJobResponse> => {
+    return await this.makeRequest<CreateJobResponse>(
+      RequestMethod.POST,
+      Routes.jobs,
+      {
+        name: 'playground_run',
+        project_id: projectId,
+        run_id: experimentId,
+        prompt_template_id: promptTemplateVersionId,
+        prompt_settings: promptSettings || null,
+        dataset_id: datasetId,
+        scorers: scorers || null,
+        task_type: 16
       }
     );
   };

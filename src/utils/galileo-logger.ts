@@ -345,7 +345,6 @@ class GalileoLogger {
         console.warn('No traces to flush.');
         return [];
       }
-      console.log('🚀 ~ GalileoLogger ~ flush ~ this.traces:', this.traces);
 
       await this.client.init({
         projectType: ProjectTypes.genAI,

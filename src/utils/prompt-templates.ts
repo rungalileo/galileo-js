@@ -1,7 +1,13 @@
 import { GalileoApiClient } from '../api-client';
+import { Message } from '../types/message.types';
+import {
+  PromptTemplate,
+  PromptTemplateVersion
+} from '../types/prompt-template.types';
 
-// Template methods - delegate to PromptTemplateService
-export const getPromptTemplates = async (projectName: string) => {
+export const getPromptTemplates = async (
+  projectName: string
+): Promise<PromptTemplate[]> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
 
@@ -9,24 +15,50 @@ export const getPromptTemplates = async (projectName: string) => {
   return templates;
 };
 
-export const createPromptTemplate = async ({
-  template,
-  version,
+export const getPromptTemplate = async ({
+  id,
   name,
-  projectName
+  projectName,
+  version
 }: {
-  template: string;
-  version: string;
-  name: string;
+  id?: string;
+  name?: string;
   projectName: string;
-}) => {
+  version?: number;
+}): Promise<PromptTemplateVersion> => {
+  if (!id && !name) {
+    throw new Error('Either id or name must be provided');
+  }
+
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
 
-  const createdTemplate = await apiClient.createPromptTemplate(
-    template,
-    version,
-    name
-  );
+  if (id) {
+    if (version) {
+      const template = await apiClient.getPromptTemplateVersion(id, version);
+      return template;
+    } else {
+      const template = await apiClient.getPromptTemplate(id);
+      version = template.selected_version.version;
+      return await apiClient.getPromptTemplateVersion(id, version);
+    }
+  } else {
+    return await apiClient.getPromptTemplateVersionByName(name!, version);
+  }
+};
+
+export const createPromptTemplate = async ({
+  template,
+  name,
+  projectName
+}: {
+  template: Message[];
+  name: string;
+  projectName: string;
+}): Promise<PromptTemplate> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectName });
+
+  const createdTemplate = await apiClient.createPromptTemplate(template, name);
   return createdTemplate;
 };

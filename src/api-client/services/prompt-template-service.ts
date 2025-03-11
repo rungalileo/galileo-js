@@ -1,11 +1,11 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { components } from '../../types/api.types';
+import {
+  PromptTemplate,
+  PromptTemplateVersion
+} from '../../types/prompt-template.types';
+import { Message } from '../../types/message.types';
 
-export type PromptTemplate =
-  components['schemas']['BasePromptTemplateResponse'];
-export type PromptTemplateVersion =
-  components['schemas']['BasePromptTemplateVersionResponse'];
 type ListTemplatesResponse = PromptTemplate[];
 
 export class PromptTemplateService extends BaseClient {
@@ -27,19 +27,50 @@ export class PromptTemplateService extends BaseClient {
     );
   };
 
+  public getPromptTemplate = async (id: string): Promise<PromptTemplate> => {
+    return await this.makeRequest<PromptTemplate>(
+      RequestMethod.GET,
+      Routes.promptTemplate,
+      null,
+      { project_id: this.projectId, template_id: id }
+    );
+  };
+
+  public getPromptTemplateVersion = async (
+    id: string,
+    version: number
+  ): Promise<PromptTemplateVersion> => {
+    return await this.makeRequest<PromptTemplateVersion>(
+      RequestMethod.GET,
+      Routes.promptTemplateVersion,
+      null,
+      { project_id: this.projectId, template_id: id, version }
+    );
+  };
+
+  public getPromptTemplateVersionByName = async (
+    name: string,
+    version?: number
+  ): Promise<PromptTemplateVersion> => {
+    return await this.makeRequest<PromptTemplateVersion>(
+      RequestMethod.GET,
+      Routes.promptTemplateVersions,
+      { template_name: name, version: version ?? null },
+      { project_id: this.projectId }
+    );
+  };
+
   public createPromptTemplate = async ({
     template,
-    version,
     name
   }: {
-    template: string;
-    version: string;
+    template: Message[];
     name: string;
   }): Promise<PromptTemplate> => {
     return await this.makeRequest<PromptTemplate>(
       RequestMethod.POST,
       Routes.promptTemplates,
-      { template, version, name },
+      { template, name },
       { project_id: this.projectId }
     );
   };
