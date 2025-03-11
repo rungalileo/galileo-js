@@ -8,12 +8,6 @@ Note: This library is in pre-release mode and may not be stable.
 
 ### Installation
 
-Without optional dependencies
-
-`npm i galileo-experimental --no-optional`
-
-With optional dependencies
-
 `npm i galileo-experimental`
 
 ### Setup
