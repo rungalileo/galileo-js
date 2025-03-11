@@ -362,6 +362,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   if ('dataset' in params) {
     if (!(params.dataset instanceof Array)) {
       // If dataset is a Dataset object, convert it to an array of records
+      datasetId = (params.dataset as Dataset).id;
       const columnNames = (params.dataset as Dataset).column_names;
       if (!columnNames) {
         throw new Error('Column names not found in dataset');
@@ -375,6 +376,13 @@ export const runExperiment = async <T extends Record<string, unknown>>(
         return record;
       });
     } else {
+      // If dataset is an array of records
+      if ('promptTemplate' in params) {
+        throw new Error(
+          'Prompt template experiments cannot be run with a local dataset'
+        );
+      }
+
       dataset = params.dataset as Record<string, unknown>[];
     }
   } else if ('datasetId' in params) {
