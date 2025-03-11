@@ -29,7 +29,7 @@ export class BaseClient {
   protected getApiUrl(projectType: string): string {
     const consoleUrl = process.env.GALILEO_CONSOLE_URL;
 
-    if (!consoleUrl && projectType === 'genAI') {
+    if (!consoleUrl && projectType === 'gen_ai') {
       return 'https://api.galileo.ai';
     }
 
