@@ -101,7 +101,7 @@ export class ExperimentService extends BaseClient {
       RequestMethod.POST,
       Routes.jobs,
       {
-        name: 'prompt_run',
+        name: 'playground_run',
         project_id: projectId,
         run_id: experimentId,
         prompt_template_id: promptTemplateVersionId,
