@@ -448,6 +448,27 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     }
     apiClient.experimentId = experiment.id;
 
+    const promptSettings =
+      params.promptSettings ||
+      ({
+        n: 1,
+        echo: false,
+        tools: null,
+        top_k: 40,
+        top_p: 1.0,
+        logprobs: true,
+        max_tokens: 256,
+        model_alias: 'GPT-4o',
+        temperature: 0.8,
+        tool_choice: null,
+        top_logprobs: 5,
+        stop_sequences: null,
+        deployment_name: null,
+        response_format: null,
+        presence_penalty: 0.0,
+        frequency_penalty: 0.0
+      } as PromptRunSettings);
+
     console.log(
       `Starting prompt experiment ${experiment.name} for project ${projectName}...`
     );
@@ -458,7 +479,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       promptTemplateVersionId,
       datasetId!,
       scorersToUse,
-      params.promptSettings
+      promptSettings
     );
 
     console.log(
