@@ -147,7 +147,8 @@ export class GalileoApiClient extends BaseClient {
         this.apiUrl,
         this.token,
         this.projectId,
-        this.logStreamId
+        this.logStreamId,
+        this.experimentId
       );
 
       this.promptTemplateService = new PromptTemplateService(

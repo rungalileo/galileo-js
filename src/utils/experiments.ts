@@ -236,10 +236,21 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   await flush();
 
   console.log(
-    `🚀 Experiment ${experiment.name} completed. ${outputs.length} rows processed.`
+    `${outputs.length} rows processed for experiment ${experiment.name}.`
   );
 
   return outputs;
+};
+
+const getLinkToExperimentResults = (
+  experimentId: string,
+  projectId: string
+) => {
+  let baseUrl = process.env.GALILEO_CONSOLE_URL || 'https://app.galileo.ai';
+  if (baseUrl.includes('api.galileo.ai')) {
+    baseUrl = baseUrl.replace('api.galileo.ai', 'app.galileo.ai');
+  }
+  return `${baseUrl}/project/${projectId}/experiments/${experimentId}`;
 };
 
 /**
@@ -385,6 +396,11 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     );
   }
 
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectName });
+  const projectId = apiClient.projectId;
+  const linkToResults = getLinkToExperimentResults(experiment.id, projectId);
+
   // Process using either a runner function or a prompt template
   if ('function' in params) {
     const processFn = params.function;
@@ -399,8 +415,23 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       dataset as Record<string, unknown>[],
       processFn
     );
-    const link = '';
-    return { results, experiment, link, message: 'Experiment completed.' };
+
+    if (scorersToUse.length > 0) {
+      console.log(
+        `Metrics are still being calculated for runner function experiment ${experiment.name}. Results will be available at ${linkToResults}`
+      );
+    } else {
+      console.log(
+        `Runner function experiment ${experiment.name} is complete. Results are available at ${linkToResults}`
+      );
+    }
+
+    return {
+      results,
+      experiment,
+      link: linkToResults,
+      message: 'Experiment completed.'
+    };
   } else if ('promptTemplate' in params) {
     let promptTemplateVersionId: string | undefined = undefined;
     if ('version' in params.promptTemplate) {
@@ -413,13 +444,12 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       promptTemplateVersionId = (params.promptTemplate as PromptTemplate)
         .selected_version_id;
     }
-    const apiClient = new GalileoApiClient();
-    await apiClient.init({ projectName });
-    const projectId = apiClient.projectId;
     apiClient.experimentId = experiment.id;
+
     console.log(
       `Starting prompt experiment ${experiment.name} for project ${projectName}...`
     );
+
     const response = await apiClient.createPromptRunJob(
       experiment.id,
       projectId,
@@ -429,7 +459,11 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       params.promptSettings
     );
 
-    return { experiment, link: response.link, message: response.message };
+    console.log(
+      `Prompt experiment ${experiment.name} has started and is currently processing. Results will be available at ${linkToResults}`
+    );
+
+    return { experiment, link: linkToResults, message: response.message };
   } else {
     throw new Error('One of function or promptTemplate must be provided');
   }
