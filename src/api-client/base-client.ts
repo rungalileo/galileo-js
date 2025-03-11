@@ -27,7 +27,7 @@ export class BaseClient {
   }
 
   protected getApiUrl(projectType: string): string {
-    const consoleUrl = process.env.GALILEO_CONSOLE_URL;
+    let consoleUrl = process.env.GALILEO_CONSOLE_URL;
 
     if (!consoleUrl && projectType === 'gen_ai') {
       return 'https://api.galileo.ai';
@@ -39,9 +39,18 @@ export class BaseClient {
 
     if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
       return 'http://localhost:8088';
-    } else {
-      return consoleUrl.replace('console', 'api');
     }
+
+    consoleUrl = consoleUrl
+      .replace('app.galileo.ai', 'api.galileo.ai')
+      .replace('console', 'api');
+
+    // remove trailing slash
+    if (consoleUrl.endsWith('/')) {
+      consoleUrl = consoleUrl.slice(0, -1);
+    }
+
+    return consoleUrl;
   }
 
   protected async healthCheck(): Promise<boolean> {
