@@ -4335,6 +4335,30 @@ export interface components {
       index: number;
       /** Values */
       values: (string | number | null)[];
+      /** Values Dict */
+      values_dict: {
+        [key: string]: string | number | null;
+      };
+      metadata: components['schemas']['DatasetRowMetadata'] | null;
+    };
+    /** DatasetRowMetadata */
+    DatasetRowMetadata: {
+      /** Created In Version */
+      created_in_version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by_user: components['schemas']['UserInfo'] | null;
+      /** Updated In Version */
+      updated_in_version: number;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      updated_by_user: components['schemas']['UserInfo'] | null;
     };
     /** DatasetRowsSort */
     DatasetRowsSort: {
@@ -4484,6 +4508,11 @@ export interface components {
     ExperimentCreateRequest: {
       /** Name */
       name: string;
+      /**
+       * Task Type
+       * @default 16
+       */
+      task_type?: 16 | 17;
     };
     /** ExperimentResponse */
     ExperimentResponse: {
@@ -4511,11 +4540,17 @@ export interface components {
       project_id: string;
       /** Created By */
       created_by?: string | null;
+      task_type: components['schemas']['TaskType'];
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
       /** Name */
       name: string;
+      /**
+       * Task Type
+       * @default 16
+       */
+      task_type?: 16 | 17;
     };
     /** FactualityTemplate */
     FactualityTemplate: {
@@ -7122,6 +7157,13 @@ export interface components {
       id?: string | null;
       /** Name */
       name?: string | null;
+      /** Filters */
+      filters?:
+        | (
+            | components['schemas']['NodeNameFilter']
+            | components['schemas']['MetadataFilter']
+          )[]
+        | null;
     };
     /**
      * RegisteredScorerAction
@@ -7857,7 +7899,8 @@ export interface components {
       | 13
       | 14
       | 15
-      | 16;
+      | 16
+      | 17;
     /** TextRating */
     TextRating: {
       /**
