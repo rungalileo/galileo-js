@@ -40,10 +40,9 @@ export class TraceService extends BaseClient {
         ...(this.experimentId && {
           experiment_id: this.experimentId
         }),
-        ...(!this.experimentId &&
-          this.logStreamId && {
-            log_stream_id: this.logStreamId
-          })
+        ...(!this.experimentId && {
+          log_stream_id: this.logStreamId
+        })
       },
       { project_id: this.projectId }
     );

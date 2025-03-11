@@ -17,9 +17,9 @@ import { Message } from '../types/message.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
-  public projectName?: string = process.env.GALILEO_PROJECT;
+  public projectName?: string = process.env.GALILEO_PROJECT || 'default';
   public projectId?: string = undefined;
-  public logStreamName?: string = process.env.GALILEO_LOG_STREAM;
+  public logStreamName?: string = process.env.GALILEO_LOG_STREAM || 'default';
   public logStreamId?: string = undefined;
   public runId?: string = undefined;
   public datasetId?: string = undefined;
@@ -108,6 +108,8 @@ export class GalileoApiClient extends BaseClient {
         }
       }
 
+      console.log(`Using projectId: ${this.projectId}`);
+
       // Initialize log stream service
       this.logStreamService = new LogStreamService(
         this.apiUrl,
@@ -140,6 +142,10 @@ export class GalileoApiClient extends BaseClient {
           }
         }
       }
+
+      console.log(`Using logStreamId: ${this.logStreamId}`);
+
+      console.log(`Using experimentId: ${this.experimentId}`);
 
       // Initialize dataset and trace services
       this.datasetService = new DatasetService(this.apiUrl, this.token);
