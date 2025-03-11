@@ -253,22 +253,34 @@ const getLinkToExperimentResults = (
  * // Run an experiment with a runner function
  * const results = await runExperiment({
  *   name: 'my-experiment',
- *   dataset: [{ id: 1, name: 'test' }],
+ *   dataset: [{ country: 'France'}],
  *   function: async (input) => {
- *     return `The capital of ${input["country"]} is ${input["capital"]}`;
- *   },
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: `What is the capital of ${input['country']}?`
+            }
+          ]
+        });
+        return response.choices[0].message.content;
+      },
  *   metrics: ['accuracy'],
  *   projectName: 'my-project'
  * });
  *
  * // Run an experiment with a prompt template
+ * const promptTemplate = await createPromptTemplate({
+ *   template: [{ role: 'user', content: 'What is the capital of {{ country }}?' }],
+ *   name: 'my-prompt-template',
+ *   projectName: 'my-project'
+ * });
+ *
  * const results = await runExperiment({
  *   name: 'my-experiment',
- *   dataset: [{ id: 1, name: 'test' }],
- *   promptTemplate: {
- *     template: 'What is the capital of {{ country }}?',
- *     parameters: ['country']
- *   },
+ *   dataset: [{ country: 'France' }],
+ *   promptTemplate
  *   metrics: ['accuracy'],
  *   projectName: 'my-project'
  * });
