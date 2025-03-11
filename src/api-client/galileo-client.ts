@@ -155,6 +155,11 @@ export class GalileoApiClient extends BaseClient {
         this.token,
         this.projectId
       );
+      this.experimentService = new ExperimentService(
+        this.apiUrl,
+        this.token,
+        this.projectId
+      );
     }
   }
 

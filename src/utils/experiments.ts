@@ -1,5 +1,8 @@
 import { Experiment, PromptRunSettings } from '../types/experiment.types';
-import { PromptTemplate } from '../types/prompt-template.types';
+import {
+  PromptTemplate,
+  PromptTemplateVersion
+} from '../types/prompt-template.types';
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
@@ -13,6 +16,7 @@ import {
 } from '../utils/datasets';
 
 type DatasetType = Dataset | Record<string, unknown>[];
+type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 
 // Define possible parameter combinations
 type DatasetWithFunction<T extends Record<string, unknown>> = {
@@ -42,7 +46,7 @@ type DatasetNameWithFunction<T extends Record<string, unknown>> = {
 type DatasetWithPromptTemplate = {
   name: string;
   dataset: DatasetType;
-  promptTemplate: PromptTemplate;
+  promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
   metrics?: string[];
   projectName: string;
@@ -51,7 +55,7 @@ type DatasetWithPromptTemplate = {
 type DatasetIdWithPromptTemplate = {
   name: string;
   datasetId: string;
-  promptTemplate: PromptTemplate;
+  promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
   metrics?: string[];
   projectName: string;
@@ -60,7 +64,7 @@ type DatasetIdWithPromptTemplate = {
 type DatasetNameWithPromptTemplate = {
   name: string;
   datasetName: string;
-  promptTemplate: PromptTemplate;
+  promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
   metrics?: string[];
   projectName: string;
@@ -385,7 +389,9 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   if ('function' in params) {
     const processFn = params.function;
 
-    console.log(`Processing ${experimentName} for project ${projectName}`);
+    console.log(
+      `Processing runner function experiment ${experiment.name} for project ${projectName}...`
+    );
 
     const results = await runExperimentWithFunction(
       experiment,
@@ -396,14 +402,28 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const link = '';
     return { results, experiment, link, message: 'Experiment completed.' };
   } else if ('promptTemplate' in params) {
+    let promptTemplateVersionId: string | undefined = undefined;
+    if ('version' in params.promptTemplate) {
+      promptTemplateVersionId = (params.promptTemplate as PromptTemplateVersion)
+        .id;
+    } else {
+      console.log(
+        `Defaulting to the selected version for prompt template ${params.promptTemplate.name}`
+      );
+      promptTemplateVersionId = (params.promptTemplate as PromptTemplate)
+        .selected_version_id;
+    }
     const apiClient = new GalileoApiClient();
     await apiClient.init({ projectName });
     const projectId = apiClient.projectId;
     apiClient.experimentId = experiment.id;
+    console.log(
+      `Starting prompt experiment ${experiment.name} for project ${projectName}...`
+    );
     const response = await apiClient.createPromptRunJob(
       experiment.id,
       projectId,
-      (params.promptTemplate as PromptTemplate).selected_version_id,
+      promptTemplateVersionId,
       datasetId!,
       scorersToUse,
       params.promptSettings
