@@ -124,6 +124,20 @@ export class BaseClient {
       .replace(
         '{dataset_id}',
         params && 'dataset_id' in params ? (params.dataset_id as string) : ''
+      )
+      .replace(
+        '{experiment_id}',
+        params && 'experiment_id' in params
+          ? (params.experiment_id as string)
+          : ''
+      )
+      .replace(
+        '{template_id}',
+        params && 'template_id' in params ? (params.template_id as string) : ''
+      )
+      .replace(
+        '{version}',
+        params && 'version' in params ? (params.version as string) : ''
       )}`;
 
     const config: AxiosRequestConfig = {
