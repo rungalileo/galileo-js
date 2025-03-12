@@ -6,7 +6,7 @@ import { join } from 'path';
 
 export const getDatasets = async (): Promise<Dataset[]> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
 
   const datasets = await apiClient.getDatasets();
   return datasets.map((dataset) => ({
@@ -111,7 +111,7 @@ export const createDataset = async (
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
 
   const createdDataset = await apiClient.createDataset(
     name,
@@ -145,7 +145,7 @@ export const getDataset = async (
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
 
   if (id) {
     return await apiClient.getDataset(id);
@@ -172,7 +172,7 @@ export const getDatasetContent = async (
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
   return await apiClient.getDatasetContent(datasetId!);
 };
 
