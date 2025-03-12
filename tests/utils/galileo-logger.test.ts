@@ -42,17 +42,22 @@ describe('GalileoLogger', () => {
       expect(logger).toBeTruthy();
     });
 
-    it('should throw error if project or log stream is missing', () => {
+    it('should not throw an error if project or log stream is missing', () => {
       delete process.env.GALILEO_PROJECT;
-      expect(() => new GalileoLogger()).toThrow(
-        'User must provide projectName to GalileoLogger, or set it as an environment variable.'
-      );
+
+      logger = new GalileoLogger();
+      expect(logger).toBeTruthy();
 
       process.env.GALILEO_PROJECT = 'test-project';
       delete process.env.GALILEO_LOG_STREAM;
-      expect(() => new GalileoLogger()).toThrow(
-        'User must provide projectName and logStreamName to GalileoLogger, or set them as environment variables.'
-      );
+
+      logger = new GalileoLogger();
+      expect(logger).toBeTruthy();
+
+      delete process.env.GALILEO_PROJECT;
+
+      logger = new GalileoLogger();
+      expect(logger).toBeTruthy();
     });
 
     it('should allow custom project and log stream names', () => {
@@ -168,9 +173,9 @@ describe('GalileoLogger', () => {
 
       // Assertions
       expect(mockInit).toHaveBeenCalledWith({
-        projectType: 'gen_ai',
-        projectName: 'test-project',
-        logStreamName: 'test-log-stream'
+        projectName: undefined,
+        logStreamName: undefined,
+        experimentId: undefined
       });
       expect(mockIngestTraces).toHaveBeenCalledWith([trace]);
       expect(flushedTraces.length).toBe(1);
