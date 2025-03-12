@@ -1944,7 +1944,7 @@ export interface components {
        * Label
        * @description Display label of the column in the UI.
        */
-      label?: string | null;
+      label?: string;
       /** @description Category of the column. */
       category: components['schemas']['ColumnCategory'];
       /**
@@ -1957,11 +1957,12 @@ export interface components {
        * @description Display label of the column group.
        */
       group_label?: string | null;
-      /**
-       * @description Data type of the column. This is used to determine how to format the data on the UI.
-       * @default unknown
-       */
-      data_type?: components['schemas']['DataTypeOptions'];
+      /** @description Insight type. */
+      insight_type?: components['schemas']['InsightType'] | null;
+      /** @description Data type of the column. This is used to determine how to format the data on the UI. */
+      data_type?: components['schemas']['DataType'] | null;
+      /** @description Data unit of the column (optional). */
+      data_unit?: components['schemas']['DataUnit'] | null;
       /**
        * Multi Valued
        * @description Whether the column is multi-valued.
@@ -1978,15 +1979,18 @@ export interface components {
       /**
        * Sortable
        * @description Whether the column is sortable.
-       * @default true
        */
       sortable?: boolean;
       /**
        * Filterable
-       * @description Whether the column is filterable by value. Doesn't include categorical filters
-       * @default true
+       * @description Whether the column is filterable.
        */
       filterable?: boolean;
+      /**
+       * Scorer Id
+       * @description For metric columns only: ID for the scorer that produced the metric.
+       */
+      scorer_id?: string | null;
       /**
        * Applicable Types
        * @description List of types applicable for this column.
@@ -4000,36 +4004,21 @@ export interface components {
       generated_scorer_id?: string | null;
     };
     /**
-     * DataTypeOptions
+     * DataType
      * @enum {string}
      */
-    DataTypeOptions:
-      | 'unknown'
-      | 'text'
-      | 'label'
-      | 'floating_point'
-      | 'integer'
-      | 'timestamp'
-      | 'milli_seconds'
-      | 'boolean'
+    DataType:
       | 'uuid'
-      | 'percentage'
-      | 'dollars'
-      | 'array'
-      | 'template_label'
-      | 'thumb_rating_percentage'
-      | 'user_id'
-      | 'text_offsets'
-      | 'segments'
-      | 'hallucination_segments'
-      | 'thumb_rating'
-      | 'score_rating'
-      | 'star_rating'
-      | 'tags_rating'
-      | 'thumb_rating_aggregate'
-      | 'score_rating_aggregate'
-      | 'star_rating_aggregate'
-      | 'tags_rating_aggregate';
+      | 'text'
+      | 'integer'
+      | 'floating_point'
+      | 'boolean'
+      | 'timestamp';
+    /**
+     * DataUnit
+     * @enum {string}
+     */
+    DataUnit: 'percentage' | 'nano_seconds' | 'milli_seconds' | 'dollars';
     /**
      * DatasetAction
      * @enum {string}
@@ -4335,6 +4324,30 @@ export interface components {
       index: number;
       /** Values */
       values: (string | number | null)[];
+      /** Values Dict */
+      values_dict: {
+        [key: string]: string | number | null;
+      };
+      metadata: components['schemas']['DatasetRowMetadata'] | null;
+    };
+    /** DatasetRowMetadata */
+    DatasetRowMetadata: {
+      /** Created In Version */
+      created_in_version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by_user: components['schemas']['UserInfo'] | null;
+      /** Updated In Version */
+      updated_in_version: number;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      updated_by_user: components['schemas']['UserInfo'] | null;
     };
     /** DatasetRowsSort */
     DatasetRowsSort: {
@@ -4484,6 +4497,13 @@ export interface components {
     ExperimentCreateRequest: {
       /** Name */
       name: string;
+      /**
+       * Task Type
+       * @default 16
+       */
+      task_type?: 16 | 17;
+      /** Dataset Version Id */
+      dataset_version_id?: string | null;
     };
     /** ExperimentResponse */
     ExperimentResponse: {
@@ -4511,11 +4531,21 @@ export interface components {
       project_id: string;
       /** Created By */
       created_by?: string | null;
+      task_type: components['schemas']['TaskType'];
+      /** Dataset Version Id */
+      dataset_version_id?: string | null;
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
       /** Name */
       name: string;
+      /**
+       * Task Type
+       * @default 16
+       */
+      task_type?: 16 | 17;
+      /** Dataset Version Id */
+      dataset_version_id?: string | null;
     };
     /** FactualityTemplate */
     FactualityTemplate: {
@@ -5018,6 +5048,11 @@ export interface components {
           )[]
         | null;
     };
+    /**
+     * InsightType
+     * @enum {string}
+     */
+    InsightType: 'vertical_bar' | 'horizontal_bar';
     /** InstructionAdherenceScorer */
     InstructionAdherenceScorer: {
       /**
@@ -5733,7 +5768,7 @@ export interface components {
        */
       column_id: string;
       /** Value */
-      value: number | number[];
+      value: number | number[] | number[];
       /**
        * Operator
        * @enum {string}
@@ -6588,6 +6623,7 @@ export interface components {
        */
       created_by: string;
       type?: components['schemas']['ProjectType'] | null;
+      created_by_user: components['schemas']['UserInfo'];
       /** Runs */
       runs: components['schemas']['RunDB'][];
       /**
@@ -6709,7 +6745,7 @@ export interface components {
        */
       name: 'runs';
       /** Value */
-      value: number | number[];
+      value: number | number[] | number[];
       /**
        * Operator
        * @enum {string}
@@ -7122,6 +7158,13 @@ export interface components {
       id?: string | null;
       /** Name */
       name?: string | null;
+      /** Filters */
+      filters?:
+        | (
+            | components['schemas']['NodeNameFilter']
+            | components['schemas']['MetadataFilter']
+          )[]
+        | null;
     };
     /**
      * RegisteredScorerAction
@@ -7313,6 +7356,8 @@ export interface components {
       winner: boolean;
       /** Dataset Hash */
       dataset_hash?: string | null;
+      /** Dataset Version Id */
+      dataset_version_id?: string | null;
       /**
        * Id
        * Format: uuid4
@@ -7361,6 +7406,8 @@ export interface components {
       winner: boolean;
       /** Dataset Hash */
       dataset_hash?: string | null;
+      /** Dataset Version Id */
+      dataset_version_id?: string | null;
       /**
        * Id
        * Format: uuid4
@@ -7857,7 +7904,8 @@ export interface components {
       | 13
       | 14
       | 15
-      | 16;
+      | 16
+      | 17;
     /** TextRating */
     TextRating: {
       /**
