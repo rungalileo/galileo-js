@@ -99,7 +99,6 @@ export class GalileoApiClient extends BaseClient {
             this.projectId =
               await this.projectService.getProjectIdByName(projectName);
             // eslint-disable-next-line no-console
-            // console.log(`✅ Using ${projectName}`);
           } catch (err: unknown) {
             const error = err as Error;
 
