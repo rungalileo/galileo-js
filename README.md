@@ -1,6 +1,6 @@
 # Galileo
 
-The Typescript client library for the Galileo platform.
+JS/TypeScript client library for the Galileo platform.
 
 ## Getting Started
 
