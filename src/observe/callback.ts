@@ -21,6 +21,9 @@ import { AgentFinish } from '@langchain/core/dist/agents.js';
 import GalileoObserveApiClient from './api-client';
 import { StepType } from '../types/legacy-step.types';
 
+/**
+ * @deprecated This class is no longer actively maintained. Please use `GalileoCallback` instead.
+ */
 export default class GalileoObserveCallback extends BaseCallbackHandler {
   public name = 'GalileoObserveCallback';
   private api_client: GalileoObserveApiClient;

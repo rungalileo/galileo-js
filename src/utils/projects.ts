@@ -22,10 +22,13 @@ export const createProject = async (name: string): Promise<Project> => {
 /*
  * Gets a project by id or name.
  */
-export const getProject = async (
-  id?: string,
-  name?: string
-): Promise<Project> => {
+export const getProject = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}): Promise<Project> => {
   if (!id && !name) {
     throw new Error(
       'To fetch a project with `getProject`, either id or name must be provided'

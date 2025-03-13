@@ -101,7 +101,7 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
 
 export const createDataset = async (
   dataset: DatasetType,
-  name?: string
+  name: string
 ): Promise<Dataset> => {
   const [datasetPath, datasetFormat] = parseDataset(dataset);
 
@@ -136,10 +136,13 @@ export const createDataset = async (
 /*
  * Gets a dataset by id or name.
  */
-export const getDataset = async (
-  id?: string,
-  name?: string
-): Promise<Dataset> => {
+export const getDataset = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}): Promise<Dataset> => {
   if (!id && !name) {
     throw new Error('Either id or name must be provided');
   }
@@ -154,10 +157,13 @@ export const getDataset = async (
   return await apiClient.getDatasetByName(name!);
 };
 
-export const getDatasetContent = async (
-  datasetId?: string,
-  datasetName?: string
-): Promise<DatasetRow[]> => {
+export const getDatasetContent = async ({
+  datasetId,
+  datasetName
+}: {
+  datasetId?: string;
+  datasetName?: string;
+}): Promise<DatasetRow[]> => {
   if (!datasetId && !datasetName) {
     throw new Error('Either datasetId or datasetName must be provided');
   }
