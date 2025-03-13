@@ -31,6 +31,7 @@ import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush } from './singleton';
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
+import { createOpenAI } from './openai-streaming';
 export {
   // Legacy clients
   GalileoObserveApiClient,
@@ -41,6 +42,8 @@ export {
   // Galileo 2.0 client and methods
   GalileoApiClient,
   GalileoLogger,
+  // OpenAI
+  createOpenAI,
   wrapOpenAI,
   // Datasets
   getDatasets,

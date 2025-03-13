@@ -470,32 +470,55 @@ class OpenAIGalileo {
     return this._galileoLogger;
   }
 
-  wrapOpenAI(openai: typeof OpenAI): typeof OpenAI {
+  wrapOpenAI(openaiInstance: OpenAI): OpenAI {
     // Create a proxy for the OpenAI instance
-    return new Proxy(openai, {
-      get: (target, prop) => {
-        // If the property is the chat.completions.create method
-        if (prop === 'chat' && target[prop]) {
-          return new Proxy(target[prop], {
-            get: (chatTarget, chatProp) => {
-              if (chatProp === 'completions' && chatTarget[chatProp]) {
-                return new Proxy(chatTarget[chatProp], {
-                  get: (completionsTarget, completionsProp) => {
+    return new Proxy(openaiInstance, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, receiver);
+
+        // If we're accessing the chat property, which should be an object
+        if (prop === 'chat' && value && typeof value === 'object') {
+          // Proxy the chat object
+          return new Proxy(value, {
+            get: (chatTarget, chatProp, chatReceiver) => {
+              const chatValue = Reflect.get(chatTarget, chatProp, chatReceiver);
+
+              // If we're accessing the completions property
+              if (
+                chatProp === 'completions' &&
+                chatValue &&
+                typeof chatValue === 'object'
+              ) {
+                // Proxy the completions object
+                return new Proxy(chatValue, {
+                  get: (
+                    completionsTarget,
+                    completionsProp,
+                    completionsReceiver
+                  ) => {
+                    const completionsValue = Reflect.get(
+                      completionsTarget,
+                      completionsProp,
+                      completionsReceiver
+                    );
+
+                    // If we're accessing the create method
                     if (
                       completionsProp === 'create' &&
-                      typeof completionsTarget[completionsProp] === 'function'
+                      typeof completionsValue === 'function'
                     ) {
-                      // Wrap the create method
+                      // Return our wrapped function
                       return async (...args: any[]) => {
                         const resource = OPENAI_CLIENT_METHODS.find(
                           (r) => r.method === 'chat.completions.create'
                         );
 
                         if (!resource) {
-                          return completionsTarget[completionsProp](...args);
+                          return completionsValue.apply(
+                            completionsTarget,
+                            args
+                          );
                         }
-
-                        // Get context from galileo_context
 
                         const startTime = getTimestamp();
                         const kwargs = args[0] || {};
@@ -516,23 +539,29 @@ class OpenAIGalileo {
 
                         const galileoLogger = this.initialize();
 
-                        let shouldCompleteTrace = false;
+                        const shouldCompleteTrace = true;
+
                         galileoLogger.startTrace(
                           serializeToStr(inputData.input),
                           undefined,
-                          inputData.name
+                          inputData.name,
+                          startTime.getTime(),
+                          undefined,
+                          inputData.metadata
                         );
-                        shouldCompleteTrace = true;
 
                         try {
-                          const openaiResponse = await completionsTarget[
-                            completionsProp
-                          ](argExtractor.getOpenAiArgs());
+                          const openaiResponse = await completionsValue.apply(
+                            completionsTarget,
+                            [argExtractor.getOpenAiArgs()]
+                          );
 
                           // Handle streaming responses
                           if (
                             kwargs.stream &&
-                            openaiResponse[Symbol.asyncIterator]
+                            openaiResponse &&
+                            typeof openaiResponse[Symbol.asyncIterator] ===
+                              'function'
                           ) {
                             return new ResponseGeneratorSync(
                               resource,
@@ -580,25 +609,29 @@ class OpenAIGalileo {
 
                             return openaiResponse;
                           }
-                        } catch (error) {
+                        } catch (error: Error | unknown) {
+                          const errorMessage =
+                            error instanceof Error
+                              ? error.message
+                              : String(error);
                           console.error(
-                            `Error while processing OpenAI request: ${error}`
+                            `Error while processing OpenAI request: ${errorMessage}`
                           );
                           throw new Error(
-                            `Failed to process the OpenAI Request: ${error.message}`
+                            `Failed to process the OpenAI Request: ${errorMessage}`
                           );
                         }
                       };
                     }
-                    return completionsTarget[completionsProp];
+                    return completionsValue;
                   }
                 });
               }
-              return chatTarget[chatProp];
+              return chatValue;
             }
           });
         }
-        return target[prop];
+        return value;
       }
     });
   }
@@ -607,13 +640,13 @@ class OpenAIGalileo {
 // Create and export a singleton instance of the wrapper
 const openaiGalileoWrapper = new OpenAIGalileo();
 
-// Create a method to wrap an existing OpenAI instance
-export function wrapWithGalileo(openaiInstance: typeof OpenAI): typeof OpenAI {
+// Create a factory function for creating wrapped OpenAI instances
+export function createOpenAI(
+  config: ConstructorParameters<typeof OpenAI>[0]
+): OpenAI {
+  const openaiInstance = new OpenAI(config);
   return openaiGalileoWrapper.wrapOpenAI(openaiInstance);
 }
-
-// Create a pre-wrapped OpenAI class
-export const openai = wrapWithGalileo(OpenAI);
 
 // Export the wrapper for more advanced use cases
 export { OpenAIGalileo };
