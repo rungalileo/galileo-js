@@ -81,6 +81,6 @@ test('test get datasets', async () => {
 });
 
 test('test get dataset content', async () => {
-  const rows = await getDatasetContent(EXAMPLE_DATASET.id);
+  const rows = await getDatasetContent({ datasetId: EXAMPLE_DATASET.id });
   expect(rows).toEqual([EXAMPLE_DATASET_ROW]);
 });

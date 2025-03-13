@@ -22,11 +22,15 @@ export const createLogStream = async (name: string): Promise<LogStream> => {
 /*
  * Gets a log stream by id or name.
  */
-export const getLogStream = async (
-  projectId: string,
-  id?: string,
-  name?: string
-): Promise<LogStream> => {
+export const getLogStream = async ({
+  projectId,
+  id,
+  name
+}: {
+  projectId: string;
+  id?: string;
+  name?: string;
+}): Promise<LogStream> => {
   if (!id && !name) {
     throw new Error(
       'To fetch a log stream with `getLogStream`, either id or name must be provided'

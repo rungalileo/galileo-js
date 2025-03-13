@@ -3,6 +3,9 @@ import { ProjectTypes } from '../types/project.types';
 import { Routes } from '../types/routes.types';
 import { TransactionRecordBatch } from '../types/transaction.types';
 
+/**
+ * @deprecated This class is no longer actively maintained. Please use `GalileoApiClient` instead.
+ */
 export default class GalileoObserveApiClient extends GalileoLegacyApiClient {
   constructor() {
     super();
