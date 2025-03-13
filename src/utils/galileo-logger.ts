@@ -72,15 +72,23 @@ class GalileoLogger {
     currentParent.addChildSpan(span);
   }
 
-  startTrace(
-    input: string,
-    output?: string,
-    name?: string,
-    createdAt?: number,
-    durationNs?: number,
-    userMetadata?: Record<string, string>,
-    tags?: string[]
-  ): Trace {
+  startTrace({
+    input,
+    output,
+    name,
+    createdAt,
+    durationNs,
+    metadata,
+    tags
+  }: {
+    input: string;
+    output?: string;
+    name?: string;
+    createdAt?: number;
+    durationNs?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+  }): Trace {
     if (this.currentParent() !== undefined) {
       throw new Error(
         'You must conclude the existing trace before adding a new one.'
@@ -92,7 +100,7 @@ class GalileoLogger {
       output,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags,
       durationNs
     });
@@ -102,22 +110,39 @@ class GalileoLogger {
     return trace;
   }
 
-  addSingleLlmSpanTrace(
-    input: LlmStepAllowedIOType,
-    output: LlmStepAllowedIOType,
-    model?: string,
-    tools?: any[],
-    name?: string,
-    createdAt?: number,
-    durationNs?: number,
-    userMetadata?: Record<string, string>,
-    tags?: string[],
-    numInputTokens?: number,
-    numOutputTokens?: number,
-    totalTokens?: number,
-    temperature?: number,
-    statusCode?: number
-  ): Trace {
+  addSingleLlmSpanTrace({
+    input,
+    output,
+    model,
+    tools,
+    name,
+    createdAt,
+    durationNs,
+    metadata,
+    tags,
+    numInputTokens,
+    numOutputTokens,
+    totalTokens,
+    timeToFirstTokenNs,
+    temperature,
+    statusCode
+  }: {
+    input: LlmStepAllowedIOType;
+    output: LlmStepAllowedIOType;
+    model?: string;
+    tools?: any[];
+    name?: string;
+    createdAt?: number;
+    durationNs?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+    numInputTokens?: number;
+    numOutputTokens?: number;
+    totalTokens?: number;
+    timeToFirstTokenNs?: number;
+    temperature?: number;
+    statusCode?: number;
+  }): Trace {
     /**
      * Create a new trace with a single span and add it to the list of traces.
      */
@@ -132,7 +157,7 @@ class GalileoLogger {
       output,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags
     });
 
@@ -144,12 +169,13 @@ class GalileoLogger {
         tools,
         name,
         createdAtNs: createdAt,
-        metadata: userMetadata,
+        metadata: metadata,
         tags,
         durationNs,
         inputTokens: numInputTokens,
         outputTokens: numOutputTokens,
         totalTokens,
+        timeToFirstTokenNs,
         temperature,
         statusCode
       })
@@ -174,6 +200,7 @@ class GalileoLogger {
     numInputTokens,
     numOutputTokens,
     totalTokens,
+    timeToFirstTokenNs,
     temperature,
     statusCode
   }: {
@@ -189,6 +216,7 @@ class GalileoLogger {
     numInputTokens?: number;
     numOutputTokens?: number;
     totalTokens?: number;
+    timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
   }): LlmSpan {
@@ -208,6 +236,7 @@ class GalileoLogger {
       inputTokens: numInputTokens,
       outputTokens: numOutputTokens,
       totalTokens,
+      timeToFirstTokenNs,
       temperature,
       statusCode
     });
@@ -216,16 +245,25 @@ class GalileoLogger {
     return span;
   }
 
-  addRetrieverSpan(
-    input: string,
-    output: RetrieverStepAllowedOutputType,
-    name?: string,
-    durationNs?: number,
-    createdAt?: number,
-    userMetadata?: Record<string, string>,
-    tags?: string[],
-    statusCode?: number
-  ): RetrieverSpan {
+  addRetrieverSpan({
+    input,
+    output,
+    name,
+    durationNs,
+    createdAt,
+    metadata,
+    tags,
+    statusCode
+  }: {
+    input: string;
+    output: RetrieverStepAllowedOutputType;
+    name?: string;
+    durationNs?: number;
+    createdAt?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+    statusCode?: number;
+  }): RetrieverSpan {
     /**
      * Add a new retriever span to the current parent.
      */
@@ -234,7 +272,7 @@ class GalileoLogger {
       output,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags,
       statusCode,
       durationNs
@@ -244,17 +282,27 @@ class GalileoLogger {
     return span;
   }
 
-  addToolSpan(
-    input: string,
-    output?: string,
-    name?: string,
-    durationNs?: number,
-    createdAt?: number,
-    userMetadata?: Record<string, string>,
-    tags?: string[],
-    statusCode?: number,
-    toolCallId?: string
-  ): ToolSpan {
+  addToolSpan({
+    input,
+    output,
+    name,
+    durationNs,
+    createdAt,
+    metadata,
+    tags,
+    statusCode,
+    toolCallId
+  }: {
+    input: string;
+    output?: string;
+    name?: string;
+    durationNs?: number;
+    createdAt?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+    statusCode?: number;
+    toolCallId?: string;
+  }): ToolSpan {
     /**
      * Add a new tool span to the current parent.
      */
@@ -263,7 +311,7 @@ class GalileoLogger {
       output,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags,
       statusCode,
       toolCallId,
@@ -274,15 +322,23 @@ class GalileoLogger {
     return span;
   }
 
-  addWorkflowSpan(
-    input: string,
-    output?: string,
-    name?: string,
-    durationNs?: number,
-    createdAt?: number,
-    userMetadata?: Record<string, string>,
-    tags?: string[]
-  ): WorkflowSpan {
+  addWorkflowSpan({
+    input,
+    output,
+    name,
+    durationNs,
+    createdAt,
+    metadata,
+    tags
+  }: {
+    input: string;
+    output?: string;
+    name?: string;
+    durationNs?: number;
+    createdAt?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+  }): WorkflowSpan {
     /**
      * Add a workflow span to the current parent. This is useful when you want to create a nested workflow span
      * within the trace or current workflow span. The next span you add will be a child of the current parent. To
@@ -293,7 +349,7 @@ class GalileoLogger {
       output,
       name,
       createdAtNs: createdAt,
-      metadata: userMetadata,
+      metadata: metadata,
       tags,
       durationNs
     });
