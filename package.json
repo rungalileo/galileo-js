@@ -16,7 +16,7 @@
   "license": "Apache-2.0",
   "homepage": "https://www.galileo.ai/",
   "dependencies": {
-    "axios": "^1.6.7",
+    "axios": "^1.8.2",
     "form-data": "^4.0.1",
     "jsonwebtoken": "^9.0.2",
     "openapi-fetch": "^0.13.3",
