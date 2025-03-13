@@ -70,20 +70,20 @@ describe('GalileoLogger', () => {
     });
 
     it('should start a trace', () => {
-      const trace = logger.startTrace('test input');
+      const trace = logger.startTrace({ input: 'test input' });
       expect(trace).toBeInstanceOf(Trace);
       expect(logger['traces'].length).toBe(1);
     });
 
     it('should throw error when adding trace while another is in progress', () => {
-      logger.startTrace('first input');
-      expect(() => logger.startTrace('second input')).toThrow(
+      logger.startTrace({ input: 'first input' });
+      expect(() => logger.startTrace({ input: 'second input' })).toThrow(
         'You must conclude the existing trace'
       );
     });
 
     it('should add LLM span to trace', () => {
-      logger.startTrace('test input');
+      logger.startTrace({ input: 'test input' });
       const input: Message[] = [{ role: MessageRole.user, content: 'Hello' }];
       const output: Message = {
         role: MessageRole.assistant,
@@ -100,24 +100,30 @@ describe('GalileoLogger', () => {
     });
 
     it('should add retriever span', () => {
-      logger.startTrace('test input');
+      logger.startTrace({ input: 'test input' });
       const document = new Document({ content: 'test content' });
 
-      const retrieverSpan = logger.addRetrieverSpan('search query', [document]);
+      const retrieverSpan = logger.addRetrieverSpan({
+        input: 'search query',
+        output: [document]
+      });
       expect(retrieverSpan).toBeInstanceOf(RetrieverSpan);
     });
 
     it('should add tool span', () => {
-      logger.startTrace('test input');
+      logger.startTrace({ input: 'test input' });
 
-      const toolSpan = logger.addToolSpan('tool input', 'tool output');
+      const toolSpan = logger.addToolSpan({
+        input: 'tool input',
+        output: 'tool output'
+      });
       expect(toolSpan).toBeInstanceOf(ToolSpan);
     });
 
     it('should add workflow span', () => {
-      logger.startTrace('test input');
+      logger.startTrace({ input: 'test input' });
 
-      const workflowSpan = logger.addWorkflowSpan('workflow input');
+      const workflowSpan = logger.addWorkflowSpan({ input: 'workflow input' });
       expect(workflowSpan).toBeInstanceOf(WorkflowSpan);
     });
   });
@@ -128,7 +134,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should conclude trace', () => {
-      logger.startTrace('test input');
+      logger.startTrace({ input: 'test input' });
       const concluded = logger.conclude({ output: 'test output' });
 
       expect(concluded).toBeUndefined();
@@ -149,7 +155,7 @@ describe('GalileoLogger', () => {
 
     it('should flush traces', async () => {
       // Add a trace
-      const trace = logger.startTrace('test input');
+      const trace = logger.startTrace({ input: 'test input' });
       const input: Message[] = [{ role: MessageRole.user, content: 'Hello' }];
       const output: Message = {
         role: MessageRole.assistant,
@@ -208,13 +214,13 @@ describe('GalileoLogger', () => {
         content: 'Hi there'
       };
 
-      const trace = logger.addSingleLlmSpanTrace(
+      const trace = logger.addSingleLlmSpanTrace({
         input,
         output,
-        'test-model',
-        [],
-        'test-trace'
-      );
+        model: 'test-model',
+        tools: [],
+        name: 'test-trace'
+      });
 
       expect(trace).toBeInstanceOf(Trace);
       expect(trace.spans.length).toBe(1);
@@ -223,7 +229,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should throw error when creating single LLM span trace with active parent', () => {
-      logger.startTrace('parent trace');
+      logger.startTrace({ input: 'parent trace' });
 
       const input: Message[] = [{ role: MessageRole.user, content: 'Hello' }];
       const output: Message = {
@@ -232,7 +238,7 @@ describe('GalileoLogger', () => {
       };
 
       expect(() => {
-        logger.addSingleLlmSpanTrace(input, output);
+        logger.addSingleLlmSpanTrace({ input, output });
       }).toThrow('A trace cannot be created within a parent trace or span');
     });
   });
