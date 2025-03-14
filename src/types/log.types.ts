@@ -182,6 +182,7 @@ export class LlmSpan extends BaseStep {
   outputTokens?: number;
   totalTokens?: number;
   temperature?: number;
+  timeToFirstTokenNs?: number;
 
   constructor(data: {
     parent?: StepWithChildSpans;
@@ -199,6 +200,7 @@ export class LlmSpan extends BaseStep {
     outputTokens?: number;
     totalTokens?: number;
     temperature?: number;
+    timeToFirstTokenNs?: number;
     tags?: string[];
   }) {
     super({ ...data, type: NodeType.llm });
@@ -210,6 +212,7 @@ export class LlmSpan extends BaseStep {
     this.outputTokens = data.outputTokens;
     this.totalTokens = data.totalTokens;
     this.temperature = data.temperature;
+    this.timeToFirstTokenNs = data.timeToFirstTokenNs;
   }
 
   toJSON(): Record<string, any> {
@@ -219,6 +222,7 @@ export class LlmSpan extends BaseStep {
       output_tokens: this.outputTokens,
       total_tokens: this.totalTokens,
       temperature: this.temperature,
+      time_to_first_token_ns: this.timeToFirstTokenNs,
       model: this.model,
       tools: this.tools,
       type: this.type,

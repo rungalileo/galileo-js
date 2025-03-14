@@ -15,6 +15,9 @@ import {
   ScorersConfiguration
 } from '../types/scorer.types';
 
+/**
+ * @deprecated This class is no longer actively maintained. Please use `runExperiment` instead.
+ */
 export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
   private apiClient: GalileoEvaluateApiClient = new GalileoEvaluateApiClient();
 
