@@ -4335,6 +4335,26 @@ export interface components {
       index: number;
       /** Values */
       values: (string | number | null)[];
+      metadata: components['schemas']['DatasetRowMetadata'] | null;
+    };
+    /** DatasetRowMetadata */
+    DatasetRowMetadata: {
+      /** Created In Version */
+      created_in_version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      created_by_user: components['schemas']['UserInfo'] | null;
+      /** Updated In Version */
+      updated_in_version: number;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      updated_by_user: components['schemas']['UserInfo'] | null;
     };
     /** DatasetRowsSort */
     DatasetRowsSort: {
