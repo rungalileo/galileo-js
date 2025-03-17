@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Converts a value to a string
  */
@@ -113,6 +114,46 @@ export const argsToDict = <T extends unknown[]>(
       result[param.name] = toStringValue(param.defaultValue);
     }
   });
+
+  return result;
+};
+
+/**
+ * Convert a record with arbitrary values to a Record<string, string> by converting
+ * all values to their string representations.
+ *
+ * @param metadata - The metadata object with potentially complex values
+ * @returns A new object with all values converted to strings
+ */
+export const convertToStringDict = (
+  metadata: Record<string, any>
+): Record<string, string> => {
+  const result: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(metadata)) {
+    // Ensure key is a string (already guaranteed by Object.entries)
+    const stringKey: string = key;
+
+    // Convert value to string based on type
+    let stringValue: string;
+
+    if (value === null || value === undefined) {
+      stringValue = '';
+    } else if (typeof value === 'object') {
+      // For complex types, use JSON serialization
+      try {
+        stringValue = JSON.stringify(value);
+      } catch (error) {
+        // Fallback if serialization fails
+        stringValue = String(value);
+      }
+    } else {
+      // For primitive types, convert directly to string
+      stringValue = String(value);
+    }
+
+    result[stringKey] = stringValue;
+  }
 
   return result;
 };
