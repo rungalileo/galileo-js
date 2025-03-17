@@ -12,7 +12,7 @@ import { AgentFinish } from '@langchain/core/agents';
 import { Document, DocumentInterface } from '@langchain/core/documents';
 import { GalileoSingleton } from '../singleton';
 import { GalileoLogger } from '../utils/galileo-logger';
-import { toStringValue } from '../utils/serialization';
+import { toStringValue, convertToStringDict } from '../utils/serialization';
 import { Serialized } from '@langchain/core/dist/load/serializable.js';
 
 type LANGCHAIN_NODE_TYPE =
@@ -113,9 +113,13 @@ export class GalileoCallback
 
     // Conclude the trace with the root node's output
     const rootOutput = rootNode.spanParams.output || '';
-    this._galileoLogger.conclude({
-      output: toStringValue(rootOutput)
-    });
+
+    if (this._startNewTrace) {
+      // If a new trace was started, conclude it
+      this._galileoLogger.conclude({
+        output: toStringValue(rootOutput)
+      });
+    }
 
     if (this._flushOnChainEnd) {
       // Upload the trace to Galileo
@@ -133,16 +137,30 @@ export class GalileoCallback
   private _logNodeTree(node: Node): void {
     let isWorkflowSpan = false;
     const input = node.spanParams.input || '';
+    const inputAsString =
+      typeof input === 'string' ? input : toStringValue(input);
     const output = node.spanParams.output || '';
+    const outputAsString =
+      typeof output === 'string' ? output : toStringValue(output);
     const name = node.spanParams.name;
-    const metadata = node.spanParams.metadata;
     const tags = node.spanParams.tags;
+
+    let metadata: Record<string, string> | undefined = undefined;
+    if (node.spanParams.metadata) {
+      try {
+        metadata = convertToStringDict(
+          node.spanParams.metadata as Record<string, any>
+        );
+      } catch (e) {
+        console.warn('Unable to convert metadata to a string dictionary', e);
+      }
+    }
 
     // Log the current node based on its type
     if (node.nodeType === 'agent' || node.nodeType === 'chain') {
       this._galileoLogger.addWorkflowSpan({
-        input,
-        output,
+        input: inputAsString,
+        output: outputAsString,
         name,
         metadata,
         tags
@@ -164,7 +182,7 @@ export class GalileoCallback
       });
     } else if (node.nodeType === 'retriever') {
       this._galileoLogger.addRetrieverSpan({
-        input,
+        input: inputAsString,
         output,
         name,
         metadata,
@@ -172,8 +190,8 @@ export class GalileoCallback
       });
     } else if (node.nodeType === 'tool') {
       this._galileoLogger.addToolSpan({
-        input,
-        output,
+        input: inputAsString,
+        output: outputAsString,
         name,
         metadata,
         tags
@@ -190,7 +208,7 @@ export class GalileoCallback
         this._logNodeTree(childNode);
         lastChild = childNode;
       } else {
-        console.warn(`Child node ${childId} not found`);
+        console.debug(`Child node ${childId} not found`);
       }
     }
 
@@ -217,7 +235,7 @@ export class GalileoCallback
     const parentNodeId = parentRunId;
 
     if (this._nodes[nodeId]) {
-      console.warn(`Node already exists for run_id ${runId}, overwriting...`);
+      console.debug(`Node already exists for run_id ${runId}, overwriting...`);
     }
 
     // Create new node
@@ -236,7 +254,7 @@ export class GalileoCallback
       if (parent) {
         parent.children.push(nodeId);
       } else {
-        console.warn(`Parent node ${parentNodeId} not found for ${nodeId}`);
+        console.debug(`Parent node ${parentNodeId} not found for ${nodeId}`);
       }
     }
 
