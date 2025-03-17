@@ -94,12 +94,12 @@ describe('OpenAI Wrapper', () => {
     // Assert
     expect(mockCreateMethod).toHaveBeenCalledWith(requestData);
     expect(result).toEqual(mockResponse);
-    expect(mockLogger.startTrace).toHaveBeenCalledWith(
-      JSON.stringify(requestData.messages),
-      undefined,
-      'openai-client-generation',
-      1000
-    );
+    expect(mockLogger.startTrace).toHaveBeenCalledWith({
+      createdAt: 1000,
+      input: '[{"role":"user","content":"Say hello world!"}]',
+      name: 'openai-client-generation',
+      output: undefined
+    });
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith({
       input: requestData.messages,
       output: [mockResponse.choices[0].message],
@@ -160,12 +160,12 @@ describe('OpenAI Wrapper', () => {
     // Assert
     expect(mockCreateMethod).toHaveBeenCalledWith(requestData);
     expect(chunks).toEqual(mockStreamingChunks);
-    expect(mockLogger.startTrace).toHaveBeenCalledWith(
-      JSON.stringify(requestData.messages),
-      undefined,
-      'openai-client-generation',
-      times[0]
-    );
+    expect(mockLogger.startTrace).toHaveBeenCalledWith({
+      createdAt: 1000,
+      input: '[{"role":"user","content":"Say hello world!"}]',
+      name: 'openai-client-generation',
+      output: undefined
+    });
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith({
       input: requestData.messages,
       output: {
