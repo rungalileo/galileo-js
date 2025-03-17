@@ -14,23 +14,32 @@ export interface LogOptions {
 
 function _isRetrieverOutput<R>(output: R): boolean {
   try {
+    const isString = (value: any) => typeof value === 'string';
+
+    const isDocument = (value: any) => value instanceof Document;
+
+    const isStringArray = (value: any) =>
+      Array.isArray(value) && (value.length === 0 || isString(value[0]));
+
+    const isDocumentArray = (value: any) =>
+      Array.isArray(value) && (value.length === 0 || isDocument(value[0]));
+
+    const isStringObject = (value: any) =>
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value) &&
+      Object.values(value).every(isString);
+
+    const isStringObjectArray = (value: any) =>
+      Array.isArray(value) && (value.length === 0 || isStringObject(value[0]));
+
     return (
-      typeof output === 'string' ||
-      (Array.isArray(output) &&
-        (output.length === 0 || typeof output[0] === 'string')) ||
-      output instanceof Document ||
-      (Array.isArray(output) &&
-        (output.length === 0 || output[0] instanceof Document)) ||
-      (typeof output === 'object' &&
-        output !== null &&
-        !Array.isArray(output) &&
-        Object.values(output).every((val) => typeof val === 'string')) ||
-      (Array.isArray(output) &&
-        (output.length === 0 ||
-          (typeof output[0] === 'object' &&
-            output[0] !== null &&
-            !Array.isArray(output[0]) &&
-            Object.values(output[0]).every((val) => typeof val === 'string'))))
+      isString(output) ||
+      isStringArray(output) ||
+      isDocument(output) ||
+      isDocumentArray(output) ||
+      isStringObject(output) ||
+      isStringObjectArray(output)
     );
   } catch (e) {
     console.warn('Unable to check if output is a retriever output', e);
