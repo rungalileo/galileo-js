@@ -1,6 +1,8 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
 import { argsToDict, extractParamsInfo } from './utils/serialization';
+import { RetrieverStepAllowedOutputType } from './types/step.types';
+import { Document } from './types/document.types';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -8,6 +10,41 @@ export interface LogOptions {
   spanType?: SpanType;
   name?: string;
   params?: Record<string, unknown>;
+}
+
+function _isRetrieverOutput<R>(output: R): boolean {
+  try {
+    const isString = (value: unknown) => typeof value === 'string';
+
+    const isDocument = (value: unknown) => value instanceof Document;
+
+    const isStringArray = (value: unknown) =>
+      Array.isArray(value) && (value.length === 0 || isString(value[0]));
+
+    const isDocumentArray = (value: unknown) =>
+      Array.isArray(value) && (value.length === 0 || isDocument(value[0]));
+
+    const isStringObject = (value: unknown) =>
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value) &&
+      Object.values(value).every(isString);
+
+    const isStringObjectArray = (value: unknown) =>
+      Array.isArray(value) && (value.length === 0 || isStringObject(value[0]));
+
+    return (
+      isString(output) ||
+      isStringArray(output) ||
+      isDocument(output) ||
+      isDocumentArray(output) ||
+      isStringObject(output) ||
+      isStringObjectArray(output)
+    );
+  } catch (e) {
+    console.warn('Unable to check if output is a retriever output', e);
+    return false;
+  }
 }
 
 /**
@@ -81,7 +118,14 @@ export function log<T extends unknown[], R>(
           //   statusCode: options.statusCode
         });
       } else if (options.spanType === 'retriever') {
-        logger?.addRetrieverSpan({ input: argsToString, output: [], name });
+        logger?.addRetrieverSpan({
+          input: argsToString,
+          output:
+            result && _isRetrieverOutput(result)
+              ? (result! as RetrieverStepAllowedOutputType)
+              : resultToString,
+          name
+        });
       } else if (options.spanType === 'tool') {
         logger?.addToolSpan({
           input: argsToString,
