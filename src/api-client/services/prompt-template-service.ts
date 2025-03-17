@@ -55,8 +55,12 @@ export class PromptTemplateService extends BaseClient {
     return await this.makeRequest<PromptTemplateVersion>(
       RequestMethod.GET,
       Routes.promptTemplateVersions,
-      { template_name: name, version: version ?? null },
-      { project_id: this.projectId }
+      null,
+      {
+        project_id: this.projectId,
+        template_name: name,
+        version: version ?? null
+      }
     );
   };
 

@@ -46,11 +46,15 @@ export function log<T extends unknown[], R>(
       logger = GalileoSingleton.getInstance().getClient();
 
       if (!logger.currentParent()) {
-        logger.startTrace(argsToString, undefined, name);
+        logger.startTrace({ input: argsToString, output: undefined, name });
       }
 
       if (!options.spanType || options.spanType === 'workflow') {
-        logger.addWorkflowSpan(argsToString, undefined, name);
+        logger.addWorkflowSpan({
+          input: argsToString,
+          output: undefined,
+          name
+        });
         concludeSpan = true;
       }
     } catch (error) {
@@ -77,9 +81,13 @@ export function log<T extends unknown[], R>(
           //   statusCode: options.statusCode
         });
       } else if (options.spanType === 'retriever') {
-        logger?.addRetrieverSpan(argsToString, [], name);
+        logger?.addRetrieverSpan({ input: argsToString, output: [], name });
       } else if (options.spanType === 'tool') {
-        logger?.addToolSpan(argsToString, resultToString, name);
+        logger?.addToolSpan({
+          input: argsToString,
+          output: resultToString,
+          name
+        });
       }
 
       return result;
