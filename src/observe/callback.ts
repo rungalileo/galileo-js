@@ -188,10 +188,17 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
 
     if (output.llmOutput) {
       const usage =
-        (output.llmOutput.tokenUsage as Record<string, unknown>) ?? {};
+        (output.llmOutput.tokenUsage as Record<string, unknown>) ??
+        (output.llmOutput.usage as Record<string, unknown>) ??
+        (output.llmOutput.estimatedTokenUsage as Record<string, unknown>) ??
+        {};
 
-      num_input_tokens = usage.promptTokens as number | undefined;
-      num_output_tokens = usage.completionTokens as number | undefined;
+      num_input_tokens = (usage.promptTokens ?? usage.inputTokens) as
+        | number
+        | undefined;
+      num_output_tokens = (usage.completionTokens ?? usage.outputTokens) as
+        | number
+        | undefined;
       num_total_tokens = usage.totalTokens as number | undefined;
     } else {
       try {

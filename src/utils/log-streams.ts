@@ -4,18 +4,23 @@ import { GalileoApiClient } from '../api-client';
 /*
  * Gets all log streams.
  */
-export const getLogStreams = async (): Promise<LogStream[]> => {
+export const getLogStreams = async (
+  projectName: string
+): Promise<LogStream[]> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectName });
   return await apiClient.getLogStreams();
 };
 
 /*
  * Creates a new log stream.
  */
-export const createLogStream = async (name: string): Promise<LogStream> => {
+export const createLogStream = async (
+  name: string,
+  projectName: string
+): Promise<LogStream> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectName });
   return await apiClient.createLogStream(name);
 };
 
@@ -23,13 +28,13 @@ export const createLogStream = async (name: string): Promise<LogStream> => {
  * Gets a log stream by id or name.
  */
 export const getLogStream = async ({
-  projectId,
   id,
-  name
+  name,
+  projectName
 }: {
-  projectId: string;
   id?: string;
   name?: string;
+  projectName: string;
 }): Promise<LogStream> => {
   if (!id && !name) {
     throw new Error(
@@ -38,7 +43,7 @@ export const getLogStream = async ({
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectId });
+  await apiClient.init({ projectName });
   if (id) {
     return await apiClient.getLogStream(id);
   }

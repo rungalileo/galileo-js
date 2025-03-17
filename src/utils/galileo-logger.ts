@@ -13,7 +13,6 @@ import {
   LlmStepAllowedIOType,
   RetrieverStepAllowedOutputType
 } from '../types/step.types';
-import { ProjectTypes } from '../types/project.types';
 
 class GalileoLoggerConfig {
   public projectName?: string;
@@ -30,32 +29,9 @@ class GalileoLogger {
   public traces: Trace[] = [];
 
   constructor(config: GalileoLoggerConfig = {}) {
-    this.projectName = config.projectName || process.env.GALILEO_PROJECT || '';
-
-    if (!this.projectName) {
-      throw new Error(
-        'User must provide projectName to GalileoLogger, or set it as an environment variable.'
-      );
-    }
-
-    if (config.experimentId && config.logStreamName) {
-      throw new Error(
-        'User must provide either experimentId or logStreamName, not both.'
-      );
-    }
-
-    if (config.experimentId) {
-      this.experimentId = config.experimentId;
-    } else {
-      this.logStreamName =
-        config.logStreamName || process.env.GALILEO_LOG_STREAM || '';
-
-      if (!this.projectName || !this.logStreamName) {
-        throw new Error(
-          'User must provide projectName and logStreamName to GalileoLogger, or set them as environment variables.'
-        );
-      }
-    }
+    this.projectName = config.projectName;
+    this.logStreamName = config.logStreamName;
+    this.experimentId = config.experimentId;
   }
 
   currentParent(): StepWithChildSpans | undefined {
@@ -403,11 +379,11 @@ class GalileoLogger {
       }
 
       await this.client.init({
-        projectType: ProjectTypes.genAI,
         projectName: this.projectName,
         logStreamName: this.logStreamName,
         experimentId: this.experimentId
       });
+
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
