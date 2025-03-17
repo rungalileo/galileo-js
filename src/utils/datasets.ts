@@ -6,7 +6,7 @@ import { join } from 'path';
 
 export const getDatasets = async (): Promise<Dataset[]> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
 
   const datasets = await apiClient.getDatasets();
   return datasets.map((dataset) => ({
@@ -101,7 +101,7 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
 
 export const createDataset = async (
   dataset: DatasetType,
-  name?: string
+  name: string
 ): Promise<Dataset> => {
   const [datasetPath, datasetFormat] = parseDataset(dataset);
 
@@ -111,7 +111,7 @@ export const createDataset = async (
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
 
   const createdDataset = await apiClient.createDataset(
     name,
@@ -136,16 +136,19 @@ export const createDataset = async (
 /*
  * Gets a dataset by id or name.
  */
-export const getDataset = async (
-  id?: string,
-  name?: string
-): Promise<Dataset> => {
+export const getDataset = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}): Promise<Dataset> => {
   if (!id && !name) {
     throw new Error('Either id or name must be provided');
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
 
   if (id) {
     return await apiClient.getDataset(id);
@@ -154,10 +157,13 @@ export const getDataset = async (
   return await apiClient.getDatasetByName(name!);
 };
 
-export const getDatasetContent = async (
-  datasetId?: string,
-  datasetName?: string
-): Promise<DatasetRow[]> => {
+export const getDatasetContent = async ({
+  datasetId,
+  datasetName
+}: {
+  datasetId?: string;
+  datasetName?: string;
+}): Promise<DatasetRow[]> => {
   if (!datasetId && !datasetName) {
     throw new Error('Either datasetId or datasetName must be provided');
   }
@@ -172,7 +178,7 @@ export const getDatasetContent = async (
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
   return await apiClient.getDatasetContent(datasetId!);
 };
 

@@ -367,7 +367,9 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       if (!columnNames) {
         throw new Error('Column names not found in dataset');
       }
-      const datasetContent = await getDatasetContent(params.dataset.id);
+      const datasetContent = await getDatasetContent({
+        datasetId: params.dataset.id
+      });
       dataset = datasetContent.map((row) => {
         const record: Record<string, string> = {};
         for (let i = 0; i < columnNames.length; i++) {
@@ -388,17 +390,16 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   } else if ('datasetId' in params) {
     // If datasetId is provided, get the dataset and its content as an array of records
     datasetId = params.datasetId;
-    const dataset_ = await getDataset(datasetId);
-    const datasetContent = await getDatasetContent(datasetId);
+    const dataset_ = await getDataset({ id: datasetId });
+    const datasetContent = await getDatasetContent({ datasetId });
     dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
   } else if ('datasetName' in params) {
     // If datasetName is provided, get the dataset and its content as an array of records
-    const dataset_ = await getDataset(undefined, params.datasetName);
+    const dataset_ = await getDataset({ name: params.datasetName });
     datasetId = dataset_.id;
-    const datasetContent = await getDatasetContent(
-      undefined,
-      params.datasetName
-    );
+    const datasetContent = await getDatasetContent({
+      datasetName: params.datasetName
+    });
     dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
   } else {
     throw new Error(

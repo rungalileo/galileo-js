@@ -14,6 +14,9 @@ import GalileoWorkflow from '../workflow';
 import { version } from '../../package.json';
 import GalileoObserveApiClient from './api-client';
 
+/**
+ * @deprecated This class is no longer actively maintained. Please use `GalileoLogger` instead.
+ */
 export default class GalileoObserveWorkflow extends GalileoWorkflow {
   private apiClient: GalileoObserveApiClient = new GalileoObserveApiClient();
 

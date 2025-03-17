@@ -17,13 +17,14 @@ import { Message } from '../types/message.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
-  public projectName?: string = process.env.GALILEO_PROJECT;
+  public projectName?: string = process.env.GALILEO_PROJECT || 'default';
   public projectId?: string = undefined;
-  public logStreamName?: string = process.env.GALILEO_LOG_STREAM;
+  public logStreamName?: string = process.env.GALILEO_LOG_STREAM || 'default';
   public logStreamId?: string = undefined;
   public runId?: string = undefined;
   public datasetId?: string = undefined;
   public experimentId?: string = undefined;
+  public projectScoped: boolean = true;
 }
 
 export class GalileoApiClient extends BaseClient {
@@ -33,6 +34,7 @@ export class GalileoApiClient extends BaseClient {
   public runId: string = '';
   public datasetId: string = '';
   public experimentId: string = '';
+  public projectScoped: boolean = true;
 
   // Service instances
   private authService?: AuthService;
@@ -55,7 +57,8 @@ export class GalileoApiClient extends BaseClient {
       logStreamName = defaultParams.logStreamName,
       runId = defaultParams.runId,
       datasetId = defaultParams.datasetId,
-      experimentId = defaultParams.experimentId
+      experimentId = defaultParams.experimentId,
+      projectScoped = defaultParams.projectScoped
     } = params;
 
     this.projectType = projectType;
@@ -78,89 +81,91 @@ export class GalileoApiClient extends BaseClient {
       // Initialize the client in base class
       this.initializeClient();
 
-      // Initialize project service and get project ID
-      this.projectService = new ProjectService(
-        this.apiUrl,
-        this.token,
-        this.projectType
-      );
-
-      if (projectId) {
-        this.projectId = projectId;
-      } else if (projectName) {
-        try {
-          this.projectId =
-            await this.projectService.getProjectIdByName(projectName);
-          // eslint-disable-next-line no-console
-          // console.log(`✅ Using ${projectName}`);
-        } catch (err: unknown) {
-          const error = err as Error;
-
-          if (error.message.includes('not found')) {
-            const project =
-              await this.projectService.createProject(projectName);
-            this.projectId = project.id;
-            // eslint-disable-next-line no-console
-            console.log(`✨ ${projectName} created.`);
-          } else {
-            throw err;
-          }
-        }
-      }
-
-      // Initialize log stream service
-      this.logStreamService = new LogStreamService(
-        this.apiUrl,
-        this.token,
-        this.projectId
-      );
-
-      if (experimentId) {
-        this.experimentId = experimentId;
-      } else if (logStreamId) {
-        this.logStreamId = logStreamId;
-      } else if (logStreamName) {
-        try {
-          const logStream =
-            await this.logStreamService.getLogStreamByName(logStreamName);
-          this.logStreamId = logStream.id;
-          // eslint-disable-next-line no-console
-          // console.log(`✅ Using ${logStreamName}`);
-        } catch (err: unknown) {
-          const error = err as Error;
-
-          if (error.message.includes('not found')) {
-            const logStream =
-              await this.logStreamService.createLogStream(logStreamName);
-            this.logStreamId = logStream.id;
-            // eslint-disable-next-line no-console
-            console.log(`✨ ${logStreamName} created.`);
-          } else {
-            throw err;
-          }
-        }
-      }
-
       // Initialize dataset and trace services
       this.datasetService = new DatasetService(this.apiUrl, this.token);
-      this.traceService = new TraceService(
-        this.apiUrl,
-        this.token,
-        this.projectId,
-        this.logStreamId,
-        this.experimentId
-      );
 
-      this.promptTemplateService = new PromptTemplateService(
-        this.apiUrl,
-        this.token,
-        this.projectId
-      );
-      this.experimentService = new ExperimentService(
-        this.apiUrl,
-        this.token,
-        this.projectId
-      );
+      if (projectScoped) {
+        // Initialize project service and get project ID
+        this.projectService = new ProjectService(
+          this.apiUrl,
+          this.token,
+          this.projectType
+        );
+
+        if (projectId) {
+          this.projectId = projectId;
+        } else if (projectName) {
+          try {
+            this.projectId =
+              await this.projectService.getProjectIdByName(projectName);
+            // eslint-disable-next-line no-console
+          } catch (err: unknown) {
+            const error = err as Error;
+
+            if (error.message.includes('not found')) {
+              const project =
+                await this.projectService.createProject(projectName);
+              this.projectId = project.id;
+              // eslint-disable-next-line no-console
+              console.log(`✨ ${projectName} created.`);
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        // Initialize log stream service
+        this.logStreamService = new LogStreamService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+
+        if (experimentId) {
+          this.experimentId = experimentId;
+        } else if (logStreamId) {
+          this.logStreamId = logStreamId;
+        } else if (logStreamName) {
+          try {
+            const logStream =
+              await this.logStreamService.getLogStreamByName(logStreamName);
+            this.logStreamId = logStream.id;
+            // eslint-disable-next-line no-console
+            // console.log(`✅ Using ${logStreamName}`);
+          } catch (err: unknown) {
+            const error = err as Error;
+
+            if (error.message.includes('not found')) {
+              const logStream =
+                await this.logStreamService.createLogStream(logStreamName);
+              this.logStreamId = logStream.id;
+              // eslint-disable-next-line no-console
+              console.log(`✨ ${logStreamName} created.`);
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        this.traceService = new TraceService(
+          this.apiUrl,
+          this.token,
+          this.projectId,
+          this.logStreamId,
+          this.experimentId
+        );
+
+        this.promptTemplateService = new PromptTemplateService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+        this.experimentService = new ExperimentService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+      }
     }
   }
 

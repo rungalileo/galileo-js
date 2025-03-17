@@ -1,12 +1,12 @@
 {
   "name": "galileo-examples",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Galileo JS client examples",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Galileo Technologies Inc. <team@rungalileo.io>",
+  "author": "Galileo Technologies Inc. <team@galileo.ai>",
   "license": "ISC",
   "dependencies": {
     "@langchain/community": "^0.3.18",

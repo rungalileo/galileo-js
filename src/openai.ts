@@ -65,12 +65,12 @@ export function wrapOpenAI(
                       const startTrace = logger.currentParent() === undefined;
 
                       if (startTrace) {
-                        logger!.startTrace(
-                          JSON.stringify(requestData.messages),
-                          undefined,
-                          'openai-client-generation',
-                          startTime
-                        );
+                        logger!.startTrace({
+                          input: JSON.stringify(requestData.messages),
+                          output: undefined,
+                          name: 'openai-client-generation',
+                          createdAt: startTime
+                        });
                       }
 
                       let response;
