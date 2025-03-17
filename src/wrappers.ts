@@ -1,6 +1,8 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
 import { argsToDict, extractParamsInfo } from './utils/serialization';
+import { RetrieverStepAllowedOutputType } from './types/step.types';
+import { Document } from './types/document.types';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -8,6 +10,32 @@ export interface LogOptions {
   spanType?: SpanType;
   name?: string;
   params?: Record<string, unknown>;
+}
+
+function _isRetrieverOutput<R>(output: R): boolean {
+  try {
+    return (
+      typeof output === 'string' ||
+      (Array.isArray(output) &&
+        (output.length === 0 || typeof output[0] === 'string')) ||
+      output instanceof Document ||
+      (Array.isArray(output) &&
+        (output.length === 0 || output[0] instanceof Document)) ||
+      (typeof output === 'object' &&
+        output !== null &&
+        !Array.isArray(output) &&
+        Object.values(output).every((val) => typeof val === 'string')) ||
+      (Array.isArray(output) &&
+        (output.length === 0 ||
+          (typeof output[0] === 'object' &&
+            output[0] !== null &&
+            !Array.isArray(output[0]) &&
+            Object.values(output[0]).every((val) => typeof val === 'string'))))
+    );
+  } catch (e) {
+    console.warn('Unable to check if output is a retriever output', e);
+    return false;
+  }
 }
 
 /**
@@ -81,7 +109,14 @@ export function log<T extends unknown[], R>(
           //   statusCode: options.statusCode
         });
       } else if (options.spanType === 'retriever') {
-        logger?.addRetrieverSpan({ input: argsToString, output: [], name });
+        logger?.addRetrieverSpan({
+          input: argsToString,
+          output:
+            result && _isRetrieverOutput(result)
+              ? (result! as RetrieverStepAllowedOutputType)
+              : resultToString,
+          name
+        });
       } else if (options.spanType === 'tool') {
         logger?.addToolSpan({
           input: argsToString,
