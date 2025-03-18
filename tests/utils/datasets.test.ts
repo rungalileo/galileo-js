@@ -26,7 +26,7 @@ const EXAMPLE_DATASET_ROW: DatasetRow = {
   index: 0,
   row_id: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
   values: ['John', 'Doe'],
-  values_dict: { first_name: 'John', last_name: 'Doe' },
+  values_dict: { firstName: 'John', lastName: 'Doe' },
   metadata: null
 };
 
