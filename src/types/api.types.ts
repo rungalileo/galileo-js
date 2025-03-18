@@ -5727,6 +5727,12 @@ export interface components {
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
       client_version?: string | null;
+      /**
+       * Reliable
+       * @description Whether or not to use reliable logging.  If set to False, the method will respond immediately before verifying that the traces have been successfully ingested, and no error message will be returned if ingestion fails.  If set to True, the method will wait for the traces to be successfully ingested or return an error message if there is an ingestion failure.
+       * @default false
+       */
+      reliable?: boolean;
     };
     /** LogRecordsIngestResponse */
     LogRecordsIngestResponse: {
