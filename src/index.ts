@@ -43,6 +43,7 @@ export {
   GalileoApiClient,
   GalileoLogger,
   GalileoCallback,
+  // OpenAI
   wrapOpenAI,
   // Datasets
   getDatasets,
