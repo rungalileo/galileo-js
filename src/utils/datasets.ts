@@ -56,18 +56,14 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
     const datasetRows = transposeDictToRows(
       dataset as Record<string, string[]>
     );
-    const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.CSV}`);
-    const header = Object.keys(datasetRows[0]).join(',') + '\n';
-    const rows = datasetRows
-      .map((row) => Object.values(row).join(','))
-      .join('\n');
-    writeFileSync(tempFilePath, header + rows, { encoding: 'utf-8' });
+    const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.JSONL}`);
+    const rows = datasetRows.map((row) => JSON.stringify(row)).join('\n');
+    writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
     datasetPath = tempFilePath;
   } else if (Array.isArray(dataset)) {
-    const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.CSV}`);
-    const header = Object.keys(dataset[0]).join(',') + '\n';
-    const rows = dataset.map((row) => Object.values(row).join(',')).join('\n');
-    writeFileSync(tempFilePath, header + rows, { encoding: 'utf-8' });
+    const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.JSONL}`);
+    const rows = dataset.map((row) => JSON.stringify(row)).join('\n');
+    writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
     datasetPath = tempFilePath;
   } else {
     throw new Error(
