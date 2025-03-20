@@ -9,11 +9,7 @@ import { init, flush, GalileoSingleton } from '../singleton';
 import { Scorer, ScorerTypes } from '../types/scorer.types';
 import { getScorers, createRunScorerSettings } from '../utils/scorers';
 import { Dataset } from '../types/dataset.types';
-import {
-  getDataset,
-  getDatasetContent,
-  convertDatasetContentToRecords
-} from '../utils/datasets';
+import { getDataset, getDatasetContent } from '../utils/datasets';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
@@ -104,6 +100,9 @@ export const createExperiment = async (
   name: string,
   projectName: string
 ): Promise<Experiment> => {
+  if (!name) {
+    throw new Error('A valid `name` must be provided to create an experiment');
+  }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
   return await apiClient.createExperiment(name);
@@ -390,9 +389,9 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   } else if ('datasetId' in params) {
     // If datasetId is provided, get the dataset and its content as an array of records
     datasetId = params.datasetId;
-    const dataset_ = await getDataset({ id: datasetId });
+    // const dataset_ = await getDataset({ id: datasetId });
     const datasetContent = await getDatasetContent({ datasetId });
-    dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
+    dataset = datasetContent.map((row) => row.values_dict);
   } else if ('datasetName' in params) {
     // If datasetName is provided, get the dataset and its content as an array of records
     const dataset_ = await getDataset({ name: params.datasetName });
@@ -400,7 +399,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const datasetContent = await getDatasetContent({
       datasetName: params.datasetName
     });
-    dataset = await convertDatasetContentToRecords(dataset_, datasetContent);
+    dataset = datasetContent.map((row) => row.values_dict);
   } else {
     throw new Error(
       'One of dataset, datasetId, or datasetName must be provided'
