@@ -87,8 +87,7 @@ export function wrapOpenAI(
                         if (startTrace) {
                           // If a trace was started, conclude it
                           logger!.conclude({
-                            output: `Error: ${errorMessage}`,
-                            durationNs: Number(startTime - startTime)
+                            output: `Error: ${errorMessage}`
                           });
                         }
                         throw error;
@@ -107,6 +106,7 @@ export function wrapOpenAI(
                       }
 
                       const endTime = Date.now();
+                      const durationNs = (endTime - startTime) * 1_000_000;
                       const output = response?.choices?.map((choice: any) =>
                         JSON.parse(JSON.stringify(choice.message))
                       );
@@ -119,7 +119,7 @@ export function wrapOpenAI(
                         numInputTokens: response?.usage?.prompt_tokens || 0,
                         numOutputTokens:
                           response?.usage?.completion_tokens || 0,
-                        durationNs: Number(endTime - startTime),
+                        durationNs,
                         metadata: requestData.metadata || {}
                       });
 
@@ -127,7 +127,7 @@ export function wrapOpenAI(
                         // If a trace was started, conclude it
                         logger!.conclude({
                           output: JSON.stringify(output),
-                          durationNs: Number(endTime - startTime)
+                          durationNs
                         });
                       }
 
