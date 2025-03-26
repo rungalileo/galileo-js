@@ -23,11 +23,11 @@ export const getDatasets = async (): Promise<Dataset[]> => {
   }));
 };
 
-type DatasetType =
+export type DatasetType =
   | PathLike
   | string
-  | Record<string, string[]>
-  | Array<Record<string, string>>;
+  | Record<string, string[] | Record<string, string>[]> // column name -> values list
+  | Array<Record<string, string | Record<string, string>>>; // rows, each row is a dictionary of column name -> value
 
 enum DatasetFormat {
   CSV = 'csv',
@@ -35,11 +35,18 @@ enum DatasetFormat {
   FEATHER = 'feather'
 }
 
+function stringify_value(value: string | Record<string, string>): string {
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return value;
+}
+
 function transposeDictToRows(
   dataset: Record<string, string[]>
 ): Array<Record<string, string>> {
   const keyRows = Object.entries(dataset).map(([key, values]) =>
-    values.map((value) => ({ [key]: value }))
+    values.map((value) => ({ [key]: stringify_value(value) }))
   );
   return keyRows[0].map((_, i) =>
     Object.assign({}, ...keyRows.map((keyRow) => keyRow[i]))
@@ -57,12 +64,20 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
       dataset as Record<string, string[]>
     );
     const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.JSONL}`);
-    const rows = datasetRows.map((row) => JSON.stringify(row)).join('\n');
+    const rows = datasetRows.map((row) => stringify_value(row)).join('\n');
     writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
     datasetPath = tempFilePath;
   } else if (Array.isArray(dataset)) {
     const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.JSONL}`);
-    const rows = dataset.map((row) => JSON.stringify(row)).join('\n');
+    const rows = dataset
+      .map((item) => {
+        const jsonifiedInner: Record<string, string> = {};
+        for (const key in item) {
+          jsonifiedInner[key] = stringify_value(item[key]);
+        }
+        return stringify_value(jsonifiedInner);
+      })
+      .join('\n');
     writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
     datasetPath = tempFilePath;
   } else {

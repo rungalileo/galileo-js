@@ -8,6 +8,8 @@ import {
   DatasetRow,
   ListDatasetResponse
 } from '../../src/api-client';
+import { PathLike } from 'fs';
+import { DatasetType } from '../../src/utils/datasets';
 
 const EXAMPLE_DATASET: Dataset = {
   id: 'c7b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3d',
@@ -70,8 +72,15 @@ afterEach(() => server.resetHandlers());
 
 afterAll(() => server.close());
 
-test('create dataset', async () => {
-  const dataset = await createDataset({ col1: ['val1', 'val2'] }, 'My Dataset');
+const createDatasetCases: DatasetType[] = [
+  { col1: ['val1', 'val2'] }, // column with strings
+  { input: [{ col1: 'val1', col2: 'val2' }] }, // column with objects
+  [{ col1: 'val1', col2: 'val2' }], // rows with strings
+  [{ col1: { key1: 'val1' }, col2: { key2: 'val2' } }] // rows with objects
+];
+
+test.each(createDatasetCases)('create dataset with data: %j', async (data) => {
+  const dataset = await createDataset(data, 'My Dataset');
   expect(dataset).toEqual(EXAMPLE_DATASET);
   expect(postDatasetsHandler).toHaveBeenCalled();
 });
