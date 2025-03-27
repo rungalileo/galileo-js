@@ -8,7 +8,6 @@ import {
   DatasetRow,
   ListDatasetResponse
 } from '../../src/api-client';
-import { PathLike } from 'fs';
 import { DatasetType } from '../../src/utils/datasets';
 
 const EXAMPLE_DATASET: Dataset = {
