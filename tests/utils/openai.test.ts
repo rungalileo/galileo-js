@@ -109,7 +109,7 @@ describe('OpenAI Wrapper', () => {
       numOutputTokens: 5,
       durationNs: 0,
       metadata: {},
-      statusCode: 200,
+      statusCode: 200
     });
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: JSON.stringify([mockResponse.choices[0].message]),
