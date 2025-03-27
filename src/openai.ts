@@ -120,7 +120,8 @@ export function wrapOpenAI(
                         numOutputTokens:
                           response?.usage?.completion_tokens || 0,
                         durationNs: Number(endTime - startTime),
-                        metadata: requestData.metadata || {}
+                        metadata: requestData.metadata || {},
+                        statusCode: 200
                       });
 
                       if (startTrace) {
@@ -323,7 +324,8 @@ class StreamWrapper implements AsyncIterable<any> {
       numInputTokens: inputTokensEstimate,
       numOutputTokens: outputTokensEstimate,
       durationNs: Number(endTime - startTimeForMetrics),
-      metadata: this.requestData.metadata || {}
+      metadata: this.requestData.metadata || {},
+      statusCode: 200
     });
 
     // Conclude the trace if this was the top-level call
