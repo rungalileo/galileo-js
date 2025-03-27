@@ -108,7 +108,8 @@ describe('OpenAI Wrapper', () => {
       numInputTokens: 10,
       numOutputTokens: 5,
       durationNs: 0,
-      metadata: {}
+      metadata: {},
+      statusCode: 200
     });
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: JSON.stringify([mockResponse.choices[0].message]),
@@ -177,7 +178,8 @@ describe('OpenAI Wrapper', () => {
       numInputTokens: 0, // Note: The wrapper doesn't calculate tokens for streaming responses
       numOutputTokens: 0,
       durationNs: times[3] - times[2], // completion start to end time
-      metadata: {}
+      metadata: {},
+      statusCode: 200
     });
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: JSON.stringify({
