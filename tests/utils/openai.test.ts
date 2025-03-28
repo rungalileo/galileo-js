@@ -426,8 +426,7 @@ describe('OpenAI Wrapper', () => {
 
     expect(mockLogger.startTrace).toHaveBeenCalled();
     expect(mockLogger.conclude).toHaveBeenCalledWith({
-      output: 'Error: API Error',
-      durationNs: 0
+      output: 'Error: API Error'
     });
   });
 
