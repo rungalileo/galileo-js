@@ -1,14 +1,10 @@
-import { GalileoApiClient } from '../../src/api-client';
 import {
   runExperiment,
   getExperiment,
   createExperiment,
   getExperiments
 } from '../../src';
-import {
-  Experiment,
-  PromptRunSettings
-} from '../../src/types/experiment.types';
+import { Experiment } from '../../src/types/experiment.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
 import {
   PromptTemplate,
@@ -145,25 +141,6 @@ const mockScorer: Scorer = {
   id: 'scorer-123',
   name: 'correctness',
   scorer_type: ScorerTypes.preset
-};
-
-const mockPromptSettings: PromptRunSettings = {
-  n: 1,
-  echo: false,
-  tools: null,
-  top_k: 40,
-  top_p: 1.0,
-  logprobs: true,
-  max_tokens: 256,
-  model_alias: 'GPT-4o',
-  temperature: 0.8,
-  tool_choice: null,
-  top_logprobs: 5,
-  stop_sequences: null,
-  deployment_name: null,
-  response_format: null,
-  presence_penalty: 0.0,
-  frequency_penalty: 0.0
 };
 
 describe('experiments utility', () => {

@@ -12,6 +12,20 @@ export enum RequestMethod {
   DELETE = 'DELETE'
 }
 
+export const GENERIC_ERROR_MESSAGE =
+  'This error has been automatically tracked. Please try again.';
+
+export const parseApiErrorMessage = (error: any) => {
+  const errorMessage =
+    typeof error?.detail === 'string'
+      ? error?.detail
+      : typeof error?.detail?.[0].msg === 'string'
+        ? error?.detail?.[0].msg
+        : GENERIC_ERROR_MESSAGE;
+
+  return errorMessage;
+};
+
 export class BaseClient {
   protected apiUrl: string = '';
   protected token: string = '';
@@ -88,7 +102,8 @@ export class BaseClient {
 
   protected validateResponse(response: AxiosResponse): void {
     if (response.status >= 300) {
-      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${response.data}`;
+      const errorMessage = parseApiErrorMessage(response.data);
+      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${errorMessage}`;
       throw new Error(msg);
     }
   }
@@ -160,8 +175,17 @@ export class BaseClient {
       data
     };
 
-    const response = await axios.request<T>(config);
-    this.validateResponse(response);
-    return response.data;
+    try {
+      const response = await axios.request<T>(config);
+      this.validateResponse(response);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const response = error.response;
+        this.validateResponse(response!);
+      }
+    }
+
+    return {} as T;
   }
 }
