@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// import type OpenAI from 'openai';
-
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
 
@@ -11,7 +9,7 @@ try {
   console.warn('openai package is not installed. Some features may not work.');
 }
 
-interface BetaLike {
+interface BetaType {
   chat: {
     completions: {
       stream: any;
@@ -20,15 +18,15 @@ interface BetaLike {
   embeddings: any;
 }
 
-interface ChatLike {
+interface ChatType {
   completions: any;
 }
 
-interface OpenAILike {
-  chat: ChatLike;
+interface OpenAIType {
+  chat: ChatType;
   embeddings: any;
   moderations: any;
-  beta?: BetaLike;
+  beta?: BetaType;
 }
 
 /**
@@ -50,7 +48,7 @@ interface OpenAILike {
  * });
  * ```
  */
-export function wrapOpenAI<T extends OpenAILike>(
+export function wrapOpenAI<T extends OpenAIType>(
   openAIClient: T,
   logger?: GalileoLogger
 ): T {
