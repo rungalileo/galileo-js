@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type OpenAI from 'openai';
-
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
 
@@ -9,6 +7,26 @@ try {
 } catch (e) {
   // eslint-disable-next-line no-console
   console.warn('openai package is not installed. Some features may not work.');
+}
+
+interface BetaType {
+  chat: {
+    completions: {
+      stream: any;
+    };
+  };
+  embeddings: any;
+}
+
+interface ChatType {
+  completions: any;
+}
+
+interface OpenAIType {
+  chat: ChatType;
+  embeddings: any;
+  moderations: any;
+  beta?: BetaType;
 }
 
 /**
@@ -30,13 +48,13 @@ try {
  * });
  * ```
  */
-export function wrapOpenAI(
-  openAIClient: OpenAI,
+export function wrapOpenAI<T extends OpenAIType>(
+  openAIClient: T,
   logger?: GalileoLogger
-): OpenAI {
-  const handler: ProxyHandler<OpenAI> = {
-    get(target, prop: keyof OpenAI) {
-      const originalMethod = target[prop];
+): T {
+  const handler: ProxyHandler<T> = {
+    get(target, prop: string | symbol) {
+      const originalMethod = target[prop as keyof T];
 
       if (
         prop === 'chat' &&
@@ -44,13 +62,13 @@ export function wrapOpenAI(
         originalMethod !== null
       ) {
         return new Proxy(originalMethod, {
-          get(chatTarget, chatProp) {
+          get(chatTarget: any, chatProp: string | symbol) {
             if (
               chatProp === 'completions' &&
               typeof chatTarget[chatProp] === 'object'
             ) {
               return new Proxy(chatTarget[chatProp], {
-                get(completionsTarget, completionsProp) {
+                get(completionsTarget: any, completionsProp: string | symbol) {
                   if (
                     completionsProp === 'create' &&
                     typeof completionsTarget[completionsProp] === 'function'
