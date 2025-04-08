@@ -18,7 +18,7 @@ type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 type DatasetWithFunction<T extends Record<string, unknown>> = {
   name: string;
   dataset: DatasetType;
-  function: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>;
+  function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
   metrics?: string[];
   projectName: string;
 };
@@ -26,7 +26,7 @@ type DatasetWithFunction<T extends Record<string, unknown>> = {
 type DatasetIdWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetId: string;
-  function: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>;
+  function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
   metrics?: string[];
   projectName: string;
 };
@@ -34,7 +34,7 @@ type DatasetIdWithFunction<T extends Record<string, unknown>> = {
 type DatasetNameWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetName: string;
-  function: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>;
+  function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
   metrics?: string[];
   projectName: string;
 };
@@ -151,7 +151,7 @@ export const getExperiment = async ({
  */
 const processRow = async <T extends Record<string, unknown>>(
   row: T,
-  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>
+  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>
 ): Promise<string> => {
   const metadata: Record<string, string> = {
     timestamp: new Date().toISOString()
@@ -198,7 +198,7 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   experiment: Experiment,
   projectName: string,
   datasetContent: Record<string, unknown>[],
-  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown[]>
+  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>
 ): Promise<string[]> => {
   const outputs: string[] = [];
 
