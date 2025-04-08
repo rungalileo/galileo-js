@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { extractParamsInfo, argsToDict } from '../../src/utils/serialization';
 
 describe('Extract Function Parameters', () => {
