@@ -20,6 +20,40 @@ class GalileoLoggerConfig {
   public experimentId?: string;
 }
 
+/**
+ * Higher-order function that wraps a method to skip execution if logging is disabled
+ * @param fn The original method
+ * @param defaultValueFn A function that returns the default value when logging is disabled
+ */
+function skipIfDisabled<T, Args extends any[]>(
+  fn: (this: GalileoLogger, ...args: Args) => T,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => T {
+  return function (this: GalileoLogger, ...args: Args): T {
+    if (this.isLoggingDisabled()) {
+      return defaultValueFn(args);
+    }
+    return fn.apply(this, args);
+  };
+}
+
+/**
+ * Higher-order function that wraps an async method to skip execution if logging is disabled
+ * @param fn The original async method
+ * @param defaultValueFn A function that returns the default value when logging is disabled
+ */
+function skipIfDisabledAsync<T, Args extends any[]>(
+  fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => Promise<T> {
+  return async function (this: GalileoLogger, ...args: Args): Promise<T> {
+    if (this.isLoggingDisabled()) {
+      return defaultValueFn(args);
+    }
+    return await fn.apply(this, args);
+  };
+}
+
 class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
@@ -33,11 +67,96 @@ class GalileoLogger {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
-    // Check if logging is disabled via environment variable
-    this.loggingDisabled =
-      typeof process !== 'undefined' &&
-      typeof process.env !== 'undefined' &&
-      process.env.GALILEO_DISABLE_LOGGING !== undefined;
+    try {
+      // Logging is disabled if GALILEO_DISABLE_LOGGING is defined and not set to '0' or 'false'
+      this.loggingDisabled =
+        typeof process !== 'undefined' &&
+        typeof process.env !== 'undefined' &&
+        (process.env.GALILEO_DISABLE_LOGGING === undefined ||
+          process.env.GALILEO_DISABLE_LOGGING === '' ||
+          (process.env.GALILEO_DISABLE_LOGGING !== '0' &&
+            process.env.GALILEO_DISABLE_LOGGING.toLowerCase() !== 'false'));
+    } catch (error) {
+      console.error(
+        'Error checking if logging is disabled; GALILEO_DISABLE_LOGGING environment variable is not set correctly:',
+        error
+      );
+      this.loggingDisabled = false;
+    }
+
+    // Wrap relevant methods with skipIfDisabled or skipIfDisabledAsync
+
+    this.addChildSpanToParent = skipIfDisabled(
+      this.addChildSpanToParent,
+      () => undefined
+    );
+
+    this.startTrace = skipIfDisabled(
+      this.startTrace,
+      (args) =>
+        new Trace({
+          input: args[0]?.input || '',
+          output: args[0]?.output || ''
+        })
+    );
+
+    this.addSingleLlmSpanTrace = skipIfDisabled(
+      this.addSingleLlmSpanTrace,
+      (args) =>
+        new Trace({
+          input: args[0]?.input || '',
+          output: args[0]?.output || ''
+        })
+    );
+
+    this.addLlmSpan = skipIfDisabled(
+      this.addLlmSpan,
+      (args) =>
+        new LlmSpan({
+          input: args[0]?.input || '',
+          output: args[0]?.output || ''
+        })
+    );
+
+    this.addRetrieverSpan = skipIfDisabled(
+      this.addRetrieverSpan,
+      (args) =>
+        new RetrieverSpan({
+          input: args[0]?.input || '',
+          output: args[0]?.output || []
+        })
+    );
+
+    this.addToolSpan = skipIfDisabled(
+      this.addToolSpan,
+      (args) =>
+        new ToolSpan({
+          input: args[0]?.input || '',
+          output: args[0]?.output || ''
+        })
+    );
+
+    this.addWorkflowSpan = skipIfDisabled(
+      this.addWorkflowSpan,
+      (args) =>
+        new WorkflowSpan({
+          input: args[0]?.input || '',
+          output: args[0]?.output || ''
+        })
+    );
+
+    this.conclude = skipIfDisabled(this.conclude, () => undefined);
+
+    this.flush = skipIfDisabledAsync(this.flush, () => []);
+
+    this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
+  }
+
+  /**
+   * Check if logging is disabled
+   */
+  isLoggingDisabled(): boolean {
+    return this.loggingDisabled;
   }
 
   currentParent(): StepWithChildSpans | undefined {
