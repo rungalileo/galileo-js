@@ -4,6 +4,18 @@
   "description": "JS client for Galileo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "npm run format && npm run lint && tsc",
     "test": "jest --detectOpenHandles --forceExit --silent",
