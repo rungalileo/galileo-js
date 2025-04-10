@@ -172,6 +172,7 @@ export class GalileoCallback
         output,
         model: node.spanParams.model,
         temperature: node.spanParams.temperature,
+        tools: 'tools' in node.spanParams ? node.spanParams.tools : undefined,
         name,
         metadata,
         tags,

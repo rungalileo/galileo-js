@@ -50,7 +50,5 @@ export class TraceService extends BaseClient {
     console.log(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
     );
-    // eslint-disable-next-line no-console
-    console.log(JSON.stringify(traces, null, 2));
   }
 }
