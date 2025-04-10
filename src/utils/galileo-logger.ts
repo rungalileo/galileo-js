@@ -11,8 +11,10 @@ import {
 } from '../types/log.types';
 import {
   LlmStepAllowedIOType,
-  RetrieverStepAllowedOutputType
+  RetrieverStepAllowedOutputType,
+  BaseStep
 } from '../types/step.types';
+import { toStringValue } from './serialization';
 
 class GalileoLoggerConfig {
   public projectName?: string;
@@ -32,6 +34,24 @@ class GalileoLogger {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
+  }
+
+  static getLastOutput(node?: BaseStep): string | undefined {
+    if (node === undefined) {
+      return undefined;
+    }
+
+    if (node.output !== undefined) {
+      return typeof node.output === 'string'
+        ? node.output
+        : toStringValue(node.output);
+    }
+
+    if (node instanceof StepWithChildSpans && node.spans.length > 0) {
+      return GalileoLogger.getLastOutput(node.spans[node.spans.length - 1]);
+    }
+
+    return undefined;
   }
 
   currentParent(): StepWithChildSpans | undefined {
@@ -335,7 +355,7 @@ class GalileoLogger {
     return span;
   }
 
-  conclude({
+  private concludeCurrentParent({
     output,
     durationNs,
     statusCode
@@ -371,11 +391,43 @@ class GalileoLogger {
     return this.currentParent();
   }
 
+  conclude({
+    output,
+    durationNs,
+    statusCode,
+    concludeAll
+  }: {
+    output?: string;
+    durationNs?: number;
+    statusCode?: number;
+    concludeAll?: boolean;
+  }): StepWithChildSpans | undefined {
+    if (!concludeAll) {
+      return this.concludeCurrentParent({ output, durationNs, statusCode });
+    }
+    let currentParent: StepWithChildSpans | undefined = undefined;
+    while (this.currentParent() !== undefined) {
+      currentParent = this.concludeCurrentParent({
+        output,
+        durationNs,
+        statusCode
+      });
+    }
+    return currentParent;
+  }
+
   async flush(): Promise<Trace[]> {
     try {
       if (!this.traces.length) {
         console.warn('No traces to flush.');
         return [];
+      }
+
+      const currentParent = this.currentParent();
+      if (currentParent !== undefined) {
+        console.info('Concluding the active trace...');
+        const lastOutput = GalileoLogger.getLastOutput(currentParent);
+        this.conclude({ output: lastOutput, concludeAll: true });
       }
 
       await this.client.init({

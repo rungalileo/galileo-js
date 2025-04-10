@@ -247,4 +247,166 @@ describe('GalileoLogger', () => {
       }).toThrow('A trace cannot be created within a parent trace or span');
     });
   });
+
+  describe('Concluding Traces With Open Nested Spans', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+
+    it('should conclude all open spans when called with concludeAll', async () => {
+      logger.startTrace({ input: 'test input' });
+      logger.addWorkflowSpan({
+        input: 'workflow input 1'
+      });
+      logger.addWorkflowSpan({
+        input: 'workflow input 2'
+      });
+      logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output'
+      });
+
+      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutput).toBe('{"content":"llm output","role":"assistant"}');
+
+      logger.conclude({ output: lastOutput, concludeAll: true }); // This will conclude both workflow spans and the trace
+
+      const trace = logger.traces[0];
+
+      expect(trace.spans.length).toBe(1);
+      expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
+      expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
+        WorkflowSpan
+      );
+      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutput);
+      expect(trace.spans[0].output).toBe(lastOutput);
+      expect(trace.output).toBe(lastOutput);
+    });
+
+    it('should conclude only the current span with called without concludeAll', async () => {
+      logger.startTrace({ input: 'test input' });
+      logger.addWorkflowSpan({
+        input: 'workflow input 1'
+      });
+      logger.addWorkflowSpan({
+        input: 'workflow input 2'
+      });
+      logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output'
+      });
+
+      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutput).toBe('{"content":"llm output","role":"assistant"}');
+
+      logger.conclude({ output: lastOutput }); // This will conclude only the current span
+
+      const trace = logger.traces[0];
+
+      expect(trace.spans.length).toBe(1);
+      expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
+      expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
+        WorkflowSpan
+      );
+      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutput);
+      expect(trace.spans[0].output).toBe(undefined);
+      expect(trace.output).toBe(undefined);
+    });
+
+    it('should conclude the trace with concludeAll even when a child span has an undefined output', async () => {
+      logger.startTrace({ input: 'test input' });
+      logger.addToolSpan({
+        input: 'tool input 1'
+      });
+      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutput).toBe(undefined);
+
+      logger.conclude({ output: lastOutput, concludeAll: true }); // This will conclude only the current span
+
+      const trace = logger.traces[0];
+
+      expect(trace.spans.length).toBe(1);
+      expect(trace.spans[0]).toBeInstanceOf(ToolSpan);
+      expect(trace.spans[0].output).toBe(undefined);
+      expect(trace.output).toBe(undefined);
+    });
+
+    it('should conclude all open spans with concludeAll even when current leaf span has a null output', async () => {
+      logger.startTrace({ input: 'test input' });
+      logger.addWorkflowSpan({
+        input: 'workflow input 1'
+      });
+      logger.addRetrieverSpan({
+        input: 'retriever input',
+        output: 'retriever output'
+      });
+      logger.conclude({ output: 'retriever output' });
+
+      logger.addWorkflowSpan({
+        input: 'workflow input 2'
+      });
+
+      logger.addWorkflowSpan({
+        input: 'workflow input 3'
+      });
+
+      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutput).toBe(undefined);
+
+      logger.conclude({ output: lastOutput, concludeAll: true }); // This will conclude only the current span
+
+      const trace = logger.traces[0];
+
+      expect(trace.spans.length).toBe(2);
+      expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
+      expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
+        RetrieverSpan
+      );
+      expect(trace.spans[0].output).toBe('retriever output');
+      expect(trace.spans[1]).toBeInstanceOf(WorkflowSpan);
+      expect((trace.spans[1] as WorkflowSpan).spans[0]).toBeInstanceOf(
+        WorkflowSpan
+      );
+      expect((trace.spans[1] as WorkflowSpan).spans[0].output).toBe(undefined);
+      expect(trace.spans[1].output).toBe(undefined);
+      expect(trace.output).toBe(undefined);
+    });
+
+    it('should conclude all open spans with concludeAll when flushing', async () => {
+      logger.startTrace({ input: 'test input' });
+      logger.addWorkflowSpan({
+        input: 'workflow input 1'
+      });
+      logger.addWorkflowSpan({
+        input: 'workflow input 2'
+      });
+      logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output'
+      });
+
+      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutput).toBe('{"content":"llm output","role":"assistant"}');
+
+      const flushedTraces = await logger.flush();
+      expect(flushedTraces.length).toBe(1);
+
+      const trace = flushedTraces[0];
+
+      expect(trace.spans.length).toBe(1);
+      expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
+      expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
+        WorkflowSpan
+      );
+      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutput);
+      expect(trace.spans[0].output).toBe(lastOutput);
+      expect(trace.output).toBe(lastOutput);
+    });
+
+    it('should throw error when concluding without an active trace', () => {
+      expect(() => logger.conclude({ output: 'test output' })).toThrow(
+        'No existing workflow to conclude'
+      );
+    });
+  });
 });
