@@ -180,11 +180,6 @@ class GalileoLogger {
     metadata?: Record<string, string>;
     tags?: string[];
   }): Trace {
-    // Return an empty trace when logging is disabled
-    if (this.loggingDisabled) {
-      return new Trace({ input, output: output || '' });
-    }
-
     if (this.currentParent() !== undefined) {
       throw new Error(
         'You must conclude the existing trace before adding a new one.'
@@ -239,11 +234,6 @@ class GalileoLogger {
     temperature?: number;
     statusCode?: number;
   }): Trace {
-    // Return an empty trace when logging is disabled
-    if (this.loggingDisabled) {
-      return new Trace({ input, output });
-    }
-
     /**
      * Create a new trace with a single span and add it to the list of traces.
      */
@@ -321,11 +311,6 @@ class GalileoLogger {
     temperature?: number;
     statusCode?: number;
   }): LlmSpan {
-    // Return an empty LlmSpan when logging is disabled
-    if (this.loggingDisabled) {
-      return new LlmSpan({ input, output });
-    }
-
     /**
      * Add a new llm span to the current parent.
      */
@@ -370,11 +355,6 @@ class GalileoLogger {
     tags?: string[];
     statusCode?: number;
   }): RetrieverSpan {
-    // Return an empty RetrieverSpan when logging is disabled
-    if (this.loggingDisabled) {
-      return new RetrieverSpan({ input, output });
-    }
-
     /**
      * Add a new retriever span to the current parent.
      */
@@ -414,11 +394,6 @@ class GalileoLogger {
     statusCode?: number;
     toolCallId?: string;
   }): ToolSpan {
-    // Return an empty ToolSpan when logging is disabled
-    if (this.loggingDisabled) {
-      return new ToolSpan({ input, output });
-    }
-
     /**
      * Add a new tool span to the current parent.
      */
@@ -455,11 +430,6 @@ class GalileoLogger {
     metadata?: Record<string, string>;
     tags?: string[];
   }): WorkflowSpan {
-    // Return an empty WorkflowSpan when logging is disabled
-    if (this.loggingDisabled) {
-      return new WorkflowSpan({ input, output });
-    }
-
     /**
      * Add a workflow span to the current parent. This is useful when you want to create a nested workflow span
      * within the trace or current workflow span. The next span you add will be a child of the current parent. To
@@ -489,9 +459,6 @@ class GalileoLogger {
     durationNs?: number;
     statusCode?: number;
   }): StepWithChildSpans | undefined {
-    // Skip if logging is disabled
-    if (this.loggingDisabled) return undefined;
-
     /**
      * Conclude the current trace or workflow span by setting the output of the current node. In the case of nested
      * workflow spans, this will point the workflow back to the parent of the current workflow span.
@@ -520,11 +487,6 @@ class GalileoLogger {
   }
 
   async flush(): Promise<Trace[]> {
-    // Skip if logging is disabled
-    if (this.loggingDisabled) {
-      return [];
-    }
-
     try {
       if (!this.traces.length) {
         console.warn('No traces to flush.');
@@ -554,9 +516,6 @@ class GalileoLogger {
   }
 
   async terminate(): Promise<void> {
-    // Skip if logging is disabled
-    if (this.loggingDisabled) return;
-
     try {
       await this.flush();
     } catch (error) {
