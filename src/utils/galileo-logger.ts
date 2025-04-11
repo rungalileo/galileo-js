@@ -153,9 +153,6 @@ class GalileoLogger {
   }
 
   addChildSpanToParent(span: Span): void {
-    // Skip if logging is disabled
-    if (this.loggingDisabled) return;
-
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
       throw new Error('A trace needs to be created in order to add a span.');
