@@ -104,32 +104,32 @@ class GalileoLogger {
 
     this.startTrace = skipIfDisabled(
       this.startTrace,
-      (args) => new Trace(emptySpanData)
+      () => new Trace(emptySpanData)
     );
 
     this.addSingleLlmSpanTrace = skipIfDisabled(
       this.addSingleLlmSpanTrace,
-      (args) => new Trace(emptySpanData)
+      () => new Trace(emptySpanData)
     );
 
     this.addLlmSpan = skipIfDisabled(
       this.addLlmSpan,
-      (args) => new LlmSpan(emptySpanData)
+      () => new LlmSpan(emptySpanData)
     );
 
     this.addRetrieverSpan = skipIfDisabled(
       this.addRetrieverSpan,
-      (args) => new RetrieverSpan(emptySpanData)
+      () => new RetrieverSpan(emptySpanData)
     );
 
     this.addToolSpan = skipIfDisabled(
       this.addToolSpan,
-      (args) => new ToolSpan(emptySpanData)
+      () => new ToolSpan(emptySpanData)
     );
 
     this.addWorkflowSpan = skipIfDisabled(
       this.addWorkflowSpan,
-      (args) => new WorkflowSpan(emptySpanData)
+      () => new WorkflowSpan(emptySpanData)
     );
 
     this.conclude = skipIfDisabled(this.conclude, () => undefined);
