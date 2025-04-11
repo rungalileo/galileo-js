@@ -31,6 +31,7 @@ function skipIfDisabled<T, Args extends any[]>(
 ): (this: GalileoLogger, ...args: Args) => T {
   return function (this: GalileoLogger, ...args: Args): T {
     if (this.isLoggingDisabled()) {
+      console.warn('Logging is disabled, skipping execution of', fn.name);
       return defaultValueFn(args);
     }
     return fn.apply(this, args);
@@ -48,6 +49,7 @@ function skipIfDisabledAsync<T, Args extends any[]>(
 ): (this: GalileoLogger, ...args: Args) => Promise<T> {
   return async function (this: GalileoLogger, ...args: Args): Promise<T> {
     if (this.isLoggingDisabled()) {
+      console.warn('Logging is disabled, skipping execution of', fn.name);
       return defaultValueFn(args);
     }
     return await fn.apply(this, args);
@@ -68,14 +70,18 @@ class GalileoLogger {
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
     try {
-      // Logging is disabled if GALILEO_DISABLE_LOGGING is defined and not set to '0' or 'false'
+      // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
+      const disableLoggingValue =
+        typeof process !== 'undefined' && typeof process.env !== 'undefined'
+          ? process.env.GALILEO_DISABLE_LOGGING
+            ? process.env.GALILEO_DISABLE_LOGGING.trim()
+            : undefined
+          : undefined;
+
       this.loggingDisabled =
-        typeof process !== 'undefined' &&
-        typeof process.env !== 'undefined' &&
-        (process.env.GALILEO_DISABLE_LOGGING === undefined ||
-          process.env.GALILEO_DISABLE_LOGGING === '' ||
-          (process.env.GALILEO_DISABLE_LOGGING !== '0' &&
-            process.env.GALILEO_DISABLE_LOGGING.toLowerCase() !== 'false'));
+        disableLoggingValue !== undefined &&
+        disableLoggingValue !== '0' &&
+        disableLoggingValue.toLowerCase() !== 'false';
     } catch (error) {
       console.error(
         'Error checking if logging is disabled; GALILEO_DISABLE_LOGGING environment variable is not set correctly:',
@@ -86,6 +92,11 @@ class GalileoLogger {
 
     // Wrap relevant methods with skipIfDisabled or skipIfDisabledAsync
 
+    const emptySpanData = {
+      input: '',
+      output: ''
+    };
+
     this.addChildSpanToParent = skipIfDisabled(
       this.addChildSpanToParent,
       () => undefined
@@ -93,56 +104,32 @@ class GalileoLogger {
 
     this.startTrace = skipIfDisabled(
       this.startTrace,
-      (args) =>
-        new Trace({
-          input: args[0]?.input || '',
-          output: args[0]?.output || ''
-        })
+      (args) => new Trace(emptySpanData)
     );
 
     this.addSingleLlmSpanTrace = skipIfDisabled(
       this.addSingleLlmSpanTrace,
-      (args) =>
-        new Trace({
-          input: args[0]?.input || '',
-          output: args[0]?.output || ''
-        })
+      (args) => new Trace(emptySpanData)
     );
 
     this.addLlmSpan = skipIfDisabled(
       this.addLlmSpan,
-      (args) =>
-        new LlmSpan({
-          input: args[0]?.input || '',
-          output: args[0]?.output || ''
-        })
+      (args) => new LlmSpan(emptySpanData)
     );
 
     this.addRetrieverSpan = skipIfDisabled(
       this.addRetrieverSpan,
-      (args) =>
-        new RetrieverSpan({
-          input: args[0]?.input || '',
-          output: args[0]?.output || []
-        })
+      (args) => new RetrieverSpan(emptySpanData)
     );
 
     this.addToolSpan = skipIfDisabled(
       this.addToolSpan,
-      (args) =>
-        new ToolSpan({
-          input: args[0]?.input || '',
-          output: args[0]?.output || ''
-        })
+      (args) => new ToolSpan(emptySpanData)
     );
 
     this.addWorkflowSpan = skipIfDisabled(
       this.addWorkflowSpan,
-      (args) =>
-        new WorkflowSpan({
-          input: args[0]?.input || '',
-          output: args[0]?.output || ''
-        })
+      (args) => new WorkflowSpan(emptySpanData)
     );
 
     this.conclude = skipIfDisabled(this.conclude, () => undefined);
