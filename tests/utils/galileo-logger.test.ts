@@ -104,6 +104,54 @@ describe('GalileoLogger', () => {
       expect(llmSpan).toBeInstanceOf(LlmSpan);
     });
 
+    it('should maintain message history integrity when adding LLM spans', () => {
+      logger.startTrace({ input: 'test input' });
+
+      // Initial messages
+      const messages: Message[] = [
+        { role: MessageRole.system, content: 'System message' },
+        { role: MessageRole.user, content: 'First user message' }
+      ];
+
+      // Add first LLM span
+      const firstOutput: Message = {
+        role: MessageRole.assistant,
+        content: 'First assistant response'
+      };
+      const firstSpan = logger.addLlmSpan({
+        input: messages,
+        output: firstOutput,
+        model: 'test-model'
+      });
+
+      // Modify the original messages array
+      messages.push(firstOutput);
+      messages.push({ role: MessageRole.user, content: 'Second user message' });
+
+      // Add second LLM span
+      const secondOutput: Message = {
+        role: MessageRole.assistant,
+        content: 'Second assistant response'
+      };
+      const secondSpan = logger.addLlmSpan({
+        input: messages,
+        output: secondOutput,
+        model: 'test-model'
+      });
+
+      // Verify that the first span's input wasn't affected by the modifications
+      expect(firstSpan.input).toHaveLength(2);
+      expect(firstSpan.input[0].content).toBe('System message');
+      expect(firstSpan.input[1].content).toBe('First user message');
+
+      // Verify that the second span has the complete history
+      expect(secondSpan.input).toHaveLength(4);
+      expect(secondSpan.input[0].content).toBe('System message');
+      expect(secondSpan.input[1].content).toBe('First user message');
+      expect(secondSpan.input[2].content).toBe('First assistant response');
+      expect(secondSpan.input[3].content).toBe('Second user message');
+    });
+
     it('should add retriever span', () => {
       logger.startTrace({ input: 'test input' });
       const document = new Document({ content: 'test content' });
