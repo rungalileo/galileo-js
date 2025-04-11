@@ -204,8 +204,11 @@ export class LlmSpan extends BaseStep {
     tags?: string[];
   }) {
     super({ ...data, type: NodeType.llm });
-    this.input = convertLlmInputOutput(data.input);
-    this.output = convertLlmInputOutput(data.output, MessageRole.assistant)[0];
+    this.input = convertLlmInputOutput(structuredClone(data.input));
+    this.output = convertLlmInputOutput(
+      structuredClone(data.output),
+      MessageRole.assistant
+    )[0];
     this.tools = data.tools;
     this.model = data.model;
     this.inputTokens = data.inputTokens;
