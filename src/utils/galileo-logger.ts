@@ -71,12 +71,9 @@ class GalileoLogger {
     this.experimentId = config.experimentId;
     try {
       // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
-      const disableLoggingValue =
-        typeof process !== 'undefined' && typeof process.env !== 'undefined'
-          ? process.env.GALILEO_DISABLE_LOGGING
-            ? process.env.GALILEO_DISABLE_LOGGING.trim()
-            : undefined
-          : undefined;
+      const disableLoggingValue = process?.env?.GALILEO_DISABLE_LOGGING
+        ? process.env.GALILEO_DISABLE_LOGGING.trim()
+        : undefined;
 
       this.loggingDisabled =
         disableLoggingValue !== undefined &&
