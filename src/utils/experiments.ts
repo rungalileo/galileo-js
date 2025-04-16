@@ -6,7 +6,7 @@ import {
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
-import { Scorer, ScorerTypes } from '../types/scorer.types';
+import { Scorer } from '../types/scorer.types';
 import { getScorers, createRunScorerSettings } from '../utils/scorers';
 import { Dataset } from '../types/dataset.types';
 import { getDataset, getDatasetContent } from '../utils/datasets';
@@ -333,7 +333,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   console.log('Retrieving metrics...');
 
   if (metrics && metrics.length > 0) {
-    const scorers = await getScorers(ScorerTypes.preset);
+    const scorers = await getScorers();
 
     for (const metric of metrics) {
       const scorer = scorers.find((scorer) => scorer.name === metric);
