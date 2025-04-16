@@ -115,6 +115,12 @@ describe('GalileoLogger', () => {
       expect(logger.isLoggingDisabled()).toBeFalsy();
     });
 
+    it('should not disable logging when GALILEO_DISABLE_LOGGING is set to whitespace string', () => {
+      process.env.GALILEO_DISABLE_LOGGING = ' ';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
     it('should disable logging when GALILEO_DISABLE_LOGGING is set to any other string', () => {
       process.env.GALILEO_DISABLE_LOGGING = 'yes';
       logger = new GalileoLogger();
