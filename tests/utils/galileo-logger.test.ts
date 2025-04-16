@@ -69,6 +69,200 @@ describe('GalileoLogger', () => {
     });
   });
 
+  describe('GALILEO_DISABLE_LOGGING Environment Variable', () => {
+    beforeEach(() => {
+      delete process.env.GALILEO_DISABLE_LOGGING;
+    });
+
+    it('should enable logging by default when GALILEO_DISABLE_LOGGING is undefined', () => {
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
+    it('should enable logging when GALILEO_DISABLE_LOGGING is set to "0"', () => {
+      process.env.GALILEO_DISABLE_LOGGING = '0';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
+    it('should enable logging when GALILEO_DISABLE_LOGGING is set to "false"', () => {
+      process.env.GALILEO_DISABLE_LOGGING = 'false';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
+    it('should enable logging when GALILEO_DISABLE_LOGGING is set to "FALSE" (case insensitive)', () => {
+      process.env.GALILEO_DISABLE_LOGGING = 'FALSE';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
+    it('should disable logging when GALILEO_DISABLE_LOGGING is set to "1"', () => {
+      process.env.GALILEO_DISABLE_LOGGING = '1';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeTruthy();
+    });
+
+    it('should disable logging when GALILEO_DISABLE_LOGGING is set to "true"', () => {
+      process.env.GALILEO_DISABLE_LOGGING = 'true';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeTruthy();
+    });
+
+    it('should not disable logging when GALILEO_DISABLE_LOGGING is set to an empty string', () => {
+      process.env.GALILEO_DISABLE_LOGGING = '';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
+    it('should not disable logging when GALILEO_DISABLE_LOGGING is set to whitespace string', () => {
+      process.env.GALILEO_DISABLE_LOGGING = ' ';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeFalsy();
+    });
+
+    it('should disable logging when GALILEO_DISABLE_LOGGING is set to any other string', () => {
+      process.env.GALILEO_DISABLE_LOGGING = 'yes';
+      logger = new GalileoLogger();
+      expect(logger.isLoggingDisabled()).toBeTruthy();
+    });
+  });
+
+  describe('Logger behavior when logging is disabled', () => {
+    beforeEach(() => {
+      process.env.GALILEO_DISABLE_LOGGING = 'true';
+      logger = new GalileoLogger();
+    });
+
+    it('should return empty objects for startTrace when logging is disabled', () => {
+      const trace = logger.startTrace({ input: 'test input' });
+      expect(trace).toBeInstanceOf(Trace);
+      expect(trace.input).toBe('');
+      expect(logger['traces'].length).toBe(0); // Verify no trace was added
+    });
+
+    it('should return empty objects for addSingleLlmSpanTrace when logging is disabled', () => {
+      const trace = logger.addSingleLlmSpanTrace({
+        input: 'test input',
+        output: 'test output',
+        model: 'gpt-4'
+      });
+      expect(trace).toBeInstanceOf(Trace);
+      expect(trace.input).toBe('');
+      expect(logger['traces'].length).toBe(0); // Verify no trace was added
+    });
+
+    it('should return empty objects for addLlmSpan when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addLlmSpan({
+        input: 'test input',
+        output: 'test output',
+        model: 'gpt-4'
+      });
+
+      expect(span).toBeInstanceOf(LlmSpan);
+      expect(span.input).toStrictEqual([
+        { content: '', role: 'user' } as Message
+      ]);
+      expect(span.output).toStrictEqual({
+        content: '',
+        role: 'assistant'
+      } as Message);
+    });
+
+    it('should return empty objects for addRetrieverSpan when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addRetrieverSpan({
+        input: 'test input',
+        output: []
+      });
+
+      expect(span).toBeInstanceOf(RetrieverSpan);
+      expect(span.input).toBe('');
+    });
+
+    it('should return empty objects for addToolSpan when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addToolSpan({
+        input: 'test input',
+        output: 'test output'
+      });
+
+      expect(span).toBeInstanceOf(ToolSpan);
+      expect(span.input).toBe('');
+    });
+
+    it('should return empty objects for addWorkflowSpan when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addWorkflowSpan({
+        input: 'test input',
+        output: 'test output'
+      });
+
+      expect(span).toBeInstanceOf(WorkflowSpan);
+      expect(span.input).toBe('');
+    });
+
+    it('should return undefined for conclude when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const result = logger.conclude({ output: 'test output' });
+      expect(result).toBeUndefined();
+    });
+
+    it('should return empty array for flush when logging is disabled', async () => {
+      const result = await logger.flush();
+      expect(result).toEqual([]);
+    });
+
+    it('should not throw error for terminate when logging is disabled', async () => {
+      await expect(logger.terminate()).resolves.toBeUndefined();
+    });
+  });
+
+  describe('Logger behavior when logging is enabled', () => {
+    beforeEach(() => {
+      process.env.GALILEO_DISABLE_LOGGING = 'false'; // Explicitly enable logging
+      logger = new GalileoLogger();
+    });
+
+    it('should properly create and store traces when logging is enabled', () => {
+      const trace = logger.startTrace({ input: 'test input' });
+      expect(trace).toBeInstanceOf(Trace);
+      expect(trace.input).toBe('test input');
+      expect(logger['traces'].length).toBe(1); // Verify trace was added
+    });
+
+    it('should properly create and store LLM spans when logging is enabled', () => {
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addLlmSpan({
+        input: 'test input',
+        output: 'test output',
+        model: 'gpt-4'
+      });
+
+      expect(span).toBeInstanceOf(LlmSpan);
+      expect(span.input).toStrictEqual([
+        { content: 'test input', role: 'user' } as Message
+      ]);
+      expect(span.output).toStrictEqual({
+        content: 'test output',
+        role: 'assistant'
+      } as Message);
+      expect(span.model).toBe('gpt-4');
+    });
+  });
+
   describe('Trace and Span Management', () => {
     beforeEach(() => {
       logger = new GalileoLogger();

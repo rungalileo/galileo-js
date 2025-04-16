@@ -22,6 +22,42 @@ class GalileoLoggerConfig {
   public experimentId?: string;
 }
 
+/**
+ * Higher-order function that wraps a method to skip execution if logging is disabled
+ * @param fn The original method
+ * @param defaultValueFn A function that returns the default value when logging is disabled
+ */
+function skipIfDisabled<T, Args extends any[]>(
+  fn: (this: GalileoLogger, ...args: Args) => T,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => T {
+  return function (this: GalileoLogger, ...args: Args): T {
+    if (this.isLoggingDisabled()) {
+      console.warn('Logging is disabled, skipping execution of', fn.name);
+      return defaultValueFn(args);
+    }
+    return fn.apply(this, args);
+  };
+}
+
+/**
+ * Higher-order function that wraps an async method to skip execution if logging is disabled
+ * @param fn The original async method
+ * @param defaultValueFn A function that returns the default value when logging is disabled
+ */
+function skipIfDisabledAsync<T, Args extends any[]>(
+  fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => Promise<T> {
+  return async function (this: GalileoLogger, ...args: Args): Promise<T> {
+    if (this.isLoggingDisabled()) {
+      console.warn('Logging is disabled, skipping execution of', fn.name);
+      return defaultValueFn(args);
+    }
+    return await fn.apply(this, args);
+  };
+}
+
 class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
@@ -29,11 +65,82 @@ class GalileoLogger {
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
+  private loggingDisabled: boolean;
 
   constructor(config: GalileoLoggerConfig = {}) {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
+    try {
+      // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
+      const disableLoggingValue =
+        process?.env?.GALILEO_DISABLE_LOGGING?.trim() ?? undefined;
+
+      this.loggingDisabled = !['', '0', 'false'].includes(
+        disableLoggingValue?.toLowerCase() ?? ''
+      );
+    } catch (error) {
+      console.error(
+        'Error checking if logging is disabled; GALILEO_DISABLE_LOGGING environment variable is not set correctly:',
+        error
+      );
+      this.loggingDisabled = false;
+    }
+
+    // Wrap relevant methods with skipIfDisabled or skipIfDisabledAsync
+
+    const emptySpanData = {
+      input: '',
+      output: ''
+    };
+
+    this.addChildSpanToParent = skipIfDisabled(
+      this.addChildSpanToParent,
+      () => undefined
+    );
+
+    this.startTrace = skipIfDisabled(
+      this.startTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addSingleLlmSpanTrace = skipIfDisabled(
+      this.addSingleLlmSpanTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addLlmSpan = skipIfDisabled(
+      this.addLlmSpan,
+      () => new LlmSpan(emptySpanData)
+    );
+
+    this.addRetrieverSpan = skipIfDisabled(
+      this.addRetrieverSpan,
+      () => new RetrieverSpan(emptySpanData)
+    );
+
+    this.addToolSpan = skipIfDisabled(
+      this.addToolSpan,
+      () => new ToolSpan(emptySpanData)
+    );
+
+    this.addWorkflowSpan = skipIfDisabled(
+      this.addWorkflowSpan,
+      () => new WorkflowSpan(emptySpanData)
+    );
+
+    this.conclude = skipIfDisabled(this.conclude, () => undefined);
+
+    this.flush = skipIfDisabledAsync(this.flush, () => []);
+
+    this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
+  }
+
+  /**
+   * Check if logging is disabled
+   */
+  isLoggingDisabled(): boolean {
+    return this.loggingDisabled;
   }
 
   static getLastOutput(node?: BaseStep): string | undefined {
