@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
     "format": "prettier --config .prettierrc.js 'src/**/*.ts' --write",
+    "format-examples": "prettier --config .prettierrc.js 'examples/**/*.js' --write",
     "fetch-api-types": "npx openapi-typescript https://api.galileo.ai/client/openapi.json --default-non-nullable=false --output src/types/api.types.ts"
   },
   "author": "Galileo Technologies Inc. <team@galileo.ai>",
