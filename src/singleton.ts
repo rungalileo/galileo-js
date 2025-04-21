@@ -67,7 +67,48 @@ export const init = (
 
 /*
  * Uploads all captured traces to the Galileo platform
+ *
+ * Example:
+ *
+ * ```typescript
+ * import { init, flush } from 'galileo';
+ *
+ * // Initialize the global context
+ * // If you have GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables set, you can skip this step
+ * init({
+ *   projectName: 'my-project',
+ *   logStreamName: 'my-log-stream'
+ * });
+ *
+ * // Your application logging code here
+ *
+ * // Upload all captured traces
+ * await flush();
+ * ```
  */
 export const flush = async () => {
   await GalileoSingleton.getInstance().getClient().flush();
+};
+
+/*
+ * Returns the singleton client logger
+ *
+ * Example:
+ *
+ * ```typescript
+ * import { init,getLogger } from 'galileo';
+ *
+ * // Initialize the global context
+ * // If you have GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables set, you can skip this step
+ * init({
+ *   projectName: 'my-project',
+ *   logStreamName: 'my-log-stream'
+ * });
+ *
+ * const logger = getLogger();
+ * logger.info('Hello, world!');
+ * ```
+ */
+export const getLogger = () => {
+  return GalileoSingleton.getInstance().getClient();
 };
