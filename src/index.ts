@@ -28,7 +28,7 @@ import {
   runExperiment
 } from './utils/experiments';
 import { GalileoLogger } from './utils/galileo-logger';
-import { init, flush } from './singleton';
+import { init, flush, getLogger } from './singleton';
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
 import { GalileoCallback } from './handlers/langchain';
@@ -70,5 +70,6 @@ export {
   // Logging
   log,
   init,
-  flush
+  flush,
+  getLogger
 };
