@@ -1,5 +1,5 @@
 import { GalileoApiClient } from '../api-client';
-import { Message } from '../types/message.types';
+import { Message, MessageRole } from '../types/message.types';
 import {
   PromptTemplate,
   PromptTemplateVersion
@@ -52,13 +52,19 @@ export const createPromptTemplate = async ({
   name,
   projectName
 }: {
-  template: Message[];
+  template: Message[] | string;
   name: string;
   projectName: string;
 }): Promise<PromptTemplate> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
+  let tmp: Message[];
 
-  const createdTemplate = await apiClient.createPromptTemplate(template, name);
+  if (typeof template === 'string') {
+    tmp = [{ content: template, role: MessageRole.user }];
+  } else {
+    tmp = template;
+  }
+  const createdTemplate = await apiClient.createPromptTemplate(tmp, name);
   return createdTemplate;
 };
