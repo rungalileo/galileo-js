@@ -15,11 +15,13 @@ import {
   BaseStep
 } from '../types/step.types';
 import { toStringValue } from './serialization';
+import { v4 as uuidv4 } from 'uuid';
 
 class GalileoLoggerConfig {
   public projectName?: string;
   public logStreamName?: string;
   public experimentId?: string;
+  public sessionId?: string;
 }
 
 /**
@@ -62,6 +64,7 @@ class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
   private experimentId?: string;
+  private sessionId?: string;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
@@ -71,6 +74,7 @@ class GalileoLogger {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
+    this.sessionId = config.sessionId;
     try {
       // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
       const disableLoggingValue =
@@ -167,12 +171,25 @@ class GalileoLogger {
       : undefined;
   }
 
+  currentSessionId(): string | undefined {
+    return this.sessionId;
+  }
+
   addChildSpanToParent(span: Span): void {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
       throw new Error('A trace needs to be created in order to add a span.');
     }
     currentParent.addChildSpan(span);
+  }
+
+  startSession(): void {
+    // TODO: Implement session creation via API
+    this.sessionId = uuidv4();
+  }
+
+  clearSession(): void {
+    this.sessionId = undefined;
   }
 
   startTrace({

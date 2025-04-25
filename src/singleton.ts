@@ -29,12 +29,19 @@ export class GalileoSingleton {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
+    sessionId?: string | undefined;
+    startNewSession?: boolean | undefined;
   }) {
     this.client = new GalileoLogger({
       projectName: options.projectName,
       logStreamName: options.logStreamName,
-      experimentId: options.experimentId
+      experimentId: options.experimentId,
+      sessionId: options.sessionId
     });
+
+    if (options.startNewSession) {
+      this.client.startSession();
+    }
   }
 }
 
@@ -60,6 +67,8 @@ export const init = (
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
+    sessionId?: string | undefined;
+    startNewSession?: boolean | undefined;
   } = {}
 ) => {
   GalileoSingleton.getInstance().init(options);

@@ -6,13 +6,15 @@ export class TraceService extends BaseClient {
   private projectId: string;
   private logStreamId: string | undefined;
   private experimentId: string | undefined;
+  private sessionId: string | undefined;
 
   constructor(
     apiUrl: string,
     token: string,
     projectId: string,
     logStreamId?: string,
-    experimentId?: string
+    experimentId?: string,
+    sessionId?: string
   ) {
     super();
     this.apiUrl = apiUrl;
@@ -20,6 +22,7 @@ export class TraceService extends BaseClient {
     this.projectId = projectId;
     this.logStreamId = logStreamId;
     this.experimentId = experimentId;
+    this.sessionId = sessionId;
     this.initializeClient();
   }
 
@@ -42,6 +45,9 @@ export class TraceService extends BaseClient {
         }),
         ...(!this.experimentId && {
           log_stream_id: this.logStreamId
+        }),
+        ...(this.sessionId && {
+          session_id: this.sessionId
         })
       },
       { project_id: this.projectId }
