@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-enum NodeType {
+export enum NodeType {
   trace = 'trace',
   workflow = 'workflow',
   llm = 'llm',
