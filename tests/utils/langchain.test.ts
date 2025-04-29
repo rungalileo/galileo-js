@@ -94,7 +94,6 @@ describe('GalileoCallback', () => {
         input: 'test prompt'
       });
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][childId]).toBeDefined();
       expect(childNode.nodeType).toBe('llm');
       expect(childNode.runId).toBe(childId);
@@ -103,20 +102,17 @@ describe('GalileoCallback', () => {
       expect(childNode.spanParams.input).toBe('test prompt');
 
       // Verify parent-child relationship
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][parentId].children).toContain(childId);
     });
 
     it('should handle end node correctly', () => {
       const runId = createId();
 
-      // @ts-ignore - Calling private method
       callback['_startNode']('chain', undefined, runId, {
         name: 'Test Chain',
         input: { query: 'test question' }
       });
 
-      // @ts-ignore - Calling private method
       callback['_endNode'](runId, { output: { result: 'test result' } });
 
       const traces = callback._galileoLogger.traces;
@@ -150,11 +146,8 @@ describe('GalileoCallback', () => {
         runId
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('chain');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.input).toEqual(inputs);
 
       const outputs = { result: 'test answer' };
@@ -182,11 +175,8 @@ describe('GalileoCallback', () => {
         runId
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('chain');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.input).toEqual(inputs);
 
       // Update inputs
@@ -219,7 +209,6 @@ describe('GalileoCallback', () => {
         undefined
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('agent');
 
       // End with agent finish
@@ -281,13 +270,9 @@ describe('GalileoCallback', () => {
         }
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('llm');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.model).toBe('gpt-4');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.temperature).toBe(0.7);
 
       // Add a token to test token timing
@@ -319,11 +304,8 @@ describe('GalileoCallback', () => {
       await callback.handleLLMEnd(llmResult, runId);
 
       // Verify token counts were set
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.numInputTokens).toBe(10);
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.numOutputTokens).toBe(20);
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.totalTokens).toBe(30);
 
       const outputs = { result: 'AI is a technology...' };
@@ -393,17 +375,12 @@ describe('GalileoCallback', () => {
         }
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('chat');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.model).toBe('gpt-4o');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.temperature).toBe(0.7);
 
       // Check that message serialization worked
-      // @ts-ignore - Accessing private property
       const inputData = callback['_nodes'][runId].spanParams.input;
       expect(Array.isArray(inputData)).toBe(true);
       expect(inputData.length).toBe(2); // Two messages
@@ -452,11 +429,8 @@ describe('GalileoCallback', () => {
         }
       });
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('chat');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.tools).toEqual([
         {
           type: 'function',
@@ -524,17 +498,13 @@ describe('GalileoCallback', () => {
         parentId
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('tool');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.input).toBe('2+2');
 
       // End tool with a string output
       await callback.handleToolEnd('4', runId);
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.output).toBe('4');
     });
 
@@ -578,7 +548,6 @@ describe('GalileoCallback', () => {
         runId
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.output).toBe('tool response');
     });
 
@@ -621,7 +590,6 @@ describe('GalileoCallback', () => {
         runId
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.output).toBe(
         '{"tool_call_id":"1","status":"success","role":"tool"}'
       );
@@ -653,11 +621,8 @@ describe('GalileoCallback', () => {
         parentId
       );
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId]).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].nodeType).toBe('retriever');
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.input).toBe('AI development');
 
       // End retriever
@@ -668,11 +633,9 @@ describe('GalileoCallback', () => {
 
       await callback.handleRetrieverEnd([document], runId);
 
-      // @ts-ignore - Accessing private property
       expect(Array.isArray(callback['_nodes'][runId].spanParams.output)).toBe(
         true
       );
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][runId].spanParams.output.length).toBe(1);
     });
   });
@@ -788,7 +751,6 @@ describe('GalileoCallback', () => {
       const childId = createId();
 
       // Start child with non-existent parent
-      // @ts-ignore - Calling private method
       const childNode = callback['_startNode'](
         'llm',
         parentId, // This parent doesn't exist
@@ -800,7 +762,6 @@ describe('GalileoCallback', () => {
       );
 
       // Child should still be created
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][childId]).toBeDefined();
       expect(childNode.parentRunId).toBe(parentId);
     });
