@@ -57,24 +57,17 @@ describe('GalileoCallback', () => {
     it('should initialize correctly with default parameters', () => {
       const defaultCallback = new GalileoCallback();
 
-      // @ts-ignore - Accessing private property
       expect(defaultCallback['_galileoLogger']).toBeDefined();
-      // @ts-ignore - Accessing private property
       expect(defaultCallback['_startNewTrace']).toBe(true);
-      // @ts-ignore - Accessing private property
       expect(defaultCallback['_flushOnChainEnd']).toBe(true);
-      // @ts-ignore - Accessing private property
       expect(defaultCallback['_nodes']).toEqual({});
     });
 
     it('should initialize with custom parameters', () => {
       const customCallback = new GalileoCallback(galileoLogger, false, true);
 
-      // @ts-ignore - Accessing private property
       expect(customCallback['_galileoLogger']).toBe(galileoLogger);
-      // @ts-ignore - Accessing private property
       expect(customCallback['_startNewTrace']).toBe(false);
-      // @ts-ignore - Accessing private property
       expect(customCallback['_flushOnChainEnd']).toBe(true);
     });
   });
@@ -83,13 +76,11 @@ describe('GalileoCallback', () => {
     it('should create and track nodes correctly', () => {
       const parentId = createId();
 
-      // @ts-ignore - Calling private method
       const node = callback['_startNode']('chain', undefined, parentId, {
         name: 'Test Chain',
         input: { query: 'test question' }
       });
 
-      // @ts-ignore - Accessing private property
       expect(callback['_nodes'][parentId]).toBeDefined();
       expect(node.nodeType).toBe('chain');
       expect(node.runId).toBe(parentId);
@@ -98,7 +89,6 @@ describe('GalileoCallback', () => {
       expect(node.spanParams.input).toStrictEqual({ query: 'test question' });
 
       const childId = createId();
-      // @ts-ignore - Calling private method
       const childNode = callback['_startNode']('llm', parentId, childId, {
         name: 'Test LLM',
         input: 'test prompt'
