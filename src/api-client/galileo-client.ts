@@ -24,6 +24,7 @@ export class GalileoApiClientParams {
   public runId?: string = undefined;
   public datasetId?: string = undefined;
   public experimentId?: string = undefined;
+  public sessionId?: string = undefined;
   public projectScoped: boolean = true;
 }
 
@@ -34,6 +35,7 @@ export class GalileoApiClient extends BaseClient {
   public runId: string = '';
   public datasetId: string = '';
   public experimentId: string = '';
+  public sessionId: string = '';
   public projectScoped: boolean = true;
 
   // Service instances
@@ -58,6 +60,7 @@ export class GalileoApiClient extends BaseClient {
       runId = defaultParams.runId,
       datasetId = defaultParams.datasetId,
       experimentId = defaultParams.experimentId,
+      sessionId = defaultParams.sessionId,
       projectScoped = defaultParams.projectScoped
     } = params;
 
@@ -147,12 +150,17 @@ export class GalileoApiClient extends BaseClient {
           }
         }
 
+        if (sessionId) {
+          this.sessionId = sessionId;
+        }
+
         this.traceService = new TraceService(
           this.apiUrl,
           this.token,
           this.projectId,
           this.logStreamId,
-          this.experimentId
+          this.experimentId,
+          this.sessionId
         );
 
         this.promptTemplateService = new PromptTemplateService(
