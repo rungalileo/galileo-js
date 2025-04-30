@@ -8584,7 +8584,14 @@ export interface components {
       /** Next Starting Token */
       next_starting_token?: number | null;
       /** Rendered Templates */
-      rendered_templates: string[];
+      rendered_templates: components['schemas']['RenderedTemplate'][];
+    };
+    /** RenderedTemplate */
+    RenderedTemplate: {
+      /** Result */
+      result: string;
+      /** Warning */
+      warning?: string | null;
     };
     /** RetrieverSpan */
     RetrieverSpan: {
