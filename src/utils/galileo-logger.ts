@@ -138,6 +138,9 @@ class GalileoLogger {
     this.flush = skipIfDisabledAsync(this.flush, () => []);
 
     this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
+
+    this.startSession = skipIfDisabledAsync(this.startSession, () => undefined);
+    this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
   }
 
   /**
@@ -183,9 +186,30 @@ class GalileoLogger {
     currentParent.addChildSpan(span);
   }
 
-  startSession(): void {
-    // TODO: Implement session creation via API
-    this.sessionId = uuidv4();
+  async startSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  } = {}): Promise<void> {
+    await this.client.init({
+      projectName: this.projectName,
+      logStreamName: this.logStreamName,
+      experimentId: this.experimentId
+    });
+
+    const session = await this.client?.createSession({
+      name,
+      previousSessionId,
+      externalId
+    });
+
+    if (session) {
+      this.sessionId = session.id;
+    }
   }
 
   clearSession(): void {
@@ -564,7 +588,7 @@ class GalileoLogger {
       const loggedTraces = [...this.traces];
 
       //// @ts-expect-error - FIXME: Type this
-      await this.client.ingestTraces(loggedTraces);
+      await this.client.ingestTraces(loggedTraces, this.sessionId);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);
       this.traces = []; // Clear after uploading

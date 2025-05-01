@@ -1,6 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Trace } from '../../types/log.types';
+import { Trace, Session } from '../../types/log.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -26,7 +26,32 @@ export class TraceService extends BaseClient {
     this.initializeClient();
   }
 
-  public async ingestTraces(traces: Trace[]): Promise<void> {
+  public async createSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  }): Promise<Session> {
+    return await this.makeRequest<Session>(
+      RequestMethod.POST,
+      Routes.traces,
+      {
+        log_stream_id: this.logStreamId,
+        name,
+        previous_session_id: previousSessionId,
+        external_id: externalId
+      },
+      { project_id: this.projectId }
+    );
+  }
+
+  public async ingestTraces(
+    traces: Trace[],
+    sessionId?: string
+  ): Promise<void> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
@@ -46,8 +71,8 @@ export class TraceService extends BaseClient {
         ...(!this.experimentId && {
           log_stream_id: this.logStreamId
         }),
-        ...(this.sessionId && {
-          session_id: this.sessionId
+        ...(sessionId && {
+          session_id: sessionId
         })
       },
       { project_id: this.projectId }

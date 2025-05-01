@@ -19,6 +19,17 @@ import {
 import { Message, MessageRole } from '../types/message.types';
 import { convertLlmInputOutput, convertRetrieverOutput } from '../utils/span';
 
+export interface Session {
+  id: string;
+  name: string;
+  externalId?: string;
+  previousSessionId?: string;
+  createdAtNs?: number;
+  updatedAtNs?: number;
+  statusCode?: number;
+  metadata?: Record<string, string>;
+}
+
 export class SpanWithParentStep extends BaseStep {
   parent?: StepWithChildSpans;
 
