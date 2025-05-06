@@ -9,6 +9,7 @@ import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import { Session, SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings
@@ -259,9 +260,26 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Trace methods - delegate to TraceService
-  public async ingestTraces(traces: any[]) {
+  public async ingestTraces(traces: any[], sessionId?: string) {
     this.ensureService(this.traceService);
-    return this.traceService!.ingestTraces(traces);
+    return this.traceService!.ingestTraces(traces, sessionId);
+  }
+
+  public async createSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  }): Promise<SessionCreateResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.createSession({
+      name,
+      previousSessionId,
+      externalId
+    });
   }
 
   // PromptTemplate methods - delegate to PromptTemplateService

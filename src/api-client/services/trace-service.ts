@@ -1,6 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Trace, Session } from '../../types/log.types';
+import { Trace, SessionCreateResponse } from '../../types/log.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -34,8 +34,8 @@ export class TraceService extends BaseClient {
     name?: string;
     previousSessionId?: string;
     externalId?: string;
-  }): Promise<Session> {
-    return await this.makeRequest<Session>(
+  }): Promise<SessionCreateResponse> {
+    return await this.makeRequest<SessionCreateResponse>(
       RequestMethod.POST,
       Routes.traces,
       {

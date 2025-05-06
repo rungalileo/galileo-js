@@ -19,6 +19,16 @@ import {
 import { Message, MessageRole } from '../types/message.types';
 import { convertLlmInputOutput, convertRetrieverOutput } from '../utils/span';
 
+// TODO: Remove this interface once the API is updated
+export interface SessionCreateResponse {
+  id: string;
+  name?: string;
+  project_id: string;
+  project_name: string;
+  previous_session_id?: string;
+  external_id?: string;
+}
+
 export interface Session {
   id: string;
   name: string;

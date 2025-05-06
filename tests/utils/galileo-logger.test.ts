@@ -13,7 +13,15 @@ import { Document } from '../../src/types/document.types';
 jest.mock('../../src/api-client', () => ({
   GalileoApiClient: jest.fn().mockImplementation(() => ({
     init: jest.fn(),
-    ingestTraces: jest.fn()
+    ingestTraces: jest.fn(),
+    createSession: jest.fn().mockReturnValue({
+      id: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e',
+      name: 'test-session',
+      project_id: 'test-project-id',
+      project_name: 'test-project-name',
+      previous_session_id: 'test-previous-session-id',
+      external_id: 'test-external-id'
+    })
   }))
 }));
 
@@ -425,7 +433,7 @@ describe('GalileoLogger', () => {
         logStreamName: undefined,
         experimentId: undefined
       });
-      expect(mockIngestTraces).toHaveBeenCalledWith([trace]);
+      expect(mockIngestTraces).toHaveBeenCalledWith([trace], undefined);
       expect(flushedTraces.length).toBe(1);
       expect(logger['traces'].length).toBe(0);
     });
@@ -648,6 +656,58 @@ describe('GalileoLogger', () => {
     it('should throw error when concluding without an active trace', () => {
       expect(() => logger.conclude({ output: 'test output' })).toThrow(
         'No existing workflow to conclude'
+      );
+    });
+  });
+  describe('Session Management', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+
+    it('should create a new session when startSession is called', async () => {
+      expect(logger.currentSessionId()).toBeUndefined();
+      await logger.startSession({
+        name: 'test session',
+        previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9d',
+        externalId: 'test'
+      });
+      expect(logger.currentSessionId()).toBe(
+        '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
+      );
+    });
+
+    it('should clear the current session when clearSession is called', async () => {
+      expect(logger.currentSessionId()).toBeUndefined();
+      await logger.startSession({
+        name: 'test session',
+        previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9d',
+        externalId: 'test'
+      });
+      expect(logger.currentSessionId()).toBe(
+        '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
+      );
+      logger.clearSession();
+      expect(logger.currentSessionId()).toBeUndefined();
+    });
+
+    it('should include the session ID when flushing traces', async () => {
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+
+      expect(logger.currentSessionId()).toBeUndefined();
+      await logger.startSession({
+        name: 'test session',
+        previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e',
+        externalId: 'test'
+      });
+
+      logger.startTrace({ input: 'trace input' });
+      logger.addWorkflowSpan({ input: 'test input' });
+      logger.conclude({ output: 'test output', concludeAll: true });
+
+      await logger.flush();
+      expect(mockIngestTraces).toHaveBeenCalledWith(
+        expect.any(Array),
+        '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
       );
     });
   });
