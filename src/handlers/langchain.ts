@@ -13,7 +13,7 @@ import { Document, DocumentInterface } from '@langchain/core/documents';
 import { GalileoSingleton } from '../singleton';
 import { GalileoLogger } from '../utils/galileo-logger';
 import { toStringValue, convertToStringDict } from '../utils/serialization';
-import { Serialized } from '@langchain/core/dist/load/serializable.js';
+import { Serialized } from '@langchain/core/load/serializable.js';
 
 type LANGCHAIN_NODE_TYPE =
   | 'agent'
@@ -49,7 +49,7 @@ class Node {
 // Root node tracking
 let _rootNode: Node | null = null;
 
-const rootNodeContext = {
+export const rootNodeContext = {
   get: (): Node | null => _rootNode,
   set: (value: Node | null): void => {
     _rootNode = value;
@@ -85,7 +85,7 @@ export class GalileoCallback
   /**
    * Commit the nodes to the trace using the Galileo Logger. Optionally flush the trace.
    */
-  private _commit(): void {
+  private async _commit(): Promise<void> {
     if (Object.keys(this._nodes).length === 0) {
       console.warn('No nodes to commit');
       return;
@@ -123,7 +123,7 @@ export class GalileoCallback
 
     if (this._flushOnChainEnd) {
       // Upload the trace to Galileo
-      this._galileoLogger.flush();
+      await this._galileoLogger.flush();
     }
 
     // Clear nodes after successful commit
@@ -265,7 +265,10 @@ export class GalileoCallback
   /**
    * End a node in the chain. Commit the nodes to a trace if the run_id matches the root node.
    */
-  private _endNode(runId: string, params: Record<string, any>): void {
+  private async _endNode(
+    runId: string,
+    params: Record<string, any>
+  ): Promise<void> {
     const nodeId = runId;
     const node = this._nodes[nodeId];
 
@@ -280,7 +283,7 @@ export class GalileoCallback
     // Check if this is the root node and commit if so
     const root = rootNodeContext.get();
     if (root && node.runId === root.runId) {
-      this._commit();
+      await this._commit();
     }
   }
 
@@ -316,8 +319,7 @@ export class GalileoCallback
     } else if (typeof inputs === 'object') {
       nodeInput = Object.fromEntries(
         Object.entries(inputs).filter(
-          ([key, value]: [string, unknown]) =>
-            key && value && typeof value === 'string'
+          ([key, value]: [string, unknown]) => key && typeof value === 'string'
         )
       );
     } else if (
@@ -341,7 +343,7 @@ export class GalileoCallback
   }
 
   public async handleChainError(err: AxiosError, runId: string): Promise<void> {
-    this._endNode(runId, {
+    await this._endNode(runId, {
       output: `ERROR: ${err.message}`,
       status_code: err.response?.status
     });
@@ -349,16 +351,28 @@ export class GalileoCallback
 
   public async handleChainEnd(
     outputs: ChainValues,
-    runId: string
+    runId: string,
+    parentRunId?: string | undefined,
+    tags?: string[] | undefined,
+    kwargs?:
+      | {
+          inputs?: Record<string, unknown> | undefined;
+        }
+      | undefined
   ): Promise<void> {
-    this._endNode(runId, { output: toStringValue(outputs) });
+    // In async scenarios, the input is sent in handleChainEnd, so we need to handle it here
+    const input = kwargs?.inputs;
+    await this._endNode(runId, {
+      output: toStringValue(outputs),
+      ...(input !== undefined && { input: toStringValue(input) })
+    });
   }
 
   public async handleAgentEnd(
     finish: AgentFinish,
     runId: string
   ): Promise<void> {
-    this._endNode(runId, { output: toStringValue(finish) });
+    await this._endNode(runId, { output: toStringValue(finish) });
   }
 
   public async handleLLMStart(
@@ -394,7 +408,7 @@ export class GalileoCallback
   }
 
   public async handleLLMError(err: AxiosError, runId: string): Promise<void> {
-    this._endNode(runId, {
+    await this._endNode(runId, {
       output: `ERROR: ${err.message}`,
       status_code: err.response?.status
     });
@@ -483,7 +497,7 @@ export class GalileoCallback
       serializedOutput = String(output.generations);
     }
 
-    this._endNode(runId, {
+    await this._endNode(runId, {
       output: serializedOutput,
       numInputTokens: tokenUsage.promptTokens,
       numOutputTokens: tokenUsage.completionTokens,
@@ -513,14 +527,21 @@ export class GalileoCallback
   }
 
   public async handleToolError(err: AxiosError, runId: string): Promise<void> {
-    this._endNode(runId, {
+    await this._endNode(runId, {
       output: `ERROR: ${err.message}`,
       status_code: err.response?.status
     });
   }
 
-  public async handleToolEnd(output: string, runId: string): Promise<void> {
-    this._endNode(runId, { output: toStringValue(output) });
+  public async handleToolEnd(output: any, runId: string): Promise<void> {
+    let serializedOutput: string = '';
+    if (typeof output === 'object' && 'content' in output) {
+      serializedOutput = toStringValue(output.content);
+    } else {
+      serializedOutput = toStringValue(output);
+    }
+
+    await this._endNode(runId, { output: serializedOutput });
   }
 
   public async handleRetrieverStart(
@@ -543,7 +564,7 @@ export class GalileoCallback
     err: AxiosError,
     runId: string
   ): Promise<void> {
-    this._endNode(runId, {
+    await this._endNode(runId, {
       output: `ERROR: ${err.message}`,
       status_code: err.response?.status
     });
@@ -564,6 +585,6 @@ export class GalileoCallback
       serializedResponse = String(documents);
     }
 
-    this._endNode(runId, { output: serializedResponse });
+    await this._endNode(runId, { output: serializedResponse });
   }
 }
