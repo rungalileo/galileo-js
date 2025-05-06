@@ -9,7 +9,7 @@ import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
-import { Session, SessionCreateResponse } from '../types/log.types';
+import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings

@@ -15,7 +15,6 @@ import {
   BaseStep
 } from '../types/step.types';
 import { toStringValue } from './serialization';
-import { v4 as uuidv4 } from 'uuid';
 
 class GalileoLoggerConfig {
   public projectName?: string;
@@ -195,25 +194,29 @@ class GalileoLogger {
     previousSessionId?: string;
     externalId?: string;
   } = {}): Promise<void> {
-    await this.client.init({
-      projectName: this.projectName,
-      logStreamName: this.logStreamName,
-      experimentId: this.experimentId
-    });
+    try {
+      await this.client.init({
+        projectName: this.projectName,
+        logStreamName: this.logStreamName,
+        experimentId: this.experimentId
+      });
 
-    const session = await this.client?.createSession({
-      name,
-      previousSessionId,
-      externalId
-    });
+      const session = await this.client?.createSession({
+        name,
+        previousSessionId,
+        externalId
+      });
 
-    if (session) {
       this.sessionId = session.id;
+      console.log('Session started.');
+    } catch (error) {
+      console.error('Failed to create session:', error);
     }
   }
 
   clearSession(): void {
     this.sessionId = undefined;
+    console.log('Session cleared.');
   }
 
   startTrace({

@@ -37,7 +37,7 @@ export class TraceService extends BaseClient {
   }): Promise<SessionCreateResponse> {
     return await this.makeRequest<SessionCreateResponse>(
       RequestMethod.POST,
-      Routes.traces,
+      Routes.sessions,
       {
         log_stream_id: this.logStreamId,
         name,
@@ -71,9 +71,7 @@ export class TraceService extends BaseClient {
         ...(!this.experimentId && {
           log_stream_id: this.logStreamId
         }),
-        ...(sessionId && {
-          session_id: sessionId
-        })
+        session_id: sessionId
       },
       { project_id: this.projectId }
     );
