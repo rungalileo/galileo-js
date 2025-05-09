@@ -15,11 +15,13 @@ import {
   BaseStep
 } from '../types/step.types';
 import { toStringValue } from './serialization';
+import { LocalMetricConfig } from '../types/metrics.types';
 
 class GalileoLoggerConfig {
   public projectName?: string;
   public logStreamName?: string;
   public experimentId?: string;
+  public localMetrics?: LocalMetricConfig[];
 }
 
 /**
@@ -62,6 +64,7 @@ class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
   private experimentId?: string;
+  private localMetrics?: LocalMetricConfig[];
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
@@ -71,6 +74,7 @@ class GalileoLogger {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
+    this.localMetrics = config.localMetrics;
     try {
       // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
       const disableLoggingValue =
@@ -545,6 +549,13 @@ class GalileoLogger {
 
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
+      // metrics here
+      if (this.localMetrics !== undefined) {
+        for (const localMetric of this.localMetrics) {
+
+
+        }
+      }
 
       //// @ts-expect-error - FIXME: Type this
       await this.client.ingestTraces(loggedTraces);
