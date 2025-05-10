@@ -20,6 +20,7 @@ class GalileoLoggerConfig {
   public projectName?: string;
   public logStreamName?: string;
   public experimentId?: string;
+  public sessionId?: string;
 }
 
 /**
@@ -62,6 +63,7 @@ class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
   private experimentId?: string;
+  private sessionId?: string;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
@@ -71,6 +73,7 @@ class GalileoLogger {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
+    this.sessionId = config.sessionId;
     try {
       // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
       const disableLoggingValue =
@@ -134,6 +137,9 @@ class GalileoLogger {
     this.flush = skipIfDisabledAsync(this.flush, () => []);
 
     this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
+
+    this.startSession = skipIfDisabledAsync(this.startSession, () => undefined);
+    this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
   }
 
   /**
@@ -167,12 +173,50 @@ class GalileoLogger {
       : undefined;
   }
 
+  currentSessionId(): string | undefined {
+    return this.sessionId;
+  }
+
   addChildSpanToParent(span: Span): void {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
       throw new Error('A trace needs to be created in order to add a span.');
     }
     currentParent.addChildSpan(span);
+  }
+
+  async startSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  } = {}): Promise<void> {
+    try {
+      await this.client.init({
+        projectName: this.projectName,
+        logStreamName: this.logStreamName,
+        experimentId: this.experimentId
+      });
+
+      const session = await this.client?.createSession({
+        name,
+        previousSessionId,
+        externalId
+      });
+
+      this.sessionId = session.id;
+      console.log('Session started.');
+    } catch (error) {
+      console.error('Failed to create session:', error);
+    }
+  }
+
+  clearSession(): void {
+    this.sessionId = undefined;
+    console.log('Session cleared.');
   }
 
   startTrace({
@@ -540,7 +584,8 @@ class GalileoLogger {
       await this.client.init({
         projectName: this.projectName,
         logStreamName: this.logStreamName,
-        experimentId: this.experimentId
+        experimentId: this.experimentId,
+        sessionId: this.sessionId
       });
 
       console.info(`Flushing ${this.traces.length} traces...`);

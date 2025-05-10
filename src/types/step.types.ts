@@ -12,7 +12,8 @@ enum NodeType {
   tool = 'tool',
   agent = 'agent',
   workflow = 'workflow',
-  trace = 'trace'
+  trace = 'trace',
+  session = 'session'
 }
 
 // Type definitions
@@ -60,6 +61,7 @@ export class BaseStep {
   modelConfig?: Record<string, any>;
   tags?: string[];
   metrics: Metrics = {};
+  externalId?: string;
 
   constructor(data: {
     type?: NodeType;
@@ -72,6 +74,7 @@ export class BaseStep {
     statusCode?: number;
     groundTruth?: string;
     tags?: string[];
+    externalId?: string;
   }) {
     this.type = data.type || NodeType.workflow;
     this.input = data.input;
@@ -84,6 +87,7 @@ export class BaseStep {
     this.statusCode = data.statusCode;
     this.groundTruth = data.groundTruth;
     this.tags = data.tags || [];
+    this.externalId = data.externalId;
 
     // Validate serializable
     this.validateInputOutputSerializable(this.input);
@@ -106,7 +110,8 @@ export class BaseStep {
       duration_ns: this.durationNs,
       userMetadata: this.userMetadata,
       status_code: this.statusCode,
-      ground_truth: this.groundTruth
+      ground_truth: this.groundTruth,
+      external_id: this.externalId
     };
   }
 }
