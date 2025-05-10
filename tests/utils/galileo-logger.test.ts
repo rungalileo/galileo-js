@@ -9,17 +9,21 @@ import {
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 
+const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
+const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
+const mockPreviousSessionId = '11678e93-b5b9-4215-bd33-9fd4480c3c45';
+
 // Mock the GalileoApiClient
 jest.mock('../../src/api-client', () => ({
   GalileoApiClient: jest.fn().mockImplementation(() => ({
     init: jest.fn(),
     ingestTraces: jest.fn(),
     createSession: jest.fn().mockReturnValue({
-      id: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e',
+      id: mockSessionId,
       name: 'test-session',
-      project_id: 'test-project-id',
-      project_name: 'test-project-name',
-      previous_session_id: 'test-previous-session-id',
+      project_id: mockProjectId,
+      project_name: 'test-project',
+      previous_session_id: mockPreviousSessionId,
       external_id: 'test-external-id'
     })
   }))
@@ -433,7 +437,7 @@ describe('GalileoLogger', () => {
         logStreamName: undefined,
         experimentId: undefined
       });
-      expect(mockIngestTraces).toHaveBeenCalledWith([trace], undefined);
+      expect(mockIngestTraces).toHaveBeenCalledWith([trace]);
       expect(flushedTraces.length).toBe(1);
       expect(logger['traces'].length).toBe(0);
     });
@@ -661,7 +665,10 @@ describe('GalileoLogger', () => {
   });
   describe('Session Management', () => {
     beforeEach(() => {
-      logger = new GalileoLogger();
+      logger = new GalileoLogger({
+        projectName: 'test-project',
+        logStreamName: 'test-log-stream'
+      });
     });
 
     it('should create a new session when startSession is called', async () => {
@@ -691,12 +698,13 @@ describe('GalileoLogger', () => {
     });
 
     it('should include the session ID when flushing traces', async () => {
+      const mockInit = jest.spyOn(logger['client'], 'init');
       const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
 
       expect(logger.currentSessionId()).toBeUndefined();
       await logger.startSession({
         name: 'test session',
-        previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e',
+        previousSessionId: mockPreviousSessionId,
         externalId: 'test'
       });
 
@@ -705,10 +713,13 @@ describe('GalileoLogger', () => {
       logger.conclude({ output: 'test output', concludeAll: true });
 
       await logger.flush();
-      expect(mockIngestTraces).toHaveBeenCalledWith(
-        expect.any(Array),
-        '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
-      );
+      expect(mockInit).toHaveBeenCalledWith({
+        projectName: 'test-project',
+        logStreamName: 'test-log-stream',
+        experimentId: undefined,
+        sessionId: mockSessionId
+      });
+      expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
     });
   });
 });
