@@ -260,9 +260,9 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Trace methods - delegate to TraceService
-  public async ingestTraces(traces: any[], sessionId?: string) {
+  public async ingestTraces(traces: any[]) {
     this.ensureService(this.traceService);
-    return this.traceService!.ingestTraces(traces, sessionId);
+    return this.traceService!.ingestTraces(traces);
   }
 
   public async createSession({

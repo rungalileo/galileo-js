@@ -48,10 +48,7 @@ export class TraceService extends BaseClient {
     );
   }
 
-  public async ingestTraces(
-    traces: Trace[],
-    sessionId?: string
-  ): Promise<void> {
+  public async ingestTraces(traces: Trace[]): Promise<void> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
@@ -71,7 +68,7 @@ export class TraceService extends BaseClient {
         ...(!this.experimentId && {
           log_stream_id: this.logStreamId
         }),
-        session_id: sessionId
+        session_id: this.sessionId
       },
       { project_id: this.projectId }
     );

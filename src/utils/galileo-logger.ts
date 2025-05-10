@@ -584,14 +584,15 @@ class GalileoLogger {
       await this.client.init({
         projectName: this.projectName,
         logStreamName: this.logStreamName,
-        experimentId: this.experimentId
+        experimentId: this.experimentId,
+        sessionId: this.sessionId
       });
 
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
       //// @ts-expect-error - FIXME: Type this
-      await this.client.ingestTraces(loggedTraces, this.sessionId);
+      await this.client.ingestTraces(loggedTraces);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);
       this.traces = []; // Clear after uploading
