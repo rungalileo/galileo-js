@@ -36,7 +36,7 @@ export class GalileoApiClient extends BaseClient {
   public runId: string = '';
   public datasetId: string = '';
   public experimentId: string = '';
-  public sessionId: string = '';
+  public sessionId?: string = undefined;
   public projectScoped: boolean = true;
 
   // Service instances
