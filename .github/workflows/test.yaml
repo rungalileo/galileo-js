@@ -12,11 +12,11 @@ jobs:
       matrix:
         # based on https://nodejs.org/en/about/previous-releases
         node-version: [
-          18,
-          20,
-          22, #LTS
-          24
-        ]
+            18,
+            20,
+            22, #LTS
+            24
+          ]
       fail-fast: false
 
     steps:
