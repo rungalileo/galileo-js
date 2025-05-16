@@ -10,7 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18,20,22,24]
+        # based on https://nodejs.org/en/about/previous-releases
+        node-version: [
+          18,
+          20,
+          22, #LTS
+          24
+        ]
       fail-fast: false
 
     steps:
