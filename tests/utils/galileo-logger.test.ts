@@ -8,6 +8,7 @@ import {
 } from '../../src/utils/galileo-logger';
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
+import { randomUUID } from 'crypto';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
 const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
@@ -673,11 +674,12 @@ describe('GalileoLogger', () => {
 
     it('should create a new session when startSession is called', async () => {
       expect(logger.currentSessionId()).toBeUndefined();
-      await logger.startSession({
+      const sessionId = await logger.startSession({
         name: 'test session',
         previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9d',
         externalId: 'test'
       });
+      expect(logger.currentSessionId()).toBe(sessionId);
       expect(logger.currentSessionId()).toBe(
         '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
       );
@@ -718,6 +720,29 @@ describe('GalileoLogger', () => {
         logStreamName: 'test-log-stream',
         experimentId: undefined,
         sessionId: mockSessionId
+      });
+      expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
+    });
+
+    it('should allow setting the session ID manually', async () => {
+      const mockInit = jest.spyOn(logger['client'], 'init');
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+      expect(logger.currentSessionId()).toBeUndefined();
+
+      // Instead of starting a session, we set the session ID directly
+      const sessionId = randomUUID();
+      logger.setSessionId(sessionId);
+
+      logger.startTrace({ input: 'trace input' });
+      logger.addWorkflowSpan({ input: 'test input' });
+      logger.conclude({ output: 'test output', concludeAll: true });
+
+      await logger.flush();
+      expect(mockInit).toHaveBeenCalledWith({
+        projectName: 'test-project',
+        logStreamName: 'test-log-stream',
+        experimentId: undefined,
+        sessionId: sessionId
       });
       expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
     });
