@@ -138,7 +138,7 @@ class GalileoLogger {
 
     this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
 
-    this.startSession = skipIfDisabledAsync(this.startSession, () => undefined);
+    this.startSession = skipIfDisabledAsync(this.startSession, () => '');
     this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
   }
 
@@ -193,25 +193,27 @@ class GalileoLogger {
     name?: string;
     previousSessionId?: string;
     externalId?: string;
-  } = {}): Promise<void> {
-    try {
-      await this.client.init({
-        projectName: this.projectName,
-        logStreamName: this.logStreamName,
-        experimentId: this.experimentId
-      });
+  } = {}): Promise<string> {
+    await this.client.init({
+      projectName: this.projectName,
+      logStreamName: this.logStreamName,
+      experimentId: this.experimentId
+    });
 
-      const session = await this.client?.createSession({
-        name,
-        previousSessionId,
-        externalId
-      });
+    const session = await this.client?.createSession({
+      name,
+      previousSessionId,
+      externalId
+    });
 
-      this.sessionId = session.id;
-      console.log('Session started.');
-    } catch (error) {
-      console.error('Failed to create session:', error);
-    }
+    this.sessionId = session.id;
+    console.log('Session started.');
+    return session.id;
+  }
+
+  setSessionId(sessionId: string): void {
+    this.sessionId = sessionId;
+    console.log('Session ID set:', sessionId);
   }
 
   clearSession(): void {
