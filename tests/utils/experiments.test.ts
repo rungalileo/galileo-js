@@ -12,6 +12,10 @@ import {
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
+import { LocalMetricConfig, MetricValueType, createLocalScorerConfig } from '../../src/types/metrics.types';
+import { GalileoSingleton } from '../../src/singleton';
+import { StepType } from '../../src/types/logging/step.types';
+import { Span } from '../../src/types/logging/span.types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -142,6 +146,53 @@ const mockScorer: Scorer = {
   name: 'correctness',
   scorer_type: ScorerTypes.preset
 };
+
+// Helper functions for the local experiments test
+const dummyFunction = (input: any, metadata?: Record<string, string>): string => {
+  return 'dummy_function';
+};
+
+const complexTraceFunction = async (input: any, metadata?: Record<string, string>): Promise<string> => {
+  const logger = GalileoSingleton.getInstance().getClient();
+  const trace = logger.startTrace({ input: 'Which continent is Spain in?' });
+  
+  const llmSpan = logger.addLlmSpan({
+    input: [{ role: 'user', content: 'Which continent is Spain in?' }],
+    output: { role: 'assistant', content: 'Europe' }
+  });
+  
+  logger.conclude({ output: 'Which continent is Spain in? output' });
+  
+  return 'Which continent is Spain in? output';
+};
+
+// Mock dataset content for tests
+const mockDatasetContent = [
+  {
+    index: 0,
+    row_id: 'row-123',
+    values: ['Which continent is Spain in?'],
+    values_dict: { question: 'Which continent is Spain in?' },
+    metadata: { meta: 'data' }
+  }
+];
+
+// Mock experiment response
+const mockExperimentResponse = (): Experiment => ({
+  id: '00000000-0000-0000-0000-000000000000',
+  name: 'test_experiment',
+  created_at: new Date('2023-01-01T00:00:00Z'),
+  updated_at: new Date('2023-01-01T00:00:00Z'),
+  project_id: '00000000-0000-0000-0000-000000000000',
+  created_by: 'user-123'
+});
+
+// Mock project response
+const mockProjectResponse = (): Project => ({
+  id: '00000000-0000-0000-0000-000000000000',
+  name: 'awesome-new-project',
+  type: ProjectTypes.genAI
+});
 
 describe('experiments utility', () => {
   let originalEnv: Record<string, string | undefined>;
@@ -353,6 +404,201 @@ describe('experiments utility', () => {
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
+    });
+  });
+
+  describe('runExperiment with local scorers', () => {
+    // Setup test cases with different parameters
+    type TestCase = {
+      //
+      function: (input: any, metadata?: Record<string, string>) => string | Promise<string>;
+      metrics: LocalMetricConfig<MetricValueType>[];
+      numSpans: number;
+      spanType: StepType;
+      results: MetricValueType[];
+      aggregateResults: MetricValueType[];
+    };
+
+    const testCases: TestCase[] = [
+      // Case 1: Simple function with no metrics
+      {
+        function: dummyFunction,
+        metrics: [],
+        numSpans: 1,
+        spanType: StepType.llm,
+        results: [],
+        aggregateResults: []
+      },
+      // Case 2: Simple function with multiple metrics
+      {
+        function: dummyFunction,
+        metrics: [
+          createLocalScorerConfig({
+            name: 'length',
+            scorer_fn: async (step) => {
+              if (typeof step.input !== 'string') {
+                throw Error('Input is not a string');
+              }
+              return step.input.length;
+            },
+            scorable_types: [StepType.workflow],
+            aggregatable_types: [StepType.trace]
+          }),
+          createLocalScorerConfig({
+            name: 'output',
+            scorer_fn: async (step) => step.output,
+            scorable_types: [StepType.workflow],
+            aggregatable_types: [StepType.trace]
+          }),
+          createLocalScorerConfig({
+            name: 'decimal',
+            scorer_fn: async () => 4.53,
+            scorable_types: [StepType.workflow],
+            aggregatable_types: [StepType.trace]
+          }),
+          createLocalScorerConfig({
+            name: 'bool',
+            scorer_fn: async () => true,
+            scorable_types: [StepType.workflow],
+            aggregatable_types: [StepType.trace]
+          })
+        ],
+        numSpans: 1,
+        spanType: StepType.workflow,
+        results: [40, 'dummy_function', 4.53, true],
+        aggregateResults: [40, 'dummy_function', 4.53, true]
+      },
+      // Case 3: Complex function with no metrics
+      {
+        function: complexTraceFunction,
+        metrics: [],
+        numSpans: 2,
+        spanType: StepType.llm,
+        results: [],
+        aggregateResults: []
+      },
+      // Case 4: Complex function with metrics
+      {
+        function: complexTraceFunction,
+        metrics: [
+          createLocalScorerConfig({
+            name: 'length',
+            scorer_fn: async (step) => {
+              if ('input' in step && Array.isArray(step.input) && step.input[0]?.content) {
+                return step.input[0].content.length;
+              }
+              return 0;
+            },
+            scorable_types: [StepType.llm],
+            aggregatable_types: [StepType.trace]
+          }),
+          createLocalScorerConfig({
+            name: 'output',
+            scorer_fn: async (step) => {
+              if ('output' in step && step.output?.content) {
+                return step.output.content;
+              }
+              return '';
+            },
+            scorable_types: [StepType.llm],
+            aggregatable_types: [StepType.trace]
+          })
+        ],
+        numSpans: 2,
+        spanType: StepType.llm,
+        results: [28, 'Which continent is Spain in? output'],
+        aggregateResults: [28, 'Which continent is Spain in? output']
+      }
+    ];
+
+    // Run tests for each test case, with and without thread pool
+    [true, false].forEach(useThreadPool => {
+      testCases.forEach((testCase, index) => {
+        it(`should run experiment with local scorers - case ${index + 1} - thread pool: ${useThreadPool}`, async () => {
+          // Mock API client responses
+          mockGetProject.mockResolvedValue(mockProjectResponse());
+          mockGetExperiment.mockResolvedValue(mockExperimentResponse());
+          mockCreateExperiment.mockResolvedValue(mockExperimentResponse());
+          mockGetDataset.mockResolvedValue(mockDataset);
+          mockGetDatasetContent.mockResolvedValue(mockDatasetContent);
+          mockIngestTraces.mockResolvedValue(undefined);
+
+          // Run the experiment
+          const result = await runExperiment({
+            name: 'test_experiment',
+            projectName: 'awesome-new-project',
+            datasetId: '00000000-0000-4000-8000-000000000000',
+            function: testCase.function,
+            metrics: testCase.metrics
+          });
+
+          // Verify the result
+          expect(result).not.toBeNull();
+          expect(result.experiment).not.toBeNull();
+          expect(result.link).toContain(`/project/${mockProjectResponse().id}/experiments/${mockExperimentResponse().id}`);
+
+          // Verify API calls
+          expect(mockGetProject).toHaveBeenCalledWith(expect.objectContaining({ name: 'awesome-new-project' }));
+          expect(mockGetExperiment).toHaveBeenCalledWith('00000000-0000-0000-0000-000000000000', 'test_experiment');
+          expect(mockCreateExperiment).toHaveBeenCalledWith('00000000-0000-0000-0000-000000000000', 'test_experiment');
+          expect(mockGetDataset).toHaveBeenCalledWith({ id: '00000000-0000-4000-8000-000000000000', name: undefined });
+          expect(mockGetDatasetContent).toHaveBeenCalled();
+
+          // Check ingest traces call
+          const ingestTracesCall = mockIngestTraces.mock.calls[0][0];
+          expect(ingestTracesCall.traces).toHaveLength(1);
+
+          // Check trace properties
+          const trace = ingestTracesCall.traces[0];
+          expect(trace.dataset_input).toBe('Which continent is Spain in?');
+          expect(trace.dataset_output).toBe('Europe');
+          expect(trace.dataset_metadata).toEqual({ meta: 'data' });
+
+          // Check metrics on trace
+          if (testCase.metrics.length > 0) {
+            testCase.metrics.forEach((metric, i) => {
+              expect(trace.metrics[metric.name]).toBe(testCase.aggregateResults[i]);
+            });
+          }
+
+          // Helper function to check spans recursively
+          const checkSpan = (span: Span): number => {
+            let spanCount = 1;
+
+            // Check span properties
+            expect(span.dataset_input).toBe('Which continent is Spain in?');
+            expect(span.dataset_output).toBe('Europe');
+            expect(span.dataset_metadata).toEqual({ meta: 'data' });
+
+            // Check metrics on span
+            if (testCase.metrics.length > 0 && span.type === testCase.spanType) {
+              testCase.metrics.forEach((metric, i) => {
+                expect(span.metrics[metric.name]).toBe(testCase.results[i]);
+              });
+            } else if (testCase.metrics.length > 0 && span.type !== testCase.spanType) {
+              testCase.metrics.forEach((metric) => {
+                expect(span.metrics[metric.name]).toBeUndefined();
+              });
+            }
+
+            // Check child spans recursively
+            if ('spans' in span && Array.isArray(span.spans)) {
+              for (const childSpan of span.spans) {
+                spanCount += checkSpan(childSpan);
+              }
+            }
+
+            return spanCount;
+          };
+
+          // Check spans
+          let totalSpans = 0;
+          for (const span of trace.spans) {
+            totalSpans += checkSpan(span);
+          }
+          expect(totalSpans).toBe(testCase.numSpans);
+        });
+      });
     });
   });
 });

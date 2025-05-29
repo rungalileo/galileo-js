@@ -1,4 +1,6 @@
-import { LocalMetricConfig, MetricValueType, Span, StepWithChildSpans, Trace } from '../types';
+import { LocalMetricConfig, MetricValueType } from '../types';
+import { Trace } from '../types/logging/trace.types';
+import { Span, StepWithChildSpans } from '../types/logging/span.types';
 
 /**
  * Populates local metrics for a step and its children
@@ -7,7 +9,7 @@ import { LocalMetricConfig, MetricValueType, Span, StepWithChildSpans, Trace } f
  */
 export async function populateLocalMetrics(
   step: Trace | Span,
-  localMetrics: LocalMetricConfig[]
+  localMetrics: LocalMetricConfig<MetricValueType>[]
 ): Promise<void> {
   for (const localMetric of localMetrics) {
     await populateLocalMetric(step, localMetric, []);
@@ -20,10 +22,10 @@ export async function populateLocalMetrics(
  * @param localMetric The local metric configuration
  * @param scores Accumulated scores for aggregation
  */
-export async function populateLocalMetric(
+export async function populateLocalMetric<T extends MetricValueType>(
   step: Trace | Span,
-  localMetric: LocalMetricConfig,
-  scores: MetricValueType[]
+  localMetric: LocalMetricConfig<T>,
+  scores: T[]
 ): Promise<void> {
   if (step instanceof StepWithChildSpans) {
     for (const span of step.spans) {

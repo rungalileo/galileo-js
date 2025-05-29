@@ -10,7 +10,7 @@ import { Scorer } from '../types/scorer.types';
 import { getScorers, createRunScorerSettings } from '../utils/scorers';
 import { Dataset } from '../types/dataset.types';
 import { getDataset, getDatasetContent } from '../utils/datasets';
-import { LocalMetricConfig } from '../types/metrics.types';
+import { LocalMetricConfig, MetricValueType } from '../types/metrics.types';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
@@ -20,7 +20,7 @@ type DatasetWithFunction<T extends Record<string, unknown>> = {
   name: string;
   dataset: DatasetType;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (string | LocalMetricConfig)[];
+  metrics?: (string | LocalMetricConfig<MetricValueType>)[];
   projectName: string;
 };
 
@@ -28,7 +28,7 @@ type DatasetIdWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetId: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (string | LocalMetricConfig)[];
+  metrics?: (string | LocalMetricConfig<MetricValueType>)[];
   projectName: string;
 };
 
@@ -36,7 +36,7 @@ type DatasetNameWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetName: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (string | LocalMetricConfig)[];
+  metrics?: (string | LocalMetricConfig<MetricValueType>)[];
   projectName: string;
 };
 
@@ -199,12 +199,17 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   experiment: Experiment,
   projectName: string,
   datasetContent: Record<string, unknown>[],
-  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>
+  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>,
+  localMetrics: LocalMetricConfig<MetricValueType>[],
 ): Promise<string[]> => {
   const outputs: string[] = [];
 
   // Initialize the singleton logger
-  init({ experimentId: experiment.id, projectName });
+  init({
+    experimentId: experiment.id,
+    projectName: projectName,
+    localMetrics: localMetrics,
+  });
 
   // Wrap the processing function with the log wrapper
   const loggedProcessFn = log(
@@ -330,6 +335,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   console.log(`🚀 Experiment ${experimentName} created.`);
 
   const scorersToUse: Scorer[] = [];
+  const localMetrics: LocalMetricConfig<MetricValueType>[] = []
 
   console.log('Retrieving metrics...');
 
@@ -337,11 +343,15 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const scorers = await getScorers();
 
     for (const metric of metrics) {
-      const scorer = scorers.find((scorer) => scorer.name === metric);
-      if (!scorer) {
-        throw new Error(`Metric ${metric} not found`);
+      if (typeof metric == 'string') {
+        const scorer = scorers.find((scorer) => scorer.name === metric);
+        if (!scorer) {
+          throw new Error(`Metric ${metric} not found`);
+        }
+        scorersToUse.push(scorer);
+      } else {
+        localMetrics.push(metric);
       }
-      scorersToUse.push(scorer);
     }
   }
 
@@ -424,7 +434,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       experiment,
       projectName,
       dataset as Record<string, unknown>[],
-      processFn
+      processFn,
+      localMetrics,
     );
 
     if (scorersToUse.length > 0) {

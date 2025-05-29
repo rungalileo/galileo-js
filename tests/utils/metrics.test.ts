@@ -4,7 +4,7 @@ import {
   createLocalScorerConfig
 } from '../../src/types';
 import { 
-  NodeType,
+  StepType,
   Trace,
   Span,
   LlmSpan,
@@ -57,23 +57,23 @@ describe('metrics utility', () => {
     simpleMetricConfig = createLocalScorerConfig({
       name: 'test_metric',
       scorer_fn: simpleScorer,
-      scorable_types: [NodeType.llm]
+      scorable_types: [StepType.llm]
     });
 
     aggregatingMetricConfig = createLocalScorerConfig({
       name: 'test_metric',
       scorer_fn: simpleScorer,
       aggregator_fn: simpleAggregator,
-      scorable_types: [NodeType.llm],
-      aggregatable_types: [NodeType.trace]
+      scorable_types: [StepType.llm],
+      aggregatable_types: [StepType.trace]
     });
 
     dictAggregatingMetricConfig = createLocalScorerConfig({
       name: 'test_metric',
       scorer_fn: simpleScorer,
       aggregator_fn: dictAggregator,
-      scorable_types: [NodeType.llm],
-      aggregatable_types: [NodeType.trace]
+      scorable_types: [StepType.llm],
+      aggregatable_types: [StepType.trace]
     });
 
     // Create test spans and traces with proper class instances
@@ -131,12 +131,12 @@ describe('metrics utility', () => {
         createLocalScorerConfig({
           name: 'metric1',
           scorer_fn: metric1Scorer,
-          scorable_types: [NodeType.llm]
+          scorable_types: [StepType.llm]
         }),
         createLocalScorerConfig({
           name: 'metric2',
           scorer_fn: metric2Scorer,
-          scorable_types: [NodeType.llm]
+          scorable_types: [StepType.llm]
         })
       ];
 
@@ -209,8 +209,8 @@ describe('metrics utility', () => {
         name: 'test_metric',
         scorer_fn: nestedMetricScorer,
         aggregator_fn: nestedMetricAggregator,
-        scorable_types: [NodeType.llm],
-        aggregatable_types: [NodeType.trace, NodeType.workflow]
+        scorable_types: [StepType.llm],
+        aggregatable_types: [StepType.trace, StepType.workflow]
       });
 
       const scores: MetricValueType[] = [];

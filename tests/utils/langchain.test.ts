@@ -4,7 +4,7 @@ import { AgentFinish } from '@langchain/core/agents';
 import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
 import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
-import { LlmSpan, NodeType, WorkflowSpan } from '../../src/types/log.types';
+import { LlmSpan, StepType, WorkflowSpan } from '../../src/types/log.types';
 
 // Mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -120,7 +120,7 @@ describe('GalileoCallback', () => {
       const trace = traces[0];
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.input).toStrictEqual(
         JSON.stringify({ query: 'test question' })
       );
@@ -155,7 +155,7 @@ describe('GalileoCallback', () => {
 
       const traces = callback._galileoLogger.traces;
       expect(traces).toHaveLength(1);
-      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].type).toBe(StepType.workflow);
       expect(traces[0].spans[0].input).toStrictEqual(JSON.stringify(inputs));
       expect(traces[0].spans[0].output).toStrictEqual(JSON.stringify(outputs));
     });
@@ -188,7 +188,7 @@ describe('GalileoCallback', () => {
 
       const traces = callback._galileoLogger.traces;
       expect(traces).toHaveLength(1);
-      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].type).toBe(StepType.workflow);
       expect(traces[0].spans[0].input).toStrictEqual(JSON.stringify(inputs));
       expect(traces[0].spans[0].output).toStrictEqual(JSON.stringify(outputs));
     });
@@ -231,7 +231,7 @@ describe('GalileoCallback', () => {
       );
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.input).toBe(JSON.stringify({ input: 'test input' }));
       expect(span.output).toBe(
         JSON.stringify({
@@ -322,7 +322,7 @@ describe('GalileoCallback', () => {
       );
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.input).toBe(JSON.stringify({ query: 'test' }));
       expect(span.output).toBe(
         JSON.stringify({
@@ -331,7 +331,7 @@ describe('GalileoCallback', () => {
       );
       expect(span.spans.length).toBe(1);
       const llmSpan = span.spans[0] as LlmSpan;
-      expect(llmSpan.type).toBe(NodeType.llm);
+      expect(llmSpan.type).toBe(StepType.llm);
       expect(llmSpan.input).toEqual([
         { content: 'Tell me about AI', role: 'user' }
       ]);
@@ -737,11 +737,11 @@ describe('GalileoCallback', () => {
       const trace = callback._galileoLogger.traces[0];
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.spans.length).toBe(3);
-      expect(span.spans[0].type).toBe(NodeType.retriever);
-      expect(span.spans[1].type).toBe(NodeType.llm);
-      expect(span.spans[2].type).toBe(NodeType.tool);
+      expect(span.spans[0].type).toBe(StepType.retriever);
+      expect(span.spans[1].type).toBe(StepType.llm);
+      expect(span.spans[2].type).toBe(StepType.tool);
     });
   });
 

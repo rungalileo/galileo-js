@@ -1,13 +1,8 @@
-import {
-  GalileoLogger,
-  Trace,
-  LlmSpan,
-  RetrieverSpan,
-  ToolSpan,
-  WorkflowSpan
-} from '../../src/utils/galileo-logger';
+import { GalileoLogger, LlmSpan, RetrieverSpan, ToolSpan, Trace, WorkflowSpan } from '../../src/utils/galileo-logger';
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
+import { createLocalScorerConfig } from '../../src/types/metrics.types';
+import { StepType } from '../../src/types/logging/step.types';
 
 // Mock the GalileoApiClient
 jest.mock('../../src/api-client', () => ({
@@ -433,6 +428,90 @@ describe('GalileoLogger', () => {
     it('should handle empty traces during flush', async () => {
       const flushedTraces = await logger.flush();
       expect(flushedTraces.length).toBe(0);
+    });
+
+    it('should process local metrics during flush and check before flushing', async () => {
+      // Create a real scorer function
+      async function testScorer(): Promise<number> {
+        return 1.0;
+      }
+      
+      // Create an aggregator function
+      async function testAggregator(values: number[]): Promise<number> {
+        return values.reduce((sum, score) => sum + score, 0);
+      }
+      
+      // Create a logger with local metrics using the helper function
+      const localMetricConfig = createLocalScorerConfig({
+        name: 'test_metric',
+        scorer_fn: testScorer,
+        aggregator_fn: testAggregator,
+        scorable_types: [StepType.llm, StepType.trace],
+        aggregatable_types: [StepType.trace]
+      });
+      
+      logger = new GalileoLogger({
+        localMetrics: [localMetricConfig]
+      });
+
+      // Add a trace with an LLM span
+      const trace = logger.startTrace({ input: 'test input' });
+      const llmSpan = logger.addLlmSpan({
+        input: { content: 'test prompt' },
+        output: { content: 'test response' }
+      });
+      logger.conclude({ output: 'test output' });
+
+      // Metrics should not be set before flush
+      expect(llmSpan.metrics['test_metric']).toBeUndefined();
+      expect(trace.metrics['test_metric']).toBeUndefined();
+
+      // Flush traces
+      await logger.flush();
+
+      // Get the trace from the ingestTraces mock
+      const mockIngestTraces = logger['client'].ingestTraces as jest.Mock;
+      expect(mockIngestTraces).toHaveBeenCalled();
+      
+      // Get the traces passed to ingestTraces
+      const tracesPassedToIngest = mockIngestTraces.mock.calls[0][0];
+      expect(tracesPassedToIngest.length).toBe(1);
+      
+      // Verify metrics were set on the trace and span
+      const flushedTrace = tracesPassedToIngest[0];
+      const flushedSpan = flushedTrace.spans[0];
+      expect(flushedSpan.metrics['test_metric']).toBe(1.0);
+      expect(flushedTrace.metrics['test_metric']).toBe(1.0);
+    });
+
+    it('should not process local metrics if none are provided', async () => {
+      // Create a logger without local metrics
+      logger = new GalileoLogger();
+
+      // Add a trace with an LLM span
+      logger.startTrace({ input: 'test input' });
+      logger.addLlmSpan({
+        input: { content: 'test prompt' },
+        output: { content: 'test response' }
+      });
+      logger.conclude({ output: 'test output' });
+
+      // Flush traces
+      await logger.flush();
+
+      // Get the trace from the ingestTraces mock
+      const mockIngestTraces = logger['client'].ingestTraces as jest.Mock;
+      expect(mockIngestTraces).toHaveBeenCalled();
+      
+      // Get the traces passed to ingestTraces
+      const tracesPassedToIngest = mockIngestTraces.mock.calls[0][0];
+      expect(tracesPassedToIngest.length).toBe(1);
+      
+      // Verify no test_metric was set on the trace and span
+      const flushedTrace = tracesPassedToIngest[0];
+      const flushedSpan = flushedTrace.spans[0];
+      expect(flushedSpan.metrics['test_metric']).toBeUndefined();
+      expect(flushedTrace.metrics['test_metric']).toBeUndefined();
     });
   });
 

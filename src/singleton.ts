@@ -1,4 +1,5 @@
 import { GalileoLogger } from './utils/galileo-logger';
+import { LocalMetricConfig, MetricValueType } from './types';
 
 export class GalileoSingleton {
   private static instance: GalileoSingleton;
@@ -29,11 +30,13 @@ export class GalileoSingleton {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
+    localMetrics?: LocalMetricConfig<MetricValueType>[] | undefined;
   }) {
     this.client = new GalileoLogger({
       projectName: options.projectName,
       logStreamName: options.logStreamName,
-      experimentId: options.experimentId
+      experimentId: options.experimentId,
+      localMetrics: options.localMetrics,
     });
   }
 }
@@ -60,6 +63,7 @@ export const init = (
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
+    localMetrics?: LocalMetricConfig<MetricValueType>[] | undefined;
   } = {}
 ) => {
   GalileoSingleton.getInstance().init(options);
