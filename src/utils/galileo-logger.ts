@@ -532,7 +532,7 @@ class GalileoLogger {
     createdAt?: number;
     metadata?: Record<string, string>;
     tags?: string[];
-    agentType?: AgentType.default;
+    agentType?: AgentType;
   }): AgentSpan {
     /**
      * Add an agent span to the current parent.
@@ -669,5 +669,6 @@ export {
   LlmSpan,
   RetrieverSpan,
   ToolSpan,
-  WorkflowSpan
+  WorkflowSpan,
+  AgentSpan
 };

@@ -197,7 +197,7 @@ export class WorkflowSpan extends StepWithChildSpans {
 export class AgentSpan extends StepWithChildSpans {
   type: NodeType = NodeType.agent;
   parent?: StepWithChildSpans;
-  agentType?: AgentType = AgentType.default;
+  agentType: AgentType = AgentType.default;
 
   constructor(data: {
     parent?: StepWithChildSpans;
