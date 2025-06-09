@@ -221,7 +221,7 @@ export class AgentSpan extends StepWithChildSpans {
         ? data.output
         : JSON.stringify(data.output);
     this.spans = data.spans || [];
-    this.agentType = data.agentType;
+    this.agentType = data.agentType || AgentType.default;
   }
 
   children(): BaseStep[] {
