@@ -8,7 +8,7 @@ import {
   ToolSpan,
   Trace,
   WorkflowSpan,
-  AgentSpan
+  AgentSpan, AgentType
 } from '../types/log.types';
 import {
   LlmStepAllowedIOType,
@@ -508,6 +508,44 @@ class GalileoLogger {
       metadata: metadata,
       tags,
       durationNs
+    });
+
+    this.addChildSpanToParent(span);
+    this.parentStack.push(span);
+    return span;
+  }
+
+  addAgentSpan({
+                    input,
+                    output,
+                    name,
+                    durationNs,
+                    createdAt,
+                    metadata,
+                    tags,
+                    agentType,
+                  }: {
+    input: string;
+    output?: string;
+    name?: string;
+    durationNs?: number;
+    createdAt?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+    agentType?: AgentType.default;
+  }): AgentSpan {
+    /**
+     * Add an agent span to the current parent.
+     */
+    const span = new AgentSpan({
+      input,
+      output,
+      name,
+      createdAtNs: createdAt,
+      metadata: metadata,
+      tags,
+      durationNs,
+      agentType,
     });
 
     this.addChildSpanToParent(span);

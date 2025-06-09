@@ -130,3 +130,4 @@ out
 
 .DS_Store
 dist
+.idea/
