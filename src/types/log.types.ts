@@ -5,7 +5,19 @@ export enum NodeType {
   workflow = 'workflow',
   llm = 'llm',
   retriever = 'retriever',
-  tool = 'tool'
+  tool = 'tool',
+  agent = 'agent',
+}
+
+export enum AgentType{
+  default = 'default',
+  planner = 'planner',
+  react = 'react',
+  reflection = 'reflection',
+  router = 'router',
+  classifier = 'classifier',
+  supervisor = 'supervisor',
+  judge = 'judge',
 }
 
 import { StepIOType } from './step.types';
@@ -162,6 +174,53 @@ export class WorkflowSpan extends StepWithChildSpans {
         ? data.output
         : JSON.stringify(data.output);
     this.spans = data.spans || [];
+  }
+
+  children(): BaseStep[] {
+    return this.spans;
+  }
+
+  addChild(...spans: Span[]): void {
+    for (const span of spans) {
+      this.spans.push(span);
+    }
+  }
+
+  toJSON(): Record<string, any> {
+    return {
+      ...super.toJSON(),
+      spans: this.spans.map((span) => span.toJSON())
+    };
+  }
+}
+
+export class AgentSpan extends StepWithChildSpans {
+  type: NodeType = NodeType.agent;
+  parent?: StepWithChildSpans;
+
+  constructor(data: {
+    parent?: StepWithChildSpans;
+    input: StepIOType;
+    output?: StepIOType;
+    name?: string;
+    createdAtNs?: number;
+    durationNs?: number;
+    metadata?: Record<string, string>;
+    statusCode?: number;
+    groundTruth?: string;
+    spans?: Span[];
+    tags?: string[];
+    agentType?: AgentType;
+  }) {
+    super({ ...data, type: NodeType.agent });
+    this.input =
+        typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
+    this.output =
+        typeof data.output === 'string'
+            ? data.output
+            : JSON.stringify(data.output);
+    this.spans = data.spans || [];
+    this.agentType = data.agentType;
   }
 
   children(): BaseStep[] {

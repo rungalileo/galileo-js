@@ -7,7 +7,8 @@ import {
   StepWithChildSpans,
   ToolSpan,
   Trace,
-  WorkflowSpan
+  WorkflowSpan,
+  AgentSpan
 } from '../types/log.types';
 import {
   LlmStepAllowedIOType,
@@ -131,6 +132,12 @@ class GalileoLogger {
       this.addWorkflowSpan,
       () => new WorkflowSpan(emptySpanData)
     );
+
+    this.addAgentSpan = skipIfDisabled(
+        this.addAgentSpan,
+        () => new AgentSpan(emptySpanData)
+    );
+
 
     this.conclude = skipIfDisabled(this.conclude, () => undefined);
 
