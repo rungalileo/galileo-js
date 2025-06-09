@@ -6,10 +6,10 @@ export enum NodeType {
   llm = 'llm',
   retriever = 'retriever',
   tool = 'tool',
-  agent = 'agent',
+  agent = 'agent'
 }
 
-export enum AgentType{
+export enum AgentType {
   default = 'default',
   planner = 'planner',
   react = 'react',
@@ -17,7 +17,7 @@ export enum AgentType{
   router = 'router',
   classifier = 'classifier',
   supervisor = 'supervisor',
-  judge = 'judge',
+  judge = 'judge'
 }
 
 import { StepIOType } from './step.types';
@@ -197,6 +197,7 @@ export class WorkflowSpan extends StepWithChildSpans {
 export class AgentSpan extends StepWithChildSpans {
   type: NodeType = NodeType.agent;
   parent?: StepWithChildSpans;
+  agentType?: AgentType = AgentType.default;
 
   constructor(data: {
     parent?: StepWithChildSpans;
@@ -214,11 +215,11 @@ export class AgentSpan extends StepWithChildSpans {
   }) {
     super({ ...data, type: NodeType.agent });
     this.input =
-        typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
+      typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
     this.output =
-        typeof data.output === 'string'
-            ? data.output
-            : JSON.stringify(data.output);
+      typeof data.output === 'string'
+        ? data.output
+        : JSON.stringify(data.output);
     this.spans = data.spans || [];
     this.agentType = data.agentType;
   }
