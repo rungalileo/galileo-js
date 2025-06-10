@@ -4,6 +4,7 @@ import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
+import { ProtectService } from './services/protect-service';
 import { LogStreamService } from './services/logstream-service';
 import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
@@ -14,6 +15,9 @@ import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
+import {
+  Request,
+} from '../types/protect.types';
 import { Message } from '../types/message.types';
 
 export class GalileoApiClientParams {
@@ -42,6 +46,7 @@ export class GalileoApiClient extends BaseClient {
   // Service instances
   private authService?: AuthService;
   private projectService?: ProjectService;
+  private protectService?: ProtectService;
   private logStreamService?: LogStreamService;
   private promptTemplateService?: PromptTemplateService;
   private datasetService?: DatasetService;
@@ -170,6 +175,11 @@ export class GalileoApiClient extends BaseClient {
           this.projectId
         );
         this.experimentService = new ExperimentService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+        this.protectService = new ProtectService(
           this.apiUrl,
           this.token,
           this.projectId
@@ -365,6 +375,12 @@ export class GalileoApiClient extends BaseClient {
       scorers,
       promptSettings
     );
+  }
+
+  // Protect methods - delegate to ProtectService
+  public async invoke(request: Request) {
+    this.ensureService(this.protectService);
+    return this.protectService!.invoke(request);
   }
 
   // Helper to ensure service is initialized
