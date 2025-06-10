@@ -9,3 +9,4 @@ export * from './project.types';
 export * from './log-stream.types';
 export * from './models.types';
 export * from './scorer.types';
+export * from './protect.types';

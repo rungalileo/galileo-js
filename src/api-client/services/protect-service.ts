@@ -3,7 +3,6 @@ import { Routes } from '../../types/routes.types';
 import { Request, Response } from '../../types/protect.types';
 
 export class ProtectService extends BaseClient {
-  // TODO do I need all this?
   private projectId: string;
   constructor(apiUrl: string, token: string, projectId: string) {
     super();

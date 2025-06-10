@@ -27,6 +27,7 @@ import {
   getExperiment,
   runExperiment
 } from './utils/experiments';
+import { invoke } from './utils/protect'; // Added import
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush, getLogger } from './singleton';
 import { log } from './wrappers';
@@ -67,6 +68,8 @@ export {
   getLogStreams,
   createLogStream,
   getLogStream,
+  // Protect
+  invoke, // Added export
   // Logging
   log,
   init,
