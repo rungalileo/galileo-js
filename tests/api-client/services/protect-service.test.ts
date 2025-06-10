@@ -4,44 +4,35 @@ import { Routes } from '../../../src/types/routes.types';
 import {
   Request as ApiRequest,
   Response as ApiResponse,
-  // Import Payload if needed for constructing ApiRequest mock,
-  // or define a minimal valid ApiRequest structure directly.
-} from '../../../src/types'; // Adjust if types are re-exported differently
+} from '../../../src/types';
 
-// Mock the BaseClient's makeRequest method
 const mockMakeRequest = jest.fn();
 
-// Mock the BaseClient module
 jest.mock('../../../src/api-client/base-client', () => {
   const originalModule = jest.requireActual('../../../src/api-client/base-client');
   return {
-    ...originalModule, // Preserve other exports like RequestMethod
+    ...originalModule,
     BaseClient: jest.fn().mockImplementation(() => ({
-      // Mock methods/properties of BaseClient that ProtectService's constructor or methods might use
-      initializeClient: jest.fn(), // Called by ProtectService constructor
+      initializeClient: jest.fn(),
       makeRequest: mockMakeRequest,
-      // Provide mock values for properties if ProtectService constructor reads them from `this`
       apiUrl: 'mockApiUrl',
       token: 'mockToken',
-      // projectId is passed to ProtectService constructor, not from BaseClient instance here
     })),
   };
 });
 
 describe('ProtectService', () => {
   let protectService: ProtectService;
-  const mockApiUrl = 'http://fake.api/v2'; // Example, use actual or consistent mock
+  const mockApiUrl = 'http://fake.api/v2';
   const mockToken = 'fake-api-token';
   const mockProjectId = 'project-uuid-for-protect';
 
-  // Define mock data based on actual API schemas
   const MOCK_API_REQUEST: ApiRequest = {
     payload: {
       input: 'Service test input.',
     },
   };
 
-  // This is components['schemas']['Response']
   const MOCK_API_RESPONSE: ApiResponse = {
     text: 'Service processed: Service test input.',
     trace_metadata: {
@@ -50,13 +41,10 @@ describe('ProtectService', () => {
       response_at: 9876543220,
       execution_time: 10,
     },
-    // status: 'not_triggered', // Optional
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Instantiate ProtectService. Since BaseClient is mocked,
-    // ProtectService will extend the mocked BaseClient.
     protectService = new ProtectService(mockApiUrl, mockToken, mockProjectId);
   });
 

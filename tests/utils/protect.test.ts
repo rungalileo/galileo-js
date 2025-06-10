@@ -102,7 +102,6 @@ describe('utils.invoke', () => {
     const result = await invoke(MOCK_API_REQUEST);
 
     expect(protectInvokeHandler).toHaveBeenCalledTimes(1);
-    // TODO: Add more specific checks for the request body if needed, e.g., using req.json() in handler
     expect(result).toEqual(MOCK_API_RESPONSE);
   });
 
@@ -112,9 +111,6 @@ describe('utils.invoke', () => {
     );
 
     await expect(invoke(MOCK_API_REQUEST)).rejects.toThrow();
-    // More specific error checking can be added if BaseClient transforms errors
-    // For example, if it throws a custom error class or specific message format.
-    // For now, just checking it throws.
     expect(protectInvokeErrorHandler).toHaveBeenCalledTimes(1);
   });
 
