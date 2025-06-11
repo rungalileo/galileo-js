@@ -28,6 +28,13 @@ import {
   runExperiment
 } from './utils/experiments';
 import { invoke } from './utils/protect'; // Added import
+import {
+  createStage,
+  getStage,
+  updateStage,
+  pauseStage,
+  resumeStage
+} from './utils/stage';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush, getLogger } from './singleton';
 import { log } from './wrappers';
@@ -70,6 +77,12 @@ export {
   getLogStream,
   // Protect
   invoke, // Added export
+  // Stages
+  createStage,
+  getStage,
+  updateStage,
+  pauseStage,
+  resumeStage,
   // Logging
   log,
   init,

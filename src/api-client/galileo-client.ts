@@ -10,6 +10,7 @@ import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import { StageService } from './services/stage-service';
 import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
@@ -19,6 +20,12 @@ import {
   Request,
 } from '../types/protect.types';
 import { Message } from '../types/message.types';
+import {
+  StageDB,
+  StageCreationPayload,
+  GetStageParams,
+  UpdateStagePayload,
+} from '../types/stage.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -52,6 +59,7 @@ export class GalileoApiClient extends BaseClient {
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
+  private stageService?: StageService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -183,6 +191,11 @@ export class GalileoApiClient extends BaseClient {
           this.apiUrl,
           this.token,
           this.projectId
+        );
+        this.stageService = new StageService(
+          this.apiUrl,
+          this.token,
+          this.projectId,
         );
       }
     }
@@ -381,6 +394,49 @@ export class GalileoApiClient extends BaseClient {
   public async invoke(request: Request) {
     this.ensureService(this.protectService);
     return this.protectService!.invoke(request);
+  }
+
+  // Stage methods - delegate to StageService
+  public async createStage(payload: StageCreationPayload): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    this.ensureProjectId();
+    return this.stageService!.createStage(this.projectId, payload);
+  }
+
+  public async getStage(params: GetStageParams): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    this.ensureProjectId();
+    return this.stageService!.getStage(this.projectId, params);
+  }
+
+  public async updateStage(
+    stageId: string,
+    payload: UpdateStagePayload,
+  ): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    this.ensureProjectId();
+    return this.stageService!.updateStage(this.projectId, stageId, payload);
+  }
+
+  public async pauseStage(stageId: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    this.ensureProjectId();
+    return this.stageService!.pauseStage(this.projectId, stageId);
+  }
+
+  public async resumeStage(stageId: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    this.ensureProjectId();
+    return this.stageService!.resumeStage(this.projectId, stageId);
+  }
+
+  // Helper to ensure projectId is available for stage operations
+  private ensureProjectId(): void {
+    if (!this.projectId) {
+      throw new Error(
+        'Project ID is not set. Ensure GalileoApiClient is initialized with a project context for stage operations.',
+      );
+    }
   }
 
   // Helper to ensure service is initialized

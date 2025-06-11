@@ -29,5 +29,7 @@ export enum Routes {
   promptTemplate = 'projects/{project_id}/templates/{template_id}',
   promptTemplateVersions = 'projects/{project_id}/templates/versions',
   promptTemplateVersion = 'projects/{project_id}/templates/{template_id}/versions/{version}',
-  jobs = 'jobs'
+  jobs = 'jobs',
+  stages = 'projects/{project_id}/stages',
+  stage = 'projects/{project_id}/stages/{stage_id}'
 }
