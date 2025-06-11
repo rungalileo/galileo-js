@@ -4,7 +4,7 @@ name: Publish Docs
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Package Release"]
+    workflows: ['Package Release']
     types:
       - completed
 
@@ -41,8 +41,8 @@ jobs:
       - name: Build Docs
         working-directory: ./galileo-js
         run: |
-            npm install
-            npm run docs
+          npm install
+          npm run docs
 
       # Create a branch in the docs-official repo using the current branch name
       - name: Create a branch

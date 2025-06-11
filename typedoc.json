@@ -1,9 +1,12 @@
 {
-  "plugin": ["typedoc-plugin-markdown", "./local-plugins/format-for-galileo.mjs"],
+  "plugin": [
+    "typedoc-plugin-markdown",
+    "./local-plugins/format-for-galileo.mjs"
+  ],
   "out": "./.generated_docs/reference",
   "fileExtension": ".mdx",
   "formatWithPrettier": true,
   "useCodeBlocks": true,
   "expandParameters": true,
-  "sanitizeComments": true,
+  "sanitizeComments": true
 }
