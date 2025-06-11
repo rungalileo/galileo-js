@@ -1,17 +1,10 @@
-import {
-  runExperiment,
-  getExperiment,
-  createExperiment,
-  getExperiments
-} from '../../src';
+import { createExperiment, getExperiment, getExperiments, runExperiment } from '../../src';
 import { Experiment } from '../../src/types/experiment.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
-import {
-  PromptTemplate,
-  PromptTemplateVersion
-} from '../../src/types/prompt-template.types';
+import { PromptTemplate, PromptTemplateVersion } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
+import { GalileoScorers } from '../../src/types/metrics.types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -313,7 +306,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [mockScorer.name],
+        metrics: [GalileoScorers.CORRECTNESS],
         projectName
       });
       expect(result).toHaveProperty(
