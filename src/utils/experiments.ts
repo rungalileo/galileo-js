@@ -361,8 +361,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       const scorerConfig: ScorerConfig = {
         id: scorer.id,
         name: scorer.name,
-        model_name: scorer.defaults?.model_name || '',
-        num_judges: scorer.defaults?.num_judges || 1,
+        model_name: scorer.defaults?.model_name || 'gpt-4o',
+        num_judges: scorer.defaults?.num_judges || 3,
         filters: scorer.defaults?.filters || [],
         scoreable_node_types: scorer.defaults?.scoreable_node_types || [],
         scorer_type: scorer.scorer_type
