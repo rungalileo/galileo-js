@@ -2408,6 +2408,8 @@ export interface components {
       settings?: {
         [key: string]: unknown;
       };
+      /** Output Type */
+      output_type?: string | null;
     };
     /**
      * BasePromptTemplateVersionResponse
@@ -2427,6 +2429,8 @@ export interface components {
       settings: {
         [key: string]: unknown;
       };
+      /** Output Type */
+      output_type?: string | null;
       /**
        * Id
        * Format: uuid4
@@ -3461,6 +3465,8 @@ export interface components {
       settings?: {
         [key: string]: unknown;
       };
+      /** Output Type */
+      output_type?: string | null;
       /** Name */
       name: string;
       /**
@@ -9357,8 +9363,12 @@ export interface components {
       | '_instruction_adherence'
       | '_ground_truth_adherence'
       | '_tool_selection_quality'
+      | '_tool_selection_quality_luna'
       | '_tool_error_rate'
+      | '_tool_error_rate_luna'
+      | '_action_completion_luna'
       | '_agentic_session_success'
+      | '_action_advancement_luna'
       | '_agentic_workflow_success'
       | '_generic_wizard'
       | '_customized_completeness_gpt'
@@ -9591,6 +9601,26 @@ export interface components {
        * @default false
        */
       completeness_nli?: boolean;
+      /**
+       * Tool Error Rate Luna
+       * @default false
+       */
+      tool_error_rate_luna?: boolean;
+      /**
+       * Tool Selection Quality Luna
+       * @default false
+       */
+      tool_selection_quality_luna?: boolean;
+      /**
+       * Action Completion Luna
+       * @default false
+       */
+      action_completion_luna?: boolean;
+      /**
+       * Action Advancement Luna
+       * @default false
+       */
+      action_advancement_luna?: boolean;
       /**
        * Uncertainty
        * @default false
