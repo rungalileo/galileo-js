@@ -1,8 +1,8 @@
 import {
-  runExperiment,
-  getExperiment,
   createExperiment,
-  getExperiments
+  getExperiment,
+  getExperiments,
+  runExperiment
 } from '../../src';
 import { Experiment } from '../../src/types/experiment.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
@@ -12,6 +12,7 @@ import {
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
+import { GalileoScorers } from '../../src/types/metrics.types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -118,11 +119,13 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   template: [
     { role: 'user', content: 'What is the capital of {{ country }}?' }
   ],
-  //   created_at: '2023-01-01T00:00:00Z',
-  //   updated_at: '2023-01-01T00:00:00Z',
-  //   prompt_template_id: 'prompt-template-123',
-  //   user_id: 'user-123',
-  version: 1
+  version: 1,
+  lines_added: 0,
+  lines_removed: 0,
+  lines_edited: 0,
+  model_changed: false,
+  settings_changed: false,
+  settings: {}
 };
 
 const mockPromptTemplate: PromptTemplate = {
@@ -311,7 +314,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [mockScorer.name],
+        metrics: [GalileoScorers.Correctness],
         projectName
       });
       expect(result).toHaveProperty(

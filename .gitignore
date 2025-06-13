@@ -131,3 +131,6 @@ out
 .DS_Store
 dist
 .idea/
+
+# Generated docs
+.generated_docs

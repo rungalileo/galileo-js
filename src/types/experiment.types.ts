@@ -8,7 +8,7 @@ export interface Experiment {
   project_id: string;
   created_by: string | null;
 }
-type PromptRunSettingsInput = components['schemas']['PromptRunSettings-Input'];
+type PromptRunSettingsInput = components['schemas']['PromptRunSettings'];
 
 export interface PromptRunSettings extends PromptRunSettingsInput {}
 

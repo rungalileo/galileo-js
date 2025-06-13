@@ -10,6 +10,7 @@ import { Scorer } from '../types/scorer.types';
 import { getScorers, createRunScorerSettings } from '../utils/scorers';
 import { Dataset } from '../types/dataset.types';
 import { getDataset, getDatasetContent } from '../utils/datasets';
+import { GalileoScorers } from '../types/metrics.types';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
@@ -19,7 +20,7 @@ type DatasetWithFunction<T extends Record<string, unknown>> = {
   name: string;
   dataset: DatasetType;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string)[];
   projectName: string;
 };
 
@@ -27,7 +28,7 @@ type DatasetIdWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetId: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string)[];
   projectName: string;
 };
 
@@ -35,7 +36,7 @@ type DatasetNameWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetName: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string)[];
   projectName: string;
 };
 
@@ -44,7 +45,7 @@ type DatasetWithPromptTemplate = {
   dataset: DatasetType;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string)[];
   projectName: string;
 };
 
@@ -53,7 +54,7 @@ type DatasetIdWithPromptTemplate = {
   datasetId: string;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string)[];
   projectName: string;
 };
 
@@ -62,7 +63,7 @@ type DatasetNameWithPromptTemplate = {
   datasetName: string;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string)[];
   projectName: string;
 };
 
