@@ -6,7 +6,7 @@ import {
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
-import { Scorer, ScorerConfig } from '../types/scorer.types';
+import { ScorerConfig } from '../types/scorer.types';
 import {
   getScorers,
   getScorerVersion,
@@ -358,7 +358,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
         );
       }
 
-      let scorerConfig: ScorerConfig = {
+      const scorerConfig: ScorerConfig = {
         id: scorer.id,
         name: scorer.name,
         model_name: scorer.defaults?.model_name || '',
