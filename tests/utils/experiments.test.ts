@@ -171,7 +171,8 @@ describe('experiments utility', () => {
     mockGetProjectByName.mockResolvedValue(mockProject);
     mockCreateRunScorerSettings.mockResolvedValue(undefined);
     mockGetScorers.mockResolvedValue([mockScorer]);
-    mockGetScorerVersion.mockResolvedValue({  // Add this implementation
+    mockGetScorerVersion.mockResolvedValue({
+      // Add this implementation
       id: 'scorer-version-123',
       version: 1,
       scorer_id: 'scorer-123'
@@ -374,7 +375,10 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty('message', promptRunJobCreatedSuccessMessage);
+      expect(result).toHaveProperty(
+        'message',
+        promptRunJobCreatedSuccessMessage
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorers).toHaveBeenCalled();
 
@@ -392,7 +396,10 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty('message', promptRunJobCreatedSuccessMessage);
+      expect(result).toHaveProperty(
+        'message',
+        promptRunJobCreatedSuccessMessage
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorers).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
@@ -415,7 +422,10 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty('message', promptRunJobCreatedSuccessMessage);
+      expect(result).toHaveProperty(
+        'message',
+        promptRunJobCreatedSuccessMessage
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorers).toHaveBeenCalled();
       expect(mockGetScorerVersion).toHaveBeenCalledWith('scorer-123', 3);
@@ -453,18 +463,24 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty('message', promptRunJobCreatedSuccessMessage);
+      expect(result).toHaveProperty(
+        'message',
+        promptRunJobCreatedSuccessMessage
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorers).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
 
       // Check what's actually being passed
-      console.log('mockCreateRunScorerSettings calls:', mockCreateRunScorerSettings.mock.calls);
-      
+      console.log(
+        'mockCreateRunScorerSettings calls:',
+        mockCreateRunScorerSettings.mock.calls
+      );
+
       // Instead of checking the structure directly, just verify the function was called
       // If we need to verify the content, we need to understand the actual param structure first
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      
+
       // Check if the createPromptRunJob includes information about metrics
       // This will give us clues about how metrics are actually processed
       expect(mockCreatePromptRunJob).toHaveBeenCalled();

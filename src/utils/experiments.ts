@@ -7,7 +7,11 @@ import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
 import { Scorer, ScorerConfig } from '../types/scorer.types';
-import { getScorers, getScorerVersion, createRunScorerSettings } from '../utils/scorers';
+import {
+  getScorers,
+  getScorerVersion,
+  createRunScorerSettings
+} from '../utils/scorers';
 import { Metric } from '../types/metrics.types';
 import { Dataset } from '../types/dataset.types';
 import { getDataset, getDatasetContent } from '../utils/datasets';
@@ -338,7 +342,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const scorers = await getScorers();
 
     for (const metric of metrics) {
-      let metricName: string = "";
+      let metricName: string = '';
       let metricVersion: number | undefined = undefined;
       if (typeof metric === 'string') {
         metricName = metric;
@@ -349,9 +353,11 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       const scorer = scorers.find((scorer) => scorer.name === metricName);
 
       if (!scorer) {
-        throw new Error(`Metric ${metric} not found. Please check the name is correct.`);
+        throw new Error(
+          `Metric ${metric} not found. Please check the name is correct.`
+        );
       }
-  
+
       let scorerConfig: ScorerConfig = {
         id: scorer.id,
         name: scorer.name,
@@ -359,7 +365,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
         num_judges: scorer.defaults?.num_judges || 1,
         filters: scorer.defaults?.filters || [],
         scoreable_node_types: scorer.defaults?.scoreable_node_types || [],
-        scorer_type: scorer.scorer_type,
+        scorer_type: scorer.scorer_type
       };
 
       // If a version is specified, fetch the scorer version

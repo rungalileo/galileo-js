@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Scorer, ScorerConfig, ScorerTypes, ScorerVersion } from '../types/scorer.types';
+import {
+  Scorer,
+  ScorerConfig,
+  ScorerTypes,
+  ScorerVersion
+} from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
@@ -335,7 +340,10 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentService!.getScorers(type);
   }
 
-  public async getScorerVersion(scorer_id: string, version: number): Promise<ScorerVersion> {
+  public async getScorerVersion(
+    scorer_id: string,
+    version: number
+  ): Promise<ScorerVersion> {
     this.ensureService(this.experimentService);
     return this.experimentService!.getScorerVersion(scorer_id, version);
   }
