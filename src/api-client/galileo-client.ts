@@ -23,7 +23,6 @@ import { Message } from '../types/message.types';
 import {
   StageDB,
   StageCreationPayload,
-  GetStageParams,
   UpdateStagePayload,
 } from '../types/stage.types';
 
@@ -399,14 +398,17 @@ export class GalileoApiClient extends BaseClient {
   // Stage methods - delegate to StageService
   public async createStage(payload: StageCreationPayload): Promise<StageDB> {
     this.ensureService(this.stageService);
-    this.ensureProjectId();
     return this.stageService!.createStage(this.projectId, payload);
   }
 
-  public async getStage(params: GetStageParams): Promise<StageDB> {
+  public async getStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    this.ensureProjectId();
-    return this.stageService!.getStage(this.projectId, params);
+    return this.stageService!.getStage(this.projectId, { stageId });
+  }
+
+  public async getStageByName(stageName: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.getStage(this.projectId, { stageName });
   }
 
   public async updateStage(
@@ -414,29 +416,17 @@ export class GalileoApiClient extends BaseClient {
     payload: UpdateStagePayload,
   ): Promise<StageDB> {
     this.ensureService(this.stageService);
-    this.ensureProjectId();
     return this.stageService!.updateStage(this.projectId, stageId, payload);
   }
 
   public async pauseStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    this.ensureProjectId();
     return this.stageService!.pauseStage(this.projectId, stageId);
   }
 
   public async resumeStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    this.ensureProjectId();
     return this.stageService!.resumeStage(this.projectId, stageId);
-  }
-
-  // Helper to ensure projectId is available for stage operations
-  private ensureProjectId(): void {
-    if (!this.projectId) {
-      throw new Error(
-        'Project ID is not set. Ensure GalileoApiClient is initialized with a project context for stage operations.',
-      );
-    }
   }
 
   // Helper to ensure service is initialized

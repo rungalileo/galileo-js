@@ -11,7 +11,7 @@ import {
   StageDB,
   StageCreationPayload,
   UpdateStagePayload,
-  GetStageParams,
+  // GetStageParams, // Removed as it's no longer used by utils/stage.ts
 } from '../../src/types/stage.types';
 import { Project, ProjectTypes, LogStream } from '../../src/types';
 import { commonHandlers, TEST_HOST } from '../common';
@@ -51,19 +51,19 @@ const MOCK_LOG_STREAM: LogStream = {
 };
 
 const stageSpecificHandlers = [
-  // Handler for LogStreams, needed by apiClient.init()
-  // The getLogStreams method fetches all log streams for the project,
-  // and getLogStreamByName filters client-side.
+  // Handler for apiClient.init({ projectName: ... }) to resolve projectName to projectId
+  http.get(`${TEST_HOST}/projects`, ({ request }) => {
+    const url = new URL(request.url);
+    if (url.searchParams.get('project_name') === MOCK_PROJECT.name) {
+      return HttpResponse.json([MOCK_PROJECT]); // Must return array
+    }
+    return HttpResponse.json([], { status: 404 });
+  }),
+  // Handler for LogStreams, needed by apiClient.init() (uses resolved projectId)
   http.get(`${TEST_HOST}/projects/${mockProjectId}/log_streams`, () => {
     return HttpResponse.json([MOCK_LOG_STREAM]);
   }),
-  // Handler for GetProject, needed by apiClient.init({ projectId: ... })
-  // Note: GalileoApiClient.init with projectId might not actually fetch the project by id if id is already known.
-  // It primarily uses projectId to scope other service calls like LogStreamService.
-  http.get(`${TEST_HOST}/projects/${mockProjectId}`, () => {
-    return HttpResponse.json(MOCK_PROJECT);
-  }),
-  // Create Stage
+  // Create Stage (uses resolved projectId)
   http.post(`${TEST_HOST}/projects/${mockProjectId}/stages`, async ({ request }) => {
     const body = await request.json() as StageCreationPayload;
     if (body.name === 'error-case') {
@@ -127,61 +127,71 @@ describe('Stage Utility Functions', () => {
   describe('createStage', () => {
     it('should create a stage successfully', async () => {
       const payload: StageCreationPayload = { name: 'New Awesome Stage' };
-      const result = await createStage(mockProjectId, payload);
+      const result = await createStage(MOCK_PROJECT.name, payload);
       expect(result.name).toBe(payload.name);
       expect(result.id).toBe(mockStageId);
     });
 
     it('should handle API error on createStage', async () => {
       const payload: StageCreationPayload = { name: 'error-case' };
-      await expect(createStage(mockProjectId, payload)).rejects.toThrow();
+      await expect(createStage(MOCK_PROJECT.name, payload)).rejects.toThrow();
     });
   });
 
   describe('getStage', () => {
     it('should get a stage by ID successfully', async () => {
-      const params: GetStageParams = { stageId: mockStageId };
-      const result = await getStage(mockProjectId, params);
+      const result = await getStage({ projectName: MOCK_PROJECT.name, id: mockStageId });
       expect(result.id).toBe(mockStageId);
     });
 
     it('should get a stage by name successfully', async () => {
-      const params: GetStageParams = { stageName: mockStageDbResponse.name };
-      const result = await getStage(mockProjectId, params);
+      const result = await getStage({ projectName: MOCK_PROJECT.name, name: mockStageDbResponse.name });
       expect(result.name).toBe(mockStageDbResponse.name);
     });
 
     it('should handle API error when stage not found by ID', async () => {
-      const params: GetStageParams = { stageId: 'nonexistent' };
-      await expect(getStage(mockProjectId, params)).rejects.toThrow();
+      await expect(getStage({ projectName: MOCK_PROJECT.name, id: 'nonexistent' })).rejects.toThrow();
     });
     
-    it('should throw error if neither stageId nor stageName is provided', async () => {
-       const params: GetStageParams = {};
-       // This error originates from StageService, propagated by GalileoApiClient
-       await expect(getStage(mockProjectId, params)).rejects.toThrow('Either stageId or stageName must be provided to getStage.');
+    it('should throw error if neither id nor name is provided', async () => {
+       await expect(getStage({ projectName: MOCK_PROJECT.name })).rejects.toThrow('Either id or name must be provided to getStage');
     });
   });
 
   describe('updateStage', () => {
-    it('should update a stage successfully', async () => {
+    it('should update a stage by ID successfully', async () => {
       const payload: UpdateStagePayload = { prioritized_rulesets: [{ rules: [{ metric: 'test', operator: 'gt', target_value: 1 }] }] };
-      const result = await updateStage(mockProjectId, mockStageId, payload);
+      const result = await updateStage({ projectName: MOCK_PROJECT.name, stageId: mockStageId, payload });
+      expect(result.description).toBe('Stage updated successfully');
+      expect(result.version).toBe((mockStageDbResponse.version || 0) + 1);
+    });
+
+    it('should update a stage by name successfully', async () => {
+      const payload: UpdateStagePayload = { prioritized_rulesets: [{ rules: [{ metric: 'test', operator: 'gt', target_value: 1 }] }] };
+      const result = await updateStage({ projectName: MOCK_PROJECT.name, stageName: mockStageDbResponse.name, payload });
       expect(result.description).toBe('Stage updated successfully');
       expect(result.version).toBe((mockStageDbResponse.version || 0) + 1);
     });
   });
 
   describe('pauseStage', () => {
-    it('should pause a stage successfully', async () => {
-      const result = await pauseStage(mockProjectId, mockStageId);
+    it('should pause a stage by ID successfully', async () => {
+      const result = await pauseStage({ projectName: MOCK_PROJECT.name, stageId: mockStageId });
+      expect(result.paused).toBe(true);
+    });
+    it('should pause a stage by name successfully', async () => {
+      const result = await pauseStage({ projectName: MOCK_PROJECT.name, stageName: mockStageDbResponse.name });
       expect(result.paused).toBe(true);
     });
   });
 
   describe('resumeStage', () => {
-    it('should resume a stage successfully', async () => {
-      const result = await resumeStage(mockProjectId, mockStageId);
+    it('should resume a stage by ID successfully', async () => {
+      const result = await resumeStage({ projectName: MOCK_PROJECT.name, stageId: mockStageId });
+      expect(result.paused).toBe(false);
+    });
+    it('should resume a stage by name successfully', async () => {
+      const result = await resumeStage({ projectName: MOCK_PROJECT.name, stageName: mockStageDbResponse.name });
       expect(result.paused).toBe(false);
     });
   });

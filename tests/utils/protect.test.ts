@@ -3,14 +3,15 @@ import { setupServer } from 'msw/node';
 import { invoke } from '../../src/utils/protect';
 import { commonHandlers, TEST_HOST } from '../common';
 import {
-  Request as ApiRequest,
+  ProtectInvokeOptions as ApiRequest, // Changed 'Request' to 'ProtectInvokeOptions', kept alias
   Response as ApiResponse,
   Project,
   ProjectTypes,
   LogStream,
-} from '../../src/types';
+} from '../../src/types'; // Assuming ProtectInvokeOptions is exported from src/types/index.ts or src/types/protect.types.ts and re-exported
 
 const MOCK_API_REQUEST: ApiRequest = {
+  projectName: 'test-project', // Added: Must match MOCK_PROJECT.name for init to work
   payload: {
     input: 'This is a test input.',
   },
@@ -99,6 +100,7 @@ describe('utils.invoke', () => {
   });
 
   it('should call the /protect/invoke endpoint and return the response', async () => {
+    expect(MOCK_API_REQUEST.projectName).toBe(MOCK_PROJECT.name); // Ensure test setup is correct for init mocks
     const result = await invoke(MOCK_API_REQUEST);
 
     expect(protectInvokeHandler).toHaveBeenCalledTimes(1);
@@ -106,6 +108,7 @@ describe('utils.invoke', () => {
   });
 
   it('should handle API errors gracefully', async () => {
+    expect(MOCK_API_REQUEST.projectName).toBe(MOCK_PROJECT.name); // Ensure test setup is correct for init mocks
     server.use(
       http.post(`${TEST_HOST}/protect/invoke`, protectInvokeErrorHandler)
     );
