@@ -74,6 +74,13 @@ export class ExperimentService extends BaseClient {
     return response.scorers;
   };
 
+  /**
+   * Retrieves a specific version of a scorer by its ID and version number.
+   *
+   * @param scorerId - The unique identifier of the scorer.
+   * @param version - The version number of the scorer to retrieve.
+   * @returns A promise that resolves to the requested {@link ScorerVersion}.
+   */
   public getScorerVersion = async (
     scorerId: string,
     version: number
