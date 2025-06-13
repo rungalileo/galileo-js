@@ -90,3 +90,8 @@ export enum GalileoScorers {
   Uncertainty = 'uncertainty'
 }
 /* eslint-enable @typescript-eslint/no-duplicate-enum-values */
+
+export interface Metric {
+  name: string;
+  version?: number;
+}
