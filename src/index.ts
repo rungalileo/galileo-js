@@ -4,6 +4,7 @@ import GalileoObserveApiClient from './observe/api-client';
 import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
+import { GalileoScorers } from './types/metrics.types';
 import {
   getDatasets,
   createDataset,
@@ -43,6 +44,7 @@ export {
   GalileoApiClient,
   GalileoLogger,
   GalileoCallback,
+  GalileoScorers,
   // OpenAI
   wrapOpenAI,
   // Datasets
