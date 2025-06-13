@@ -23,7 +23,8 @@
     "lint-fix": "eslint . --fix",
     "format": "prettier --config .prettierrc.js 'src/**/*.ts' --write",
     "format-examples": "prettier --config .prettierrc.js 'examples/**/*.js' --write",
-    "fetch-api-types": "npx openapi-typescript https://api.galileo.ai/client/openapi.json --default-non-nullable=false --output src/types/api.types.ts"
+    "fetch-api-types": "npx openapi-typescript https://api.galileo.ai/client/openapi.json --default-non-nullable=false --output src/types/api.types.ts",
+    "docs": "typedoc"
   },
   "author": "Galileo Technologies Inc. <team@galileo.ai>",
   "license": "Apache-2.0",
@@ -56,6 +57,8 @@
     "openapi-typescript": "^7.4.4",
     "prettier": "^3.2.5",
     "ts-jest": "^29.2.6",
+    "typedoc": "^0.28.5",
+    "typedoc-plugin-markdown": "^4.6.4",
     "typescript": "^5.8.2"
   },
   "directories": {
