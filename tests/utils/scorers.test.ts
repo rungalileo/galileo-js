@@ -19,10 +19,10 @@ jest.mock('../../src/api-client', () => {
 describe('scorers utility', () => {
   const scorerId = 'scorer-123';
   const version = 2;
-  
+
   const mockScorerVersion: ScorerVersion = {
     id: 'scorer-version-123',
-    version: 2,
+    version: 2
   };
 
   beforeEach(() => {
@@ -43,24 +43,26 @@ describe('scorers utility', () => {
       await getScorerVersion(scorerId, version);
       expect(mockInit).toHaveBeenCalled();
     });
-    
+
     it('should call getScorerVersion with the correct parameters', async () => {
       await getScorerVersion(scorerId, version);
       expect(mockGetScorerVersion).toHaveBeenCalledWith(scorerId, version);
     });
-    
+
     it('should return the scorer version data', async () => {
       const result = await getScorerVersion(scorerId, version);
       expect(result).toEqual(mockScorerVersion);
     });
-    
+
     it('should handle API errors gracefully', async () => {
       // Setup mock to throw an error
       const apiError = new Error('API connection failed');
       mockGetScorerVersion.mockRejectedValueOnce(apiError);
-      
+
       // Call the function and expect it to reject with the same error
-      await expect(getScorerVersion(scorerId, version)).rejects.toThrow(apiError);
+      await expect(getScorerVersion(scorerId, version)).rejects.toThrow(
+        apiError
+      );
     });
   });
 });
