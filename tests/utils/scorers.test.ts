@@ -43,17 +43,14 @@ describe('scorers utility', () => {
       await getScorerVersion(scorerId, version);
       expect(mockInit).toHaveBeenCalled();
     });
-
     it('should call getScorerVersion with the correct parameters', async () => {
       await getScorerVersion(scorerId, version);
       expect(mockGetScorerVersion).toHaveBeenCalledWith(scorerId, version);
     });
-
     it('should return the scorer version data', async () => {
       const result = await getScorerVersion(scorerId, version);
       expect(result).toEqual(mockScorerVersion);
     });
-
     it('should handle API errors gracefully', async () => {
       // Setup mock to throw an error
       const apiError = new Error('API connection failed');
