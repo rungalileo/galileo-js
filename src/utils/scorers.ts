@@ -8,6 +8,17 @@ export const getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
   return await client.getScorers(type);
 };
 
+/**
+ * Retrieves a specific version of a scorer by its ID and version number.
+ *
+ * @param scorerId - The unique identifier of the scorer.
+ * @param version - The version number of the scorer to retrieve.
+ * @returns A promise that resolves to the requested {@link ScorerVersion}.
+ *
+ * @remarks
+ * This function initializes a new instance of {@link GalileoApiClient},
+ * establishes a connection, and fetches the specified scorer version.
+ */
 export const getScorerVersion = async (
   scorerId: string,
   version: number
