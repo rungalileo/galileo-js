@@ -9,6 +9,7 @@ import {
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
+import { AgentSpan } from '../../src/types';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
 const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
@@ -224,6 +225,19 @@ describe('GalileoLogger', () => {
       expect(span.input).toBe('');
     });
 
+    it('should return empty objects for addAgentSpan when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addAgentSpan({
+        input: 'test input',
+        output: 'test output'
+      });
+
+      expect(span).toBeInstanceOf(AgentSpan);
+      expect(span.input).toBe('');
+    });
+
     it('should return undefined for conclude when logging is disabled', () => {
       // First create a trace (which will be a no-op due to disabled logging)
       logger.startTrace({ input: 'test input' });
@@ -385,6 +399,13 @@ describe('GalileoLogger', () => {
 
       const workflowSpan = logger.addWorkflowSpan({ input: 'workflow input' });
       expect(workflowSpan).toBeInstanceOf(WorkflowSpan);
+    });
+
+    it('should add agent span', () => {
+      logger.startTrace({ input: 'test input' });
+
+      const agentSpan = logger.addAgentSpan({ input: 'workflow input' });
+      expect(agentSpan).toBeInstanceOf(AgentSpan);
     });
   });
 

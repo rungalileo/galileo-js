@@ -3,7 +3,7 @@ import { GalileoLogger } from '@rungalileo/galileo';
 
 const logger = new GalileoLogger({
   projectName: 'SDK_test_project',
-  logStreamName: 'rodrigo_test'
+  logStreamName: 'log_stream_test'
 });
 
 // Create a new trace
@@ -51,6 +51,20 @@ logger.addLlmSpan({
   durationNs: 1000000000, // durationNs (1s)
   userMetadata: { temperature: '0.7' }, // userMetadata
   tags: ['llm', 'chat'] // tags
+});
+
+// Add an LLM span as a child of the workflow span
+logger.addAgentSpan({
+  input: [{ role: 'user', content: 'Hello, how are you?' }], // input messages
+  output: {
+    role: 'assistant',
+    content: 'I am doing well, thank you for asking!'
+  }, // output message
+  model: 'gpt-3.5-turbo', // model name
+  name: 'Agent Span', // name
+  durationNs: 1000000000, // durationNs (1s)
+  userMetadata: { temperature: '0.7' }, // userMetadata
+  tags: ['agent', 'span'] // tags
 });
 
 // Conclude the workflow span
