@@ -24,7 +24,7 @@ jobs:
         with:
           repository: rungalileo/docs-official
           path: ./docs-official
-          token:  ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          token: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
 
       # Generate the docs using TSDoc
       - name: Build Docs
