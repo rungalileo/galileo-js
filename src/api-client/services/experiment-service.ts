@@ -1,6 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Scorer } from '../../types/scorer.types';
+import { Scorer, ScorerConfig, ScorerVersion } from '../../types/scorer.types';
 import { ScorerTypes } from '../../types/scorer.types';
 import {
   Experiment,
@@ -74,10 +74,32 @@ export class ExperimentService extends BaseClient {
     return response.scorers;
   };
 
+  /**
+   * Retrieves a specific version of a scorer by its ID and version number.
+   *
+   * @param scorerId - The unique identifier of the scorer.
+   * @param version - The version number of the scorer to retrieve.
+   * @returns A promise that resolves to the requested {@link ScorerVersion}.
+   */
+  public getScorerVersion = async (
+    scorerId: string,
+    version: number
+  ): Promise<ScorerVersion> => {
+    const path = Routes.scorerVersion.replace('{scorer_id}', scorerId);
+    return await this.makeRequest<ScorerVersion>(
+      RequestMethod.GET,
+      path as Routes,
+      undefined,
+      {
+        version: version
+      }
+    );
+  };
+
   public createRunScorerSettings = async (
     experimentId: string,
     projectId: string,
-    scorers: Scorer[]
+    scorers: ScorerConfig[]
   ): Promise<void> => {
     return await this.makeRequest<void>(
       RequestMethod.POST,
@@ -95,7 +117,7 @@ export class ExperimentService extends BaseClient {
     projectId: string,
     promptTemplateVersionId: string,
     datasetId: string,
-    scorers?: Scorer[],
+    scorers?: ScorerConfig[],
     promptSettings?: PromptRunSettings
   ): Promise<CreateJobResponse> => {
     return await this.makeRequest<CreateJobResponse>(
@@ -108,7 +130,7 @@ export class ExperimentService extends BaseClient {
         prompt_template_version_id: promptTemplateVersionId,
         prompt_settings: promptSettings || {},
         dataset_id: datasetId,
-        // scorers: scorers || null,
+        scorers: scorers,
         task_type: 17
       }
     );
