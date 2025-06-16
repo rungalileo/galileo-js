@@ -85,12 +85,14 @@ export class ExperimentService extends BaseClient {
     scorerId: string,
     version: number
   ): Promise<ScorerVersion> => {
-    const path = Routes.scorerVersion
-      .replace(':scorer_id', scorerId)
-      .replace(':version', version.toString());
+    const path = Routes.scorerVersion.replace('{scorer_id}', scorerId);
     return await this.makeRequest<ScorerVersion>(
       RequestMethod.GET,
-      path as Routes
+      path as Routes,
+      undefined,
+      {
+        version: version
+      }
     );
   };
 

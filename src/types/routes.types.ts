@@ -23,7 +23,7 @@ export enum Routes {
   traces = 'projects/{project_id}/traces',
   sessions = 'projects/{project_id}/sessions',
   scorers = 'scorers/list',
-  scorerVersion = 'scorers/{scorer_id}/versions/{version}',
+  scorerVersion = 'scorers/{scorer_id}/version',
   runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings',
   promptTemplates = 'projects/{project_id}/templates',
   promptTemplate = 'projects/{project_id}/templates/{template_id}',
