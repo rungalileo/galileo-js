@@ -5,7 +5,6 @@ import {
   deleteScorer,
   getScorers
 } from './scorers';
-import { components } from '../types/api.types';
 
 /**
  * Creates a custom LLM metric.

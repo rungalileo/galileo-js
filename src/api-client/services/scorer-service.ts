@@ -8,7 +8,6 @@ import {
   ScorerVersion
 } from '../../types/scorer.types';
 import { ScorerTypes } from '../../types/scorer.types';
-import { components } from '../../types/api.types';
 
 export class ScorerService extends BaseClient {
   constructor(apiUrl: string, token: string) {

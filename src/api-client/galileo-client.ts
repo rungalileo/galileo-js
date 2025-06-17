@@ -24,7 +24,6 @@ import {
   PromptRunSettings
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
-import { components } from '../types/api.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;

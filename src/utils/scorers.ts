@@ -7,7 +7,6 @@ import {
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
-import { components } from '../types/api.types';
 
 export const getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
   const client = new GalileoApiClient();
