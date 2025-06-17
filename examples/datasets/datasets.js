@@ -3,7 +3,7 @@ import {
   getDatasets,
   createDataset,
   getDatasetContent
-} from '@rungalileo/galileo';
+} from '../../dist/index.js';
 
 // Create a dataset
 const dataset = await createDataset(
@@ -21,5 +21,5 @@ const datasets = await getDatasets();
 datasets.forEach((dataset) => console.log(dataset));
 
 // Get dataset content
-const content = await getDatasetContent(dataset.id);
+const content = await getDatasetContent({ datasetId: dataset.id });
 console.log('Dataset content:', content);
