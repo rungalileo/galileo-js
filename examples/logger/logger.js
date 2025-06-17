@@ -1,10 +1,12 @@
-import 'dotenv/config';
-import { GalileoLogger } from '@rungalileo/galileo';
+import dotenv from 'dotenv';
+import { GalileoLogger } from '../../dist/index.js';
 
 const logger = new GalileoLogger({
   projectName: 'SDK_test_project',
   logStreamName: 'log_stream_test'
 });
+
+dotenv.config();
 
 // Create a new trace
 const trace = logger.startTrace(
