@@ -11,21 +11,19 @@ import {
   StageDB,
   StageCreationPayload,
   UpdateStagePayload,
-  // GetStageParams, // Removed as it's no longer used by utils/stage.ts
 } from '../../src/types/stage.types';
 import { Project, ProjectTypes, LogStream } from '../../src/types';
 import { commonHandlers, TEST_HOST } from '../common';
 
-process.env.GALILEO_CONSOLE_URL = TEST_HOST; // Ensure apiClient init uses this
-process.env.GALILEO_API_KEY = 'test-api-key'; // For apiClient init
+process.env.GALILEO_CONSOLE_URL = TEST_HOST;
+process.env.GALILEO_API_KEY = 'test-api-key';
 
 const mockProjectId = 'project-uuid-123';
 const mockStageId = 'stage-uuid-abc';
 
-// Mock Project for init()
 const MOCK_PROJECT: Project = {
   id: mockProjectId,
-  name: 'Test Project From Stage Util',
+  name: 'Test Project',
   type: ProjectTypes.genAI,
 };
 
@@ -40,7 +38,6 @@ const mockStageDbResponse: StageDB = {
   description: 'A test stage',
 };
 
-// Mock LogStream for init()
 const MOCK_LOG_STREAM: LogStream = {
   id: 'logstream-default-uuid',
   name: 'default',
@@ -51,32 +48,33 @@ const MOCK_LOG_STREAM: LogStream = {
 };
 
 const stageSpecificHandlers = [
-  // Handler for apiClient.init({ projectName: ... }) to resolve projectName to projectId
+  // Handler for Project Name
   http.get(`${TEST_HOST}/projects`, ({ request }) => {
     const url = new URL(request.url);
     if (url.searchParams.get('project_name') === MOCK_PROJECT.name) {
-      return HttpResponse.json([MOCK_PROJECT]); // Must return array
+      return HttpResponse.json([MOCK_PROJECT]);
     }
     return HttpResponse.json([], { status: 404 });
   }),
-  // Handler for LogStreams, needed by apiClient.init() (uses resolved projectId)
+
+  // Handler for Log Streams
   http.get(`${TEST_HOST}/projects/${mockProjectId}/log_streams`, () => {
     return HttpResponse.json([MOCK_LOG_STREAM]);
   }),
-  // Create Stage (uses resolved projectId)
+
+  // Create Stage
   http.post(`${TEST_HOST}/projects/${mockProjectId}/stages`, async ({ request }) => {
     const body = await request.json() as StageCreationPayload;
     if (body.name === 'error-case') {
       return HttpResponse.json({ detail: 'Failed to create stage' }, { status: 500 });
     }
-    // Construct a StageDB response, taking fields from body and falling back to mockStageDbResponse
+
     const responseData: StageDB = {
-      ...mockStageDbResponse, // for id, project_id, created_by, default version etc.
+      ...mockStageDbResponse,
       name: body.name,
       description: body.description ?? mockStageDbResponse.description,
       type: body.type ?? mockStageDbResponse.type,
       paused: body.paused ?? mockStageDbResponse.paused,
-      // prioritized_rulesets from body are not part of StageDB response
     };
     return HttpResponse.json(responseData);
   }),
@@ -99,7 +97,6 @@ const stageSpecificHandlers = [
   // Update Stage
   http.post(`${TEST_HOST}/projects/${mockProjectId}/stages/${mockStageId}`, async ({ request }) => {
     await request.json() as UpdateStagePayload;
-    // Return a valid StageDB, e.g., with an updated description or version
     return HttpResponse.json({ ...mockStageDbResponse, description: 'Stage updated successfully', version: (mockStageDbResponse.version || 0) + 1 });
   }),
 
@@ -107,6 +104,7 @@ const stageSpecificHandlers = [
   http.put(`${TEST_HOST}/projects/${mockProjectId}/stages/${mockStageId}`, ({ request }) => {
     const url = new URL(request.url);
     const pauseParam = url.searchParams.get('pause');
+
     if (pauseParam === 'true') {
       return HttpResponse.json({ ...mockStageDbResponse, paused: true });
     }

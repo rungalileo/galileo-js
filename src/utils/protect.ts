@@ -1,7 +1,7 @@
 import {
   ProtectInvokeOptions,
   Response,
-  BackendRequest, // Using BackendRequest for the original Request type from API schema
+  Request,
 } from '../types/protect.types';
 import { GalileoApiClient } from '../api-client';
 
@@ -10,13 +10,11 @@ import { GalileoApiClient } from '../api-client';
  */
 export const invoke = async (options: ProtectInvokeOptions): Promise<Response> => {
   const {
-    // Contextual:
-    projectName, // Mandatory
+    projectName,
     stageName,
     stageId,
     stageVersion,
-    // Operational:
-    payload, // Mandatory from ProtectInvokeOptions (and BackendRequest)
+    payload,
     prioritized_rulesets,
     timeout,
     metadata,
@@ -24,22 +22,19 @@ export const invoke = async (options: ProtectInvokeOptions): Promise<Response> =
   } = options;
 
   const apiClient = new GalileoApiClient();
-  // projectName is now mandatory for init from ProtectInvokeOptions
   await apiClient.init({ projectName });
 
-  // Construct the actual Request object expected by apiClient.invoke and the backend
-  const backendApiRequest: BackendRequest = {
+  const request: Request = {
     payload,
     prioritized_rulesets,
     timeout,
     metadata,
     headers,
-    project_name: projectName, // Pass the mandatory projectName
-    // project_id is not explicitly set here; backend will use project_name or what's in payload if any
+    project_name: projectName,
     stage_name: stageName,
     stage_id: stageId,
     stage_version: stageVersion,
   };
   
-  return await apiClient.invoke(backendApiRequest);
+  return await apiClient.invoke(request);
 };

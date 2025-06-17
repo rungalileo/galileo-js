@@ -3,15 +3,15 @@ import { setupServer } from 'msw/node';
 import { invoke } from '../../src/utils/protect';
 import { commonHandlers, TEST_HOST } from '../common';
 import {
-  ProtectInvokeOptions as ApiRequest, // Changed 'Request' to 'ProtectInvokeOptions', kept alias
+  ProtectInvokeOptions as ApiRequest,
   Response as ApiResponse,
   Project,
   ProjectTypes,
   LogStream,
-} from '../../src/types'; // Assuming ProtectInvokeOptions is exported from src/types/index.ts or src/types/protect.types.ts and re-exported
+} from '../../src/types';
 
 const MOCK_API_REQUEST: ApiRequest = {
-  projectName: 'test-project', // Added: Must match MOCK_PROJECT.name for init to work
+  projectName: 'test-project',
   payload: {
     input: 'This is a test input.',
   },
@@ -32,6 +32,7 @@ const MOCK_PROJECT: Project = {
   name: 'test-project',
   type: ProjectTypes.genAI,
 };
+
 const MOCK_DEFAULT_LOG_STREAM: LogStream = {
   id: 'mock-logstream-id-default',
   name: 'default',
@@ -60,6 +61,7 @@ const getLogStreamsHandler = jest.fn().mockImplementation(({ params }) => {
   }
   return HttpResponse.json([], { status: 404 });
 });
+
 const getProjectsHandler = jest.fn().mockImplementation(({ request }) => {
   const url = new URL(request.url);
   const projectNameSearch = url.searchParams.get('project_name');
@@ -100,7 +102,7 @@ describe('utils.invoke', () => {
   });
 
   it('should call the /protect/invoke endpoint and return the response', async () => {
-    expect(MOCK_API_REQUEST.projectName).toBe(MOCK_PROJECT.name); // Ensure test setup is correct for init mocks
+    expect(MOCK_API_REQUEST.projectName).toBe(MOCK_PROJECT.name);
     const result = await invoke(MOCK_API_REQUEST);
 
     expect(protectInvokeHandler).toHaveBeenCalledTimes(1);
@@ -108,7 +110,7 @@ describe('utils.invoke', () => {
   });
 
   it('should handle API errors gracefully', async () => {
-    expect(MOCK_API_REQUEST.projectName).toBe(MOCK_PROJECT.name); // Ensure test setup is correct for init mocks
+    expect(MOCK_API_REQUEST.projectName).toBe(MOCK_PROJECT.name);
     server.use(
       http.post(`${TEST_HOST}/protect/invoke`, protectInvokeErrorHandler)
     );

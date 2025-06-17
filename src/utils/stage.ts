@@ -1,4 +1,3 @@
-// src/utils/stage.ts
 import { GalileoApiClient } from '../api-client';
 import {
   StageCreationPayload,
@@ -8,7 +7,7 @@ import {
 
 /**
  * Creates a new stage for a project.
- * This is a utility function that instantiates GalileoApiClient internally.
+ * 
  * @param projectName The name of the project.
  * @param payload The data for the new stage (must include stage name).
  * @returns The created stage.
@@ -24,12 +23,11 @@ export const createStage = async (
 
 /**
  * Retrieves a specific stage by its ID or name within a project.
- * This is a utility function that instantiates GalileoApiClient internally.
+ * 
  * @param projectName The name of the project.
  * @param id The ID of the stage (optional if name is provided).
  * @param name The name of the stage (optional if id is provided).
  * @returns The requested stage.
- * @throws Error if neither id nor name is provided, or if the stage is not found.
  */
 export const getStage = async ({
   projectName,
@@ -54,13 +52,12 @@ export const getStage = async ({
 
 /**
  * Updates an existing stage's rulesets.
- * This is a utility function that instantiates GalileoApiClient internally.
+ * 
  * @param projectName The name of the project.
  * @param stageId The ID of the stage to update (optional if stageName is provided).
  * @param stageName The name of the stage to update (optional if stageId is provided).
  * @param payload The new ruleset data for the stage.
  * @returns The updated stage.
- * @throws Error if neither stageId nor stageName is provided, or if the stage is not found.
  */
 export const updateStage = async ({
   projectName,
@@ -89,12 +86,11 @@ export const updateStage = async ({
 
 /**
  * Pauses a stage.
- * This is a utility function that instantiates GalileoApiClient internally.
+ * 
  * @param projectName The name of the project.
  * @param stageId The ID of the stage to pause (optional if stageName is provided).
  * @param stageName The name of the stage to pause (optional if stageId is provided).
  * @returns The updated stage (now paused).
- * @throws Error if neither stageId nor stageName is provided, or if the stage is not found.
  */
 export const pauseStage = async ({
   projectName,
@@ -121,12 +117,11 @@ export const pauseStage = async ({
 
 /**
  * Resumes a paused stage.
- * This is a utility function that instantiates GalileoApiClient internally.
+ * 
  * @param projectName The name of the project.
  * @param stageId The ID of the stage to resume (optional if stageName is provided).
  * @param stageName The name of the stage to resume (optional if stageId is provided).
  * @returns The updated stage (now active).
- * @throws Error if neither stageId nor stageName is provided, or if the stage is not found.
  */
 export const resumeStage = async ({
   projectName,

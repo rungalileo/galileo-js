@@ -398,17 +398,17 @@ export class GalileoApiClient extends BaseClient {
   // Stage methods - delegate to StageService
   public async createStage(payload: StageCreationPayload): Promise<StageDB> {
     this.ensureService(this.stageService);
-    return this.stageService!.createStage(this.projectId, payload);
+    return this.stageService!.createStage(payload);
   }
 
   public async getStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    return this.stageService!.getStage(this.projectId, { stageId });
+    return this.stageService!.getStage({ stageId });
   }
 
   public async getStageByName(stageName: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    return this.stageService!.getStage(this.projectId, { stageName });
+    return this.stageService!.getStage({ stageName });
   }
 
   public async updateStage(
@@ -416,17 +416,17 @@ export class GalileoApiClient extends BaseClient {
     payload: UpdateStagePayload,
   ): Promise<StageDB> {
     this.ensureService(this.stageService);
-    return this.stageService!.updateStage(this.projectId, stageId, payload);
+    return this.stageService!.updateStage(stageId, payload);
   }
 
   public async pauseStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    return this.stageService!.pauseStage(this.projectId, stageId);
+    return this.stageService!.pauseStage(stageId);
   }
 
   public async resumeStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
-    return this.stageService!.resumeStage(this.projectId, stageId);
+    return this.stageService!.resumeStage(stageId);
   }
 
   // Helper to ensure service is initialized

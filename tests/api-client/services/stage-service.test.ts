@@ -1,4 +1,3 @@
-// tests/api-client/services/stage-service.test.ts
 import { StageService } from '../../../src/api-client/services/stage-service';
 import { RequestMethod } from '../../../src/api-client/base-client';
 import { Routes } from '../../../src/types/routes.types';
@@ -9,16 +8,15 @@ import {
   StageDB,
 } from '../../../src/types/stage.types';
 
-// Mock BaseClient
 const mockMakeRequest = jest.fn();
 jest.mock('../../../src/api-client/base-client', () => {
   return {
     BaseClient: jest.fn().mockImplementation(() => {
       return {
         makeRequest: mockMakeRequest,
-        initializeClient: jest.fn(), // Mock initializeClient
-        apiUrl: 'mockApiUrl', // Provide mock values if constructor uses them
-        token: 'mockToken',   // Provide mock values if constructor uses them
+        initializeClient: jest.fn(),
+        apiUrl: 'mockApiUrl',
+        token: 'mockToken',
       };
     }),
     RequestMethod: jest.requireActual('../../../src/api-client/base-client').RequestMethod,
@@ -32,13 +30,10 @@ describe('StageService', () => {
   const mockProjectId = 'project-123';
 
   beforeEach(() => {
-    // Clear all mocks before each test
     mockMakeRequest.mockClear();
-    // Re-initialize service before each test to ensure clean state
     stageService = new StageService(mockApiUrl, mockToken, mockProjectId);
   });
 
-  // Test data
   const mockStageDB: StageDB = {
     id: 'stage-abc',
     name: 'Test Stage',
@@ -53,7 +48,7 @@ describe('StageService', () => {
       const payload: StageCreationPayload = { name: 'New Stage' };
       mockMakeRequest.mockResolvedValueOnce(mockStageDB);
 
-      await stageService.createStage(mockProjectId, payload);
+      await stageService.createStage(payload);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -69,7 +64,7 @@ describe('StageService', () => {
       const params: GetStageParams = { stageId: 'stage-abc' };
       mockMakeRequest.mockResolvedValueOnce(mockStageDB);
 
-      await stageService.getStage(mockProjectId, params);
+      await stageService.getStage(params);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.GET,
@@ -83,7 +78,7 @@ describe('StageService', () => {
       const params: GetStageParams = { stageName: 'Test Stage' };
       mockMakeRequest.mockResolvedValueOnce(mockStageDB);
 
-      await stageService.getStage(mockProjectId, params);
+      await stageService.getStage(params);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.GET,
@@ -95,7 +90,7 @@ describe('StageService', () => {
 
     it('should throw error if neither stageId nor stageName is provided', async () => {
       const params: GetStageParams = {};
-      await expect(stageService.getStage(mockProjectId, params)).rejects.toThrow(
+      await expect(stageService.getStage(params)).rejects.toThrow(
         'Either stageId or stageName must be provided to getStage.',
       );
     });
@@ -107,7 +102,7 @@ describe('StageService', () => {
       const payload: UpdateStagePayload = { prioritized_rulesets: [] };
       mockMakeRequest.mockResolvedValueOnce(mockStageDB);
 
-      await stageService.updateStage(mockProjectId, stageId, payload);
+      await stageService.updateStage(stageId, payload);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -123,7 +118,7 @@ describe('StageService', () => {
       const stageId = 'stage-abc';
       mockMakeRequest.mockResolvedValueOnce({ ...mockStageDB, paused: true });
 
-      await stageService.pauseStage(mockProjectId, stageId);
+      await stageService.pauseStage(stageId);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.PUT,
@@ -139,7 +134,7 @@ describe('StageService', () => {
       const stageId = 'stage-abc';
       mockMakeRequest.mockResolvedValueOnce({ ...mockStageDB, paused: false });
 
-      await stageService.resumeStage(mockProjectId, stageId);
+      await stageService.resumeStage(stageId);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.PUT,

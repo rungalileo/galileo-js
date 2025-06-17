@@ -27,7 +27,7 @@ import {
   getExperiment,
   runExperiment
 } from './utils/experiments';
-import { invoke } from './utils/protect'; // Added import
+import { invoke } from './utils/protect';
 import {
   createStage,
   getStage,
@@ -76,7 +76,7 @@ export {
   createLogStream,
   getLogStream,
   // Protect
-  invoke, // Added export
+  invoke,
   // Stages
   createStage,
   getStage,
