@@ -57,6 +57,10 @@ export type ScorerConfig = components['schemas']['ScorerConfig'];
 
 export type ScorerDefaults = components['schemas']['ScorerDefaults'];
 
+export type ModelType = components['schemas']['ModelType'];
+
+export type ChainPollTemplate = components['schemas']['ChainPollTemplate'];
+
 export interface Scorer {
   id: string;
   name: string;

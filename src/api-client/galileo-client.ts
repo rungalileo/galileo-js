@@ -4,7 +4,9 @@ import {
   ScorerConfig,
   ScorerDefaults,
   ScorerTypes,
-  ScorerVersion
+  ScorerVersion,
+  ModelType,
+  ChainPollTemplate
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
@@ -261,15 +263,9 @@ export class GalileoApiClient extends BaseClient {
     return this.datasetService!.getDatasetContent(datasetId);
   }
 
-  public async deleteDataset({
-    id,
-    name
-  }: {
-    id?: string;
-    name?: string;
-  }): Promise<void> {
+  public async deleteDataset(id: string): Promise<void> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.deleteDataset({ id: id, name: name });
+    return this.datasetService!.deleteDataset(id);
   }
 
   public async appendRowsToDatasetContent(
@@ -352,7 +348,7 @@ export class GalileoApiClient extends BaseClient {
   }
 
   public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
-    this.ensureService(this.experimentService);
+    this.ensureService(this.scorerService);
     return this.scorerService!.getScorers(type);
   }
 
@@ -360,7 +356,7 @@ export class GalileoApiClient extends BaseClient {
     scorer_id: string,
     version: number
   ): Promise<ScorerVersion> {
-    this.ensureService(this.experimentService);
+    this.ensureService(this.scorerService);
     return this.scorerService!.getScorerVersion(scorer_id, version);
   }
 
@@ -402,10 +398,10 @@ export class GalileoApiClient extends BaseClient {
     description?: string,
     tags?: string[],
     defaults?: ScorerDefaults,
-    modelType?: components['schemas']['ModelType'],
+    modelType?: ModelType,
     defaultVersionId?: string
   ): Promise<Scorer> {
-    this.ensureService(this.experimentService);
+    this.ensureService(this.scorerService);
     return this.scorerService!.createScorer(
       name,
       scorerType,
@@ -420,11 +416,11 @@ export class GalileoApiClient extends BaseClient {
   public async createLlmScorerVersion(
     scorerId: string,
     instructions: string,
-    chainPollTemplate: components['schemas']['ChainPollTemplate'],
+    chainPollTemplate: ChainPollTemplate,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> {
-    this.ensureService(this.experimentService);
+    this.ensureService(this.scorerService);
     return this.scorerService!.createLLMScorerVersion(
       scorerId,
       instructions,
@@ -435,7 +431,7 @@ export class GalileoApiClient extends BaseClient {
   }
 
   public async deleteScorer(scorerId: string): Promise<void> {
-    this.ensureService(this.experimentService);
+    this.ensureService(this.scorerService);
     return this.scorerService!.deleteScorer(scorerId);
   }
 

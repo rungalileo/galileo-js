@@ -1,6 +1,8 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import {
+  ChainPollTemplate,
+  ModelType,
   Scorer,
   ScorerDefaults,
   ScorerVersion
@@ -82,7 +84,7 @@ export class ScorerService extends BaseClient {
     description?: string,
     tags?: string[],
     defaults?: ScorerDefaults,
-    modelType?: components['schemas']['ModelType'],
+    modelType?: ModelType,
     defaultVersionId?: string
   ): Promise<Scorer> => {
     const scorerPayload = {
@@ -115,7 +117,7 @@ export class ScorerService extends BaseClient {
   public createLLMScorerVersion = async (
     scorerId: string,
     instructions: string,
-    chainPollTemplate: components['schemas']['ChainPollTemplate'],
+    chainPollTemplate: ChainPollTemplate,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> => {

@@ -1,4 +1,10 @@
-import { Scorer, ScorerConfig, ScorerVersion } from '../types/scorer.types';
+import {
+  ChainPollTemplate,
+  ModelType,
+  Scorer,
+  ScorerConfig,
+  ScorerVersion
+} from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
 import { components } from '../types/api.types';
@@ -29,6 +35,17 @@ export const getScorerVersion = async (
   return await client.getScorerVersion(scorerId, version);
 };
 
+/**
+ * Creates run scorer settings for an experiment.
+ *
+ * @param params - The parameters for creating run scorer settings.
+ * @param params.experimentId - The experiment ID.
+ * @param params.projectId - (Optional) The project ID.
+ * @param params.projectName - (Optional) The project name.
+ * @param params.scorers - The list of scorer configurations.
+ * @returns A promise that resolves when the settings are created.
+ * @throws Error if neither projectId nor projectName is provided.
+ */
 export const createRunScorerSettings = async ({
   experimentId,
   projectId,
@@ -54,13 +71,25 @@ export const createRunScorerSettings = async ({
   );
 };
 
+/**
+ * Creates a new scorer.
+ *
+ * @param name - The name of the scorer.
+ * @param scorerType - The type of the scorer.
+ * @param description - (Optional) A description for the scorer.
+ * @param tags - (Optional) Tags to associate with the scorer.
+ * @param defaults - (Optional) Default settings for the scorer.
+ * @param modelType - (Optional) The model type for the scorer.
+ * @param defaultVersionId - (Optional) The default version ID for the scorer.
+ * @returns A promise that resolves to the created {@link Scorer}.
+ */
 export const createScorer = async (
   name: string,
   scorerType: ScorerTypes,
   description?: string,
   tags?: string[],
   defaults?: ScorerDefaults,
-  modelType?: components['schemas']['ModelType'],
+  modelType?: ModelType,
   defaultVersionId?: string
 ): Promise<Scorer> => {
   const client = new GalileoApiClient();
@@ -77,10 +106,20 @@ export const createScorer = async (
   );
 };
 
+/**
+ * Creates a new LLM scorer version for a given scorer.
+ *
+ * @param scorerId - The unique identifier of the scorer.
+ * @param instructions - Instructions for the scorer version.
+ * @param chainPollTemplate - The chain poll template for the scorer version.
+ * @param modelName - (Optional) The model name to use.
+ * @param numJudges - (Optional) The number of judges to use.
+ * @returns A promise that resolves to the created {@link ScorerVersion}.
+ */
 export const createLlmScorerVersion = async (
   scorerId: string,
   instructions: string,
-  chainPollTemplate: components['schemas']['ChainPollTemplate'],
+  chainPollTemplate: ChainPollTemplate,
   modelName?: string,
   numJudges?: number
 ): Promise<ScorerVersion> => {
@@ -96,6 +135,12 @@ export const createLlmScorerVersion = async (
   );
 };
 
+/**
+ * Deletes a scorer by its unique identifier.
+ *
+ * @param scorerId - The unique identifier of the scorer to delete.
+ * @returns A promise that resolves when the scorer is deleted.
+ */
 export const deleteScorer = async (scorerId: string): Promise<void> => {
   const client = new GalileoApiClient();
   await client.init();
