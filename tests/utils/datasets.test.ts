@@ -7,11 +7,7 @@ import {
   deleteDataset
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
-import {
-  Dataset,
-  DatasetContent,
-  DatasetRow,
-} from '../../src/api-client';
+import { Dataset, DatasetContent, DatasetRow } from '../../src/api-client';
 import { DatasetType } from '../../src/utils/datasets';
 
 const EXAMPLE_DATASET: Dataset = {

@@ -7,7 +7,7 @@ import {
 import {
   Scorer,
   ScorerVersion,
-  ScorerTypes,
+  ScorerTypes
 } from '../../src/types/scorer.types';
 
 // Create mock implementation functions
