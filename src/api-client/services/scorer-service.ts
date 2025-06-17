@@ -16,6 +16,12 @@ export class ScorerService extends BaseClient {
     this.initializeClient();
   }
 
+  /**
+   * Retrieves a list of scorers, optionally filtered by scorer type.
+   *
+   * @param type - (Optional) The type of scorer to filter by.
+   * @returns A promise that resolves to an array of {@link Scorer} objects.
+   */
   public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
     const response = await this.makeRequest<{ scorers: Scorer[] }>(
       RequestMethod.POST,
@@ -58,6 +64,18 @@ export class ScorerService extends BaseClient {
     );
   };
 
+  /**
+   * Creates a new scorer with the specified parameters.
+   *
+   * @param name - The name of the scorer.
+   * @param type - The type of the scorer.
+   * @param description - (Optional) A description for the scorer.
+   * @param tags - (Optional) Tags to associate with the scorer.
+   * @param defaults - (Optional) Default settings for the scorer.
+   * @param modelType - (Optional) The model type for the scorer.
+   * @param defaultVersionId - (Optional) The default version ID for the scorer.
+   * @returns A promise that resolves to the created {@link Scorer}.
+   */
   public createScorer = async (
     name: string,
     type: ScorerTypes,
@@ -84,6 +102,16 @@ export class ScorerService extends BaseClient {
     );
   };
 
+  /**
+   * Creates a new LLM scorer version for a given scorer.
+   *
+   * @param scorerId - The unique identifier of the scorer.
+   * @param instructions - Instructions for the scorer version.
+   * @param chainPollTemplate - The chain poll template for the scorer version.
+   * @param modelName - (Optional) The model name to use.
+   * @param numJudges - (Optional) The number of judges to use.
+   * @returns A promise that resolves to the created {@link ScorerVersion}.
+   */
   public createLLMScorerVersion = async (
     scorerId: string,
     instructions: string,
@@ -108,6 +136,12 @@ export class ScorerService extends BaseClient {
     );
   };
 
+  /**
+   * Deletes a scorer by its unique identifier.
+   *
+   * @param id - The unique identifier of the scorer to delete.
+   * @returns A promise that resolves when the scorer is deleted.
+   */
   public deleteScorer = async (id: string): Promise<void> => {
     const path = Routes.scorerId.replace('{scorer_id}', id);
     await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
