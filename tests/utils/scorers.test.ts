@@ -8,7 +8,6 @@ import {
   Scorer,
   ScorerVersion,
   ScorerTypes,
-  ScorerDefaults
 } from '../../src/types/scorer.types';
 
 // Create mock implementation functions
@@ -24,8 +23,8 @@ jest.mock('../../src/api-client', () => {
       return {
         init: mockInit,
         createScorer: mockCreateScorer,
-        createLlmScorerVersion: (...args: any[]) =>
-          mockCreateLlmScorerVersion(...args), // <-- Add this line
+        createLlmScorerVersion: (...args: unknown[]) =>
+          mockCreateLlmScorerVersion(...args),
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion
       };

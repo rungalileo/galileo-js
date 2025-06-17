@@ -11,7 +11,6 @@ import {
   Dataset,
   DatasetContent,
   DatasetRow,
-  ListDatasetResponse
 } from '../../src/api-client';
 import { DatasetType } from '../../src/utils/datasets';
 
@@ -41,9 +40,6 @@ const postDatasetsHandler = jest.fn().mockImplementation(() => {
 });
 
 const getDatasetsHandler = jest.fn().mockImplementation(() => {
-  const response: ListDatasetResponse = {
-    datasets: [EXAMPLE_DATASET]
-  };
   return HttpResponse.json({ datasets: [EXAMPLE_DATASET] });
 });
 
