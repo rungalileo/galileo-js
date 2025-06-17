@@ -236,3 +236,36 @@ export const convertDatasetContentToRecords = async (
     return record;
   });
 };
+
+/**
+ * Deletes a dataset by its unique identifier or name.
+ *
+ * If both `id` and `name` are provided, `id` takes precedence.
+ * If only `name` is provided, the dataset will be looked up by name.
+ * Throws an error if neither `id` nor `name` is provided, or if the dataset cannot be found.
+ *
+ * @param id - (Optional) The unique identifier of the dataset to delete.
+ * @param name - (Optional) The name of the dataset to delete.
+ * @returns A promise that resolves when the dataset is deleted.
+ * @throws Error if neither id nor name is provided, or if the dataset cannot be found.
+ */
+export const deleteDataset = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}): Promise<void> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+  if (!id && !name) {
+    throw new Error('Either id or name must be provided');
+  }
+
+  if (name && !id) {
+    const dataset = await apiClient.getDatasetByName(name);
+    id = dataset.id;
+  }
+
+  await apiClient.deleteDataset(id!);
+};

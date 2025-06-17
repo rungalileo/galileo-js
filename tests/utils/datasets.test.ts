@@ -1,13 +1,13 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { getDatasets, createDataset, getDatasetContent } from '../../src';
-import { commonHandlers, TEST_HOST } from '../common';
 import {
-  Dataset,
-  DatasetContent,
-  DatasetRow,
-  ListDatasetResponse
-} from '../../src/api-client';
+  getDatasets,
+  createDataset,
+  getDatasetContent,
+  deleteDataset
+} from '../../src';
+import { commonHandlers, TEST_HOST } from '../common';
+import { Dataset, DatasetContent, DatasetRow } from '../../src/api-client';
 import { DatasetType } from '../../src/utils/datasets';
 
 const EXAMPLE_DATASET: Dataset = {
@@ -36,10 +36,7 @@ const postDatasetsHandler = jest.fn().mockImplementation(() => {
 });
 
 const getDatasetsHandler = jest.fn().mockImplementation(() => {
-  const response: ListDatasetResponse = {
-    datasets: [EXAMPLE_DATASET]
-  };
-  return HttpResponse.json(response);
+  return HttpResponse.json({ datasets: [EXAMPLE_DATASET] });
 });
 
 const getDatasetContentHandler = jest.fn().mockImplementation(() => {
@@ -49,6 +46,14 @@ const getDatasetContentHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(response);
 });
 
+const deleteDatasetHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json({ success: true });
+});
+
+const getDatasetByNameHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json({ datasets: [EXAMPLE_DATASET] });
+});
+
 export const handlers = [
   ...commonHandlers,
   http.post(`${TEST_HOST}/datasets`, postDatasetsHandler),
@@ -56,7 +61,12 @@ export const handlers = [
   http.get(
     `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
     getDatasetContentHandler
-  )
+  ),
+  http.delete(
+    `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}`,
+    deleteDatasetHandler
+  ),
+  http.post(`${TEST_HOST}/datasets/query`, getDatasetByNameHandler)
 ];
 
 const server = setupServer(...handlers);
@@ -93,4 +103,15 @@ test('test get datasets', async () => {
 test('test get dataset content', async () => {
   const rows = await getDatasetContent({ datasetId: EXAMPLE_DATASET.id });
   expect(rows).toEqual([EXAMPLE_DATASET_ROW]);
+});
+
+test('delete dataset by id', async () => {
+  await deleteDataset({ id: EXAMPLE_DATASET.id });
+  expect(deleteDatasetHandler).toHaveBeenCalled();
+});
+
+test('delete dataset by name', async () => {
+  await deleteDataset({ name: EXAMPLE_DATASET.name });
+  expect(getDatasetByNameHandler).toHaveBeenCalled();
+  expect(deleteDatasetHandler).toHaveBeenCalled();
 });
