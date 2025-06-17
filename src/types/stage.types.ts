@@ -1,55 +1,22 @@
 import { components } from './api.types';
 
-
 export type StageType = components['schemas']['StageType'];
 export type RuleOperator = components['schemas']['RuleOperator'];
 export type ExecutionStatus = components['schemas']['ExecutionStatus'];
+export type Rule = components['schemas']['Rule'];
+export type SubscriptionConfig = components['schemas']['SubscriptionConfig'];
+export type OverrideAction = components['schemas']['OverrideAction'];
+export type PassthroughAction = components['schemas']['PassthroughAction'];
+export type Ruleset = components['schemas']['Ruleset'];
+export type RulesetsMixin = components['schemas']['RulesetsMixin'];
+export type StageDB = components['schemas']['StageDB'];
 
-export interface Rule {
-  metric: string;
-  operator: RuleOperator;
-  target_value: string | number | unknown[] | null;
-}
-
-export interface SubscriptionConfig {
-  statuses?: ExecutionStatus[];
-  url: string;
-}
-
-export interface OverrideAction {
-  type: 'OVERRIDE';
-  subscriptions?: SubscriptionConfig[];
-  choices: string[];
-}
-
-export interface PassthroughAction {
-  type: 'PASSTHROUGH';
-  subscriptions?: SubscriptionConfig[];
-}
-
-export interface Ruleset {
-  rules?: Rule[];
-  action?: OverrideAction | PassthroughAction;
-  description?: string | null;
-}
-
-export interface RulesetsMixin {
-  prioritized_rulesets?: Ruleset[];
-}
-
-// TODO why redefine these when existing in api.types.ts?
-export interface StageDB {
-  name: string;
-  project_id: string;
-  description?: string | null;
-  type?: StageType;
-  paused?: boolean;
-  created_by: string;
-  id: string;
-  version?: number | null;
-}
-
-// `project_id` is handled as a path parameter in the API call, so it's omitted here.
+/**
+ * Payload for creating a new stage.
+ * `project_id` is handled as a path parameter in the API call, so it's omitted here.
+ *
+ * Derived from: components['schemas']['StageWithRulesets']
+ */
 export interface StageCreationPayload {
   prioritized_rulesets?: Ruleset[];
   name: string;
