@@ -74,6 +74,9 @@ export const init = async (
     experimentId?: string | undefined;
     sessionId?: string | undefined;
     startNewSession?: boolean | undefined;
+    sessionName?: string | undefined;
+    previousSessionId?: string | undefined;
+    externalId?: string | undefined;
   } = {}
 ) => {
   await GalileoSingleton.getInstance().init(options);
