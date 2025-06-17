@@ -118,11 +118,17 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   template: [
     { role: 'user', content: 'What is the capital of {{ country }}?' }
   ],
+  version: 1,
+  settings: {},
+  model_changed: false,
+  settings_changed: false,
+  lines_added: 0,
+  lines_removed: 0,
+  lines_edited: 0
   //   created_at: '2023-01-01T00:00:00Z',
   //   updated_at: '2023-01-01T00:00:00Z',
   //   prompt_template_id: 'prompt-template-123',
   //   user_id: 'user-123',
-  version: 1
 };
 
 const mockPromptTemplate: PromptTemplate = {
