@@ -29,6 +29,7 @@ export class GalileoSingleton {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
+    sessionId?: string | undefined;
     startNewSession?: boolean | undefined;
     sessionName?: string | undefined;
     previousSessionId?: string | undefined;
@@ -40,7 +41,9 @@ export class GalileoSingleton {
       experimentId: options.experimentId
     });
 
-    if (options.startNewSession) {
+    if (options.sessionId) {
+      this.client.setSessionId(options.sessionId);
+    } else if (options.startNewSession) {
       this.client.startSession({
         name: options.sessionName,
         previousSessionId: options.previousSessionId,
@@ -64,6 +67,32 @@ export class GalileoSingleton {
  * init({
  *   projectName: 'my-project',
  *   logStreamName: 'my-log-stream'
+ * });
+ * ```
+ * You can also continue an existing session by providing the session ID:
+ *
+ * ```typescript
+ * import { init } from 'galileo';
+ *
+ * init({
+ *   projectName: 'my-project',
+ *   logStreamName: 'my-log-stream',
+ *   sessionId: 'my-session-id'
+ * });
+ * ```
+ * 
+ * Sessions are created automatically for each new trace. If you'd like to start a session and use it for a batch of traces, you can specify the following options:
+ *
+ * ```typescript
+ * import { init } from 'galileo';
+ *
+ * init({
+ *   projectName: 'my-project',
+ *   logStreamName: 'my-log-stream',
+ *   startNewSession: true,
+ *   sessionName: 'my-session-name', // Optional
+ *   previousSessionId: 'my-previous-session-id', // Optional
+ *   externalId: 'my-external-id' // Optional
  * });
  * ```
  */
