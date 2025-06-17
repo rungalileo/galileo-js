@@ -236,3 +236,15 @@ export const convertDatasetContentToRecords = async (
     return record;
   });
 };
+
+export const deleteDataset = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}): Promise<void> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+  await apiClient.deleteDataset({ id: id, name: name });
+};

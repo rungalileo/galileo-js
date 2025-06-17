@@ -167,4 +167,29 @@ export class DatasetService extends BaseClient {
       { dataset_id: datasetId }
     );
   }
+
+  public async deleteDataset({
+    id,
+    name
+  }: {
+    id?: string;
+    name?: string;
+  }): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    if (!id && !name) {
+      throw new Error('Either id or name must be provided');
+    }
+
+    if (name && !id) {
+      const dataset = await this.getDatasetByName(name);
+      id = dataset.id;
+    }
+
+    const path = Routes.dataset.replace('{dataset_id}', id!);
+
+    await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
+  }
 }

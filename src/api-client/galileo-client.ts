@@ -261,6 +261,17 @@ export class GalileoApiClient extends BaseClient {
     return this.datasetService!.getDatasetContent(datasetId);
   }
 
+  public async deleteDataset({
+    id,
+    name
+  }: {
+    id?: string;
+    name?: string;
+  }): Promise<void> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.deleteDataset({ id: id, name: name });
+  }
+
   public async appendRowsToDatasetContent(
     datasetId: string,
     rows: DatasetAppendRow[]
