@@ -7,10 +7,6 @@ import {
 
 /**
  * Creates a new stage for a project.
- * 
- * @param projectName The name of the project.
- * @param payload The data for the new stage (must include stage name).
- * @returns The created stage.
  */
 export const createStage = async (
   projectName: string,
@@ -23,11 +19,6 @@ export const createStage = async (
 
 /**
  * Retrieves a specific stage by its ID or name within a project.
- * 
- * @param projectName The name of the project.
- * @param id The ID of the stage (optional if name is provided).
- * @param name The name of the stage (optional if id is provided).
- * @returns The requested stage.
  */
 export const getStage = async ({
   projectName,
@@ -52,12 +43,6 @@ export const getStage = async ({
 
 /**
  * Updates an existing stage's rulesets.
- * 
- * @param projectName The name of the project.
- * @param stageId The ID of the stage to update (optional if stageName is provided).
- * @param stageName The name of the stage to update (optional if stageId is provided).
- * @param payload The new ruleset data for the stage.
- * @returns The updated stage.
  */
 export const updateStage = async ({
   projectName,
@@ -86,11 +71,6 @@ export const updateStage = async ({
 
 /**
  * Pauses a stage.
- * 
- * @param projectName The name of the project.
- * @param stageId The ID of the stage to pause (optional if stageName is provided).
- * @param stageName The name of the stage to pause (optional if stageId is provided).
- * @returns The updated stage (now paused).
  */
 export const pauseStage = async ({
   projectName,
@@ -117,11 +97,6 @@ export const pauseStage = async ({
 
 /**
  * Resumes a paused stage.
- * 
- * @param projectName The name of the project.
- * @param stageId The ID of the stage to resume (optional if stageName is provided).
- * @param stageName The name of the stage to resume (optional if stageId is provided).
- * @returns The updated stage (now active).
  */
 export const resumeStage = async ({
   projectName,

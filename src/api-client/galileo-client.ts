@@ -16,9 +16,7 @@ import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
-import {
-  Request,
-} from '../types/protect.types';
+import { Request, Response } from '../types/protect.types';
 import { Message } from '../types/message.types';
 import {
   StageDB,
@@ -390,7 +388,7 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Protect methods - delegate to ProtectService
-  public async invoke(request: Request) {
+  public async invoke(request: Request): Promise<Response> {
     this.ensureService(this.protectService);
     return this.protectService!.invoke(request);
   }

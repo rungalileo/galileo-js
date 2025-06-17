@@ -21,7 +21,6 @@ export class StageService extends BaseClient {
   /**
    * Creates a new stage for a project.
    * @param payload The data for the new stage.
-   * @returns The created stage.
    */
   public createStage = async (
     payload: StageCreationPayload,
@@ -36,9 +35,7 @@ export class StageService extends BaseClient {
 
   /**
    * Retrieves a specific stage by its ID or name.
-   * Either stageId or stageName must be provided.
-   * @param params Parameters to identify the stage (stageId or stageName).
-   * @returns The requested stage.
+   * @param params Parameters to identify the stage.
    */
   public getStage = async (
     params: GetStageParams,
@@ -66,7 +63,6 @@ export class StageService extends BaseClient {
    * Updates an existing stage's rulesets.
    * @param stageId The ID of the stage to update.
    * @param payload The new ruleset data for the stage.
-   * @returns The updated stage.
    */
   public updateStage = async (
     stageId: string,
@@ -83,7 +79,6 @@ export class StageService extends BaseClient {
   /**
    * Pauses a stage.
    * @param stageId The ID of the stage to pause.
-   * @returns The updated stage (now paused).
    */
   public pauseStage = async (
     stageId: string,
@@ -99,7 +94,6 @@ export class StageService extends BaseClient {
   /**
    * Resumes a paused stage.
    * @param stageId The ID of the stage to resume.
-   * @returns The updated stage (now active).
    */
   public resumeStage = async (
     stageId: string,
