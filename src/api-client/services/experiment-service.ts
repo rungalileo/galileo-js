@@ -1,7 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Scorer, ScorerConfig, ScorerVersion } from '../../types/scorer.types';
-import { ScorerTypes } from '../../types/scorer.types';
+import { ScorerConfig } from '../../types/scorer.types';
 import {
   Experiment,
   PromptRunSettings,
@@ -50,48 +49,6 @@ export class ExperimentService extends BaseClient {
       },
       {
         project_id: this.projectId
-      }
-    );
-  };
-
-  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
-    const response = await this.makeRequest<{ scorers: Scorer[] }>(
-      RequestMethod.POST,
-      Routes.scorers,
-      type
-        ? {
-            filters: [
-              {
-                name: 'scorer_type',
-                value: type,
-                operator: 'eq'
-              }
-            ]
-          }
-        : {}
-    );
-
-    return response.scorers;
-  };
-
-  /**
-   * Retrieves a specific version of a scorer by its ID and version number.
-   *
-   * @param scorerId - The unique identifier of the scorer.
-   * @param version - The version number of the scorer to retrieve.
-   * @returns A promise that resolves to the requested {@link ScorerVersion}.
-   */
-  public getScorerVersion = async (
-    scorerId: string,
-    version: number
-  ): Promise<ScorerVersion> => {
-    const path = Routes.scorerVersion.replace('{scorer_id}', scorerId);
-    return await this.makeRequest<ScorerVersion>(
-      RequestMethod.GET,
-      path as Routes,
-      undefined,
-      {
-        version: version
       }
     );
   };

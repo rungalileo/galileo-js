@@ -2,6 +2,7 @@
 import {
   Scorer,
   ScorerConfig,
+  ScorerDefaults,
   ScorerTypes,
   ScorerVersion
 } from '../types/scorer.types';
@@ -14,12 +15,14 @@ import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import { ScorerService } from './services/scorer-service';
 import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
+import { components } from '../types/api.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -52,6 +55,7 @@ export class GalileoApiClient extends BaseClient {
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
+  private scorerService?: ScorerService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -179,6 +183,7 @@ export class GalileoApiClient extends BaseClient {
           this.token,
           this.projectId
         );
+        this.scorerService = new ScorerService(this.apiUrl, this.token);
       }
     }
   }
@@ -337,7 +342,7 @@ export class GalileoApiClient extends BaseClient {
 
   public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
     this.ensureService(this.experimentService);
-    return this.experimentService!.getScorers(type);
+    return this.scorerService!.getScorers(type);
   }
 
   public async getScorerVersion(
@@ -345,7 +350,7 @@ export class GalileoApiClient extends BaseClient {
     version: number
   ): Promise<ScorerVersion> {
     this.ensureService(this.experimentService);
-    return this.experimentService!.getScorerVersion(scorer_id, version);
+    return this.scorerService!.getScorerVersion(scorer_id, version);
   }
 
   public async createRunScorerSettings(
@@ -378,6 +383,49 @@ export class GalileoApiClient extends BaseClient {
       scorers,
       promptSettings
     );
+  }
+
+  public async createScorer(
+    name: string,
+    scorerType: ScorerTypes,
+    description?: string,
+    tags?: string[],
+    defaults?: ScorerDefaults,
+    modelType?: components['schemas']['ModelType'],
+    defaultVersionId?: string
+  ): Promise<Scorer> {
+    this.ensureService(this.experimentService);
+    return this.scorerService!.createScorer(
+      name,
+      scorerType,
+      description,
+      tags,
+      defaults,
+      modelType,
+      defaultVersionId
+    );
+  }
+
+  public async createLlmScorerVersion(
+    scorerId: string,
+    instructions: string,
+    chainPollTemplate: components['schemas']['ChainPollTemplate'],
+    modelName?: string,
+    numJudges?: number
+  ): Promise<ScorerVersion> {
+    this.ensureService(this.experimentService);
+    return this.scorerService!.createLLMScorerVersion(
+      scorerId,
+      instructions,
+      chainPollTemplate,
+      modelName,
+      numJudges
+    );
+  }
+
+  public async deleteScorer(scorerId: string): Promise<void> {
+    this.ensureService(this.experimentService);
+    return this.scorerService!.deleteScorer(scorerId);
   }
 
   // Helper to ensure service is initialized

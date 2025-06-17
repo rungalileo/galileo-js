@@ -11,6 +11,7 @@ import {
   getDatasetContent,
   getDataset
 } from './utils/datasets';
+import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
   createPromptTemplate,
   getPromptTemplates,
@@ -73,5 +74,8 @@ export {
   log,
   init,
   flush,
-  getLogger
+  getLogger,
+  // Metrics
+  createCustomLlmMetric,
+  deleteMetric
 };
