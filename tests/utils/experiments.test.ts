@@ -127,7 +127,9 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   lines_edited: 0,
   model_changed: false,
   settings_changed: false,
-  settings: {}
+  settings: {},
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
 };
 
 const mockPromptTemplate: PromptTemplate = {
@@ -139,7 +141,15 @@ const mockPromptTemplate: PromptTemplate = {
   all_versions: [mockPromptTemplateVersion],
   all_available_versions: [1],
   total_versions: 1,
-  max_version: 1
+  max_version: 1,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  creator: {
+    id: 'user-creator-123',
+    email: 'creator@example.com',
+    first_name: 'Mock',
+    last_name: 'Creator'
+  }
 };
 
 const mockScorer: Scorer = {
