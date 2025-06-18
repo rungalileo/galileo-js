@@ -1,14 +1,16 @@
 import {
   ProtectInvokeOptions,
   Response,
-  Request,
+  Request
 } from '../types/protect.types';
 import { GalileoApiClient } from '../api-client';
 
 /*
  * Invoke Protect
  */
-export const invoke = async (options: ProtectInvokeOptions): Promise<Response> => {
+export const invoke = async (
+  options: ProtectInvokeOptions
+): Promise<Response> => {
   const {
     projectName,
     stageName,
@@ -18,7 +20,7 @@ export const invoke = async (options: ProtectInvokeOptions): Promise<Response> =
     prioritizedRulesets,
     timeout,
     metadata,
-    headers,
+    headers
   } = options;
 
   const apiClient = new GalileoApiClient();
@@ -33,8 +35,8 @@ export const invoke = async (options: ProtectInvokeOptions): Promise<Response> =
     project_name: projectName,
     stage_name: stageName,
     stage_id: stageId,
-    stage_version: stageVersion,
+    stage_version: stageVersion
   };
-  
+
   return await apiClient.invoke(request);
 };

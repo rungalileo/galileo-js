@@ -7,14 +7,14 @@ import {
   Response as ApiResponse,
   Project,
   ProjectTypes,
-  LogStream,
+  LogStream
 } from '../../src/types';
 
 const MOCK_API_REQUEST: ApiRequest = {
   projectName: 'test-project',
   payload: {
-    input: 'This is a test input.',
-  },
+    input: 'This is a test input.'
+  }
 };
 
 const MOCK_API_RESPONSE: ApiResponse = {
@@ -23,14 +23,14 @@ const MOCK_API_RESPONSE: ApiResponse = {
     id: 'mock-trace-id',
     received_at: 1234567890,
     response_at: 1234567990,
-    execution_time: 100,
-  },
+    execution_time: 100
+  }
 };
 
 const MOCK_PROJECT: Project = {
   id: 'mock-project-id-from-init',
   name: 'test-project',
-  type: ProjectTypes.genAI,
+  type: ProjectTypes.genAI
 };
 
 const MOCK_DEFAULT_LOG_STREAM: LogStream = {
@@ -39,11 +39,11 @@ const MOCK_DEFAULT_LOG_STREAM: LogStream = {
   created_at: new Date(),
   updated_at: new Date(),
   project_id: MOCK_PROJECT.id,
-  created_by: 'test-user',
+  created_by: 'test-user'
 };
 
 const MOCK_ERROR_RESPONSE = {
-  detail: 'An unexpected error occurred.',
+  detail: 'An unexpected error occurred.'
 };
 
 const protectInvokeHandler = jest.fn().mockImplementation(() => {
@@ -74,8 +74,11 @@ const getProjectsHandler = jest.fn().mockImplementation(({ request }) => {
 export const handlers = [
   ...commonHandlers,
   http.get(`${TEST_HOST}/projects`, getProjectsHandler),
-  http.get(`${TEST_HOST}/projects/:projectId/log_streams`, getLogStreamsHandler),
-  http.post(`${TEST_HOST}/protect/invoke`, protectInvokeHandler),
+  http.get(
+    `${TEST_HOST}/projects/:projectId/log_streams`,
+    getLogStreamsHandler
+  ),
+  http.post(`${TEST_HOST}/protect/invoke`, protectInvokeHandler)
 ];
 
 const server = setupServer(...handlers);
@@ -118,5 +121,4 @@ describe('utils.invoke', () => {
     await expect(invoke(MOCK_API_REQUEST)).rejects.toThrow();
     expect(protectInvokeErrorHandler).toHaveBeenCalledTimes(1);
   });
-
 });

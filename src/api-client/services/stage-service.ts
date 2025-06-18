@@ -4,7 +4,7 @@ import {
   StageDB,
   StageCreationPayload,
   GetStageParams,
-  UpdateStagePayload,
+  UpdateStagePayload
 } from '../../types/stage.types';
 
 export class StageService extends BaseClient {
@@ -23,13 +23,13 @@ export class StageService extends BaseClient {
    * @param payload The data for the new stage.
    */
   public createStage = async (
-    payload: StageCreationPayload,
+    payload: StageCreationPayload
   ): Promise<StageDB> => {
     return await this.makeRequest<StageDB>(
       RequestMethod.POST,
       Routes.stages,
       payload,
-      { project_id: this.projectId },
+      { project_id: this.projectId }
     );
   };
 
@@ -37,13 +37,15 @@ export class StageService extends BaseClient {
    * Retrieves a specific stage by its ID or name.
    * @param params Parameters to identify the stage.
    */
-  public getStage = async (
-    params: GetStageParams,
-  ): Promise<StageDB> => {
+  public getStage = async (params: GetStageParams): Promise<StageDB> => {
     if (!params.stageId && !params.stageName) {
-      throw new Error('Either stageId or stageName must be provided to getStage.');
+      throw new Error(
+        'Either stageId or stageName must be provided to getStage.'
+      );
     }
-    const requestParams: Record<string, unknown> = { project_id: this.projectId };
+    const requestParams: Record<string, unknown> = {
+      project_id: this.projectId
+    };
     if (params.stageId) {
       requestParams.stage_id = params.stageId;
     }
@@ -55,7 +57,7 @@ export class StageService extends BaseClient {
       RequestMethod.GET,
       Routes.stages,
       undefined,
-      requestParams,
+      requestParams
     );
   };
 
@@ -66,13 +68,13 @@ export class StageService extends BaseClient {
    */
   public updateStage = async (
     stageId: string,
-    payload: UpdateStagePayload,
+    payload: UpdateStagePayload
   ): Promise<StageDB> => {
     return await this.makeRequest<StageDB>(
       RequestMethod.POST,
       Routes.stage,
       payload,
-      { project_id: this.projectId, stage_id: stageId },
+      { project_id: this.projectId, stage_id: stageId }
     );
   };
 
@@ -80,14 +82,12 @@ export class StageService extends BaseClient {
    * Pauses a stage.
    * @param stageId The ID of the stage to pause.
    */
-  public pauseStage = async (
-    stageId: string,
-  ): Promise<StageDB> => {
+  public pauseStage = async (stageId: string): Promise<StageDB> => {
     return await this.makeRequest<StageDB>(
       RequestMethod.PUT,
       Routes.stage,
       undefined,
-      { project_id: this.projectId, stage_id: stageId, pause: 'true' },
+      { project_id: this.projectId, stage_id: stageId, pause: 'true' }
     );
   };
 
@@ -95,14 +95,12 @@ export class StageService extends BaseClient {
    * Resumes a paused stage.
    * @param stageId The ID of the stage to resume.
    */
-  public resumeStage = async (
-    stageId: string,
-  ): Promise<StageDB> => {
+  public resumeStage = async (stageId: string): Promise<StageDB> => {
     return await this.makeRequest<StageDB>(
       RequestMethod.PUT,
       Routes.stage,
       undefined,
-      { project_id: this.projectId, stage_id: stageId, pause: 'false' },
+      { project_id: this.projectId, stage_id: stageId, pause: 'false' }
     );
   };
 }

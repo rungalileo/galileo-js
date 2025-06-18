@@ -16,7 +16,7 @@ export class ProtectService extends BaseClient {
     return await this.makeRequest<Response>(
       RequestMethod.POST,
       Routes.protectInvoke,
-      request,
+      request
     );
   };
 }

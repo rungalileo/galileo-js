@@ -14,6 +14,6 @@ export interface ProtectInvokeOptions {
   payload: Payload;
   prioritizedRulesets?: Ruleset[];
   timeout?: number;
-  metadata?: { [key: string]: string; } | null;
-  headers?: { [key: string]: string; } | null;
+  metadata?: { [key: string]: string } | null;
+  headers?: { [key: string]: string } | null;
 }

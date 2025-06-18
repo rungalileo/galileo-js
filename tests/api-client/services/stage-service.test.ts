@@ -5,7 +5,7 @@ import {
   StageCreationPayload,
   GetStageParams,
   UpdateStagePayload,
-  StageDB,
+  StageDB
 } from '../../../src/types/stage.types';
 
 const mockMakeRequest = jest.fn();
@@ -16,10 +16,11 @@ jest.mock('../../../src/api-client/base-client', () => {
         makeRequest: mockMakeRequest,
         initializeClient: jest.fn(),
         apiUrl: 'mockApiUrl',
-        token: 'mockToken',
+        token: 'mockToken'
       };
     }),
-    RequestMethod: jest.requireActual('../../../src/api-client/base-client').RequestMethod,
+    RequestMethod: jest.requireActual('../../../src/api-client/base-client')
+      .RequestMethod
   };
 });
 
@@ -40,7 +41,7 @@ describe('StageService', () => {
     project_id: mockProjectId,
     created_by: 'user-xyz',
     type: 'local',
-    paused: false,
+    paused: false
   };
 
   describe('createStage', () => {
@@ -54,7 +55,7 @@ describe('StageService', () => {
         RequestMethod.POST,
         Routes.stages,
         payload,
-        { project_id: mockProjectId },
+        { project_id: mockProjectId }
       );
     });
   });
@@ -70,7 +71,7 @@ describe('StageService', () => {
         RequestMethod.GET,
         Routes.stages,
         undefined,
-        { project_id: mockProjectId, stage_id: params.stageId },
+        { project_id: mockProjectId, stage_id: params.stageId }
       );
     });
 
@@ -84,14 +85,14 @@ describe('StageService', () => {
         RequestMethod.GET,
         Routes.stages,
         undefined,
-        { project_id: mockProjectId, stage_name: params.stageName },
+        { project_id: mockProjectId, stage_name: params.stageName }
       );
     });
 
     it('should throw error if neither stageId nor stageName is provided', async () => {
       const params: GetStageParams = {};
       await expect(stageService.getStage(params)).rejects.toThrow(
-        'Either stageId or stageName must be provided to getStage.',
+        'Either stageId or stageName must be provided to getStage.'
       );
     });
   });
@@ -108,7 +109,7 @@ describe('StageService', () => {
         RequestMethod.POST,
         Routes.stage,
         payload,
-        { project_id: mockProjectId, stage_id: stageId },
+        { project_id: mockProjectId, stage_id: stageId }
       );
     });
   });
@@ -124,7 +125,7 @@ describe('StageService', () => {
         RequestMethod.PUT,
         Routes.stage,
         undefined,
-        { project_id: mockProjectId, stage_id: stageId, pause: 'true' },
+        { project_id: mockProjectId, stage_id: stageId, pause: 'true' }
       );
     });
   });
@@ -140,7 +141,7 @@ describe('StageService', () => {
         RequestMethod.PUT,
         Routes.stage,
         undefined,
-        { project_id: mockProjectId, stage_id: stageId, pause: 'false' },
+        { project_id: mockProjectId, stage_id: stageId, pause: 'false' }
       );
     });
   });

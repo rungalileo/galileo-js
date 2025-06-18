@@ -2,7 +2,7 @@ import { GalileoApiClient } from '../api-client';
 import {
   StageCreationPayload,
   UpdateStagePayload,
-  StageDB,
+  StageDB
 } from '../types/stage.types';
 
 /**
@@ -10,7 +10,7 @@ import {
  */
 export const createStage = async (
   projectName: string,
-  payload: StageCreationPayload,
+  payload: StageCreationPayload
 ): Promise<StageDB> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
@@ -23,7 +23,7 @@ export const createStage = async (
 export const getStage = async ({
   projectName,
   id,
-  name,
+  name
 }: {
   projectName: string;
   id?: string;
@@ -48,7 +48,7 @@ export const updateStage = async ({
   projectName,
   stageId,
   stageName,
-  payload,
+  payload
 }: {
   projectName: string;
   stageId?: string;
@@ -56,7 +56,9 @@ export const updateStage = async ({
   payload: UpdateStagePayload;
 }): Promise<StageDB> => {
   if (!stageId && !stageName) {
-    throw new Error('Either stageId or stageName must be provided to updateStage');
+    throw new Error(
+      'Either stageId or stageName must be provided to updateStage'
+    );
   }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
@@ -75,14 +77,16 @@ export const updateStage = async ({
 export const pauseStage = async ({
   projectName,
   stageId,
-  stageName,
+  stageName
 }: {
   projectName: string;
   stageId?: string;
   stageName?: string;
 }): Promise<StageDB> => {
   if (!stageId && !stageName) {
-    throw new Error('Either stageId or stageName must be provided to pauseStage');
+    throw new Error(
+      'Either stageId or stageName must be provided to pauseStage'
+    );
   }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
@@ -101,14 +105,16 @@ export const pauseStage = async ({
 export const resumeStage = async ({
   projectName,
   stageId,
-  stageName,
+  stageName
 }: {
   projectName: string;
   stageId?: string;
   stageName?: string;
 }): Promise<StageDB> => {
   if (!stageId && !stageName) {
-    throw new Error('Either stageId or stageName must be provided to resumeStage');
+    throw new Error(
+      'Either stageId or stageName must be provided to resumeStage'
+    );
   }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });

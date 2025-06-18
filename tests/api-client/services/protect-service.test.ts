@@ -3,21 +3,23 @@ import { RequestMethod } from '../../../src/api-client/base-client';
 import { Routes } from '../../../src/types/routes.types';
 import {
   Request as ApiRequest,
-  Response as ApiResponse,
+  Response as ApiResponse
 } from '../../../src/types';
 
 const mockMakeRequest = jest.fn();
 
 jest.mock('../../../src/api-client/base-client', () => {
-  const originalModule = jest.requireActual('../../../src/api-client/base-client');
+  const originalModule = jest.requireActual(
+    '../../../src/api-client/base-client'
+  );
   return {
     ...originalModule,
     BaseClient: jest.fn().mockImplementation(() => ({
       initializeClient: jest.fn(),
       makeRequest: mockMakeRequest,
       apiUrl: 'mockApiUrl',
-      token: 'mockToken',
-    })),
+      token: 'mockToken'
+    }))
   };
 });
 
@@ -29,8 +31,8 @@ describe('ProtectService', () => {
 
   const MOCK_API_REQUEST: ApiRequest = {
     payload: {
-      input: 'Service test input.',
-    },
+      input: 'Service test input.'
+    }
   };
 
   const MOCK_API_RESPONSE: ApiResponse = {
@@ -39,8 +41,8 @@ describe('ProtectService', () => {
       id: 'service-mock-trace-id',
       received_at: 9876543210,
       response_at: 9876543220,
-      execution_time: 10,
-    },
+      execution_time: 10
+    }
   };
 
   beforeEach(() => {
@@ -67,7 +69,9 @@ describe('ProtectService', () => {
       const apiError = new Error('Network Error');
       mockMakeRequest.mockRejectedValue(apiError);
 
-      await expect(protectService.invoke(MOCK_API_REQUEST)).rejects.toThrow(apiError);
+      await expect(protectService.invoke(MOCK_API_REQUEST)).rejects.toThrow(
+        apiError
+      );
       expect(mockMakeRequest).toHaveBeenCalledTimes(1);
     });
   });

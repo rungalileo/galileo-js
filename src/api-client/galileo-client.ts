@@ -30,7 +30,7 @@ import { Message } from '../types/message.types';
 import {
   StageDB,
   StageCreationPayload,
-  UpdateStagePayload,
+  UpdateStagePayload
 } from '../types/stage.types';
 
 export class GalileoApiClientParams {
@@ -202,7 +202,7 @@ export class GalileoApiClient extends BaseClient {
         this.stageService = new StageService(
           this.apiUrl,
           this.token,
-          this.projectId,
+          this.projectId
         );
         this.scorerService = new ScorerService(this.apiUrl, this.token);
       }
@@ -435,7 +435,7 @@ export class GalileoApiClient extends BaseClient {
 
   public async updateStage(
     stageId: string,
-    payload: UpdateStagePayload,
+    payload: UpdateStagePayload
   ): Promise<StageDB> {
     this.ensureService(this.stageService);
     return this.stageService!.updateStage(stageId, payload);
