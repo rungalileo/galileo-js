@@ -12,7 +12,7 @@ export interface ProtectInvokeOptions {
   stageId?: string;
   stageVersion?: number;
   payload: Payload;
-  prioritized_rulesets?: Ruleset[];
+  prioritizedRulesets?: Ruleset[];
   timeout?: number;
   metadata?: { [key: string]: string; } | null;
   headers?: { [key: string]: string; } | null;

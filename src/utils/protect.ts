@@ -15,7 +15,7 @@ export const invoke = async (options: ProtectInvokeOptions): Promise<Response> =
     stageId,
     stageVersion,
     payload,
-    prioritized_rulesets,
+    prioritizedRulesets,
     timeout,
     metadata,
     headers,
@@ -26,10 +26,10 @@ export const invoke = async (options: ProtectInvokeOptions): Promise<Response> =
 
   const request: Request = {
     payload,
-    prioritized_rulesets,
     timeout,
     metadata,
     headers,
+    prioritized_rulesets: prioritizedRulesets,
     project_name: projectName,
     stage_name: stageName,
     stage_id: stageId,
