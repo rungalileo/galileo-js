@@ -165,6 +165,10 @@ export class BaseClient {
       .replace(
         '{version}',
         params && 'version' in params ? (params.version as string) : ''
+      )
+      .replace(
+        '{stage_id}',
+        params && 'stage_id' in params ? (params.stage_id as string) : ''
       )}`;
 
     const config: AxiosRequestConfig = {

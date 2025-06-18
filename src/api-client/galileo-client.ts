@@ -12,18 +12,26 @@ import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
+import { ProtectService } from './services/protect-service';
 import { LogStreamService } from './services/logstream-service';
 import { PromptTemplateService } from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import { StageService } from './services/stage-service';
 import { ScorerService } from './services/scorer-service';
 import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
+import { Request, Response } from '../types/protect.types';
 import { Message } from '../types/message.types';
+import {
+  StageDB,
+  StageCreationPayload,
+  UpdateStagePayload
+} from '../types/stage.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -51,11 +59,13 @@ export class GalileoApiClient extends BaseClient {
   // Service instances
   private authService?: AuthService;
   private projectService?: ProjectService;
+  private protectService?: ProtectService;
   private logStreamService?: LogStreamService;
   private promptTemplateService?: PromptTemplateService;
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
+  private stageService?: StageService;
   private scorerService?: ScorerService;
 
   public async init(
@@ -180,6 +190,16 @@ export class GalileoApiClient extends BaseClient {
           this.projectId
         );
         this.experimentService = new ExperimentService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+        this.protectService = new ProtectService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+        this.stageService = new StageService(
           this.apiUrl,
           this.token,
           this.projectId
@@ -389,6 +409,46 @@ export class GalileoApiClient extends BaseClient {
       scorers,
       promptSettings
     );
+  }
+
+  // Protect methods - delegate to ProtectService
+  public async invoke(request: Request): Promise<Response> {
+    this.ensureService(this.protectService);
+    return this.protectService!.invoke(request);
+  }
+
+  // Stage methods - delegate to StageService
+  public async createStage(payload: StageCreationPayload): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.createStage(payload);
+  }
+
+  public async getStage(stageId: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.getStage({ stageId });
+  }
+
+  public async getStageByName(stageName: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.getStage({ stageName });
+  }
+
+  public async updateStage(
+    stageId: string,
+    payload: UpdateStagePayload
+  ): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.updateStage(stageId, payload);
+  }
+
+  public async pauseStage(stageId: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.pauseStage(stageId);
+  }
+
+  public async resumeStage(stageId: string): Promise<StageDB> {
+    this.ensureService(this.stageService);
+    return this.stageService!.resumeStage(stageId);
   }
 
   public async createScorer(

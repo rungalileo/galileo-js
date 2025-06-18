@@ -8,6 +8,7 @@ export enum Routes {
   projects = 'projects',
   project = 'projects/{project_id}',
   projects_all = 'projects/all',
+  protectInvoke = 'protect/invoke',
   logStreams = 'projects/{project_id}/log_streams',
   logStream = 'projects/{project_id}/log_streams/{log_stream_id}',
   runs = 'projects/{project_id}/runs',
@@ -30,6 +31,8 @@ export enum Routes {
   promptTemplateVersions = 'projects/{project_id}/templates/versions',
   promptTemplateVersion = 'projects/{project_id}/templates/{template_id}/versions/{version}',
   jobs = 'jobs',
+  stages = 'projects/{project_id}/stages',
+  stage = 'projects/{project_id}/stages/{stage_id}',
   scorer = 'scorers',
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',
   scorerId = 'scorers/{scorer_id}'

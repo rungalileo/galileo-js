@@ -14,6 +14,8 @@ export {
 } from './services/dataset-service';
 export { TraceService } from './services/trace-service';
 export { ExperimentService } from './services/experiment-service';
+export { ProtectService } from './services/protect-service';
+export { StageService } from './services/stage-service';
 
 // Export any enums or types that might be needed
 export { RequestMethod } from './base-client';

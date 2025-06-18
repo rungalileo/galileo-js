@@ -731,6 +731,48 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/projects/{project_id}/traces/{trace_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Trace */
+    get: operations['get_trace_projects__project_id__traces__trace_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update Trace
+     * @description Update a trace with the given ID.
+     */
+    patch: operations['update_trace_projects__project_id__traces__trace_id__patch'];
+    trace?: never;
+  };
+  '/projects/{project_id}/spans/{span_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Span */
+    get: operations['get_span_projects__project_id__spans__span_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update Span
+     * @description Update a span with the given ID.
+     */
+    patch: operations['update_span_projects__project_id__spans__span_id__patch'];
+    trace?: never;
+  };
   '/projects/{project_id}/traces/available_columns': {
     parameters: {
       query?: never;
@@ -810,40 +852,6 @@ export interface paths {
     put?: never;
     /** Query Spans */
     post: operations['query_spans_projects__project_id__spans_search_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/projects/{project_id}/traces/{trace_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Trace */
-    get: operations['get_trace_projects__project_id__traces__trace_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/projects/{project_id}/spans/{span_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Span */
-    get: operations['get_span_projects__project_id__spans__span_id__get'];
-    put?: never;
-    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1247,6 +1255,7 @@ export interface paths {
     };
     /**
      * Get Template From Project
+     * @deprecated
      * @description Get a prompt template from a project.
      *
      *     Parameters
@@ -1254,7 +1263,7 @@ export interface paths {
      *     template_id : UUID4
      *         Prompt template ID.
      *     project_id : UUID4
-     *         Prokect ID.
+     *         Project ID.
      *     ctx : Context, optional
      *         User context with database session, by default Depends(get_user_context).
      *
@@ -1266,7 +1275,10 @@ export interface paths {
     get: operations['get_template_from_project_projects__project_id__templates__template_id__get'];
     put?: never;
     post?: never;
-    /** Delete Template */
+    /**
+     * Delete Template
+     * @deprecated
+     */
     delete: operations['delete_template_projects__project_id__templates__template_id__delete'];
     options?: never;
     head?: never;
@@ -1284,6 +1296,7 @@ export interface paths {
     put?: never;
     /**
      * Create Prompt Template Version
+     * @deprecated
      * @description Create a prompt template version for a given prompt template.
      *
      *     Parameters
@@ -1311,6 +1324,76 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/templates/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Query Templates
+     * @description Query prompt templates the user has access to.
+     *
+     *     Parameters
+     *     ----------
+     *     params : ListPromptTemplateParams
+     *         Query parameters for filtering and sorting
+     *     pagination : PaginationRequestMixin
+     *         Pagination parameters
+     *     ctx : Context
+     *         User context containing database session and user information
+     *
+     *     Returns
+     *     -------
+     *     ListPromptTemplateResponse
+     *         Paginated list of prompt template responses that the user has access to.
+     */
+    post: operations['query_templates_templates_query_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates/{template_id}/versions/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Query Template Versions
+     * @description Query versions of a specific prompt template.
+     *
+     *     Parameters
+     *     ----------
+     *     template_id : UUID4
+     *         ID of the template to query versions for
+     *     params : ListPromptTemplateVersionParams
+     *         Query parameters for filtering and sorting
+     *     pagination : PaginationRequestMixin
+     *         Pagination parameters
+     *     ctx : Context
+     *         User context containing database session and user information
+     *
+     *     Returns
+     *     -------
+     *     ListPromptTemplateVersionResponse
+     *         Paginated list of template version responses
+     */
+    post: operations['query_template_versions_templates__template_id__versions_query_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/templates/{template_id}/versions/{version}': {
     parameters: {
       query?: never;
@@ -1320,6 +1403,7 @@ export interface paths {
     };
     /**
      * Get Template Version
+     * @deprecated
      * @description Get a specific version of a prompt template.
      *
      *     Parameters
@@ -1337,7 +1421,10 @@ export interface paths {
      *         Prompt template version response.
      */
     get: operations['get_template_version_projects__project_id__templates__template_id__versions__version__get'];
-    /** Set Selected Template Version */
+    /**
+     * Set Selected Template Version
+     * @deprecated
+     */
     put: operations['set_selected_template_version_projects__project_id__templates__template_id__versions__version__put'];
     post?: never;
     delete?: never;
@@ -1374,6 +1461,239 @@ export interface paths {
     put?: never;
     /** Generate Template Input Stub */
     post: operations['generate_template_input_stub_input_stub_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Global Prompt Template
+     * @description Create a global prompt template (no project specified).
+     *
+     *     Create a prompt template version, and then create a prompt template that
+     *     points to that version as the selected version.
+     *
+     *     Parameters
+     *     ----------
+     *     ctx : Context
+     *         Request context including authentication information
+     *     create_request : CreatePromptTemplateWithVersionRequestBody
+     *         Request body containing template name and content
+     *
+     *     Returns
+     *     -------
+     *     BasePromptTemplateResponse
+     *         Details about the created prompt template.
+     */
+    post: operations['create_global_prompt_template_templates_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates/{template_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Global Template
+     * @description Get a global prompt template given a template ID.
+     *
+     *     Parameters
+     *     ----------
+     *     template_id : UUID4
+     *         Prompt template id.
+     *     ctx : Context
+     *         Request context including authentication information
+     *     principal : Principal
+     *         Principal object.
+     *
+     *     Returns
+     *     -------
+     *     BasePromptTemplateResponse
+     *         Details about the created prompt template.
+     */
+    get: operations['get_global_template_templates__template_id__get'];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Global Template
+     * @description Delete a global prompt template given a template ID.
+     *
+     *     Parameters
+     *     ----------
+     *     template_id : UUID4
+     *         Prompt template id.
+     *     ctx : Context
+     *         Request context including authentication information
+     *
+     *     Returns
+     *     -------
+     *     DeletePromptResponse
+     *         Message indicating the prompt template was deleted.
+     */
+    delete: operations['delete_global_template_templates__template_id__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates/{template_id}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Global Prompt Template Version
+     * @description Create a prompt template version for a given prompt template.
+     *
+     *     Parameters
+     *     ----------
+     *     template_id : UUID4
+     *         Prompt template ID.
+     *     ctx : Context
+     *         Request context including authentication information
+     *     base_prompt_template_version : BasePromptTemplateVersion
+     *         Version details to create
+     *
+     *     Returns
+     *     -------
+     *     BasePromptTemplateVersionResponse
+     *         Response with details about the created prompt template version.
+     */
+    post: operations['create_global_prompt_template_version_templates__template_id__versions_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates/{template_id}/versions/{version}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Global Template Version
+     * @description Get a global prompt template version given a template ID and version number.
+     *
+     *     Parameters
+     *     ----------
+     *     template_id : UUID4
+     *         Prompt template id.
+     *     version : int
+     *         Version number.
+     *     ctx : Context
+     *         Request context including authentication information
+     *
+     *     Returns
+     *     -------
+     *     BasePromptTemplateVersionResponse
+     *         Details about the prompt template version.
+     */
+    get: operations['get_global_template_version_templates__template_id__versions__version__get'];
+    /**
+     * Set Selected Global Template Version
+     * @description Set a global prompt template version as the selected version.
+     *
+     *     Parameters
+     *     ----------
+     *     template_id : UUID4
+     *         Prompt template id.
+     *     version : int
+     *         Version number.
+     *     ctx : Context
+     *         Request context including authentication information
+     *
+     *     Returns
+     *     -------
+     *     BasePromptTemplateResponse
+     *         Details about the prompt template.
+     */
+    put: operations['set_selected_global_template_version_templates__template_id__versions__version__put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates/{template_id}/users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List User Prompt Template Collaborators
+     * @description List the users with which the prompt template has been shared.
+     */
+    get: operations['list_user_prompt_template_collaborators_templates__template_id__users_get'];
+    put?: never;
+    /** Create User Prompt Template Collaborators */
+    post: operations['create_user_prompt_template_collaborators_templates__template_id__users_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/templates/{template_id}/users/{user_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete User Prompt Template Collaborator
+     * @description Remove a user's access to a prompt template.
+     */
+    delete: operations['delete_user_prompt_template_collaborator_templates__template_id__users__user_id__delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update User Prompt Template Collaborator
+     * @description Update the sharing permissions of a user on a prompt template.
+     */
+    patch: operations['update_user_prompt_template_collaborator_templates__template_id__users__user_id__patch'];
+    trace?: never;
+  };
+  '/protect/invoke': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Invoke V2 */
+    post: operations['invoke_v2_protect_invoke_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1559,10 +1879,81 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/scorers/{scorer_id}/versions/{version_number}/restore': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Restore Scorer Version
+     * @description List all scorers.
+     */
+    post: operations['restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/stages': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Stage */
+    get: operations['get_stage_projects__project_id__stages_get'];
+    put?: never;
+    /** Create Stage */
+    post: operations['create_stage_projects__project_id__stages_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/stages/{stage_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Pause Stage */
+    put: operations['pause_stage_projects__project_id__stages__stage_id__put'];
+    /** Update Stage */
+    post: operations['update_stage_projects__project_id__stages__stage_id__post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** ActionResult */
+    ActionResult: {
+      /** @description Type of action that was taken. */
+      type: components['schemas']['ActionType'];
+      /**
+       * Value
+       * @description Value of the action that was taken.
+       */
+      value: string;
+    };
+    /**
+     * ActionType
+     * @enum {string}
+     */
+    ActionType: 'OVERRIDE' | 'PASSTHROUGH';
     /** AgentSpan */
     AgentSpan: {
       /**
@@ -1745,9 +2136,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -1801,6 +2193,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
       /**
        * @description Agent type.
        * @default default
@@ -1899,9 +2297,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -1955,6 +2354,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
       /**
        * @description Agent type.
        * @default default
@@ -2369,13 +2774,18 @@ export interface components {
      * @description Response from API to get a prompt template version.
      */
     BasePromptTemplateResponse: {
-      /** Name */
-      name: string;
       /**
        * Id
        * Format: uuid4
        */
       id: string;
+      /**
+       * Permissions
+       * @default []
+       */
+      permissions?: components['schemas']['Permission'][];
+      /** Name */
+      name: string;
       /** Template */
       template: string;
       selected_version: components['schemas']['BasePromptTemplateVersionResponse'];
@@ -2392,6 +2802,17 @@ export interface components {
       total_versions: number;
       /** Max Version */
       max_version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      creator: components['schemas']['UserInfo'] | null;
     };
     /** BasePromptTemplateVersion */
     BasePromptTemplateVersion: {
@@ -2408,6 +2829,8 @@ export interface components {
       settings?: {
         [key: string]: unknown;
       };
+      /** Output Type */
+      output_type?: string | null;
     };
     /**
      * BasePromptTemplateVersionResponse
@@ -2427,6 +2850,8 @@ export interface components {
       settings: {
         [key: string]: unknown;
       };
+      /** Output Type */
+      output_type?: string | null;
       /**
        * Id
        * Format: uuid4
@@ -2442,6 +2867,16 @@ export interface components {
       lines_removed: number;
       /** Lines Edited */
       lines_edited: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
     };
     /** BaseRegisteredScorerDB */
     BaseRegisteredScorerDB: {
@@ -3461,6 +3896,8 @@ export interface components {
       settings?: {
         [key: string]: unknown;
       };
+      /** Output Type */
+      output_type?: string | null;
       /** Name */
       name: string;
       /**
@@ -5315,6 +5752,19 @@ export interface components {
         [key: string]: boolean | string | number;
       };
     };
+    /**
+     * ExecutionStatus
+     * @description Status of the execution.
+     * @enum {string}
+     */
+    ExecutionStatus:
+      | 'triggered'
+      | 'failed'
+      | 'error'
+      | 'timeout'
+      | 'paused'
+      | 'not_triggered'
+      | 'skipped';
     /** ExperimentCreateRequest */
     ExperimentCreateRequest: {
       /** Name */
@@ -6292,6 +6742,50 @@ export interface components {
      * @enum {string}
      */
     IntegrationAction: 'update' | 'delete' | 'share';
+    /** InvokeResponse */
+    InvokeResponse: {
+      /** @default skipped */
+      status?: components['schemas']['ExecutionStatus'];
+      /**
+       * Api Version
+       * @default 1.0.0
+       */
+      api_version?: string;
+      /**
+       * Text
+       * @description Text from the request after processing the rules.
+       */
+      text: string;
+      trace_metadata: components['schemas']['TraceMetadata'];
+      stage_metadata: components['schemas']['StageMetadata'];
+      /**
+       * Ruleset Results
+       * @description Results of the rule execution.
+       */
+      ruleset_results?: components['schemas']['RulesetResult'][];
+      /**
+       * Metric Results
+       * @description Results of the metric computation.
+       */
+      metric_results?: {
+        [key: string]: components['schemas']['MetricComputation'];
+      };
+      action_result: components['schemas']['ActionResult'];
+      /**
+       * Metadata
+       * @description Optional additional metadata. This being echoed back from the request.
+       */
+      metadata?: {
+        [key: string]: string;
+      } | null;
+      /**
+       * Headers
+       * @description Optional additional HTTP headers that should be included in the response.
+       */
+      headers?: {
+        [key: string]: string;
+      } | null;
+    };
     /** JobDB */
     JobDB: {
       /**
@@ -6541,6 +7035,85 @@ export interface components {
       next_starting_token?: number | null;
       /** Datasets */
       datasets?: components['schemas']['PromptDatasetDB'][];
+    };
+    /** ListPromptTemplateParams */
+    ListPromptTemplateParams: {
+      /** Filters */
+      filters?: (
+        | components['schemas']['PromptTemplateNameFilter']
+        | components['schemas']['PromptTemplateCreatedByFilter']
+        | components['schemas']['PromptTemplateUsedInProjectFilter']
+      )[];
+      /**
+       * Sort
+       * @default {
+       *       "name": "created_at",
+       *       "ascending": false,
+       *       "sort_type": "column"
+       *     }
+       */
+      sort?:
+        | (
+            | components['schemas']['PromptTemplateNameSort']
+            | components['schemas']['PromptTemplateCreatedAtSort']
+            | components['schemas']['PromptTemplateUpdatedAtSort']
+          )
+        | null;
+    };
+    /** ListPromptTemplateResponse */
+    ListPromptTemplateResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Templates */
+      templates?: components['schemas']['BasePromptTemplateResponse'][];
+    };
+    /** ListPromptTemplateVersionParams */
+    ListPromptTemplateVersionParams: {
+      /** Sort */
+      sort?:
+        | (
+            | components['schemas']['PromptTemplateVersionNumberSort']
+            | components['schemas']['PromptTemplateVersionCreatedAtSort']
+            | components['schemas']['PromptTemplateVersionUpdatedAtSort']
+          )
+        | null;
+    };
+    /** ListPromptTemplateVersionResponse */
+    ListPromptTemplateVersionResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Versions */
+      versions?: components['schemas']['BasePromptTemplateVersionResponse'][];
     };
     /** ListScorerVersionsResponse */
     ListScorerVersionsResponse: {
@@ -6822,9 +7395,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -6878,6 +7452,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
       /**
        * Tools
        * @description List of available tools passed to the LLM on invocation.
@@ -7164,8 +7744,11 @@ export interface components {
        */
       type: 'text';
     };
-    /** LogSpansIngestRequest */
-    LogSpansIngestRequest: {
+    /**
+     * LogSpanUpdateRequest
+     * @description Request model for updating a trace.
+     */
+    LogSpanUpdateRequest: {
       /**
        * Log Stream Id
        * @description Log stream id associated with the traces.
@@ -7187,10 +7770,105 @@ export interface components {
        */
       reliable?: boolean;
       /**
-       * Session Id
-       * @description Session id associated with the spans.
+       * Span Id
+       * Format: uuid4
+       * @description Span id to update.
        */
-      session_id?: string | null;
+      span_id: string;
+      /**
+       * Input
+       * @description Input of the span. Overwrites previous value if present.
+       */
+      input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
+       * Output
+       * @description Output of the trace. Overwrites previous value if present.
+       */
+      output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Tags
+       * @description Tags to add to the span.
+       */
+      tags?: string[] | null;
+      /**
+       * Status Code
+       * @description Status code of the trace. Overwrites previous value if present.
+       */
+      status_code?: number | null;
+    };
+    /** LogSpanUpdateResponse */
+    LogSpanUpdateResponse: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Project Id
+       * Format: uuid4
+       * @description Project id associated with the traces.
+       */
+      project_id: string;
+      /**
+       * Project Name
+       * @description Project name associated with the traces.
+       */
+      project_name: string;
+      /**
+       * Session Id
+       * Format: uuid4
+       * @description Session id associated with the traces.
+       */
+      session_id: string;
+      /**
+       * Records Count
+       * @description Total number of records ingested
+       */
+      records_count: number;
+      /**
+       * Span Id
+       * Format: uuid4
+       * @description Span id associated with the updated span.
+       */
+      span_id: string;
+    };
+    /**
+     * LogSpansIngestRequest
+     * @description Request model for ingesting spans.
+     */
+    LogSpansIngestRequest: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /** @default api_direct */
+      logging_method?: components['schemas']['LoggingMethod'];
+      /** Client Version */
+      client_version?: string | null;
+      /**
+       * Reliable
+       * @description Whether or not to use reliable logging.  If set to False, the method will respond immediately before verifying that the traces have been successfully ingested, and no error message will be returned if ingestion fails.  If set to True, the method will wait for the traces to be successfully ingested or return an error message if there is an ingestion failure.
+       * @default false
+       */
+      reliable?: boolean;
       /**
        * Spans
        * @description List of spans to log.
@@ -7299,7 +7977,109 @@ export interface components {
       /** Name */
       name: string;
     };
-    /** LogTracesIngestRequest */
+    /**
+     * LogTraceUpdateRequest
+     * @description Request model for updating a trace.
+     */
+    LogTraceUpdateRequest: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /** @default api_direct */
+      logging_method?: components['schemas']['LoggingMethod'];
+      /** Client Version */
+      client_version?: string | null;
+      /**
+       * Reliable
+       * @description Whether or not to use reliable logging.  If set to False, the method will respond immediately before verifying that the traces have been successfully ingested, and no error message will be returned if ingestion fails.  If set to True, the method will wait for the traces to be successfully ingested or return an error message if there is an ingestion failure.
+       * @default false
+       */
+      reliable?: boolean;
+      /**
+       * Trace Id
+       * Format: uuid4
+       * @description Trace id to update.
+       */
+      trace_id: string;
+      /**
+       * Input
+       * @description Input of the trace. Overwrites previous value if present.
+       */
+      input?: string | null;
+      /**
+       * Output
+       * @description Output of the trace. Overwrites previous value if present.
+       */
+      output?: string | null;
+      /**
+       * Status Code
+       * @description Status code of the trace. Overwrites previous value if present.
+       */
+      status_code?: number | null;
+      /**
+       * Tags
+       * @description Tags to add to the trace.
+       */
+      tags?: string[] | null;
+      /**
+       * Is Complete
+       * @description Whether or not the records in this request are complete.
+       * @default false
+       */
+      is_complete?: boolean | null;
+    };
+    /** LogTraceUpdateResponse */
+    LogTraceUpdateResponse: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Project Id
+       * Format: uuid4
+       * @description Project id associated with the traces.
+       */
+      project_id: string;
+      /**
+       * Project Name
+       * @description Project name associated with the traces.
+       */
+      project_name: string;
+      /**
+       * Session Id
+       * Format: uuid4
+       * @description Session id associated with the traces.
+       */
+      session_id: string;
+      /**
+       * Records Count
+       * @description Total number of records ingested
+       */
+      records_count: number;
+      /**
+       * Trace Id
+       * Format: uuid4
+       * @description Trace id associated with the updated trace.
+       */
+      trace_id: string;
+    };
+    /**
+     * LogTracesIngestRequest
+     * @description Request model for ingesting traces.
+     */
     LogTracesIngestRequest: {
       /**
        * Log Stream Id
@@ -7331,6 +8111,12 @@ export interface components {
        * @description List of traces to log.
        */
       traces: components['schemas']['Trace'][];
+      /**
+       * Is Complete
+       * @description Whether or not the records in this request are complete.
+       * @default true
+       */
+      is_complete?: boolean;
     };
     /** LogTracesIngestResponse */
     LogTracesIngestResponse: {
@@ -7409,6 +8195,28 @@ export interface components {
       /** Value */
       value: string | string[];
     };
+    /** MetricComputation */
+    MetricComputation: {
+      /** Value */
+      value?:
+        | number
+        | string
+        | (number | string | null)[]
+        | {
+            [key: string]: number | string | null;
+          }
+        | null;
+      /** Execution Time */
+      execution_time?: number | null;
+      status?: components['schemas']['MetricComputationStatus'] | null;
+      /** Error Message */
+      error_message?: string | null;
+    };
+    /**
+     * MetricComputationStatus
+     * @enum {string}
+     */
+    MetricComputationStatus: 'success' | 'timeout' | 'failed' | 'error';
     /** MetricComputing */
     MetricComputing: {
       /**
@@ -7882,6 +8690,50 @@ export interface components {
        * @description Number of judges for the scorer.
        */
       num_judges?: number | null;
+    };
+    /** OverrideAction */
+    OverrideAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'OVERRIDE';
+      /**
+       * Subscriptions
+       * @description List of subscriptions to send a notification to when this action is applied and the ruleset status matches any of the configured statuses.
+       */
+      subscriptions?: components['schemas']['SubscriptionConfig'][];
+      /**
+       * Choices
+       * @description List of choices to override the response with. If there are multiple choices, one will be chosen at random when applying this action.
+       */
+      choices: string[];
+    };
+    /** PassthroughAction */
+    PassthroughAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'PASSTHROUGH';
+      /**
+       * Subscriptions
+       * @description List of subscriptions to send a notification to when this action is applied and the ruleset status matches any of the configured statuses.
+       */
+      subscriptions?: components['schemas']['SubscriptionConfig'][];
+    };
+    /** Payload */
+    Payload: {
+      /**
+       * Input
+       * @description Input text to be processed.
+       */
+      input?: string | null;
+      /**
+       * Output
+       * @description Output text to be processed.
+       */
+      output?: string | null;
     };
     /** Permission */
     Permission: {
@@ -8652,6 +9504,166 @@ export interface components {
       /** Known Models */
       known_models?: components['schemas']['Model'][];
     };
+    /** PromptTemplateCreatedAtSort */
+    PromptTemplateCreatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'created_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** PromptTemplateCreatedByFilter */
+    PromptTemplateCreatedByFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'creator';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** PromptTemplateNameFilter */
+    PromptTemplateNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
+    };
+    /** PromptTemplateNameSort */
+    PromptTemplateNameSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** PromptTemplateUpdatedAtSort */
+    PromptTemplateUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** PromptTemplateUsedInProjectFilter */
+    PromptTemplateUsedInProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'used_in_project';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** PromptTemplateVersionCreatedAtSort */
+    PromptTemplateVersionCreatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'created_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** PromptTemplateVersionNumberSort */
+    PromptTemplateVersionNumberSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'version';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** PromptTemplateVersionUpdatedAtSort */
+    PromptTemplateVersionUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
     /** QueryDatasetParams */
     QueryDatasetParams: {
       /** Filters */
@@ -8757,6 +9769,77 @@ export interface components {
       result: string;
       /** Warning */
       warning?: string | null;
+    };
+    /** Request */
+    Request: {
+      /**
+       * Prioritized Rulesets
+       * @description Rulesets to be applied to the payload.
+       */
+      prioritized_rulesets?: components['schemas']['Ruleset'][];
+      /** @description Payload to be processed. */
+      payload: components['schemas']['Payload'];
+      /**
+       * Project Name
+       * @description Project name.
+       */
+      project_name?: string | null;
+      /**
+       * Project Id
+       * @description Project ID.
+       */
+      project_id?: string | null;
+      /**
+       * Stage Name
+       * @description Stage name.
+       */
+      stage_name?: string | null;
+      /**
+       * Stage Id
+       * @description Stage ID.
+       */
+      stage_id?: string | null;
+      /**
+       * Stage Version
+       * @description Stage version to use for the request, if it's a central stage with a previously registered version.
+       */
+      stage_version?: number | null;
+      /**
+       * Timeout
+       * @description Optional timeout for the guardrail execution in seconds. This is not the timeout for the request. If not set, a default timeout of 5 minutes will be used.
+       * @default 300
+       */
+      timeout?: number;
+      /**
+       * Metadata
+       * @description Optional additional metadata. This will be echoed back in the response.
+       */
+      metadata?: {
+        [key: string]: string;
+      } | null;
+      /**
+       * Headers
+       * @description Optional additional HTTP headers that should be included in the response.
+       */
+      headers?: {
+        [key: string]: string;
+      } | null;
+    };
+    /** Response */
+    Response: {
+      /**
+       * @description Status of the request after processing the rules.
+       * @default not_triggered
+       */
+      status?: components['schemas']['ExecutionStatus'];
+      /**
+       * Text
+       * @description Text from the request after processing the rules.
+       */
+      text: string;
+      trace_metadata: components['schemas']['TraceMetadata'];
+    } & {
+      [key: string]: unknown;
     };
     /** RetrieverSpan */
     RetrieverSpan: {
@@ -8912,9 +9995,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -8968,6 +10052,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
     };
     /** RollbackRequest */
     RollbackRequest: {
@@ -8991,6 +10081,119 @@ export interface components {
             | components['schemas']['MetadataFilter']
           )[]
         | null;
+    };
+    /** Rule */
+    Rule: {
+      /**
+       * Metric
+       * @description Name of the metric.
+       */
+      metric: string;
+      /** @description Operator to use for comparison. */
+      operator: components['schemas']['RuleOperator'];
+      /**
+       * Target Value
+       * @description Value to compare with for this metric (right hand side).
+       */
+      target_value: string | number | unknown[] | null;
+    };
+    /**
+     * RuleOperator
+     * @enum {string}
+     */
+    RuleOperator:
+      | 'gt'
+      | 'lt'
+      | 'gte'
+      | 'lte'
+      | 'eq'
+      | 'neq'
+      | 'contains'
+      | 'all'
+      | 'any'
+      | 'empty'
+      | 'not_empty';
+    /** RuleResult */
+    RuleResult: {
+      /** @default skipped */
+      status?: components['schemas']['ExecutionStatus'];
+      /**
+       * Metric
+       * @description Name of the metric.
+       */
+      metric: string;
+      /** @description Operator to use for comparison. */
+      operator: components['schemas']['RuleOperator'];
+      /**
+       * Target Value
+       * @description Value to compare with for this metric (right hand side).
+       */
+      target_value: string | number | unknown[] | null;
+      /**
+       * Value
+       * @description Result of the metric computation.
+       */
+      value?: unknown | null;
+      /**
+       * Execution Time
+       * @description Execution time for the rule in seconds.
+       */
+      execution_time?: number | null;
+    };
+    /** Ruleset */
+    Ruleset: {
+      /**
+       * Rules
+       * @description List of rules to evaluate. Atleast 1 rule is required.
+       */
+      rules?: components['schemas']['Rule'][];
+      /**
+       * Action
+       * @description Action to take if all the rules are met.
+       */
+      action?:
+        | components['schemas']['OverrideAction']
+        | components['schemas']['PassthroughAction'];
+      /**
+       * Description
+       * @description Description of the ruleset.
+       */
+      description?: string | null;
+    };
+    /** RulesetResult */
+    RulesetResult: {
+      /** @default skipped */
+      status?: components['schemas']['ExecutionStatus'];
+      /**
+       * Rules
+       * @description List of rules to evaluate. Atleast 1 rule is required.
+       */
+      rules?: components['schemas']['Rule'][];
+      /**
+       * Action
+       * @description Action to take if all the rules are met.
+       */
+      action?:
+        | components['schemas']['OverrideAction']
+        | components['schemas']['PassthroughAction'];
+      /**
+       * Description
+       * @description Description of the ruleset.
+       */
+      description?: string | null;
+      /**
+       * Rule Results
+       * @description Results of the rule execution.
+       */
+      rule_results?: components['schemas']['RuleResult'][];
+    };
+    /** RulesetsMixin */
+    RulesetsMixin: {
+      /**
+       * Prioritized Rulesets
+       * @description Rulesets to be applied to the payload.
+       */
+      prioritized_rulesets?: components['schemas']['Ruleset'][];
     };
     /** RunDB */
     RunDB: {
@@ -9357,8 +10560,12 @@ export interface components {
       | '_instruction_adherence'
       | '_ground_truth_adherence'
       | '_tool_selection_quality'
+      | '_tool_selection_quality_luna'
       | '_tool_error_rate'
+      | '_tool_error_rate_luna'
+      | '_action_completion_luna'
       | '_agentic_session_success'
+      | '_action_advancement_luna'
       | '_agentic_workflow_success'
       | '_generic_wizard'
       | '_customized_completeness_gpt'
@@ -9591,6 +10798,26 @@ export interface components {
        * @default false
        */
       completeness_nli?: boolean;
+      /**
+       * Tool Error Rate Luna
+       * @default false
+       */
+      tool_error_rate_luna?: boolean;
+      /**
+       * Tool Selection Quality Luna
+       * @default false
+       */
+      tool_selection_quality_luna?: boolean;
+      /**
+       * Action Completion Luna
+       * @default false
+       */
+      action_completion_luna?: boolean;
+      /**
+       * Action Advancement Luna
+       * @default false
+       */
+      action_advancement_luna?: boolean;
       /**
        * Uncertainty
        * @default false
@@ -9862,9 +11089,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * @description Galileo ID of the trace containing the span (or the same value as id for a trace)
@@ -10003,9 +11231,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * @description Galileo ID of the trace containing the span (or the same value as id for a trace)
@@ -10125,6 +11354,106 @@ export interface components {
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
     };
+    /** StageDB */
+    StageDB: {
+      /**
+       * Name
+       * @description Name of the stage. Must be unique within the project.
+       */
+      name: string;
+      /**
+       * Project Id
+       * Format: uuid4
+       * @description ID of the project to which this stage belongs.
+       */
+      project_id: string;
+      /**
+       * Description
+       * @description Optional human-readable description of the goals of this guardrail.
+       */
+      description?: string | null;
+      /**
+       * @description Type of the stage.
+       * @default local
+       */
+      type?: components['schemas']['StageType'];
+      /**
+       * Paused
+       * @description Whether the action is enabled. If False, the action will not be applied.
+       * @default false
+       */
+      paused?: boolean;
+      /**
+       * Created By
+       * Format: uuid4
+       */
+      created_by: string;
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /** Version */
+      version?: number | null;
+    };
+    /** StageMetadata */
+    StageMetadata: {
+      /**
+       * Project Id
+       * Format: uuid4
+       */
+      project_id: string;
+      /**
+       * Stage Id
+       * Format: uuid4
+       */
+      stage_id: string;
+      /** Stage Name */
+      stage_name: string;
+      /** Stage Version */
+      stage_version: number;
+      stage_type: components['schemas']['StageType'];
+    };
+    /**
+     * StageType
+     * @enum {string}
+     */
+    StageType: 'local' | 'central';
+    /** StageWithRulesets */
+    StageWithRulesets: {
+      /**
+       * Prioritized Rulesets
+       * @description Rulesets to be applied to the payload.
+       */
+      prioritized_rulesets?: components['schemas']['Ruleset'][];
+      /**
+       * Name
+       * @description Name of the stage. Must be unique within the project.
+       */
+      name: string;
+      /**
+       * Project Id
+       * Format: uuid4
+       * @description ID of the project to which this stage belongs.
+       */
+      project_id: string;
+      /**
+       * Description
+       * @description Optional human-readable description of the goals of this guardrail.
+       */
+      description?: string | null;
+      /**
+       * @description Type of the stage.
+       * @default local
+       */
+      type?: components['schemas']['StageType'];
+      /**
+       * Paused
+       * @description Whether the action is enabled. If False, the action will not be applied.
+       * @default false
+       */
+      paused?: boolean;
+    };
     /** StarAggregate */
     StarAggregate: {
       /**
@@ -10167,6 +11496,23 @@ export interface components {
     StringData: {
       /** Input Strings */
       input_strings: string[];
+    };
+    /** SubscriptionConfig */
+    SubscriptionConfig: {
+      /**
+       * Statuses
+       * @description List of statuses that will cause a notification to be sent to the configured URL.
+       * @default [
+       *       "triggered"
+       *     ]
+       */
+      statuses?: components['schemas']['ExecutionStatus'][];
+      /**
+       * Url
+       * Format: uri
+       * @description URL to send the event to. This can be a webhook URL, a message queue URL, an event bus or a custom endpoint that can receive an HTTP POST request.
+       */
+      url: string;
     };
     /** TagsAggregate */
     TagsAggregate: {
@@ -10640,9 +11986,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -10696,6 +12043,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
       /**
        * Tool Call Id
        * @description ID of the tool call.
@@ -10864,6 +12217,31 @@ export interface components {
         | components['schemas']['ToolSpan']
       )[];
     };
+    /** TraceMetadata */
+    TraceMetadata: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description Unique identifier for the request.
+       */
+      id?: string;
+      /**
+       * Received At
+       * @description Time the request was received by the server in nanoseconds.
+       */
+      received_at?: number;
+      /**
+       * Response At
+       * @description Time the response was sent by the server in nanoseconds.
+       */
+      response_at?: number;
+      /**
+       * Execution Time
+       * @description Execution time for the request (in seconds).
+       * @default -1
+       */
+      execution_time?: number;
+    };
     /** TraceRecord */
     TraceRecord: {
       /**
@@ -10944,9 +12322,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -11001,6 +12380,12 @@ export interface components {
       feedback_rating_info?: {
         [key: string]: components['schemas']['FeedbackRatingInfo'];
       };
+      /**
+       * Is Complete
+       * @description Whether the trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
     };
     /** TraceRecordWithChildren */
     TraceRecordWithChildren: {
@@ -11090,9 +12475,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -11147,6 +12533,12 @@ export interface components {
       feedback_rating_info?: {
         [key: string]: components['schemas']['FeedbackRatingInfo'];
       };
+      /**
+       * Is Complete
+       * @description Whether the trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
     };
     /** UncertaintyScorer */
     UncertaintyScorer: {
@@ -11516,9 +12908,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -11572,6 +12965,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
     };
     /** WorkflowSpanRecordWithChildren */
     WorkflowSpanRecordWithChildren: {
@@ -11665,9 +13064,10 @@ export interface components {
       id: string;
       /**
        * Session ID
+       * Format: uuid4
        * @description Galileo ID of the session
        */
-      session_id?: string | null;
+      session_id: string;
       /**
        * Trace ID
        * Format: uuid4
@@ -11721,6 +13121,12 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
     };
     /** GetProjectsPaginatedResponse */
     api__schemas__project__GetProjectsPaginatedResponse: {
@@ -13721,6 +15127,145 @@ export interface operations {
       };
     };
   };
+  get_trace_projects__project_id__traces__trace_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        trace_id: string;
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TraceRecordWithChildren'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_trace_projects__project_id__traces__trace_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LogTraceUpdateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogTraceUpdateResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_span_projects__project_id__spans__span_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        span_id: string;
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | components['schemas']['AgentSpanRecordWithChildren']
+            | components['schemas']['WorkflowSpanRecordWithChildren']
+            | components['schemas']['LlmSpanRecord']
+            | components['schemas']['ToolSpanRecord']
+            | components['schemas']['RetrieverSpanRecord'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_span_projects__project_id__spans__span_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LogSpanUpdateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogSpanUpdateResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   traces_available_columns_projects__project_id__traces_available_columns_post: {
     parameters: {
       query?: never;
@@ -13883,75 +15428,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['LogRecordsQueryResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_trace_projects__project_id__traces__trace_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        trace_id: string;
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['TraceRecordWithChildren'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_span_projects__project_id__spans__span_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        span_id: string;
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json':
-            | components['schemas']['AgentSpanRecordWithChildren']
-            | components['schemas']['WorkflowSpanRecordWithChildren']
-            | components['schemas']['LlmSpanRecord']
-            | components['schemas']['ToolSpanRecord']
-            | components['schemas']['RetrieverSpanRecord'];
         };
       };
       /** @description Validation Error */
@@ -14837,6 +16313,80 @@ export interface operations {
       };
     };
   };
+  query_templates_templates_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListPromptTemplateParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListPromptTemplateResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  query_template_versions_templates__template_id__versions_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListPromptTemplateVersionParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListPromptTemplateVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_template_version_projects__project_id__templates__template_id__versions__version__get: {
     parameters: {
       query?: never;
@@ -14959,6 +16509,372 @@ export interface operations {
         };
         content: {
           'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_global_prompt_template_templates_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreatePromptTemplateWithVersionRequestBody'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BasePromptTemplateResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_global_template_templates__template_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BasePromptTemplateResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_global_template_templates__template_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeletePromptResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_global_prompt_template_version_templates__template_id__versions_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BasePromptTemplateVersion'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BasePromptTemplateVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_global_template_version_templates__template_id__versions__version__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+        version: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BasePromptTemplateVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  set_selected_global_template_version_templates__template_id__versions__version__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+        version: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BasePromptTemplateResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_user_prompt_template_collaborators_templates__template_id__users_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListUserCollaboratorsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_user_prompt_template_collaborators_templates__template_id__users_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserCollaboratorCreate'][];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserCollaborator'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_user_prompt_template_collaborator_templates__template_id__users__user_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_user_prompt_template_collaborator_templates__template_id__users__user_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CollaboratorUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserCollaborator'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  invoke_v2_protect_invoke_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Request'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | components['schemas']['Response']
+            | components['schemas']['InvokeResponse'];
         };
       };
       /** @description Validation Error */
@@ -15385,6 +17301,177 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+        version_number: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_stage_projects__project_id__stages_get: {
+    parameters: {
+      query?: {
+        stage_name?: string | null;
+        stage_id?: string | null;
+      };
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StageDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_stage_projects__project_id__stages_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StageWithRulesets'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StageDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  pause_stage_projects__project_id__stages__stage_id__put: {
+    parameters: {
+      query?: {
+        pause?: boolean;
+      };
+      header?: never;
+      path: {
+        stage_id: string;
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StageDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_stage_projects__project_id__stages__stage_id__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        stage_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RulesetsMixin'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StageDB'];
         };
       };
       /** @description Validation Error */
