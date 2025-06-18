@@ -167,4 +167,26 @@ export class DatasetService extends BaseClient {
       { dataset_id: datasetId }
     );
   }
+
+  /**
+   * Deletes a dataset by its unique identifier or name.
+   *
+   * If both `id` and `name` are provided, `id` takes precedence.
+   * If only `name` is provided, the dataset will be looked up by name.
+   * Throws an error if neither `id` nor `name` is provided, or if the dataset cannot be found.
+   *
+   * @param id - (Optional) The unique identifier of the dataset to delete.
+   * @param name - (Optional) The name of the dataset to delete.
+   * @returns A promise that resolves when the dataset is deleted.
+   * @throws Error if the client is not initialized, neither id nor name is provided, or the dataset cannot be found.
+   */
+  public async deleteDataset(id: string): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+
+    const path = Routes.dataset.replace('{dataset_id}', id!);
+
+    await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
+  }
 }

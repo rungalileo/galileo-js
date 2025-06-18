@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Scorer, ScorerTypes } from '../types/scorer.types';
+import {
+  Scorer,
+  ScorerConfig,
+  ScorerDefaults,
+  ScorerTypes,
+  ScorerVersion,
+  ModelType,
+  ChainPollTemplate
+} from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
@@ -11,6 +19,7 @@ import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { StageService } from './services/stage-service';
+import { ScorerService } from './services/scorer-service';
 import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
@@ -57,6 +66,7 @@ export class GalileoApiClient extends BaseClient {
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
   private stageService?: StageService;
+  private scorerService?: ScorerService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -194,6 +204,7 @@ export class GalileoApiClient extends BaseClient {
           this.token,
           this.projectId,
         );
+        this.scorerService = new ScorerService(this.apiUrl, this.token);
       }
     }
   }
@@ -269,6 +280,11 @@ export class GalileoApiClient extends BaseClient {
   public async getDatasetContent(datasetId: string) {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetContent(datasetId);
+  }
+
+  public async deleteDataset(id: string): Promise<void> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.deleteDataset(id);
   }
 
   public async appendRowsToDatasetContent(
@@ -351,14 +367,22 @@ export class GalileoApiClient extends BaseClient {
   }
 
   public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
-    this.ensureService(this.experimentService);
-    return this.experimentService!.getScorers(type);
+    this.ensureService(this.scorerService);
+    return this.scorerService!.getScorers(type);
+  }
+
+  public async getScorerVersion(
+    scorer_id: string,
+    version: number
+  ): Promise<ScorerVersion> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.getScorerVersion(scorer_id, version);
   }
 
   public async createRunScorerSettings(
     experimentId: string,
     projectId: string,
-    scorers: Scorer[]
+    scorers: ScorerConfig[]
   ): Promise<void> {
     this.ensureService(this.experimentService);
     return this.experimentService!.createRunScorerSettings(
@@ -373,7 +397,7 @@ export class GalileoApiClient extends BaseClient {
     projectId: string,
     promptTemplateVersionId: string,
     datasetId: string,
-    scorers?: Scorer[],
+    scorers?: ScorerConfig[],
     promptSettings?: PromptRunSettings
   ): Promise<CreateJobResponse> {
     this.ensureService(this.experimentService);
@@ -425,6 +449,49 @@ export class GalileoApiClient extends BaseClient {
   public async resumeStage(stageId: string): Promise<StageDB> {
     this.ensureService(this.stageService);
     return this.stageService!.resumeStage(stageId);
+  }
+
+  public async createScorer(
+    name: string,
+    scorerType: ScorerTypes,
+    description?: string,
+    tags?: string[],
+    defaults?: ScorerDefaults,
+    modelType?: ModelType,
+    defaultVersionId?: string
+  ): Promise<Scorer> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.createScorer(
+      name,
+      scorerType,
+      description,
+      tags,
+      defaults,
+      modelType,
+      defaultVersionId
+    );
+  }
+
+  public async createLlmScorerVersion(
+    scorerId: string,
+    instructions: string,
+    chainPollTemplate: ChainPollTemplate,
+    modelName?: string,
+    numJudges?: number
+  ): Promise<ScorerVersion> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.createLLMScorerVersion(
+      scorerId,
+      instructions,
+      chainPollTemplate,
+      modelName,
+      numJudges
+    );
+  }
+
+  public async deleteScorer(scorerId: string): Promise<void> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.deleteScorer(scorerId);
   }
 
   // Helper to ensure service is initialized

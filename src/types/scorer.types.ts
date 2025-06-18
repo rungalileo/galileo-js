@@ -1,4 +1,5 @@
 import { Models } from './models.types';
+import { components } from './api.types';
 
 export interface ScorersConfiguration {
   adherence_nli?: boolean;
@@ -50,8 +51,19 @@ export enum ScorerTypes {
   preset = 'preset'
 }
 
+export type ScorerVersion = components['schemas']['BaseScorerVersionDB'];
+
+export type ScorerConfig = components['schemas']['ScorerConfig'];
+
+export type ScorerDefaults = components['schemas']['ScorerDefaults'];
+
+export type ModelType = components['schemas']['ModelType'];
+
+export type ChainPollTemplate = components['schemas']['ChainPollTemplate'];
+
 export interface Scorer {
   id: string;
   name: string;
   scorer_type: ScorerTypes;
+  defaults?: ScorerDefaults;
 }

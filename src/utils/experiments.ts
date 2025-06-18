@@ -6,10 +6,16 @@ import {
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
-import { Scorer } from '../types/scorer.types';
-import { getScorers, createRunScorerSettings } from '../utils/scorers';
+import { ScorerConfig } from '../types/scorer.types';
+import {
+  getScorers,
+  getScorerVersion,
+  createRunScorerSettings
+} from '../utils/scorers';
+import { Metric } from '../types/metrics.types';
 import { Dataset } from '../types/dataset.types';
 import { getDataset, getDatasetContent } from '../utils/datasets';
+import { GalileoScorers } from '../types/metrics.types';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
@@ -19,7 +25,7 @@ type DatasetWithFunction<T extends Record<string, unknown>> = {
   name: string;
   dataset: DatasetType;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string | Metric)[];
   projectName: string;
 };
 
@@ -27,7 +33,7 @@ type DatasetIdWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetId: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string | Metric)[];
   projectName: string;
 };
 
@@ -35,7 +41,7 @@ type DatasetNameWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetName: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string | Metric)[];
   projectName: string;
 };
 
@@ -44,7 +50,7 @@ type DatasetWithPromptTemplate = {
   dataset: DatasetType;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string | Metric)[];
   projectName: string;
 };
 
@@ -53,7 +59,7 @@ type DatasetIdWithPromptTemplate = {
   datasetId: string;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string | Metric)[];
   projectName: string;
 };
 
@@ -62,7 +68,7 @@ type DatasetNameWithPromptTemplate = {
   datasetName: string;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (GalileoScorers | string | Metric)[];
   projectName: string;
 };
 
@@ -328,7 +334,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
   console.log(`🚀 Experiment ${experimentName} created.`);
 
-  const scorersToUse: Scorer[] = [];
+  const scorersToUse: ScorerConfig[] = [];
 
   console.log('Retrieving metrics...');
 
@@ -336,11 +342,39 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const scorers = await getScorers();
 
     for (const metric of metrics) {
-      const scorer = scorers.find((scorer) => scorer.name === metric);
-      if (!scorer) {
-        throw new Error(`Metric ${metric} not found`);
+      let metricName: string = '';
+      let metricVersion: number | undefined = undefined;
+      if (typeof metric === 'string') {
+        metricName = metric;
+      } else {
+        metricName = metric.name;
+        metricVersion = metric.version;
       }
-      scorersToUse.push(scorer);
+      const scorer = scorers.find((scorer) => scorer.name === metricName);
+
+      if (!scorer) {
+        throw new Error(
+          `Metric ${metric} not found. Please check the name is correct.`
+        );
+      }
+
+      const scorerConfig: ScorerConfig = {
+        id: scorer.id,
+        name: scorer.name,
+        model_name: scorer.defaults?.model_name || 'gpt-4o',
+        num_judges: scorer.defaults?.num_judges || 3,
+        filters: scorer.defaults?.filters || [],
+        scoreable_node_types: scorer.defaults?.scoreable_node_types || [],
+        scorer_type: scorer.scorer_type
+      };
+
+      // If a version is specified, fetch the scorer version
+      if (metricVersion !== undefined) {
+        const scorerVersion = await getScorerVersion(scorer.id, metricVersion);
+        scorerConfig.scorer_version = scorerVersion;
+      }
+
+      scorersToUse.push(scorerConfig);
     }
   }
 
