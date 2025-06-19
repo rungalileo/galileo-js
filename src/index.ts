@@ -16,7 +16,12 @@ import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
   createPromptTemplate,
   getPromptTemplates,
-  getPromptTemplate
+  getPromptTemplate,
+  createGlobalPromptTemplate,
+  getGlobalPromptTemplate,
+  getGlobalPromptTemplateVersion,
+  deleteGlobalPromptTemplate,
+  listGlobalPromptTemplates
 } from './utils/prompt-templates';
 import { getProjects, createProject, getProject } from './utils/projects';
 import {
@@ -59,6 +64,12 @@ export {
   getPromptTemplates,
   getPromptTemplate,
   createPromptTemplate,
+  // Global prompt templates
+  createGlobalPromptTemplate,
+  getGlobalPromptTemplate,
+  getGlobalPromptTemplateVersion,
+  deleteGlobalPromptTemplate,
+  listGlobalPromptTemplates,
   // Experiments
   getExperiments,
   createExperiment,
