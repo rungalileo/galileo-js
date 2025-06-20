@@ -68,3 +68,106 @@ export const createPromptTemplate = async ({
   const createdTemplate = await apiClient.createPromptTemplate(tmp, name);
   return createdTemplate;
 };
+
+export const createGlobalPromptTemplate = async ({
+  template,
+  name
+}: {
+  template: Message[] | string;
+  name: string;
+}): Promise<PromptTemplate> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+  let tmp: Message[];
+
+  if (typeof template === 'string') {
+    tmp = [{ content: template, role: MessageRole.user }];
+  } else {
+    tmp = template;
+  }
+  return await apiClient.createGlobalPromptTemplate(tmp, name);
+};
+
+export const getGlobalPromptTemplate = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}): Promise<PromptTemplate> => {
+  if ((!id && !name) || (id && name)) {
+    throw new Error('Either id or name must be provided, but not both.');
+  }
+
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
+  if (id) {
+    return await apiClient.getGlobalPromptTemplate(id);
+  } else {
+    const templates = await listGlobalPromptTemplates({
+      name_filter: name!,
+      limit: 1
+    });
+    if (templates.length > 0) {
+      return templates[0];
+    }
+    throw new Error(`Global prompt template with name '${name}' not found`);
+  }
+};
+
+export const getGlobalPromptTemplateVersion = async ({
+  template_id,
+  version
+}: {
+  template_id: string;
+  version: number;
+}): Promise<PromptTemplateVersion> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
+  return await apiClient.getGlobalPromptTemplateVersion(template_id, version);
+};
+
+export const deleteGlobalPromptTemplate = async ({
+  id,
+  name
+}: {
+  id?: string;
+  name?: string;
+}) => {
+  if ((!id && !name) || (id && name)) {
+    throw new Error('Either id or name must be provided, but not both.');
+  }
+
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
+  let template_id = id;
+  if (name) {
+    const template = await getGlobalPromptTemplate({ name });
+    template_id = template.id;
+  }
+
+  return await apiClient.deleteGlobalPromptTemplate(template_id!);
+};
+
+export const listGlobalPromptTemplates = async ({
+  name_filter,
+  limit = 100,
+  starting_token = 0
+}: {
+  name_filter: string;
+  limit?: number;
+  starting_token?: number;
+}): Promise<PromptTemplate[]> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
+  const templates = await apiClient.listGlobalPromptTemplates(
+    name_filter,
+    limit,
+    starting_token
+  );
+  return templates;
+};

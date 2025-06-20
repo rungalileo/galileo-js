@@ -13,7 +13,10 @@ import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
-import { PromptTemplateService } from './services/prompt-template-service';
+import {
+  PromptTemplateService,
+  GlobalPromptTemplateService
+} from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
@@ -53,6 +56,7 @@ export class GalileoApiClient extends BaseClient {
   private projectService?: ProjectService;
   private logStreamService?: LogStreamService;
   private promptTemplateService?: PromptTemplateService;
+  private globalPromptTemplateService?: GlobalPromptTemplateService;
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
@@ -97,6 +101,12 @@ export class GalileoApiClient extends BaseClient {
 
       // Initialize dataset and trace services
       this.datasetService = new DatasetService(this.apiUrl, this.token);
+
+      // Initialize the global prompt template service
+      this.globalPromptTemplateService = new GlobalPromptTemplateService(
+        this.apiUrl,
+        this.token
+      );
 
       if (projectScoped) {
         // Initialize project service and get project ID
@@ -179,6 +189,7 @@ export class GalileoApiClient extends BaseClient {
           this.token,
           this.projectId
         );
+
         this.experimentService = new ExperimentService(
           this.apiUrl,
           this.token,
@@ -328,6 +339,46 @@ export class GalileoApiClient extends BaseClient {
       template,
       name
     });
+  }
+
+  // GlobalPromptTemplate methods - delegate to GlobalPromptTemplateService
+  public async createGlobalPromptTemplate(template: Message[], name: string) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.createGlobalPromptTemplate({
+      template,
+      name
+    });
+  }
+
+  public async listGlobalPromptTemplates(
+    name_filter: string,
+    limit: number,
+    starting_token: number
+  ) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.listGlobalPromptTemplates(
+      name_filter,
+      limit,
+      starting_token
+    );
+  }
+
+  public async getGlobalPromptTemplate(id: string) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.getGlobalPromptTemplate(id);
+  }
+
+  public async getGlobalPromptTemplateVersion(id: string, version: number) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.getGlobalPromptTemplateVersion(
+      id,
+      version
+    );
+  }
+
+  public async deleteGlobalPromptTemplate(id: string) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.deleteGlobalPromptTemplate(id);
   }
 
   // Experiment methods - delegate to ExperimentService
