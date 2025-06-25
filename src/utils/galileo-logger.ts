@@ -282,7 +282,7 @@ class GalileoLogger {
     timeToFirstTokenNs,
     temperature,
     statusCode,
-    spanStepNumber,
+    spanStepNumber
   }: {
     input: LlmStepAllowedIOType;
     output: LlmStepAllowedIOType;
@@ -336,7 +336,7 @@ class GalileoLogger {
         timeToFirstTokenNs,
         temperature,
         statusCode,
-        stepNumber: spanStepNumber,
+        stepNumber: spanStepNumber
       })
     );
 
@@ -362,7 +362,7 @@ class GalileoLogger {
     timeToFirstTokenNs,
     temperature,
     statusCode,
-    stepNumber,
+    stepNumber
   }: {
     input: LlmStepAllowedIOType;
     output: LlmStepAllowedIOType;
@@ -400,7 +400,7 @@ class GalileoLogger {
       timeToFirstTokenNs,
       temperature,
       statusCode,
-      stepNumber,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -416,7 +416,7 @@ class GalileoLogger {
     metadata,
     tags,
     statusCode,
-    stepNumber,
+    stepNumber
   }: {
     input: string;
     output: RetrieverStepAllowedOutputType;
@@ -440,7 +440,7 @@ class GalileoLogger {
       tags,
       statusCode,
       durationNs,
-      stepNumber,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -457,7 +457,7 @@ class GalileoLogger {
     tags,
     statusCode,
     toolCallId,
-    stepNumber,
+    stepNumber
   }: {
     input: string;
     output?: string;
@@ -483,7 +483,7 @@ class GalileoLogger {
       statusCode,
       toolCallId,
       durationNs,
-      stepNumber,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -498,7 +498,7 @@ class GalileoLogger {
     createdAt,
     metadata,
     tags,
-    stepNumber,
+    stepNumber
   }: {
     input: string;
     output?: string;
@@ -522,7 +522,7 @@ class GalileoLogger {
       metadata: metadata,
       tags,
       durationNs,
-      stepNumber,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -539,7 +539,7 @@ class GalileoLogger {
     metadata,
     tags,
     agentType,
-    stepNumber,
+    stepNumber
   }: {
     input: string;
     output?: string;
@@ -563,7 +563,7 @@ class GalileoLogger {
       tags,
       durationNs,
       agentType,
-      stepNumber,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);

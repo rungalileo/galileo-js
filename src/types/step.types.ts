@@ -115,7 +115,7 @@ export class BaseStep {
       status_code: this.statusCode,
       ground_truth: this.groundTruth,
       external_id: this.externalId,
-      step_number: this.stepNumber,
+      step_number: this.stepNumber
     };
   }
 }
