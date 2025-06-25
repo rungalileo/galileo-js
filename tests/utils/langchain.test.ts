@@ -766,4 +766,249 @@ describe('GalileoCallback', () => {
       expect(childNode.parentRunId).toBe(parentId);
     });
   });
+
+  describe('Step Number Extraction', () => {
+    const testCases = [
+      {
+        nodeType: 'tool',
+        startFn: 'handleToolStart',
+        endFn: 'handleToolEnd',
+        inputArgs: {
+          serialized: { name: 'calculator', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          input: '2+2'
+        },
+        outputArgs: {
+          output: '4'
+        },
+        expectedType: NodeType.tool
+      },
+      {
+        nodeType: 'llm',
+        startFn: 'handleLLMStart',
+        endFn: 'handleLLMEnd',
+        inputArgs: {
+          serialized: { lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          prompts: ['Tell me about AI'],
+          invocation_params: { model_name: 'gpt-4' }
+        },
+        outputArgs: {
+          response: {
+            generations: [
+              [
+                {
+                  text: 'AI is a technology...',
+                  generationInfo: {}
+                }
+              ]
+            ],
+            llmOutput: { tokenUsage: { totalTokens: 100 } }
+          }
+        },
+        expectedType: NodeType.llm
+      },
+      {
+        nodeType: 'retriever',
+        startFn: 'handleRetrieverStart',
+        endFn: 'handleRetrieverEnd',
+        inputArgs: {
+          serialized: { lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          query: 'AI development'
+        },
+        outputArgs: {
+          documents: [
+            {
+              pageContent: 'AI is advancing rapidly',
+              metadata: { source: 'textbook' }
+            }
+          ]
+        },
+        expectedType: NodeType.retriever
+      },
+      {
+        nodeType: 'chain',
+        startFn: 'handleChainStart',
+        endFn: 'handleChainEnd',
+        inputArgs: {
+          serialized: { name: 'TestChain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          inputs: { query: 'test' }
+        },
+        outputArgs: {
+          outputs: { result: 'answer' }
+        },
+        expectedType: NodeType.workflow
+      },
+      {
+        nodeType: 'agent',
+        startFn: 'handleChainStart',
+        endFn: 'handleChainEnd',
+        inputArgs: {
+          serialized: { name: 'Agent', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          inputs: { query: 'test' }
+        },
+        outputArgs: {
+          outputs: { result: 'answer' }
+        },
+        expectedType: NodeType.workflow
+      }
+    ];
+
+    testCases.forEach(({ nodeType, startFn, endFn, inputArgs, outputArgs, expectedType }) => {
+      it(`should set step_number correctly for ${nodeType} nodes`, async () => {
+        const parentId = createId();
+        const runId = createId();
+        const stepNumber = 42;
+
+        // Create parent chain for non-root nodes
+        if (nodeType !== 'chain' && nodeType !== 'agent') {
+          await callback.handleChainStart(
+            {
+              name: 'TestChain',
+              lc: 1,
+              type: 'secret',
+              id: ['test']
+            } as Serialized,
+            { query: 'test' },
+            parentId
+          );
+        }
+
+        // Prepare input arguments with step number metadata
+        const startArgs = {
+          ...inputArgs,
+          runId,
+          parentRunId: nodeType !== 'chain' && nodeType !== 'agent' ? parentId : undefined,
+          metadata: { langgraph_step: stepNumber.toString() }
+        };
+
+        // Call start function
+        if (startFn === 'handleChainStart') {
+          await callback.handleChainStart(
+            startArgs.serialized,
+            startArgs.inputs!,
+            startArgs.runId,
+            startArgs.parentRunId,
+            undefined,
+            startArgs.metadata
+          );
+        } else if (startFn === 'handleLLMStart') {
+          await callback.handleLLMStart(
+            startArgs.serialized,
+            startArgs.prompts!,
+            startArgs.runId,
+            startArgs.parentRunId,
+            startArgs.invocation_params,
+            undefined,
+            startArgs.metadata
+          );
+        } else if (startFn === 'handleToolStart') {
+          await callback.handleToolStart(
+            startArgs.serialized,
+            startArgs.input!,
+            startArgs.runId,
+            startArgs.parentRunId,
+            undefined,
+            startArgs.metadata
+          );
+        } else if (startFn === 'handleRetrieverStart') {
+          await callback.handleRetrieverStart(
+            startArgs.serialized,
+            startArgs.query!,
+            startArgs.runId,
+            startArgs.parentRunId,
+            undefined,
+            startArgs.metadata
+          );
+        }
+
+        // Prepare and call end function
+        const endArgs = {
+          ...outputArgs,
+          runId,
+          parentRunId: nodeType !== 'chain' && nodeType !== 'agent' ? parentId : undefined
+        };
+
+        if (endFn === 'handleChainEnd') {
+          await callback.handleChainEnd(endArgs.outputs!, endArgs.runId);
+        } else if (endFn === 'handleLLMEnd') {
+          await callback.handleLLMEnd(endArgs.response!, endArgs.runId);
+        } else if (endFn === 'handleToolEnd') {
+          await callback.handleToolEnd(endArgs.output!, endArgs.runId);
+        } else if (endFn === 'handleRetrieverEnd') {
+          await callback.handleRetrieverEnd(endArgs.documents!, endArgs.runId);
+        }
+
+        // End chain to trigger commit for non-root nodes
+        if (nodeType !== 'chain' && nodeType !== 'agent') {
+          await callback.handleChainEnd({ result: 'test answer' }, parentId);
+          const traces = callback._galileoLogger.traces;
+          expect(traces).toHaveLength(1);
+          expect(traces[0].spans).toHaveLength(1);
+          const childSpan = (traces[0].spans[0] as WorkflowSpan).spans[0];
+          expect(childSpan.type).toBe(expectedType);
+          expect(childSpan.stepNumber).toBe(stepNumber);
+        } else {
+          const traces = callback._galileoLogger.traces;
+          expect(traces).toHaveLength(1);
+          expect(traces[0].spans).toHaveLength(1);
+          const rootSpan = traces[0].spans[0];
+          expect(rootSpan.type).toBe(expectedType);
+          expect(rootSpan.stepNumber).toBe(stepNumber);
+        }
+      });
+    });
+
+    it('should handle invalid step number gracefully', async () => {
+      const runId = createId();
+
+      // Start chain with invalid step number in metadata
+      await callback.handleChainStart(
+        {
+          name: 'TestChain',
+          lc: 1,
+          type: 'secret',
+          id: ['test']
+        } as Serialized,
+        { query: 'test question' },
+        runId,
+        undefined,
+        undefined,
+        { langgraph_step: 'not-a-number' }
+      );
+
+      // End chain
+      await callback.handleChainEnd({ result: 'test answer' }, runId);
+
+      const traces = callback._galileoLogger.traces;
+      expect(traces).toHaveLength(1);
+      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].stepNumber).toBeUndefined();
+    });
+
+    it('should handle missing step number correctly', async () => {
+      const runId = createId();
+
+      // Start chain without step number in metadata
+      await callback.handleChainStart(
+        {
+          name: 'TestChain',
+          lc: 1,
+          type: 'secret',
+          id: ['test']
+        } as Serialized,
+        { query: 'test question' },
+        runId,
+        undefined,
+        undefined,
+        { other_metadata: 'value' }
+      );
+
+      // End chain
+      await callback.handleChainEnd({ result: 'test answer' }, runId);
+
+      const traces = callback._galileoLogger.traces;
+      expect(traces).toHaveLength(1);
+      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].stepNumber).toBeUndefined();
+    });
+  });
 });

@@ -156,6 +156,24 @@ export class GalileoCallback
       }
     }
 
+    // Extract step number from metadata
+    let stepNumber: number | undefined = undefined;
+    if (metadata) {
+      const langgraphStep = metadata["langgraph_step"];
+      if (langgraphStep !== undefined) {
+        try {
+          stepNumber = parseInt(langgraphStep, 10);
+          if (isNaN(stepNumber)) {
+            console.warn(`Invalid step number: ${langgraphStep}, not a valid integer`);
+            stepNumber = undefined;
+          }
+        } catch (e) {
+          console.warn(`Invalid step number: ${langgraphStep}, exception raised ${e}`);
+          stepNumber = undefined;
+        }
+      }
+    }
+
     // Log the current node based on its type
     if (node.nodeType === 'agent' || node.nodeType === 'chain') {
       this._galileoLogger.addWorkflowSpan({
@@ -163,7 +181,8 @@ export class GalileoCallback
         output: outputAsString,
         name,
         metadata,
-        tags
+        tags,
+        stepNumber
       });
       isWorkflowSpan = true;
     } else if (node.nodeType === 'llm' || node.nodeType === 'chat') {
@@ -179,7 +198,8 @@ export class GalileoCallback
         numInputTokens: node.spanParams.numInputTokens,
         numOutputTokens: node.spanParams.numOutputTokens,
         totalTokens: node.spanParams.totalTokens,
-        timeToFirstTokenNs: node.spanParams.timeToFirstTokenNs
+        timeToFirstTokenNs: node.spanParams.timeToFirstTokenNs,
+        stepNumber
       });
     } else if (node.nodeType === 'retriever') {
       this._galileoLogger.addRetrieverSpan({
@@ -187,7 +207,8 @@ export class GalileoCallback
         output,
         name,
         metadata,
-        tags
+        tags,
+        stepNumber
       });
     } else if (node.nodeType === 'tool') {
       this._galileoLogger.addToolSpan({
@@ -195,7 +216,8 @@ export class GalileoCallback
         output: outputAsString,
         name,
         metadata,
-        tags
+        tags,
+        stepNumber
       });
     } else {
       console.warn(`Unknown node type: ${node.nodeType}`);
