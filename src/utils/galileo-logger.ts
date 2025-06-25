@@ -281,7 +281,8 @@ class GalileoLogger {
     totalTokens,
     timeToFirstTokenNs,
     temperature,
-    statusCode
+    statusCode,
+    spanStepNumber,
   }: {
     input: LlmStepAllowedIOType;
     output: LlmStepAllowedIOType;
@@ -298,6 +299,7 @@ class GalileoLogger {
     timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
+    spanStepNumber?: number;
   }): Trace {
     /**
      * Create a new trace with a single span and add it to the list of traces.
@@ -333,7 +335,8 @@ class GalileoLogger {
         totalTokens,
         timeToFirstTokenNs,
         temperature,
-        statusCode
+        statusCode,
+        stepNumber: spanStepNumber,
       })
     );
 
@@ -358,7 +361,8 @@ class GalileoLogger {
     totalTokens,
     timeToFirstTokenNs,
     temperature,
-    statusCode
+    statusCode,
+    stepNumber,
   }: {
     input: LlmStepAllowedIOType;
     output: LlmStepAllowedIOType;
@@ -375,6 +379,7 @@ class GalileoLogger {
     timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
+    stepNumber?: number;
   }): LlmSpan {
     /**
      * Add a new llm span to the current parent.
@@ -394,7 +399,8 @@ class GalileoLogger {
       totalTokens,
       timeToFirstTokenNs,
       temperature,
-      statusCode
+      statusCode,
+      stepNumber,
     });
 
     this.addChildSpanToParent(span);
@@ -409,7 +415,8 @@ class GalileoLogger {
     createdAt,
     metadata,
     tags,
-    statusCode
+    statusCode,
+    stepNumber,
   }: {
     input: string;
     output: RetrieverStepAllowedOutputType;
@@ -419,6 +426,7 @@ class GalileoLogger {
     metadata?: Record<string, string>;
     tags?: string[];
     statusCode?: number;
+    stepNumber?: number;
   }): RetrieverSpan {
     /**
      * Add a new retriever span to the current parent.
@@ -431,7 +439,8 @@ class GalileoLogger {
       metadata: metadata,
       tags,
       statusCode,
-      durationNs
+      durationNs,
+      stepNumber,
     });
 
     this.addChildSpanToParent(span);
@@ -447,7 +456,8 @@ class GalileoLogger {
     metadata,
     tags,
     statusCode,
-    toolCallId
+    toolCallId,
+    stepNumber,
   }: {
     input: string;
     output?: string;
@@ -458,6 +468,7 @@ class GalileoLogger {
     tags?: string[];
     statusCode?: number;
     toolCallId?: string;
+    stepNumber?: number;
   }): ToolSpan {
     /**
      * Add a new tool span to the current parent.
@@ -471,7 +482,8 @@ class GalileoLogger {
       tags,
       statusCode,
       toolCallId,
-      durationNs
+      durationNs,
+      stepNumber,
     });
 
     this.addChildSpanToParent(span);
@@ -485,7 +497,8 @@ class GalileoLogger {
     durationNs,
     createdAt,
     metadata,
-    tags
+    tags,
+    stepNumber,
   }: {
     input: string;
     output?: string;
@@ -494,6 +507,7 @@ class GalileoLogger {
     createdAt?: number;
     metadata?: Record<string, string>;
     tags?: string[];
+    stepNumber?: number;
   }): WorkflowSpan {
     /**
      * Add a workflow span to the current parent. This is useful when you want to create a nested workflow span
@@ -507,7 +521,8 @@ class GalileoLogger {
       createdAtNs: createdAt,
       metadata: metadata,
       tags,
-      durationNs
+      durationNs,
+      stepNumber,
     });
 
     this.addChildSpanToParent(span);
@@ -523,7 +538,8 @@ class GalileoLogger {
     createdAt,
     metadata,
     tags,
-    agentType
+    agentType,
+    stepNumber,
   }: {
     input: string;
     output?: string;
@@ -533,6 +549,7 @@ class GalileoLogger {
     metadata?: Record<string, string>;
     tags?: string[];
     agentType?: AgentType;
+    stepNumber?: number;
   }): AgentSpan {
     /**
      * Add an agent span to the current parent.
@@ -545,7 +562,8 @@ class GalileoLogger {
       metadata: metadata,
       tags,
       durationNs,
-      agentType
+      agentType,
+      stepNumber,
     });
 
     this.addChildSpanToParent(span);

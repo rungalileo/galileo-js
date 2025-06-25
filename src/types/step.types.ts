@@ -62,6 +62,7 @@ export class BaseStep {
   tags?: string[];
   metrics: Metrics = {};
   externalId?: string;
+  stepNumber?: number;
 
   constructor(data: {
     type?: NodeType;
@@ -75,6 +76,7 @@ export class BaseStep {
     groundTruth?: string;
     tags?: string[];
     externalId?: string;
+    stepNumber?: number;
   }) {
     this.type = data.type || NodeType.workflow;
     this.input = data.input;
@@ -88,6 +90,7 @@ export class BaseStep {
     this.groundTruth = data.groundTruth;
     this.tags = data.tags || [];
     this.externalId = data.externalId;
+    this.stepNumber = data.stepNumber;
 
     // Validate serializable
     this.validateInputOutputSerializable(this.input);
@@ -111,7 +114,8 @@ export class BaseStep {
       userMetadata: this.userMetadata,
       status_code: this.statusCode,
       ground_truth: this.groundTruth,
-      external_id: this.externalId
+      external_id: this.externalId,
+      step_number: this.stepNumber,
     };
   }
 }
