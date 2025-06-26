@@ -41,31 +41,6 @@ export interface SessionCreateResponse {
   external_id?: string;
 }
 
-export class SpanWithParentStep extends BaseStep {
-  parent?: StepWithChildSpans;
-
-  constructor(data: {
-    type?: NodeType;
-    input: StepIOType;
-    output?: StepIOType;
-    name?: string;
-    createdAtNs?: number;
-    durationNs?: number;
-    metadata?: Record<string, string>;
-    statusCode?: number;
-    groundTruth?: string;
-    parent?: StepWithChildSpans;
-  }) {
-    super(data);
-    this.parent = data.parent;
-  }
-
-  toJSON(): Record<string, any> {
-    return {
-      ...super.toJSON()
-    };
-  }
-}
 interface IStepWithChildSpans {
   spans: Span[];
   children(): BaseStep[];
@@ -89,6 +64,7 @@ export class StepWithChildSpans
     statusCode?: number;
     groundTruth?: string;
     spans?: Span[];
+    stepNumber?: number;
   }) {
     super(data);
     this.spans = data.spans || [];
@@ -165,6 +141,7 @@ export class WorkflowSpan extends StepWithChildSpans {
     groundTruth?: string;
     spans?: Span[];
     tags?: string[];
+    stepNumber?: number;
   }) {
     super({ ...data, type: NodeType.workflow });
     this.input =
@@ -212,6 +189,7 @@ export class AgentSpan extends StepWithChildSpans {
     spans?: Span[];
     tags?: string[];
     agentType?: AgentType;
+    stepNumber?: number;
   }) {
     super({ ...data, type: NodeType.agent });
     this.input =
@@ -272,6 +250,7 @@ export class LlmSpan extends BaseStep {
     temperature?: number;
     timeToFirstTokenNs?: number;
     tags?: string[];
+    stepNumber?: number;
   }) {
     super({ ...data, type: NodeType.llm });
     this.input = convertLlmInputOutput(structuredClone(data.input));
@@ -324,6 +303,7 @@ export class RetrieverSpan extends BaseStep {
     statusCode?: number;
     groundTruth?: string;
     tags?: string[];
+    stepNumber?: number;
   }) {
     super({ ...data });
     this.input =
@@ -360,6 +340,7 @@ export class ToolSpan extends BaseStep {
     groundTruth?: string;
     tags?: string[];
     toolCallId?: string;
+    stepNumber?: number;
   }) {
     super({
       ...data,
