@@ -10,9 +10,9 @@ async function testWrappedStreaming() {
   console.log('\n=== Testing Wrapped OpenAI Client Streaming ===');
 
   try {
-    const stream = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: 'Say hello briefly.' }],
+    const stream = await openai.completions.create({
+      model: 'gpt-4',
+      prompt: 'Say hello briefly.',
       temperature: 0.7,
       stream: true
     });
@@ -28,58 +28,36 @@ async function testWrappedStreaming() {
       Symbol.asyncIterator in stream
     );
 
-    if (Symbol.asyncIterator in stream) {
-      // If it has the Symbol.asyncIterator property, try iterating
-      let counter = 0;
-      try {
-        console.log('Attempting to iterate through wrapped stream:');
-        for await (const chunk of stream) {
-          console.log(
-            `Chunk ${counter++}:`,
-            JSON.stringify(chunk.choices[0]?.delta)
-          );
-          if (counter >= 3) break; // Just get a few chunks for debugging
-        }
-        console.log('Successfully iterated through wrapped stream');
-      } catch (iterError) {
-        console.error(
-          'Error iterating wrapped stream:',
-          iterError.name,
-          iterError.message
-        );
-        console.error('Stack:', iterError.stack);
-      }
-    } else {
-      console.log(
-        'The wrapped stream is not async iterable, inspecting properties:'
-      );
-      // Print available methods and properties
-      console.log('Object keys:', Object.keys(stream));
-      console.log('Object prototype:', Object.getPrototypeOf(stream));
-
-      // Check if we're dealing with a StreamWrapper instance
-      console.log('Constructor name:', stream.constructor?.name || 'Unknown');
-
-      // Try to manually access the iterator if it exists
-      if (typeof stream[Symbol.asyncIterator] === 'function') {
-        console.log(
-          'AsyncIterator exists as a function but Symbol.asyncIterator is not recognized'
-        );
-      }
+    // Process the stream
+    for await (const chunk of stream) {
+      console.log('Received chunk:', chunk.choices[0].text);
     }
   } catch (error) {
-    console.error('Error in wrapped streaming test:', error);
-    console.error('Error type:', error.constructor.name);
-    console.error('Stack:', error.stack);
+    console.error('Error in streaming test:', error);
+  }
+}
+
+// Test non-streaming completion
+async function testWrappedCompletion() {
+  console.log('\n=== Testing Wrapped OpenAI Client Completion ===');
+
+  try {
+    const completion = await openai.completions.create({
+      model: 'gpt-4',
+      prompt: 'Say hello briefly.',
+      temperature: 0.7
+    });
+
+    console.log('Completion response:', completion.choices[0].text);
+  } catch (error) {
+    console.error('Error in completion test:', error);
   }
 }
 
 // Run the tests
 async function runTests() {
-  // Then test the wrapped client to identify issues
+  await testWrappedCompletion();
   await testWrappedStreaming();
 }
 
-runTests().catch((err) => {
-  console.error('Unhandled error in test execution:', err);
-});
+runTests().catch(console.error);
