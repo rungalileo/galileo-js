@@ -14,14 +14,13 @@ import {
 } from './utils/datasets';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
-  createPromptTemplate,
-  getPromptTemplates,
   getPromptTemplate,
-  createGlobalPromptTemplate,
-  getGlobalPromptTemplate,
-  getGlobalPromptTemplateVersion,
-  deleteGlobalPromptTemplate,
-  listGlobalPromptTemplates
+  getPromptTemplates,
+  createPromptTemplate,
+  createPrompt,
+  getPrompts,
+  getPrompt,
+  deletePrompt
 } from './utils/prompt-templates';
 import { getProjects, createProject, getProject } from './utils/projects';
 import {
@@ -61,15 +60,13 @@ export {
   getDataset,
   deleteDataset,
   // Prompt templates
-  getPromptTemplates,
   getPromptTemplate,
+  getPromptTemplates,
   createPromptTemplate,
-  // Global prompt templates
-  createGlobalPromptTemplate,
-  getGlobalPromptTemplate,
-  getGlobalPromptTemplateVersion,
-  deleteGlobalPromptTemplate,
-  listGlobalPromptTemplates,
+  getPrompts,
+  getPrompt,
+  createPrompt,
+  deletePrompt,
   // Experiments
   getExperiments,
   createExperiment,
