@@ -1,19 +1,16 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import {
-  createGlobalPromptTemplate,
-  deleteGlobalPromptTemplate,
-  getGlobalPromptTemplate,
-  getGlobalPromptTemplateVersion,
-  listGlobalPromptTemplates
+  createPrompt,
+  deletePrompt,
+  getPrompt,
+  getPrompts
 } from '../../src/utils/prompt-templates';
 import {
   PromptTemplate,
   PromptTemplateVersion
-  // ListPromptTemplateResponse
 } from '../../src/types/prompt-template.types';
 import { commonHandlers, TEST_HOST } from '../common';
-// import { MessageRole } from '../../src/types/message.types';
 
 const EXAMPLE_PROMPT_TEMPLATE_VERSION: PromptTemplateVersion = {
   id: '24d9f582-cd1c-4fe1-a1ca-c69fa4b5c2ce',
@@ -47,7 +44,7 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
   selected_version: {
     template: '[{"content":"Hello, {name}!","role":"user"}]',
     raw: false,
-    version: 0,
+    version: 1,
     settings: {},
     output_type: null,
     id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
@@ -64,7 +61,7 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
     {
       template: '[{"content":"Hello, {name}!","role":"user"}]',
       raw: false,
-      version: 0,
+      version: 1,
       settings: {},
       output_type: null,
       id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
@@ -142,8 +139,8 @@ afterEach(() => server.resetHandlers());
 
 afterAll(() => server.close());
 
-test('test create global prompt template', async () => {
-  const dataset = await createGlobalPromptTemplate({
+test('test create prompt template', async () => {
+  const dataset = await createPrompt({
     template: 'Hello, {name}!',
     name: 'My Dataset'
   });
@@ -151,52 +148,53 @@ test('test create global prompt template', async () => {
   expect(createGlobalPromptTemplateHandler).toHaveBeenCalled();
 });
 
-test('test list global prompt templates', async () => {
-  const templates = await listGlobalPromptTemplates({
-    name_filter: 'My Dataset'
+test('test get prompt templates', async () => {
+  const templates = await getPrompts({
+    name: 'My Dataset'
   });
   expect(templates).toEqual([EXAMPLE_PROMPT_TEMPLATE]);
   expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
 });
 
-test('test get global prompt template by id', async () => {
-  const template = await getGlobalPromptTemplate({
+test('test get prompt template by id', async () => {
+  const template = await getPrompt({
     id: EXAMPLE_PROMPT_TEMPLATE.id
   });
-  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE);
-  expect(getGlobalPromptTemplateHandler).toHaveBeenCalled();
+  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
+  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
 });
 
-test('test get global prompt template by name', async () => {
-  const template = await getGlobalPromptTemplate({
+test('test get prompt template by name', async () => {
+  const template = await getPrompt({
     name: 'My Dataset'
   });
-  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE);
+  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
   expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
+  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
 });
 
-test('test delete global prompt template by id', async () => {
-  const response = await deleteGlobalPromptTemplate({
+test('test delete prompt template by id', async () => {
+  const response = await deletePrompt({
     id: EXAMPLE_PROMPT_TEMPLATE.id
   });
   expect(response).toEqual({ success: true });
   expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
 });
 
-test('test delete global prompt template by name', async () => {
-  const response = await deleteGlobalPromptTemplate({
-    name: 'My Dataset'
-  });
-  expect(response).toEqual({ success: true });
-  expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
-  expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
-});
-
-test('test get global prompt template version', async () => {
-  const templateVersion = await getGlobalPromptTemplateVersion({
-    template_id: EXAMPLE_PROMPT_TEMPLATE.id,
+test('test get prompt template by id and version', async () => {
+  const templateVersion = await getPrompt({
+    id: EXAMPLE_PROMPT_TEMPLATE.id,
     version: EXAMPLE_PROMPT_TEMPLATE_VERSION.version
   });
   expect(templateVersion).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
   expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
+});
+
+test('test delete prompt template by name', async () => {
+  const response = await deletePrompt({
+    name: 'My Dataset'
+  });
+  expect(response).toEqual({ success: true });
+  expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
+  expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
 });
