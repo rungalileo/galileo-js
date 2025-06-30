@@ -4,7 +4,12 @@ import { AgentFinish } from '@langchain/core/agents';
 import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
 import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
-import { LlmSpan, NodeType, WorkflowSpan } from '../../src/types/log.types';
+import {
+  LlmSpan,
+  NodeType,
+  WorkflowSpan,
+  AgentSpan
+} from '../../src/types/log.types';
 
 // Mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -230,8 +235,8 @@ describe('GalileoCallback', () => {
         })
       );
       expect(trace.spans.length).toBe(1);
-      const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      const span = trace.spans[0] as AgentSpan;
+      expect(span.type).toBe(NodeType.agent);
       expect(span.input).toBe(JSON.stringify({ input: 'test input' }));
       expect(span.output).toBe(
         JSON.stringify({
