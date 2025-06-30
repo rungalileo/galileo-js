@@ -175,8 +175,18 @@ export class GalileoCallback
     }
 
     // Log the current node based on its type
-    if (node.nodeType === 'agent' || node.nodeType === 'chain') {
+    if (node.nodeType === 'chain') {
       this._galileoLogger.addWorkflowSpan({
+        input: inputAsString,
+        output: outputAsString,
+        name,
+        metadata,
+        tags,
+        stepNumber
+      });
+      isWorkflowSpan = true;
+    } else if (node.nodeType === 'agent') {
+      this._galileoLogger.addAgentSpan({
         input: inputAsString,
         output: outputAsString,
         name,
