@@ -685,6 +685,116 @@ describe('GalileoLogger', () => {
       );
     });
   });
+
+  describe('Validating data on flush', () => {
+    it('should validate trace and span data on flush', async () => {
+      const createdAt = Date.now() * 1000000;
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'trace test' },
+        tags: ['trace test']
+      });
+      logger.addWorkflowSpan({
+        input: 'workflow input',
+        name: 'workflow span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'workflow test' },
+        tags: ['workflow test'],
+        stepNumber: 1
+      });
+      logger.addRetrieverSpan({
+        input: 'retriever input',
+        output: 'retriever output',
+        name: 'retriever span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'retriever test' },
+        tags: ['retriever test'],
+        statusCode: 200,
+        stepNumber: 2
+      });
+      logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        name: 'llm span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'llm test' },
+        tags: ['llm test'],
+        numInputTokens: 1,
+        numOutputTokens: 1,
+        totalTokens: 2,
+        timeToFirstTokenNs: 1000,
+        temperature: 0.7,
+        statusCode: 200,
+        stepNumber: 3
+      });
+
+      logger.conclude({ output: 'workflow output', statusCode: 200 });
+      logger.conclude({ output: 'trace output', statusCode: 200 });
+
+      const flushedTraces = await logger.flush();
+      expect(flushedTraces.length).toBe(1);
+
+      const trace = flushedTraces[0];
+      expect(trace.input).toBe('test input');
+      expect(trace.output).toBe('trace output');
+      expect(trace.name).toBe('test trace');
+      expect(trace.createdAtNs).toBe(createdAt);
+      expect(trace.durationNs).toBe(1000);
+      expect(trace.userMetadata).toEqual({ test: 'trace test' });
+      expect(trace.tags).toEqual(['trace test']);
+      expect(trace.statusCode).toBe(200);
+
+      expect(trace.spans.length).toBe(1);
+      expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
+
+      const workflowSpan = trace.spans[0] as WorkflowSpan;
+      expect(workflowSpan.input).toBe('workflow input');
+      expect(workflowSpan.output).toBe('workflow output');
+      expect(workflowSpan.name).toBe('workflow span');
+      expect(workflowSpan.createdAtNs).toBe(createdAt);
+      expect(workflowSpan.durationNs).toBe(1000);
+      expect(workflowSpan.userMetadata).toEqual({ test: 'workflow test' });
+      expect(workflowSpan.tags).toEqual(['workflow test']);
+      expect(workflowSpan.statusCode).toBe(200);
+      expect(workflowSpan.stepNumber).toBe(1);
+
+      expect(workflowSpan.spans.length).toBe(2);
+
+      const retrieverSpan = workflowSpan.spans[0] as RetrieverSpan;
+      expect(retrieverSpan.input).toBe('retriever input');
+      expect(retrieverSpan.output).toEqual([
+        { content: 'retriever output', metadata: {} }
+      ]);
+      expect(retrieverSpan.name).toBe('retriever span');
+      expect(retrieverSpan.createdAtNs).toBe(createdAt);
+      expect(retrieverSpan.durationNs).toBe(1000);
+      expect(retrieverSpan.userMetadata).toEqual({ test: 'retriever test' });
+      expect(retrieverSpan.tags).toEqual(['retriever test']);
+      expect(retrieverSpan.statusCode).toBe(200);
+      expect(retrieverSpan.stepNumber).toBe(2);
+
+      const llmSpan = workflowSpan.spans[1] as LlmSpan;
+      expect(llmSpan.input).toEqual([{ content: 'llm input', role: 'user' }]);
+      expect(llmSpan.output).toEqual({
+        content: 'llm output',
+        role: 'assistant'
+      });
+      expect(llmSpan.name).toBe('llm span');
+      expect(llmSpan.createdAtNs).toBe(createdAt);
+      expect(llmSpan.durationNs).toBe(1000);
+      expect(llmSpan.userMetadata).toEqual({ test: 'llm test' });
+      expect(llmSpan.tags).toEqual(['llm test']);
+      expect(llmSpan.statusCode).toBe(200);
+      expect(llmSpan.stepNumber).toBe(3);
+    });
+  });
+
   describe('Session Management', () => {
     beforeEach(() => {
       logger = new GalileoLogger({

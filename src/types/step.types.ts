@@ -111,11 +111,12 @@ export class BaseStep {
       name: this.name,
       created_at_ns: this.createdAtNs,
       duration_ns: this.durationNs,
-      userMetadata: this.userMetadata,
+      user_metadata: this.userMetadata,
       status_code: this.statusCode,
       ground_truth: this.groundTruth,
       external_id: this.externalId,
-      step_number: this.stepNumber
+      step_number: this.stepNumber,
+      tags: this.tags
     };
   }
 }
