@@ -835,7 +835,6 @@ describe('GalileoLogger', () => {
       expect(serializedSpan['metrics']['duration_ns']).toBe(1000);
     });
 
-
     it('should serialize duration values correctly', () => {
       const createdAt = Date.now() * 1000000;
 
