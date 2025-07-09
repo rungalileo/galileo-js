@@ -270,18 +270,20 @@ export class LlmSpan extends BaseStep {
   toJSON(): Record<string, any> {
     return {
       ...super.toJSON(),
-      input_tokens: this.inputTokens,
-      output_tokens: this.outputTokens,
-      total_tokens: this.totalTokens,
+      metrics: {
+        num_input_tokens: this.inputTokens,
+        num_output_tokens: this.outputTokens,
+        num_total_tokens: this.totalTokens,
+        duration_ns: this.durationNs,
+        time_to_first_token_ns: this.timeToFirstTokenNs
+      },
       temperature: this.temperature,
-      time_to_first_token_ns: this.timeToFirstTokenNs,
       model: this.model,
       tools: this.tools,
       type: this.type,
       input: this.input,
       output: this.output,
-      name: this.name,
-      duration_ns: this.durationNs
+      name: this.name
     };
   }
 }
