@@ -258,6 +258,11 @@ export class GalileoApiClient extends BaseClient {
     return this.datasetService!.getDataset(id);
   }
 
+  public async getDatasetEtag(id: string) {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.getDatasetEtag(id);
+  }
+
   public async getDatasetByName(name: string) {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetByName(name);
@@ -280,10 +285,15 @@ export class GalileoApiClient extends BaseClient {
 
   public async appendRowsToDatasetContent(
     datasetId: string,
+    etag: string,
     rows: DatasetAppendRow[]
   ): Promise<void> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.appendRowsToDatasetContent(datasetId, rows);
+    return this.datasetService!.appendRowsToDatasetContent(
+      datasetId,
+      etag,
+      rows
+    );
   }
 
   // Trace methods - delegate to TraceService

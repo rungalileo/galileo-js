@@ -1,10 +1,11 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import {
-  getDatasets,
+  addRowsToDataset,
   createDataset,
+  deleteDataset,
   getDatasetContent,
-  deleteDataset
+  getDatasets
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
 import { Dataset, DatasetContent, DatasetRow } from '../../src/api-client';
@@ -43,7 +44,13 @@ const getDatasetContentHandler = jest.fn().mockImplementation(() => {
   const response: DatasetContent = {
     rows: [EXAMPLE_DATASET_ROW]
   };
-  return HttpResponse.json(response);
+
+  return HttpResponse.json(response, {
+    status: 200,
+    headers: {
+      etag: 'abc123'
+    }
+  });
 });
 
 const deleteDatasetHandler = jest.fn().mockImplementation(() => {
@@ -52,6 +59,10 @@ const deleteDatasetHandler = jest.fn().mockImplementation(() => {
 
 const getDatasetByNameHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json({ datasets: [EXAMPLE_DATASET] });
+});
+
+const addRowsToDatasetHandler = jest.fn().mockImplementation(() => {
+  return new HttpResponse(null, { status: 204 });
 });
 
 export const handlers = [
@@ -66,7 +77,11 @@ export const handlers = [
     `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}`,
     deleteDatasetHandler
   ),
-  http.post(`${TEST_HOST}/datasets/query`, getDatasetByNameHandler)
+  http.post(`${TEST_HOST}/datasets/query`, getDatasetByNameHandler),
+  http.patch(
+    `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
+    addRowsToDatasetHandler
+  )
 ];
 
 const server = setupServer(...handlers);
@@ -114,4 +129,12 @@ test('delete dataset by name', async () => {
   await deleteDataset({ name: EXAMPLE_DATASET.name });
   expect(getDatasetByNameHandler).toHaveBeenCalled();
   expect(deleteDatasetHandler).toHaveBeenCalled();
+});
+
+test('add rows to dataset', async () => {
+  await addRowsToDataset({
+    datasetId: EXAMPLE_DATASET.id,
+    rows: [{ col1: 'val1', col2: 'val2' }]
+  });
+  expect(addRowsToDatasetHandler).toHaveBeenCalled();
 });

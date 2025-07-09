@@ -78,6 +78,16 @@ export class DatasetService extends BaseClient {
     );
   };
 
+  public getDatasetEtag = async (id: string): Promise<string> => {
+    const response = await this.makeRequestRaw<Dataset>(
+      RequestMethod.GET,
+      Routes.datasetContent,
+      null,
+      { dataset_id: id, limit: 1 }
+    );
+    return response.headers['etag'];
+  };
+
   public getDatasetByName = async (name: string): Promise<Dataset> => {
     const { datasets } = await this.makeRequest<{ datasets: Dataset[] }>(
       RequestMethod.POST,
@@ -154,17 +164,23 @@ export class DatasetService extends BaseClient {
 
   public async appendRowsToDatasetContent(
     datasetId: string,
+    etag: string,
     rows: DatasetAppendRow[]
   ): Promise<void> {
     if (!this.client) {
       throw new Error('Client not initialized');
     }
 
+    const extraHeaders = {
+      'If-Match': etag
+    };
+
     await this.makeRequest<void>(
-      RequestMethod.POST,
+      RequestMethod.PATCH,
       Routes.datasetContent,
-      { rows },
-      { dataset_id: datasetId }
+      { edits: rows },
+      { dataset_id: datasetId },
+      extraHeaders
     );
   }
 

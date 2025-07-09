@@ -14,8 +14,4 @@ export interface Dataset {
   draft: boolean;
 }
 
-export interface DatasetAppendRow {
-  [key: string]: string | number | null;
-}
-
 export type DatasetRow = components['schemas']['DatasetRow'];

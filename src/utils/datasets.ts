@@ -1,5 +1,5 @@
 import { GalileoApiClient, DatasetRow } from '../api-client';
-import { Dataset, DatasetAppendRow } from '../types/dataset.types';
+import { Dataset } from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -202,18 +202,31 @@ export const getDatasetContent = async ({
  *
  * @example
  * ```typescript
- * await addRowsToDataset('datasetId', [{ column1: 'value1', column2: 'value2' }]);
+ * await addRowsToDataset(datasetId, [{ input: 'value1', output: 'value2' }]);
  * ```
  */
-export const addRowsToDataset = async (
-  datasetId: string,
-  rows: DatasetAppendRow[]
-): Promise<void> => {
+export const addRowsToDataset = async ({
+  datasetId,
+  rows
+}: {
+  datasetId: string;
+  rows: Record<string, string | Record<string, string>>[];
+}): Promise<void> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
+  const etag = await apiClient.getDatasetEtag(datasetId);
+  const stringifiedRows = rows.map((row) => {
+    const stringifiedRow: Record<string, string> = {};
+    for (const key in row) {
+      stringifiedRow[key] = stringify_value(row[key]);
+    }
+    return stringifiedRow;
+  });
+
   await apiClient.appendRowsToDatasetContent(
     datasetId,
-    rows.map((row) => ({
+    etag,
+    stringifiedRows.map((row) => ({
       edit_type: 'append_row',
       values: row
     }))
