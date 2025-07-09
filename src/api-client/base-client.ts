@@ -7,6 +7,7 @@ import { Routes } from '../types/routes.types';
 
 export enum RequestMethod {
   GET = 'GET',
+  PATCH = 'PATCH',
   POST = 'POST',
   PUT = 'PUT',
   DELETE = 'DELETE'
@@ -120,18 +121,24 @@ export class BaseClient {
     }
   }
 
-  public async makeRequest<T>(
+  /**
+   * Make an HTTP request to the Galileo API and return the raw Axios response.
+   */
+  public async makeRequestRaw<T>(
     request_method: Method,
     endpoint: Routes,
     data?: string | Record<string, any> | null,
-    params?: Record<string, unknown>
-  ): Promise<T> {
+    params?: Record<string, unknown>,
+    extraHeaders?: Record<string, string>
+  ): Promise<AxiosResponse<T>> {
     await this.refreshTokenIfNeeded(endpoint);
 
     let headers: Record<string, any> = { 'client-type': 'sdk-js' };
     if (this.token) {
       headers = this.getAuthHeader(this.token);
     }
+
+    headers = { ...headers, ...extraHeaders };
 
     const endpointPath = `${this.apiUrl}/${endpoint
       .replace(
@@ -175,17 +182,33 @@ export class BaseClient {
       data
     };
 
+    const response = await axios.request<T>(config);
+    this.validateResponse(response);
+    return response;
+  }
+
+  public async makeRequest<T>(
+    request_method: Method,
+    endpoint: Routes,
+    data?: string | Record<string, any> | null,
+    params?: Record<string, unknown>,
+    extraHeaders?: Record<string, string>
+  ): Promise<T> {
     try {
-      const response = await axios.request<T>(config);
-      this.validateResponse(response);
+      const response = await this.makeRequestRaw<T>(
+        request_method,
+        endpoint,
+        data,
+        params,
+        extraHeaders
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const response = error.response;
         this.validateResponse(response!);
       }
+      return {} as T;
     }
-
-    return {} as T;
   }
 }

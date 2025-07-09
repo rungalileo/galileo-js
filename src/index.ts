@@ -10,7 +10,8 @@ import {
   createDataset,
   getDatasetContent,
   getDataset,
-  deleteDataset
+  deleteDataset,
+  addRowsToDataset
 } from './utils/datasets';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
@@ -59,6 +60,7 @@ export {
   getDatasetContent,
   getDataset,
   deleteDataset,
+  addRowsToDataset,
   // Prompt templates
   getPromptTemplate,
   getPromptTemplates,
