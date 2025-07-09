@@ -110,7 +110,9 @@ export class BaseStep {
       output: this.output,
       name: this.name,
       created_at_ns: this.createdAtNs,
-      duration_ns: this.durationNs,
+      metrics: {
+        duration_ns: this.durationNs
+      },
       user_metadata: this.userMetadata,
       status_code: this.statusCode,
       ground_truth: this.groundTruth,

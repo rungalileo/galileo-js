@@ -307,6 +307,6 @@ In the root directory, run:
 In the examples directory, run:
 
 - `npm i`
-- `npm link @rungalileo/galileo`
+- `npm link galileo`
 
 Use `node` to run examples, e.g. `node examples/logger/workflow.js`.

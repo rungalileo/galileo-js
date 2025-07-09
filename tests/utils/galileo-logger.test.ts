@@ -795,6 +795,118 @@ describe('GalileoLogger', () => {
     });
   });
 
+  describe('Serializing spans', () => {
+    it('should serialize token values correctly', () => {
+      const createdAt = Date.now() * 1000000;
+
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'trace test' },
+        tags: ['trace test']
+      });
+      
+      const llmSpan = logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        name: 'llm span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'llm test' },
+        tags: ['llm test'],
+        numInputTokens: 1,
+        numOutputTokens: 1,
+        totalTokens: 2,
+        timeToFirstTokenNs: 1000,
+        temperature: 0.7,
+        statusCode: 200,
+        stepNumber: 3
+      });
+
+      logger.conclude({ output: 'trace output', statusCode: 200 });
+
+      const serializedSpan = llmSpan.toJSON();
+      expect(serializedSpan["metrics"]["num_input_tokens"]).toBe(1);
+      expect(serializedSpan["metrics"]["num_output_tokens"]).toBe(1);
+      expect(serializedSpan["metrics"]["num_total_tokens"]).toBe(2);
+      expect(serializedSpan["metrics"]["time_to_first_token_ns"]).toBe(1000);
+      expect(serializedSpan["metrics"]["duration_ns"]).toBe(1000);
+    });
+
+
+    it('should serialize duration values correctly', () => {
+      const createdAt = Date.now() * 1000000;
+
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'trace test' },
+        tags: ['trace test']
+      });
+
+      const workflowSpan = logger.addWorkflowSpan({
+        input: 'workflow input',
+        name: 'workflow span',
+        createdAt,
+        durationNs: 1000,
+      });
+      
+      const agentSpan = logger.addAgentSpan({
+        input: 'agent input',
+        output: 'agent output',
+        name: 'agent span',
+        createdAt,
+        durationNs: 2000,
+      });
+      
+      const llmSpan = logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        name: 'llm span',
+        createdAt,
+        durationNs: 3000,
+      });
+      
+      const retrieverSpan = logger.addRetrieverSpan({
+        input: 'retriever input',
+        output: 'retriever output',
+        name: 'retriever span',
+        createdAt,
+        durationNs: 4000,
+      });
+      
+      const toolSpan = logger.addToolSpan({
+        input: 'tool input',
+        output: 'tool output',
+        name: 'tool span',
+        createdAt,
+        durationNs: 5000,
+      });
+
+      logger.conclude({ output: 'Workflow span output', statusCode: 200 });
+      logger.conclude({ output: 'trace output', statusCode: 200 });
+
+      const serializedWorkflowSpan = workflowSpan.toJSON();
+      expect(serializedWorkflowSpan["metrics"]["duration_ns"]).toBe(1000);
+
+      const serializedAgentSpan = agentSpan.toJSON();
+      expect(serializedAgentSpan["metrics"]["duration_ns"]).toBe(2000);
+
+      const serializedLlmSpan = llmSpan.toJSON();
+      expect(serializedLlmSpan["metrics"]["duration_ns"]).toBe(3000);
+
+      const serializedRetrieverSpan = retrieverSpan.toJSON();
+      expect(serializedRetrieverSpan["metrics"]["duration_ns"]).toBe(4000);
+
+      const serializedToolSpan = toolSpan.toJSON();
+      expect(serializedToolSpan["metrics"]["duration_ns"]).toBe(5000);
+    });
+  });
+
   describe('Session Management', () => {
     beforeEach(() => {
       logger = new GalileoLogger({

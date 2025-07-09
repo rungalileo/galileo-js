@@ -51,6 +51,10 @@ logger.addLlmSpan({
   model: 'gpt-3.5-turbo', // model name
   name: 'Chat Completion', // name
   durationNs: 1000000000, // durationNs (1s)
+  numInputTokens: 10, // number of input tokens
+  numOutputTokens: 20, // number of output tokens
+  totalTokens: 30, // total tokens
+  timeToFirstTokenNs: 500000000, // time to first token in nanoseconds
   userMetadata: { temperature: '0.7' }, // userMetadata
   tags: ['llm', 'chat'] // tags
 });
