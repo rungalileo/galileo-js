@@ -1,7 +1,7 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
 import { argsToDict, extractParamsInfo } from './utils/serialization';
-import { RetrieverStepAllowedOutputType } from './types/step.types';
+import { RetrieverSpanAllowedOutputType } from './types/logging/step.types';
 import { Document } from './types/document.types';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
@@ -122,7 +122,7 @@ export function log<T extends unknown[], R>(
           input: argsToString,
           output:
             result && _isRetrieverOutput(result)
-              ? (result! as RetrieverStepAllowedOutputType)
+              ? (result! as RetrieverSpanAllowedOutputType)
               : resultToString,
           name
         });
