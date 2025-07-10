@@ -36,7 +36,7 @@ jobs:
       # Create a branch in the docs-official repo using the current branch name
       - name: Create a branch
         working-directory: ./docs-official
-        run: git checkout -b feat/update-docs-${GITHUB_REF_NAME}
+        run: git checkout -b feat/update-docs-${GITHUB_REF_NAME}-${{ github.run_id }}
 
       # Copy the generated docs from the TypeScript SDK repo to the docs repo
       - name: Update SDK docs
@@ -51,8 +51,8 @@ jobs:
           git config --global user.email "info@galileo.com"
           git config --global user.name "Galileo"
           git add .
-          git commit -m "Updating docs from ${GITHUB_REF_NAME}"
-          git push -u origin feat/update-docs-${GITHUB_REF_NAME}
+          git commit -m "Updating docs from ${GITHUB_REF_NAME}-${{ github.run_id }}"
+          git push -u origin feat/update-docs-${GITHUB_REF_NAME}-${{ github.run_id }}
 
       # Create a PR against the docs repo with the new changes
       - name: Create PR
