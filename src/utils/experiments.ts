@@ -6,11 +6,20 @@ import {
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, GalileoSingleton } from '../singleton';
-import { Scorer } from '../types/scorer.types';
-import { getScorers, createRunScorerSettings } from '../utils/scorers';
+import { ScorerConfig } from '../types/scorer.types';
+import {
+  getScorers,
+  getScorerVersion,
+  createRunScorerSettings
+} from '../utils/scorers';
 import { Dataset } from '../types/dataset.types';
 import { getDataset, getDatasetContent } from '../utils/datasets';
-import { LocalMetricConfig, MetricValueType } from '../types/metrics.types';
+import {
+  LocalMetricConfig,
+  MetricValueType,
+  GalileoScorers,
+  Metric
+} from '../types/metrics.types';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
@@ -20,7 +29,12 @@ type DatasetWithFunction<T extends Record<string, unknown>> = {
   name: string;
   dataset: DatasetType;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (string | LocalMetricConfig<MetricValueType>)[];
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
   projectName: string;
 };
 
@@ -28,7 +42,12 @@ type DatasetIdWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetId: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (string | LocalMetricConfig<MetricValueType>)[];
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
   projectName: string;
 };
 
@@ -36,7 +55,12 @@ type DatasetNameWithFunction<T extends Record<string, unknown>> = {
   name: string;
   datasetName: string;
   function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (string | LocalMetricConfig<MetricValueType>)[];
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
   projectName: string;
 };
 
@@ -45,7 +69,12 @@ type DatasetWithPromptTemplate = {
   dataset: DatasetType;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
   projectName: string;
 };
 
@@ -54,7 +83,12 @@ type DatasetIdWithPromptTemplate = {
   datasetId: string;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
   projectName: string;
 };
 
@@ -63,7 +97,12 @@ type DatasetNameWithPromptTemplate = {
   datasetName: string;
   promptTemplate: PromptTemplateType;
   promptSettings?: PromptRunSettings;
-  metrics?: string[];
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
   projectName: string;
 };
 
@@ -176,7 +215,7 @@ const processRow = async <T extends Record<string, unknown>>(
   }
 
   // Conclude the trace
-  const startTime = logger.traces[0].createdAtNs;
+  const startTime = logger.traces[0].createdAt;
   logger.conclude({
     output,
     durationNs: Date.now() - startTime
@@ -200,7 +239,7 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   projectName: string,
   datasetContent: Record<string, unknown>[],
   processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>,
-  localMetrics: LocalMetricConfig<MetricValueType>[],
+  localMetrics: LocalMetricConfig<MetricValueType>[]
 ): Promise<string[]> => {
   const outputs: string[] = [];
 
@@ -208,7 +247,7 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   init({
     experimentId: experiment.id,
     projectName: projectName,
-    localMetrics: localMetrics,
+    localMetrics: localMetrics
   });
 
   // Wrap the processing function with the log wrapper
@@ -334,8 +373,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
   console.log(`🚀 Experiment ${experimentName} created.`);
 
-  const scorersToUse: Scorer[] = [];
-  const localMetrics: LocalMetricConfig<MetricValueType>[] = []
+  const scorersToUse: ScorerConfig[] = [];
+  const localMetrics: LocalMetricConfig<MetricValueType>[] = [];
 
   console.log('Retrieving metrics...');
 
@@ -343,14 +382,47 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const scorers = await getScorers();
 
     for (const metric of metrics) {
-      if (typeof metric == 'string') {
-        const scorer = scorers.find((scorer) => scorer.name === metric);
-        if (!scorer) {
-          throw new Error(`Metric ${metric} not found`);
-        }
-        scorersToUse.push(scorer);
-      } else {
+      if (typeof metric === 'object' && 'scorer_fn' in metric) {
+        // This is a LocalMetricConfig
         localMetrics.push(metric);
+      } else {
+        // This is a string, GalileoScorers, or Metric
+        let metricName: string = '';
+        let metricVersion: number | undefined = undefined;
+        if (typeof metric === 'string') {
+          metricName = metric;
+        } else {
+          metricName = metric.name;
+          metricVersion = metric.version;
+        }
+        const scorer = scorers.find((scorer) => scorer.name === metricName);
+
+        if (!scorer) {
+          throw new Error(
+            `Metric ${metric} not found. Please check the name is correct.`
+          );
+        }
+
+        const scorerConfig: ScorerConfig = {
+          id: scorer.id,
+          name: scorer.name,
+          model_name: scorer.defaults?.model_name || 'gpt-4o',
+          num_judges: scorer.defaults?.num_judges || 3,
+          filters: scorer.defaults?.filters || [],
+          scoreable_node_types: scorer.defaults?.scoreable_node_types || [],
+          scorer_type: scorer.scorer_type
+        };
+
+        // If a version is specified, fetch the scorer version
+        if (metricVersion !== undefined) {
+          const scorerVersion = await getScorerVersion(
+            scorer.id,
+            metricVersion
+          );
+          scorerConfig.scorer_version = scorerVersion;
+        }
+
+        scorersToUse.push(scorerConfig);
       }
     }
   }
@@ -435,7 +507,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       projectName,
       dataset as Record<string, unknown>[],
       processFn,
-      localMetrics,
+      localMetrics
     );
 
     if (scorersToUse.length > 0) {

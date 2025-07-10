@@ -1,12 +1,20 @@
 import {
   BaseStep,
-  BaseStepOptions, LlmSpanAllowedInputType, LlmSpanAllowedOutputType,
-  Metrics, MetricsOptions, RetrieverSpanAllowedOutputType,
+  BaseStepOptions,
+  LlmSpanAllowedInputType,
+  LlmSpanAllowedOutputType,
+  Metrics,
+  MetricsOptions,
+  RetrieverSpanAllowedOutputType,
   StepAllowedInputType,
   StepType
 } from './step.types';
 import { Message, MessageRole } from '../message.types';
-import { convertLlmInput, convertLlmOutput, convertRetrieverOutput } from '../../utils/span';
+import {
+  convertLlmInput,
+  convertLlmOutput,
+  convertRetrieverOutput
+} from '../../utils/span';
 import { Document } from '../document.types';
 
 export interface BaseSpanOptions extends BaseStepOptions {
@@ -63,6 +71,39 @@ export class WorkflowSpan extends StepWithChildSpans {
   }
 }
 
+export enum AgentType {
+  default = 'default',
+  planner = 'planner',
+  react = 'react',
+  reflection = 'reflection',
+  router = 'router',
+  classifier = 'classifier',
+  supervisor = 'supervisor',
+  judge = 'judge'
+}
+
+export interface AgentSpanOptions extends StepWithChildSpansOptions {
+  agentType?: AgentType;
+}
+
+export class AgentSpan extends StepWithChildSpans {
+  type: StepType = StepType.agent;
+  agentType: AgentType;
+
+  constructor(data: AgentSpanOptions) {
+    super(StepType.agent, data);
+    this.agentType = data.agentType || AgentType.default;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  toJSON(): Record<string, any> {
+    return {
+      ...super.toJSON(),
+      agent_type: this.agentType
+    };
+  }
+}
+
 export interface LlmMetricsOptions extends MetricsOptions {
   numInputTokens?: number;
   numOutputTokens?: number;
@@ -103,10 +144,13 @@ export class LlmSpan extends BaseSpan {
   temperature?: number;
   finishReason?: string;
 
-  constructor(data: LlmSpanOptions){
+  constructor(data: LlmSpanOptions) {
     super(StepType.llm, data);
     this.input = convertLlmInput(structuredClone(data.input));
-    this.output = convertLlmOutput(structuredClone(data.output), MessageRole.assistant);
+    this.output = convertLlmOutput(
+      structuredClone(data.output),
+      MessageRole.assistant
+    );
     this.metrics = data.metrics || new LlmMetrics({});
     this.tools = data.tools;
     this.model = data.model;
@@ -121,7 +165,7 @@ export class LlmSpan extends BaseSpan {
       tools: this.tools,
       model: this.model,
       temperature: this.temperature,
-      finish_reason: this.finishReason,
+      finish_reason: this.finishReason
     };
   }
 }
@@ -166,11 +210,9 @@ export class ToolSpan extends BaseStep {
   toolCallId?: string;
 
   constructor(data: ToolSpanOptions) {
-    super(StepType.tool, data)
+    super(StepType.tool, data);
     this.input =
-      typeof data.input === 'string'
-        ? data.input
-        : JSON.stringify(data.input);
+      typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
     this.output =
       typeof data.output === 'string'
         ? (data.output ?? '')
@@ -182,7 +224,7 @@ export class ToolSpan extends BaseStep {
   toJSON(): Record<string, any> {
     return {
       ...super.toJSON(),
-      toolCallId: this.toolCallId,
+      toolCallId: this.toolCallId
     };
   }
 }

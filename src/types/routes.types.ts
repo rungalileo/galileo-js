@@ -21,11 +21,20 @@ export enum Routes {
   dataset = 'datasets/{dataset_id}',
   datasetContent = 'datasets/{dataset_id}/content',
   traces = 'projects/{project_id}/traces',
+  sessions = 'projects/{project_id}/sessions',
   scorers = 'scorers/list',
+  scorerVersion = 'scorers/{scorer_id}/version',
   runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings',
   promptTemplates = 'projects/{project_id}/templates',
   promptTemplate = 'projects/{project_id}/templates/{template_id}',
   promptTemplateVersions = 'projects/{project_id}/templates/versions',
   promptTemplateVersion = 'projects/{project_id}/templates/{template_id}/versions/{version}',
-  jobs = 'jobs'
+  globalPromptTemplateQuery = 'templates/query',
+  globalPromptTemplates = 'templates',
+  globalPromptTemplate = 'templates/{template_id}',
+  globalPromptTemplateVersion = 'templates/{template_id}/versions/{version}',
+  jobs = 'jobs',
+  scorer = 'scorers',
+  llmScorerVersion = 'scorers/{scorer_id}/version/llm',
+  scorerId = 'scorers/{scorer_id}'
 }

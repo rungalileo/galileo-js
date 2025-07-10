@@ -1,19 +1,32 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Scorer, ScorerTypes } from '../types/scorer.types';
+import {
+  Scorer,
+  ScorerConfig,
+  ScorerDefaults,
+  ScorerTypes,
+  ScorerVersion,
+  ModelType,
+  ChainPollTemplate
+} from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
-import { PromptTemplateService } from './services/prompt-template-service';
+import {
+  PromptTemplateService,
+  GlobalPromptTemplateService
+} from './services/prompt-template-service';
 import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import { ScorerService } from './services/scorer-service';
 import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
+import { SessionCreateResponse } from '../types/logging/session.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -24,6 +37,7 @@ export class GalileoApiClientParams {
   public runId?: string = undefined;
   public datasetId?: string = undefined;
   public experimentId?: string = undefined;
+  public sessionId?: string = undefined;
   public projectScoped: boolean = true;
 }
 
@@ -34,6 +48,7 @@ export class GalileoApiClient extends BaseClient {
   public runId: string = '';
   public datasetId: string = '';
   public experimentId: string = '';
+  public sessionId?: string = undefined;
   public projectScoped: boolean = true;
 
   // Service instances
@@ -41,9 +56,11 @@ export class GalileoApiClient extends BaseClient {
   private projectService?: ProjectService;
   private logStreamService?: LogStreamService;
   private promptTemplateService?: PromptTemplateService;
+  private globalPromptTemplateService?: GlobalPromptTemplateService;
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
+  private scorerService?: ScorerService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -58,6 +75,7 @@ export class GalileoApiClient extends BaseClient {
       runId = defaultParams.runId,
       datasetId = defaultParams.datasetId,
       experimentId = defaultParams.experimentId,
+      sessionId = defaultParams.sessionId,
       projectScoped = defaultParams.projectScoped
     } = params;
 
@@ -83,6 +101,12 @@ export class GalileoApiClient extends BaseClient {
 
       // Initialize dataset and trace services
       this.datasetService = new DatasetService(this.apiUrl, this.token);
+
+      // Initialize the global prompt template service
+      this.globalPromptTemplateService = new GlobalPromptTemplateService(
+        this.apiUrl,
+        this.token
+      );
 
       if (projectScoped) {
         // Initialize project service and get project ID
@@ -147,12 +171,17 @@ export class GalileoApiClient extends BaseClient {
           }
         }
 
+        if (sessionId) {
+          this.sessionId = sessionId;
+        }
+
         this.traceService = new TraceService(
           this.apiUrl,
           this.token,
           this.projectId,
           this.logStreamId,
-          this.experimentId
+          this.experimentId,
+          this.sessionId
         );
 
         this.promptTemplateService = new PromptTemplateService(
@@ -160,11 +189,13 @@ export class GalileoApiClient extends BaseClient {
           this.token,
           this.projectId
         );
+
         this.experimentService = new ExperimentService(
           this.apiUrl,
           this.token,
           this.projectId
         );
+        this.scorerService = new ScorerService(this.apiUrl, this.token);
       }
     }
   }
@@ -242,6 +273,11 @@ export class GalileoApiClient extends BaseClient {
     return this.datasetService!.getDatasetContent(datasetId);
   }
 
+  public async deleteDataset(id: string): Promise<void> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.deleteDataset(id);
+  }
+
   public async appendRowsToDatasetContent(
     datasetId: string,
     rows: DatasetAppendRow[]
@@ -254,6 +290,23 @@ export class GalileoApiClient extends BaseClient {
   public async ingestTraces(traces: any[]) {
     this.ensureService(this.traceService);
     return this.traceService!.ingestTraces(traces);
+  }
+
+  public async createSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  }): Promise<SessionCreateResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.createSession({
+      name,
+      previousSessionId,
+      externalId
+    });
   }
 
   // PromptTemplate methods - delegate to PromptTemplateService
@@ -288,6 +341,46 @@ export class GalileoApiClient extends BaseClient {
     });
   }
 
+  // GlobalPromptTemplate methods - delegate to GlobalPromptTemplateService
+  public async createGlobalPromptTemplate(template: Message[], name: string) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.createGlobalPromptTemplate({
+      template,
+      name
+    });
+  }
+
+  public async listGlobalPromptTemplates(
+    name_filter: string,
+    limit: number,
+    starting_token: number
+  ) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.listGlobalPromptTemplates(
+      name_filter,
+      limit,
+      starting_token
+    );
+  }
+
+  public async getGlobalPromptTemplate(id: string) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.getGlobalPromptTemplate(id);
+  }
+
+  public async getGlobalPromptTemplateVersion(id: string, version: number) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.getGlobalPromptTemplateVersion(
+      id,
+      version
+    );
+  }
+
+  public async deleteGlobalPromptTemplate(id: string) {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.deleteGlobalPromptTemplate(id);
+  }
+
   // Experiment methods - delegate to ExperimentService
   public async getExperiments() {
     this.ensureService(this.experimentService);
@@ -305,14 +398,22 @@ export class GalileoApiClient extends BaseClient {
   }
 
   public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
-    this.ensureService(this.experimentService);
-    return this.experimentService!.getScorers(type);
+    this.ensureService(this.scorerService);
+    return this.scorerService!.getScorers(type);
+  }
+
+  public async getScorerVersion(
+    scorer_id: string,
+    version: number
+  ): Promise<ScorerVersion> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.getScorerVersion(scorer_id, version);
   }
 
   public async createRunScorerSettings(
     experimentId: string,
     projectId: string,
-    scorers: Scorer[]
+    scorers: ScorerConfig[]
   ): Promise<void> {
     this.ensureService(this.experimentService);
     return this.experimentService!.createRunScorerSettings(
@@ -327,7 +428,7 @@ export class GalileoApiClient extends BaseClient {
     projectId: string,
     promptTemplateVersionId: string,
     datasetId: string,
-    scorers?: Scorer[],
+    scorers?: ScorerConfig[],
     promptSettings?: PromptRunSettings
   ): Promise<CreateJobResponse> {
     this.ensureService(this.experimentService);
@@ -339,6 +440,49 @@ export class GalileoApiClient extends BaseClient {
       scorers,
       promptSettings
     );
+  }
+
+  public async createScorer(
+    name: string,
+    scorerType: ScorerTypes,
+    description?: string,
+    tags?: string[],
+    defaults?: ScorerDefaults,
+    modelType?: ModelType,
+    defaultVersionId?: string
+  ): Promise<Scorer> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.createScorer(
+      name,
+      scorerType,
+      description,
+      tags,
+      defaults,
+      modelType,
+      defaultVersionId
+    );
+  }
+
+  public async createLlmScorerVersion(
+    scorerId: string,
+    instructions: string,
+    chainPollTemplate: ChainPollTemplate,
+    modelName?: string,
+    numJudges?: number
+  ): Promise<ScorerVersion> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.createLLMScorerVersion(
+      scorerId,
+      instructions,
+      chainPollTemplate,
+      modelName,
+      numJudges
+    );
+  }
+
+  public async deleteScorer(scorerId: string): Promise<void> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.deleteScorer(scorerId);
   }
 
   // Helper to ensure service is initialized

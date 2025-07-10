@@ -1,14 +1,35 @@
-import { GalileoLogger, LlmSpan, RetrieverSpan, ToolSpan, Trace, WorkflowSpan } from '../../src/utils/galileo-logger';
+import {
+  GalileoLogger,
+  LlmSpan,
+  RetrieverSpan,
+  ToolSpan,
+  Trace,
+  WorkflowSpan
+} from '../../src/utils/galileo-logger';
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { createLocalScorerConfig } from '../../src/types/metrics.types';
 import { StepType } from '../../src/types/logging/step.types';
+import { randomUUID } from 'crypto';
+import { AgentSpan } from '../../src/types';
+
+const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
+const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
+const mockPreviousSessionId = '11678e93-b5b9-4215-bd33-9fd4480c3c45';
 
 // Mock the GalileoApiClient
 jest.mock('../../src/api-client', () => ({
   GalileoApiClient: jest.fn().mockImplementation(() => ({
     init: jest.fn(),
-    ingestTraces: jest.fn()
+    ingestTraces: jest.fn(),
+    createSession: jest.fn().mockReturnValue({
+      id: mockSessionId,
+      name: 'test-session',
+      project_id: mockProjectId,
+      project_name: 'test-project',
+      previous_session_id: mockPreviousSessionId,
+      external_id: 'test-external-id'
+    })
   }))
 }));
 
@@ -206,6 +227,19 @@ describe('GalileoLogger', () => {
       expect(span.input).toBe('');
     });
 
+    it('should return empty objects for addAgentSpan when logging is disabled', () => {
+      // First create a trace (which will be a no-op due to disabled logging)
+      logger.startTrace({ input: 'test input' });
+
+      const span = logger.addAgentSpan({
+        input: 'test input',
+        output: 'test output'
+      });
+
+      expect(span).toBeInstanceOf(AgentSpan);
+      expect(span.input).toBe('');
+    });
+
     it('should return undefined for conclude when logging is disabled', () => {
       // First create a trace (which will be a no-op due to disabled logging)
       logger.startTrace({ input: 'test input' });
@@ -368,6 +402,13 @@ describe('GalileoLogger', () => {
       const workflowSpan = logger.addWorkflowSpan({ input: 'workflow input' });
       expect(workflowSpan).toBeInstanceOf(WorkflowSpan);
     });
+
+    it('should add agent span', () => {
+      logger.startTrace({ input: 'test input' });
+
+      const agentSpan = logger.addAgentSpan({ input: 'workflow input' });
+      expect(agentSpan).toBeInstanceOf(AgentSpan);
+    });
   });
 
   describe('Trace Conclusion', () => {
@@ -435,12 +476,12 @@ describe('GalileoLogger', () => {
       async function testScorer(): Promise<number> {
         return 1.0;
       }
-      
+
       // Create an aggregator function
       async function testAggregator(values: number[]): Promise<number> {
         return values.reduce((sum, score) => sum + score, 0);
       }
-      
+
       // Create a logger with local metrics using the helper function
       const localMetricConfig = createLocalScorerConfig({
         name: 'test_metric',
@@ -449,7 +490,7 @@ describe('GalileoLogger', () => {
         scorable_types: [StepType.llm, StepType.trace],
         aggregatable_types: [StepType.trace]
       });
-      
+
       logger = new GalileoLogger({
         localMetrics: [localMetricConfig]
       });
@@ -472,11 +513,11 @@ describe('GalileoLogger', () => {
       // Get the trace from the ingestTraces mock
       const mockIngestTraces = logger['client'].ingestTraces as jest.Mock;
       expect(mockIngestTraces).toHaveBeenCalled();
-      
+
       // Get the traces passed to ingestTraces
       const tracesPassedToIngest = mockIngestTraces.mock.calls[0][0];
       expect(tracesPassedToIngest.length).toBe(1);
-      
+
       // Verify metrics were set on the trace and span
       const flushedTrace = tracesPassedToIngest[0];
       const flushedSpan = flushedTrace.spans[0];
@@ -502,11 +543,11 @@ describe('GalileoLogger', () => {
       // Get the trace from the ingestTraces mock
       const mockIngestTraces = logger['client'].ingestTraces as jest.Mock;
       expect(mockIngestTraces).toHaveBeenCalled();
-      
+
       // Get the traces passed to ingestTraces
       const tracesPassedToIngest = mockIngestTraces.mock.calls[0][0];
       expect(tracesPassedToIngest.length).toBe(1);
-      
+
       // Verify no test_metric was set on the trace and span
       const flushedTrace = tracesPassedToIngest[0];
       const flushedSpan = flushedTrace.spans[0];
@@ -728,6 +769,199 @@ describe('GalileoLogger', () => {
       expect(() => logger.conclude({ output: 'test output' })).toThrow(
         'No existing workflow to conclude'
       );
+    });
+  });
+
+  describe('Validating data on flush', () => {
+    it('should validate trace and span data on flush', async () => {
+      const createdAt = Date.now() * 1000000;
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'trace test' },
+        tags: ['trace test']
+      });
+      logger.addWorkflowSpan({
+        input: 'workflow input',
+        name: 'workflow span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'workflow test' },
+        tags: ['workflow test'],
+        stepNumber: 1
+      });
+      logger.addRetrieverSpan({
+        input: 'retriever input',
+        output: 'retriever output',
+        name: 'retriever span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'retriever test' },
+        tags: ['retriever test'],
+        statusCode: 200,
+        stepNumber: 2
+      });
+      logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        name: 'llm span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'llm test' },
+        tags: ['llm test'],
+        numInputTokens: 1,
+        numOutputTokens: 1,
+        totalTokens: 2,
+        timeToFirstTokenNs: 1000,
+        temperature: 0.7,
+        statusCode: 200,
+        stepNumber: 3
+      });
+
+      logger.conclude({ output: 'workflow output', statusCode: 200 });
+      logger.conclude({ output: 'trace output', statusCode: 200 });
+
+      const flushedTraces = await logger.flush();
+      expect(flushedTraces.length).toBe(1);
+
+      const trace = flushedTraces[0];
+      expect(trace.input).toBe('test input');
+      expect(trace.output).toBe('trace output');
+      expect(trace.name).toBe('test trace');
+      expect(trace.createdAt).toBe(createdAt);
+      expect(trace.metrics.durationNs).toBe(1000);
+      expect(trace.userMetadata).toEqual({ test: 'trace test' });
+      expect(trace.tags).toEqual(['trace test']);
+      expect(trace.statusCode).toBe(200);
+
+      expect(trace.spans.length).toBe(1);
+      expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
+
+      const workflowSpan = trace.spans[0] as WorkflowSpan;
+      expect(workflowSpan.input).toBe('workflow input');
+      expect(workflowSpan.output).toBe('workflow output');
+      expect(workflowSpan.name).toBe('workflow span');
+      expect(workflowSpan.createdAt).toBe(createdAt);
+      expect(workflowSpan.metrics.durationNs).toBe(1000);
+      expect(workflowSpan.userMetadata).toEqual({ test: 'workflow test' });
+      expect(workflowSpan.tags).toEqual(['workflow test']);
+      expect(workflowSpan.statusCode).toBe(200);
+      expect(workflowSpan.stepNumber).toBe(1);
+
+      expect(workflowSpan.spans.length).toBe(2);
+
+      const retrieverSpan = workflowSpan.spans[0] as RetrieverSpan;
+      expect(retrieverSpan.input).toBe('retriever input');
+      expect(retrieverSpan.output).toEqual([
+        { content: 'retriever output', metadata: {} }
+      ]);
+      expect(retrieverSpan.name).toBe('retriever span');
+      expect(retrieverSpan.createdAt).toBe(createdAt);
+      expect(retrieverSpan.metrics.durationNs).toBe(1000);
+      expect(retrieverSpan.userMetadata).toEqual({ test: 'retriever test' });
+      expect(retrieverSpan.tags).toEqual(['retriever test']);
+      expect(retrieverSpan.statusCode).toBe(200);
+      expect(retrieverSpan.stepNumber).toBe(2);
+
+      const llmSpan = workflowSpan.spans[1] as LlmSpan;
+      expect(llmSpan.input).toEqual([{ content: 'llm input', role: 'user' }]);
+      expect(llmSpan.output).toEqual({
+        content: 'llm output',
+        role: 'assistant'
+      });
+      expect(llmSpan.name).toBe('llm span');
+      expect(llmSpan.createdAt).toBe(createdAt);
+      expect(llmSpan.metrics.durationNs).toBe(1000);
+      expect(llmSpan.userMetadata).toEqual({ test: 'llm test' });
+      expect(llmSpan.tags).toEqual(['llm test']);
+      expect(llmSpan.statusCode).toBe(200);
+      expect(llmSpan.stepNumber).toBe(3);
+    });
+  });
+
+  describe('Session Management', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger({
+        projectName: 'test-project',
+        logStreamName: 'test-log-stream'
+      });
+    });
+
+    it('should create a new session when startSession is called', async () => {
+      expect(logger.currentSessionId()).toBeUndefined();
+      const sessionId = await logger.startSession({
+        name: 'test session',
+        previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9d',
+        externalId: 'test'
+      });
+      expect(logger.currentSessionId()).toBe(sessionId);
+      expect(logger.currentSessionId()).toBe(
+        '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
+      );
+    });
+
+    it('should clear the current session when clearSession is called', async () => {
+      expect(logger.currentSessionId()).toBeUndefined();
+      await logger.startSession({
+        name: 'test session',
+        previousSessionId: '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9d',
+        externalId: 'test'
+      });
+      expect(logger.currentSessionId()).toBe(
+        '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e'
+      );
+      logger.clearSession();
+      expect(logger.currentSessionId()).toBeUndefined();
+    });
+
+    it('should include the session ID when flushing traces', async () => {
+      const mockInit = jest.spyOn(logger['client'], 'init');
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+
+      expect(logger.currentSessionId()).toBeUndefined();
+      await logger.startSession({
+        name: 'test session',
+        previousSessionId: mockPreviousSessionId,
+        externalId: 'test'
+      });
+
+      logger.startTrace({ input: 'trace input' });
+      logger.addWorkflowSpan({ input: 'test input' });
+      logger.conclude({ output: 'test output', concludeAll: true });
+
+      await logger.flush();
+      expect(mockInit).toHaveBeenCalledWith({
+        projectName: 'test-project',
+        logStreamName: 'test-log-stream',
+        experimentId: undefined,
+        sessionId: mockSessionId
+      });
+      expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
+    });
+
+    it('should allow setting the session ID manually', async () => {
+      const mockInit = jest.spyOn(logger['client'], 'init');
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+      expect(logger.currentSessionId()).toBeUndefined();
+
+      // Instead of starting a session, we set the session ID directly
+      const sessionId = randomUUID();
+      logger.setSessionId(sessionId);
+
+      logger.startTrace({ input: 'trace input' });
+      logger.addWorkflowSpan({ input: 'test input' });
+      logger.conclude({ output: 'test output', concludeAll: true });
+
+      await logger.flush();
+      expect(mockInit).toHaveBeenCalledWith({
+        projectName: 'test-project',
+        logStreamName: 'test-log-stream',
+        experimentId: undefined,
+        sessionId: sessionId
+      });
+      expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
     });
   });
 });

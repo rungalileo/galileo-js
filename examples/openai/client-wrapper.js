@@ -1,9 +1,28 @@
-import 'dotenv/config';
-import { wrapOpenAI } from '@rungalileo/galileo';
+import dotenv from 'dotenv';
+import { wrapOpenAI, flush } from '../../dist/index.js';
 import { OpenAI } from 'openai';
+
+dotenv.config();
 
 // Wrap the OpenAI client with your logging wrapper
 const openai = wrapOpenAI(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
+
+async function testWrapped() {
+  console.log('\n=== Testing Wrapped OpenAI Client ===');
+
+  try {
+    const result = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ content: 'Say hello world!', role: 'user' }]
+    });
+
+    console.log(result);
+
+    await flush();
+  } catch (error) {
+    console.error('Error during test:', error);
+  }
+}
 
 // Now test the wrapped client with debugging information
 async function testWrappedStreaming() {
@@ -76,7 +95,7 @@ async function testWrappedStreaming() {
 
 // Run the tests
 async function runTests() {
-  // Then test the wrapped client to identify issues
+  await testWrapped();
   await testWrappedStreaming();
 }
 

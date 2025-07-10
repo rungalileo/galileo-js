@@ -1,7 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Scorer } from '../../types/scorer.types';
-import { ScorerTypes } from '../../types/scorer.types';
+import { ScorerConfig } from '../../types/scorer.types';
 import {
   Experiment,
   PromptRunSettings,
@@ -54,30 +53,10 @@ export class ExperimentService extends BaseClient {
     );
   };
 
-  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
-    const response = await this.makeRequest<{ scorers: Scorer[] }>(
-      RequestMethod.POST,
-      Routes.scorers,
-      type
-        ? {
-            filters: [
-              {
-                name: 'scorer_type',
-                value: type,
-                operator: 'eq'
-              }
-            ]
-          }
-        : {}
-    );
-
-    return response.scorers;
-  };
-
   public createRunScorerSettings = async (
     experimentId: string,
     projectId: string,
-    scorers: Scorer[]
+    scorers: ScorerConfig[]
   ): Promise<void> => {
     return await this.makeRequest<void>(
       RequestMethod.POST,
@@ -95,7 +74,7 @@ export class ExperimentService extends BaseClient {
     projectId: string,
     promptTemplateVersionId: string,
     datasetId: string,
-    scorers?: Scorer[],
+    scorers?: ScorerConfig[],
     promptSettings?: PromptRunSettings
   ): Promise<CreateJobResponse> => {
     return await this.makeRequest<CreateJobResponse>(
@@ -108,7 +87,7 @@ export class ExperimentService extends BaseClient {
         prompt_template_version_id: promptTemplateVersionId,
         prompt_settings: promptSettings || {},
         dataset_id: datasetId,
-        // scorers: scorers || null,
+        scorers: scorers,
         task_type: 17
       }
     );

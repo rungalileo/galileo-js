@@ -26,18 +26,30 @@ export class GalileoSingleton {
     this.client = client;
   }
 
-  public init(options: {
+  public async init(options: {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
     localMetrics?: LocalMetricConfig<MetricValueType>[] | undefined;
+    startNewSession?: boolean | undefined;
+    sessionName?: string | undefined;
+    previousSessionId?: string | undefined;
+    externalId?: string | undefined;
   }) {
     this.client = new GalileoLogger({
       projectName: options.projectName,
       logStreamName: options.logStreamName,
       experimentId: options.experimentId,
-      localMetrics: options.localMetrics,
+      localMetrics: options.localMetrics
     });
+
+    if (options.startNewSession) {
+      this.client.startSession({
+        name: options.sessionName,
+        previousSessionId: options.previousSessionId,
+        externalId: options.externalId
+      });
+    }
   }
 }
 
@@ -58,15 +70,17 @@ export class GalileoSingleton {
  * });
  * ```
  */
-export const init = (
+export const init = async (
   options: {
     projectName?: string | undefined;
     logStreamName?: string | undefined;
     experimentId?: string | undefined;
     localMetrics?: LocalMetricConfig<MetricValueType>[] | undefined;
+    sessionId?: string | undefined;
+    startNewSession?: boolean | undefined;
   } = {}
 ) => {
-  GalileoSingleton.getInstance().init(options);
+  await GalileoSingleton.getInstance().init(options);
 };
 
 /*

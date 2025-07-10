@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GalileoApiClient } from '../api-client';
 import {
-  BaseSpan, LlmMetrics,
+  BaseSpan,
+  AgentSpan,
+  AgentType,
+  LlmMetrics,
   LlmSpan,
   RetrieverSpan,
   Span,
@@ -12,7 +15,9 @@ import {
 import { Trace } from '../types/logging/trace.types';
 import {
   RetrieverSpanAllowedOutputType,
-  Metrics, LlmSpanAllowedOutputType, LlmSpanAllowedInputType
+  Metrics,
+  LlmSpanAllowedOutputType,
+  LlmSpanAllowedInputType
 } from '../types/logging/step.types';
 import { toStringValue } from './serialization';
 import { LocalMetricConfig, MetricValueType } from '../types/metrics.types';
@@ -22,6 +27,7 @@ class GalileoLoggerConfig {
   public projectName?: string;
   public logStreamName?: string;
   public experimentId?: string;
+  public sessionId?: string;
   public localMetrics?: LocalMetricConfig<any>[];
 }
 
@@ -65,6 +71,7 @@ class GalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
   private experimentId?: string;
+  private sessionId?: string;
   private localMetrics?: LocalMetricConfig<MetricValueType>[];
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
@@ -75,6 +82,7 @@ class GalileoLogger {
     this.projectName = config.projectName;
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
+    this.sessionId = config.sessionId;
     this.localMetrics = config.localMetrics;
     try {
       // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
@@ -134,11 +142,19 @@ class GalileoLogger {
       () => new WorkflowSpan(emptySpanData)
     );
 
+    this.addAgentSpan = skipIfDisabled(
+      this.addAgentSpan,
+      () => new AgentSpan(emptySpanData)
+    );
+
     this.conclude = skipIfDisabled(this.conclude, () => undefined);
 
     this.flush = skipIfDisabledAsync(this.flush, () => []);
 
     this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
+
+    this.startSession = skipIfDisabledAsync(this.startSession, () => '');
+    this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
   }
 
   /**
@@ -172,12 +188,52 @@ class GalileoLogger {
       : undefined;
   }
 
+  currentSessionId(): string | undefined {
+    return this.sessionId;
+  }
+
   addChildSpanToParent(span: Span): void {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
       throw new Error('A trace needs to be created in order to add a span.');
     }
     currentParent.addChildSpan(span);
+  }
+
+  async startSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  } = {}): Promise<string> {
+    await this.client.init({
+      projectName: this.projectName,
+      logStreamName: this.logStreamName,
+      experimentId: this.experimentId
+    });
+
+    const session = await this.client?.createSession({
+      name,
+      previousSessionId,
+      externalId
+    });
+
+    this.sessionId = session.id;
+    console.log('Session started.');
+    return session.id;
+  }
+
+  setSessionId(sessionId: string): void {
+    this.sessionId = sessionId;
+    console.log('Session ID set:', sessionId);
+  }
+
+  clearSession(): void {
+    this.sessionId = undefined;
+    console.log('Session cleared.');
   }
 
   startTrace({
@@ -210,7 +266,7 @@ class GalileoLogger {
       createdAt,
       metadata,
       tags,
-      metrics: new Metrics({durationNs: durationNs}),
+      metrics: new Metrics({ durationNs: durationNs })
     });
 
     this.traces.push(trace);
@@ -233,10 +289,11 @@ class GalileoLogger {
     totalTokens,
     temperature,
     statusCode,
+    spanStepNumber,
     timeToFirstTokenNs,
     datasetInput,
     datasetOutput,
-    datasetMetadata,
+    datasetMetadata
   }: {
     input: LlmSpanAllowedInputType;
     output: LlmSpanAllowedOutputType;
@@ -252,10 +309,11 @@ class GalileoLogger {
     totalTokens?: number;
     temperature?: number;
     statusCode?: number;
+    spanStepNumber?: number;
     timeToFirstTokenNs?: number;
-    datasetInput?: string,
-    datasetOutput?: string,
-    datasetMetadata?: Record<string, string>,
+    datasetInput?: string;
+    datasetOutput?: string;
+    datasetMetadata?: Record<string, string>;
   }): Trace {
     /**
      * Create a new trace with a single span and add it to the list of traces.
@@ -274,7 +332,7 @@ class GalileoLogger {
       tags,
       datasetInput,
       datasetOutput,
-      datasetMetadata,
+      datasetMetadata
     });
 
     trace.addChildSpan(
@@ -290,15 +348,16 @@ class GalileoLogger {
           numInputTokens,
           numOutputTokens,
           numTotalTokens: totalTokens,
-          timeToFirstTokenNs,
+          timeToFirstTokenNs
         }),
         tools,
         model,
         temperature,
         statusCode,
+        stepNumber: spanStepNumber,
         datasetInput,
         datasetOutput,
-        datasetMetadata,
+        datasetMetadata
       })
     );
 
@@ -323,7 +382,8 @@ class GalileoLogger {
     totalTokens,
     timeToFirstTokenNs,
     temperature,
-    statusCode
+    statusCode,
+    stepNumber
   }: {
     input: LlmSpanAllowedInputType;
     output: LlmSpanAllowedOutputType;
@@ -337,9 +397,10 @@ class GalileoLogger {
     numInputTokens?: number;
     numOutputTokens?: number;
     totalTokens?: number;
+    timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
-    timeToFirstTokenNs?: number;
+    stepNumber?: number;
   }): LlmSpan {
     /**
      * Add a new llm span to the current parent.
@@ -358,10 +419,11 @@ class GalileoLogger {
         numInputTokens,
         numOutputTokens,
         numTotalTokens: totalTokens,
-        timeToFirstTokenNs,
+        timeToFirstTokenNs
       }),
       temperature,
-      statusCode
+      statusCode,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -376,7 +438,8 @@ class GalileoLogger {
     createdAt,
     metadata,
     tags,
-    statusCode
+    statusCode,
+    stepNumber
   }: {
     input: string;
     output: RetrieverSpanAllowedOutputType;
@@ -386,6 +449,7 @@ class GalileoLogger {
     metadata?: Record<string, string>;
     tags?: string[];
     statusCode?: number;
+    stepNumber?: number;
   }): RetrieverSpan {
     /**
      * Add a new retriever span to the current parent.
@@ -398,7 +462,8 @@ class GalileoLogger {
       metadata: metadata,
       tags,
       statusCode,
-      metrics: new Metrics({durationNs: durationNs}),
+      metrics: new Metrics({ durationNs: durationNs }),
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -414,7 +479,8 @@ class GalileoLogger {
     metadata,
     tags,
     statusCode,
-    toolCallId
+    toolCallId,
+    stepNumber
   }: {
     input: string;
     output?: string;
@@ -425,6 +491,7 @@ class GalileoLogger {
     tags?: string[];
     statusCode?: number;
     toolCallId?: string;
+    stepNumber?: number;
   }): ToolSpan {
     /**
      * Add a new tool span to the current parent.
@@ -438,7 +505,8 @@ class GalileoLogger {
       tags,
       statusCode,
       toolCallId,
-      metrics: new Metrics({durationNs: durationNs}),
+      metrics: new Metrics({ durationNs: durationNs }),
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -452,7 +520,8 @@ class GalileoLogger {
     durationNs,
     createdAt,
     metadata,
-    tags
+    tags,
+    stepNumber
   }: {
     input: string;
     output?: string;
@@ -461,6 +530,7 @@ class GalileoLogger {
     createdAt?: number;
     metadata?: Record<string, string>;
     tags?: string[];
+    stepNumber?: number;
   }): WorkflowSpan {
     /**
      * Add a workflow span to the current parent. This is useful when you want to create a nested workflow span
@@ -474,7 +544,49 @@ class GalileoLogger {
       createdAt: createdAt,
       metadata: metadata,
       tags,
-      metrics: new Metrics({durationNs: durationNs}),
+      metrics: new Metrics({ durationNs: durationNs }),
+      stepNumber
+    });
+
+    this.addChildSpanToParent(span);
+    this.parentStack.push(span);
+    return span;
+  }
+
+  addAgentSpan({
+    input,
+    output,
+    name,
+    durationNs,
+    createdAt,
+    metadata,
+    tags,
+    agentType,
+    stepNumber
+  }: {
+    input: string;
+    output?: string;
+    name?: string;
+    durationNs?: number;
+    createdAt?: number;
+    metadata?: Record<string, string>;
+    tags?: string[];
+    agentType?: AgentType;
+    stepNumber?: number;
+  }): AgentSpan {
+    /**
+     * Add an agent span to the current parent.
+     */
+    const span = new AgentSpan({
+      input,
+      output,
+      name,
+      createdAt: createdAt,
+      metadata: metadata,
+      tags,
+      metrics: new Metrics({ durationNs: durationNs }),
+      agentType,
+      stepNumber
     });
 
     this.addChildSpanToParent(span);
@@ -560,7 +672,8 @@ class GalileoLogger {
       await this.client.init({
         projectName: this.projectName,
         logStreamName: this.logStreamName,
-        experimentId: this.experimentId
+        experimentId: this.experimentId,
+        sessionId: this.sessionId
       });
 
       console.info(`Flushing ${this.traces.length} traces...`);
@@ -603,5 +716,6 @@ export {
   LlmSpan,
   RetrieverSpan,
   ToolSpan,
-  WorkflowSpan
+  WorkflowSpan,
+  AgentSpan
 };

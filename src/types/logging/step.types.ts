@@ -1,12 +1,33 @@
-
 import { Document } from '../document.types';
 import { Message } from '../message.types';
 import { MetricValueType } from '../metrics.types';
 
-export type StepAllowedInputType = string | string[] | Record<string, string> |Record<string, string>[] | Message | Message[];
-export type StepAllowedOutputType = string | string[] | Record<string, string> | Record<string, string>[] | Message | Document | Document[];
-export type LlmSpanAllowedInputType = string | string[] | Record<string, string> |Record<string, string>[] | Message | Message[];
-export type LlmSpanAllowedOutputType = string | Record<string, string> | Message;
+export type StepAllowedInputType =
+  | string
+  | string[]
+  | Record<string, string>
+  | Record<string, string>[]
+  | Message
+  | Message[];
+export type StepAllowedOutputType =
+  | string
+  | string[]
+  | Record<string, string>
+  | Record<string, string>[]
+  | Message
+  | Document
+  | Document[];
+export type LlmSpanAllowedInputType =
+  | string
+  | string[]
+  | Record<string, string>
+  | Record<string, string>[]
+  | Message
+  | Message[];
+export type LlmSpanAllowedOutputType =
+  | string
+  | Record<string, string>
+  | Message;
 export type RetrieverSpanAllowedOutputType =
   | string
   | Record<string, string>
@@ -20,18 +41,22 @@ export enum StepType {
   workflow = 'workflow',
   llm = 'llm',
   retriever = 'retriever',
-  tool = 'tool'
+  tool = 'tool',
+  agent = 'agent'
 }
 
 export interface MetricsOptions {
   durationNs?: number;
-  [key: string]: MetricValueType | undefined
+  [key: string]: MetricValueType | undefined;
 }
 
 export class Metrics {
   durationNs?: number;
   // eslint-disable-next-line no-undef
-  [key: string]: MetricValueType | undefined | (() => Record<string, MetricValueType | undefined>);
+  [key: string]:
+    | MetricValueType
+    | undefined
+    | (() => Record<string, MetricValueType | undefined>);
 
   constructor(options: MetricsOptions) {
     for (const key in options) {
@@ -64,6 +89,7 @@ export interface BaseStepOptions {
   statusCode?: number;
   metrics?: Metrics;
   externalId?: string;
+  stepNumber?: number;
   datasetInput?: string;
   datasetOutput?: string;
   datasetMetadata?: Record<string, string>;
@@ -80,14 +106,12 @@ export class BaseStep {
   statusCode?: number;
   metrics: Metrics = new Metrics({});
   externalId?: string;
+  stepNumber?: number;
   datasetInput?: string;
   datasetOutput?: string;
   datasetMetadata?: Record<string, string> = {};
 
-  constructor(
-    type: StepType,
-    data: BaseStepOptions,
-  ) {
+  constructor(type: StepType, data: BaseStepOptions) {
     this.type = type;
     this.input = data.input;
     this.output = data.output;
@@ -97,8 +121,9 @@ export class BaseStep {
     this.userMetadata = data.metadata || {};
     this.tags = data.tags || [];
     this.statusCode = data.statusCode;
-    this.metrics = data.metrics || new Metrics({})
+    this.metrics = data.metrics || new Metrics({});
     this.externalId = data.externalId;
+    this.stepNumber = data.stepNumber;
     this.datasetInput = data.datasetInput;
     this.datasetOutput = data.datasetOutput;
     this.datasetMetadata = data.datasetMetadata || {};
@@ -108,7 +133,9 @@ export class BaseStep {
     this.validateInputOutputSerializable(this.output);
   }
 
-  validateInputOutputSerializable<T = StepAllowedInputType | StepAllowedOutputType>(val: T): T {
+  validateInputOutputSerializable<
+    T = StepAllowedInputType | StepAllowedOutputType
+  >(val: T): T {
     // Make sure we can serialize input/output to JSON string
     JSON.stringify(val);
     return val;

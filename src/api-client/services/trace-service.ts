@@ -1,18 +1,21 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Trace } from '../../types/log.types';
+import { Trace } from '../../types/logging/trace.types';
+import { SessionCreateResponse } from '../../types/logging/session.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
   private logStreamId: string | undefined;
   private experimentId: string | undefined;
+  private sessionId: string | undefined;
 
   constructor(
     apiUrl: string,
     token: string,
     projectId: string,
     logStreamId?: string,
-    experimentId?: string
+    experimentId?: string,
+    sessionId?: string
   ) {
     super();
     this.apiUrl = apiUrl;
@@ -20,7 +23,30 @@ export class TraceService extends BaseClient {
     this.projectId = projectId;
     this.logStreamId = logStreamId;
     this.experimentId = experimentId;
+    this.sessionId = sessionId;
     this.initializeClient();
+  }
+
+  public async createSession({
+    name,
+    previousSessionId,
+    externalId
+  }: {
+    name?: string;
+    previousSessionId?: string;
+    externalId?: string;
+  }): Promise<SessionCreateResponse> {
+    return await this.makeRequest<SessionCreateResponse>(
+      RequestMethod.POST,
+      Routes.sessions,
+      {
+        log_stream_id: this.logStreamId,
+        name,
+        previous_session_id: previousSessionId,
+        external_id: externalId
+      },
+      { project_id: this.projectId }
+    );
   }
 
   public async ingestTraces(traces: Trace[]): Promise<void> {
@@ -42,7 +68,8 @@ export class TraceService extends BaseClient {
         }),
         ...(!this.experimentId && {
           log_stream_id: this.logStreamId
-        })
+        }),
+        session_id: this.sessionId
       },
       { project_id: this.projectId }
     );
