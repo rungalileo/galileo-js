@@ -1,7 +1,15 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { getMetrics } from '../../src';
-import { MetricSearchResponse } from '../../src/types';
+import {
+  getMetrics,
+  getTraces,
+  getSpans,
+  getSessions
+} from '../../src';
+import {
+  MetricSearchResponse,
+  LogRecordsQueryResponse
+} from '../../src/types';
 import { commonHandlers, TEST_HOST } from '../common';
 
 const EXAMPLE_METRIC_SEARCH_RESPONSE: MetricSearchResponse = {
@@ -13,6 +21,10 @@ const EXAMPLE_METRIC_SEARCH_RESPONSE: MetricSearchResponse = {
   bucketed_metrics: {}
 };
 
+const EXAMPLE_LOG_RECORDS_QUERY_RESPONSE: LogRecordsQueryResponse = {
+  records: []
+};
+
 const MOCK_ERROR_RESPONSE = {
   detail: 'An unexpected error occurred.'
 };
@@ -21,7 +33,19 @@ const postMetricsSearchHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(EXAMPLE_METRIC_SEARCH_RESPONSE);
 });
 
-const postMetricsSearchErrorHandler = jest.fn().mockImplementation(() => {
+const postTracesSearchHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json(EXAMPLE_LOG_RECORDS_QUERY_RESPONSE);
+});
+
+const postSpansSearchHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json(EXAMPLE_LOG_RECORDS_QUERY_RESPONSE);
+});
+
+const postSessionsSearchHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json(EXAMPLE_LOG_RECORDS_QUERY_RESPONSE);
+});
+
+const postSearchErrorHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(MOCK_ERROR_RESPONSE, { status: 500 });
 });
 
@@ -51,6 +75,18 @@ export const handlers = [
     `${TEST_HOST}/projects/test-project-id/metrics/search`,
     postMetricsSearchHandler
   ),
+  http.post(
+    `${TEST_HOST}/projects/test-project-id/traces/search`,
+    postTracesSearchHandler
+  ),
+  http.post(
+    `${TEST_HOST}/projects/test-project-id/spans/search`,
+    postSpansSearchHandler
+  ),
+  http.post(
+    `${TEST_HOST}/projects/test-project-id/sessions/search`,
+    postSessionsSearchHandler
+  ),
   http.get(`${TEST_HOST}/projects`, getProjectByNameHandler),
   http.get(
     `${TEST_HOST}/projects/test-project-id/log_streams`,
@@ -64,7 +100,7 @@ export const handlers = [
 
 const server = setupServer(...handlers);
 
-describe('utils.getMetrics', () => {
+describe('utils.search', () => {
   beforeAll(() => {
     process.env.GALILEO_CONSOLE_URL = TEST_HOST;
     process.env.GALILEO_API_KEY = 'placeholder';
@@ -74,7 +110,10 @@ describe('utils.getMetrics', () => {
   afterEach(() => {
     server.resetHandlers();
     postMetricsSearchHandler.mockClear();
-    postMetricsSearchErrorHandler.mockClear();
+    postTracesSearchHandler.mockClear();
+    postSpansSearchHandler.mockClear();
+    postSessionsSearchHandler.mockClear();
+    postSearchErrorHandler.mockClear();
     getProjectByNameHandler.mockClear();
     getLogStreamByNameHandler.mockClear();
     createLogStreamHandler.mockClear();
@@ -84,35 +123,97 @@ describe('utils.getMetrics', () => {
     server.close();
   });
 
-  it('should call the metrics/search endpoint and return the response', async () => {
-    const response = await getMetrics(
-      {
-        start_time: '2021-09-10T00:00:00Z',
-        end_time: '2021-09-11T00:00:00Z'
-      },
-      'test-project'
-    );
-    expect(response).toEqual(EXAMPLE_METRIC_SEARCH_RESPONSE);
-    expect(postMetricsSearchHandler).toHaveBeenCalledTimes(1);
-  });
-
-  it('should handle API errors gracefully', async () => {
-    server.use(
-      http.post(
-        `${TEST_HOST}/projects/test-project-id/metrics/search`,
-        postMetricsSearchErrorHandler
-      )
-    );
-
-    await expect(
-      getMetrics(
+  describe('getMetrics', () => {
+    it('should call the metrics/search endpoint and return the response', async () => {
+      const response = await getMetrics(
         {
           start_time: '2021-09-10T00:00:00Z',
           end_time: '2021-09-11T00:00:00Z'
         },
         'test-project'
-      )
-    ).rejects.toThrow();
-    expect(postMetricsSearchErrorHandler).toHaveBeenCalledTimes(1);
+      );
+      expect(response).toEqual(EXAMPLE_METRIC_SEARCH_RESPONSE);
+      expect(postMetricsSearchHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      server.use(
+        http.post(
+          `${TEST_HOST}/projects/test-project-id/metrics/search`,
+          postSearchErrorHandler
+        )
+      );
+
+      await expect(
+        getMetrics(
+          {
+            start_time: '2021-09-10T00:00:00Z',
+            end_time: '2021-09-11T00:00:00Z'
+          },
+          'test-project'
+        )
+      ).rejects.toThrow();
+      expect(postSearchErrorHandler).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getTraces', () => {
+    it('should call the traces/search endpoint and return the response', async () => {
+      const response = await getTraces({}, 'test-project');
+      expect(response).toEqual(EXAMPLE_LOG_RECORDS_QUERY_RESPONSE);
+      expect(postTracesSearchHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      server.use(
+        http.post(
+          `${TEST_HOST}/projects/test-project-id/traces/search`,
+          postSearchErrorHandler
+        )
+      );
+
+      await expect(getTraces({}, 'test-project')).rejects.toThrow();
+      expect(postSearchErrorHandler).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getSpans', () => {
+    it('should call the spans/search endpoint and return the response', async () => {
+      const response = await getSpans({}, 'test-project');
+      expect(response).toEqual(EXAMPLE_LOG_RECORDS_QUERY_RESPONSE);
+      expect(postSpansSearchHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      server.use(
+        http.post(
+          `${TEST_HOST}/projects/test-project-id/spans/search`,
+          postSearchErrorHandler
+        )
+      );
+
+      await expect(getSpans({}, 'test-project')).rejects.toThrow();
+      expect(postSearchErrorHandler).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getSessions', () => {
+    it('should call the sessions/search endpoint and return the response', async () => {
+      const response = await getSessions({}, 'test-project');
+      expect(response).toEqual(EXAMPLE_LOG_RECORDS_QUERY_RESPONSE);
+      expect(postSessionsSearchHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      server.use(
+        http.post(
+          `${TEST_HOST}/projects/test-project-id/sessions/search`,
+          postSearchErrorHandler
+        )
+      );
+
+      await expect(getSessions({}, 'test-project')).rejects.toThrow();
+      expect(postSearchErrorHandler).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -13,7 +13,12 @@ import {
   deleteDataset,
   addRowsToDataset
 } from './utils/datasets';
-import { getMetrics } from './utils/search';
+import {
+  getMetrics,
+  getTraces,
+  getSpans,
+  getSessions
+} from './utils/search';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
   getPromptTemplate,
@@ -91,5 +96,9 @@ export {
   // Metrics
   createCustomLlmMetric,
   deleteMetric,
-  getMetrics
+  getMetrics,
+  // Traces
+  getTraces,
+  getSpans,
+  getSessions,
 };

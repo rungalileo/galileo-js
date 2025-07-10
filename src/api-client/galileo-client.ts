@@ -31,6 +31,10 @@ import {
   MetricSearchRequest,
   MetricSearchResponse
 } from '../types/search.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../types/search.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -321,6 +325,27 @@ export class GalileoApiClient extends BaseClient {
       previousSessionId,
       externalId
     });
+  }
+
+  public async searchTraces(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchTraces(request);
+  }
+
+  public async searchSpans(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchSpans(request);
+  }
+
+  public async searchSessions(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchSessions(request);
   }
 
   public async searchMetrics(

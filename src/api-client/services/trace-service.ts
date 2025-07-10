@@ -5,6 +5,10 @@ import {
   MetricSearchRequest,
   MetricSearchResponse
 } from '../../types/search.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../../types/search.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -93,6 +97,51 @@ export class TraceService extends BaseClient {
     return await this.makeRequest<MetricSearchResponse>(
       RequestMethod.POST,
       Routes.metricsSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchTraces(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.tracesSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchSpans(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.spansSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchSessions(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.sessionsSearch,
       request,
       { project_id: this.projectId }
     );

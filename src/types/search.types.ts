@@ -10,3 +10,7 @@ export type MetricFilter =
   | components['schemas']['LogRecordsNumberFilter']
   | components['schemas']['LogRecordsBooleanFilter']
   | components['schemas']['LogRecordsTextFilter'];
+export type LogRecordsQueryRequest =
+  components['schemas']['LogRecordsQueryRequest'];
+export type LogRecordsQueryResponse =
+  components['schemas']['LogRecordsQueryResponse'];

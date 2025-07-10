@@ -1,7 +1,9 @@
 import { GalileoApiClient } from '../api-client';
 import {
   MetricSearchRequest,
-  MetricSearchResponse
+  MetricSearchResponse,
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse,
 } from '../types/search.types';
 
 export const getMetrics = async (
@@ -11,4 +13,31 @@ export const getMetrics = async (
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
   return await apiClient.searchMetrics(request);
+};
+
+export const getTraces = async (
+  request: LogRecordsQueryRequest,
+  projectName: string
+): Promise<LogRecordsQueryResponse> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectName });
+  return await apiClient.searchTraces(request);
+};
+
+export const getSpans = async (
+  request: LogRecordsQueryRequest,
+  projectName: string
+): Promise<LogRecordsQueryResponse> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectName });
+  return await apiClient.searchSpans(request);
+};
+
+export const getSessions = async (
+  request: LogRecordsQueryRequest,
+  projectName: string
+): Promise<LogRecordsQueryResponse> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectName });
+  return await apiClient.searchSessions(request);
 };
