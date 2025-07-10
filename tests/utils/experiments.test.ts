@@ -129,7 +129,8 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   settings_changed: false,
   settings: {},
   created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z'
+  updated_at: '2023-01-01T00:00:00Z',
+  created_by_user: null
 };
 
 const mockPromptTemplate: PromptTemplate = {
@@ -144,7 +145,7 @@ const mockPromptTemplate: PromptTemplate = {
   max_version: 1,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
-  creator: null
+  created_by_user: null
 };
 
 const mockScorer: Scorer = {
