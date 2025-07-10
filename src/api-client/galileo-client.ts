@@ -27,6 +27,10 @@ import {
   PromptRunSettings
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
+import {
+  MetricSearchRequest,
+  MetricSearchResponse
+} from '../types/search.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -317,6 +321,13 @@ export class GalileoApiClient extends BaseClient {
       previousSessionId,
       externalId
     });
+  }
+
+  public async searchMetrics(
+    request: MetricSearchRequest
+  ): Promise<MetricSearchResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchMetrics(request);
   }
 
   // PromptTemplate methods - delegate to PromptTemplateService

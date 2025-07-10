@@ -1,6 +1,10 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { Trace, SessionCreateResponse } from '../../types/log.types';
+import {
+  MetricSearchRequest,
+  MetricSearchResponse
+} from '../../types/search.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -75,6 +79,22 @@ export class TraceService extends BaseClient {
     // eslint-disable-next-line no-console
     console.log(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
+    );
+  }
+
+
+  public async searchMetrics(
+    request: MetricSearchRequest
+  ): Promise<MetricSearchResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<MetricSearchResponse>(
+      RequestMethod.POST,
+      Routes.metricsSearch,
+      request,
+      { project_id: this.projectId }
     );
   }
 }
