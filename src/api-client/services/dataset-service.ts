@@ -9,6 +9,11 @@ export type DatasetContent = components['schemas']['DatasetContent'];
 export type Dataset = components['schemas']['DatasetDB'];
 export type DatasetRow = components['schemas']['DatasetRow'];
 export type DatasetAppendRow = components['schemas']['DatasetAppendRow'];
+export type SyntheticDatasetExtensionRequest =
+  components['schemas']['SyntheticDatasetExtensionRequest'];
+export type SyntheticDatasetExtensionResponse =
+  components['schemas']['SyntheticDatasetExtensionResponse'];
+export type JobProgress = components['schemas']['JobProgress'];
 
 type CollectionPaths =
   | paths['/datasets']
@@ -205,4 +210,25 @@ export class DatasetService extends BaseClient {
 
     await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
   }
+
+  public async extendDataset(
+    params: SyntheticDatasetExtensionRequest
+  ): Promise<SyntheticDatasetExtensionResponse> {
+    return this.makeRequest<SyntheticDatasetExtensionResponse>(
+      RequestMethod.POST,
+      Routes.datasetExtend,
+      params
+    );
+  }
+
+  public getExtendDatasetStatus = async (
+    datasetId: string
+  ): Promise<JobProgress> => {
+    return await this.makeRequest<JobProgress>(
+      RequestMethod.GET,
+      Routes.datasetExtendStatus,
+      null,
+      { dataset_id: datasetId }
+    );
+  };
 }

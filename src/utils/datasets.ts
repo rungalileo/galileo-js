@@ -1,4 +1,8 @@
-import { GalileoApiClient, DatasetRow } from '../api-client';
+import {
+  GalileoApiClient,
+  DatasetRow,
+  SyntheticDatasetExtensionRequest
+} from '../api-client';
 import { Dataset } from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -281,4 +285,35 @@ export const deleteDataset = async ({
   }
 
   await apiClient.deleteDataset(id!);
+};
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export const extendDataset = async (
+  params: SyntheticDatasetExtensionRequest
+): Promise<DatasetRow[]> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
+  const { dataset_id } = await apiClient.extendDataset(params);
+
+  let job;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    // Wait for job to finish
+    // TODO: Add timeout
+    job = await apiClient.getExtendDatasetStatus(dataset_id);
+    if (job.steps_completed === 3) {
+      // TODO: Fix job.steps_completed === job.steps_total
+      break;
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      `(${job.steps_completed}/${job.steps_total}) ${job.progress_message}`
+    );
+    await sleep(1000);
+  }
+
+  return apiClient.getDatasetContent(dataset_id);
 };
