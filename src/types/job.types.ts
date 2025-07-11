@@ -20,6 +20,6 @@ export const isJobFailed = (status: JobStatus): boolean => {
 
 export interface RequestData {
   prompt_scorer_settings?: {
-    scorer_name?: string;
+    scorer_name: string;
   };
 }

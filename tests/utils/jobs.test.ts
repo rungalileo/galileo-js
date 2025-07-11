@@ -82,18 +82,37 @@ describe('Job Utils', () => {
 
   describe('getJobProgress', () => {
     beforeEach(() => {
+      // This is called internally by getJobProgress after the primary job completes
       getJobsForProjectRunHandler.mockImplementation(() => {
         return HttpResponse.json([]);
       });
     });
-    it('should return the job when it is completed', async () => {
+
+    it('should return the job when it is completed on the first try', async () => {
       getJobHandler.mockImplementation(() => {
         return HttpResponse.json(mockJob);
       });
 
-      const job = await getJobProgress(jobId, 'test-project', runId);
+      const resultJobId = await getJobProgress(jobId, 'test-project', runId);
 
-      expect(job).toEqual(mockJob);
+      expect(resultJobId).toEqual(jobId);
+      expect(getJobHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw an error if the job fails', async () => {
+      const failedJob = {
+        ...mockJob,
+        status: JobStatus.failed,
+        error_message: 'Test error',
+      };
+      getJobHandler.mockImplementation(() => {
+        return HttpResponse.json(failedJob);
+      });
+
+      await expect(
+        getJobProgress(jobId, 'test-project', runId)
+      ).rejects.toThrow('Job failed with error message Test error.');
+
       expect(getJobHandler).toHaveBeenCalledTimes(1);
     });
 
@@ -112,24 +131,83 @@ describe('Job Utils', () => {
           return HttpResponse.json(mockJob);
         });
 
-      const job = await getJobProgress(jobId, 'test-project', runId);
+      const resultJobId = await getJobProgress(jobId, 'test-project', runId);
 
-      expect(job).toEqual(mockJob);
+      expect(resultJobId).toEqual(jobId);
       expect(getJobHandler).toHaveBeenCalledTimes(3);
     });
   });
 
   describe('getScorerJobsStatus', () => {
-    it('should return the jobs for a given run', async () => {
-      const mockJobs = [mockJob];
+    it('should log the correct status and handle aliased and unknown scorers', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleDebugSpy = jest
+        .spyOn(console, 'debug')
+        .mockImplementation(() => {});
+
+      const mockJobs: Job[] = [
+        // Test case 1: A completed job with an aliased scorer name
+        {
+          ...mockJob,
+          id: 'job-1',
+          status: JobStatus.completed,
+          request_data: {
+            prompt_scorer_settings: { scorer_name: 'completeness_gpt' },
+          },
+        },
+        // Test case 2: A pending job with a non-aliased scorer name
+        {
+          ...mockJob,
+          id: 'job-2',
+          status: JobStatus.pending,
+          request_data: {
+            prompt_scorer_settings: { scorer_name: 'a_new_scorer' },
+          },
+        },
+        // Test case 3: A failed job
+        {
+          ...mockJob,
+          id: 'job-3',
+          status: JobStatus.failed,
+          error_message: 'Something went wrong.',
+          request_data: {
+            prompt_scorer_settings: { scorer_name: 'factuality' },
+          },
+        },
+        // Test case 4: A job with no scorer settings, which should be skipped
+        {
+          ...mockJob,
+          id: 'job-4',
+          status: JobStatus.completed,
+          request_data: {},
+        },
+      ];
+
       getJobsForProjectRunHandler.mockImplementation(() => {
         return HttpResponse.json(mockJobs);
       });
 
-      const jobs = await getScorerJobsStatus('test-project', runId);
+      await getScorerJobsStatus('test-project', runId);
 
-      expect(jobs).toEqual(mockJobs);
       expect(getJobsForProjectRunHandler).toHaveBeenCalledTimes(1);
+
+      // Verify the console output
+      expect(consoleSpy).toHaveBeenCalledWith('completeness_plus: Done ✅');
+      expect(consoleSpy).toHaveBeenCalledWith('a_new_scorer: Computing 🚧');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'correctness: Failed ❌, error was: Something went wrong.'
+      );
+
+      // Verify that the job with no scorer settings was skipped
+      expect(consoleSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('job-4')
+      );
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        'Scorer job job-4 has no scorer settings.'
+      );
+
+      consoleSpy.mockRestore();
+      consoleDebugSpy.mockRestore();
     });
   });
 });
