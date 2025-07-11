@@ -18,7 +18,13 @@ import {
   PromptTemplateService,
   GlobalPromptTemplateService
 } from './services/prompt-template-service';
-import { DatasetService, DatasetAppendRow } from './services/dataset-service';
+import {
+  DatasetService,
+  DatasetAppendRow,
+  SyntheticDatasetExtensionRequest,
+  SyntheticDatasetExtensionResponse,
+  JobProgress
+} from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
@@ -296,6 +302,18 @@ export class GalileoApiClient extends BaseClient {
       etag,
       rows
     );
+  }
+
+  public async extendDataset(
+    params: SyntheticDatasetExtensionRequest
+  ): Promise<SyntheticDatasetExtensionResponse> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.extendDataset(params);
+  }
+
+  public async getExtendDatasetStatus(datasetId: string): Promise<JobProgress> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.getExtendDatasetStatus(datasetId);
   }
 
   // Trace methods - delegate to TraceService
