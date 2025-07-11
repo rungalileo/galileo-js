@@ -34,6 +34,8 @@ export enum Routes {
   promptTemplateVersions = 'projects/{project_id}/templates/versions',
   promptTemplateVersion = 'projects/{project_id}/templates/{template_id}/versions/{version}',
   globalPromptTemplateQuery = 'templates/query',
+  job = 'jobs/{job_id}',
+  jobsForProjectRun = 'projects/{project_id}/runs/{run_id}/jobs',
   globalPromptTemplates = 'templates',
   globalPromptTemplate = 'templates/{template_id}',
   globalPromptTemplateVersion = 'templates/{template_id}/versions/{version}',

@@ -20,6 +20,7 @@ import {
   getSessions
 } from './utils/search';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
+import { getJobProgress, getScorerJobsStatus } from './utils/jobs';
 import {
   getPromptTemplate,
   getPromptTemplates,
@@ -97,6 +98,9 @@ export {
   createCustomLlmMetric,
   deleteMetric,
   getMetrics,
+  // Jobs
+  getJobProgress,
+  getScorerJobsStatus,
   // Traces
   getTraces,
   getSpans,

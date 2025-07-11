@@ -21,6 +21,7 @@ import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
+import { JobService } from './services/job-service';
 import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
@@ -60,6 +61,7 @@ export class GalileoApiClient extends BaseClient {
   public projectScoped: boolean = true;
 
   // Service instances
+  private jobService?: JobService;
   private authService?: AuthService;
   private projectService?: ProjectService;
   private logStreamService?: LogStreamService;
@@ -203,6 +205,7 @@ export class GalileoApiClient extends BaseClient {
           this.token,
           this.projectId
         );
+        this.jobService = new JobService(this.apiUrl, this.token, this.projectId);
         this.scorerService = new ScorerService(this.apiUrl, this.token);
       }
     }
@@ -355,6 +358,19 @@ export class GalileoApiClient extends BaseClient {
     return this.traceService!.searchMetrics(request);
   }
 
+  // Job methods - delegate to JobService
+  public async getJob(jobId: string): Promise<any> {
+    this.ensureService(this.jobService);
+    return this.jobService!.getJob(jobId);
+  }
+
+  public async getJobsForProjectRun(
+    runId: string,
+    status?: string
+  ): Promise<any[]> {
+    this.ensureService(this.jobService);
+    return this.jobService!.getJobsForProjectRun(runId, status);
+  }
   // PromptTemplate methods - delegate to PromptTemplateService
   public async getPromptTemplates() {
     this.ensureService(this.promptTemplateService);
