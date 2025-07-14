@@ -174,8 +174,8 @@ const mockScorer: Scorer = {
 };
 
 // Helper functions for the local experiments test
-const dummyFunction = async (input: string): Promise<string> => {
-  return input + 'dummy_function';
+const dummyFunction = async (): Promise<string> => {
+  return 'dummy_function';
 };
 
 const complexTraceFunction = async (): Promise<string> => {

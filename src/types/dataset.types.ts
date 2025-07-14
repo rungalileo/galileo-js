@@ -82,14 +82,14 @@ const serializeToString = (value: unknown): string => {
   return typeof value === 'string' ? value : JSON.stringify(value);
 };
 
-export const deserializeFromString = (
+export const deserializeInputFromString = (
   value: string
-): string | Record<string, unknown> => {
+): Record<string, unknown> => {
   try {
     return JSON.parse(value);
   } catch (error) {
     if (error instanceof SyntaxError && error.message.includes('JSON.parse')) {
-      return value;
+      return { value: value };
     } else {
       throw error;
     }

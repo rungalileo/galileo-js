@@ -13,7 +13,7 @@ import {
   createRunScorerSettings
 } from '../utils/scorers';
 import {
-  deserializeFromString,
+  deserializeInputFromString,
   Dataset,
   DatasetRecord
 } from '../types/dataset.types';
@@ -42,9 +42,13 @@ type BaseRunExperimentParams = {
   projectName: string;
 };
 
-type RunExperimentWithFunctionParams = BaseRunExperimentParams & {
-  function: (input: string | Record<string, unknown>) => Promise<unknown>;
-};
+type RunExperimentWithFunctionParams<T extends Record<string, unknown>> =
+  BaseRunExperimentParams & {
+    function: (
+      input: T,
+      metadata?: Record<string, unknown>
+    ) => Promise<unknown>;
+  };
 
 type RunExperimentWithPromptTemplateParams = BaseRunExperimentParams & {
   promptTemplate: PromptTemplateType;
@@ -62,10 +66,10 @@ type DatasetNameRunExperimentParams = BaseRunExperimentParams & {
 };
 
 // Union of all possible parameter combinations
-export type RunExperimentParams =
-  | (RunExperimentWithFunctionParams & DatasetRunExperimentParams)
-  | (RunExperimentWithFunctionParams & DatasetIdRunExperimentParams)
-  | (RunExperimentWithFunctionParams & DatasetNameRunExperimentParams)
+export type RunExperimentParams<T extends Record<string, unknown>> =
+  | (RunExperimentWithFunctionParams<T> & DatasetRunExperimentParams)
+  | (RunExperimentWithFunctionParams<T> & DatasetIdRunExperimentParams)
+  | (RunExperimentWithFunctionParams<T> & DatasetNameRunExperimentParams)
   | (RunExperimentWithPromptTemplateParams & DatasetRunExperimentParams)
   | (RunExperimentWithPromptTemplateParams & DatasetIdRunExperimentParams)
   | (RunExperimentWithPromptTemplateParams & DatasetNameRunExperimentParams);
@@ -144,9 +148,9 @@ export const getExperiment = async ({
  * @param processFn - The runner function to use for processing
  * @returns The processed output as a string
  */
-const processRow = async (
+const processRow = async <T extends Record<string, unknown>>(
   row: DatasetRecord,
-  processFn: (input: string | Record<string, unknown>) => Promise<unknown>
+  processFn: (input: T, metadata?: Record<string, unknown>) => Promise<unknown>
 ): Promise<string> => {
   console.log(`Processing dataset row: ${JSON.stringify(row)}`);
 
@@ -154,7 +158,10 @@ const processRow = async (
 
   try {
     // Process the row with logging
-    const result = await processFn(deserializeFromString(row.input));
+    const result = await processFn(
+      deserializeInputFromString(row.input) as T,
+      row.metadata
+    );
     output = JSON.stringify(result);
   } catch (error) {
     console.error(`Error processing dataset row:`, row, error);
@@ -174,11 +181,11 @@ const processRow = async (
  * @param metrics - The metrics to use for evaluation
  * @returns The processed outputs as an array of strings
  */
-const runExperimentWithFunction = async (
+const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   experiment: Experiment,
   projectName: string,
   dataset: DatasetRecord[],
-  processFn: (input: string | Record<string, unknown>) => Promise<unknown>,
+  processFn: (input: T, metadata?: Record<string, unknown>) => Promise<unknown>,
   localMetrics: LocalMetricConfig<MetricValueType>[]
 ): Promise<string[]> => {
   const outputs: string[] = [];
@@ -273,8 +280,8 @@ const getLinkToExperimentResults = (
  * @param projectName - Optional project name
  * @returns Array of outputs from the processing function
  */
-export const runExperiment = async (
-  params: RunExperimentParams
+export const runExperiment = async <T extends Record<string, unknown>>(
+  params: RunExperimentParams<T>
 ): Promise<RunExperimentOutput> => {
   const { name, metrics, projectName } = params;
 
