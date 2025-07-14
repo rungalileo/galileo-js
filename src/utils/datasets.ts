@@ -211,12 +211,7 @@ export const createDatasetRecord = ({
       try {
         record = JSON.parse(metadata);
       } catch (error) {
-        if (
-          error instanceof SyntaxError &&
-          (error.message.includes('is not valid JSON') ||
-            (error.message.includes('Unexpected token') &&
-              error.message.includes('in JSON')))
-        ) {
+        if (isJsonParseError(error)) {
           record = { metadata: metadata };
         } else {
           throw error;
@@ -256,15 +251,21 @@ export const deserializeInputFromString = (
   try {
     return JSON.parse(value);
   } catch (error) {
-    if (
-      error instanceof SyntaxError &&
-      error.message.includes('is not valid JSON')
-    ) {
+    if (isJsonParseError(error)) {
       return { value: value };
     } else {
       throw error;
     }
   }
+};
+
+const isJsonParseError = (error: unknown): boolean => {
+  return (
+    error instanceof SyntaxError &&
+    (error.message.includes('is not valid JSON') ||
+      (error.message.includes('Unexpected token') &&
+        error.message.includes('in JSON')))
+  );
 };
 
 export const getRecordsForDataset = async ({
