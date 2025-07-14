@@ -1,16 +1,13 @@
-import { 
-  LocalMetricConfig, 
-  MetricValueType, 
+import {
+  LocalMetricConfig,
+  MetricValueType,
   createLocalScorerConfig
 } from '../../src/types';
-import { 
-  StepType,
-  Trace,
-  Span,
-  LlmSpan,
-  WorkflowSpan,
-} from '../../src/types';
-import { populateLocalMetrics, populateLocalMetric } from '../../src/utils/metrics';
+import { StepType, Trace, Span, LlmSpan, WorkflowSpan } from '../../src/types';
+import {
+  populateLocalMetrics,
+  populateLocalMetric
+} from '../../src/utils/metrics';
 
 // Define real scorer and aggregator functions for testing
 
@@ -27,26 +24,34 @@ async function simpleScorer(step: Trace | Span): Promise<number> {
  * A simple aggregator that sums all scores
  */
 async function simpleAggregator(scores: MetricValueType[]): Promise<number> {
-  return (scores as number[]).reduce((sum, score) => sum + (score as number), 0);
+  return (scores as number[]).reduce(
+    (sum, score) => sum + (score as number),
+    0
+  );
 }
 
 /**
  * An aggregator that returns both mean and sum as a dictionary
  */
-async function dictAggregator(scores: MetricValueType[]): Promise<Record<string, number>> {
+async function dictAggregator(
+  scores: MetricValueType[]
+): Promise<Record<string, number>> {
   const numScores = scores.length;
-  const sum = (scores as number[]).reduce((sum, score) => sum + (score as number), 0);
-  return { 
-    '_mean': numScores ? sum / numScores : 0, 
-    '_sum': sum 
+  const sum = (scores as number[]).reduce(
+    (sum, score) => sum + (score as number),
+    0
+  );
+  return {
+    _mean: numScores ? sum / numScores : 0,
+    _sum: sum
   };
 }
 
 describe('metrics utility', () => {
   // Test fixtures
-  let simpleMetricConfig: LocalMetricConfig;
-  let aggregatingMetricConfig: LocalMetricConfig;
-  let dictAggregatingMetricConfig: LocalMetricConfig;
+  let simpleMetricConfig: LocalMetricConfig<number>;
+  let aggregatingMetricConfig: LocalMetricConfig<number>;
+  let dictAggregatingMetricConfig: LocalMetricConfig<number>;
   let llmSpan: LlmSpan;
   let workflowSpan: WorkflowSpan;
   let traceWithSpans: Trace;
@@ -124,16 +129,20 @@ describe('metrics utility', () => {
 
     it('should populate metrics for multiple metric configs', async () => {
       // Create two different scorers that return different values
-      async function metric1Scorer(): Promise<number> { return 2.0; }
-      async function metric2Scorer(): Promise<number> { return 3.0; }
-      
+      async function metric1Scorer(): Promise<number> {
+        return 2.0;
+      }
+      async function metric2Scorer(): Promise<number> {
+        return 3.0;
+      }
+
       const localMetrics = [
-        createLocalScorerConfig({
+        createLocalScorerConfig<number>({
           name: 'metric1',
           scorer_fn: metric1Scorer,
           scorable_types: [StepType.llm]
         }),
-        createLocalScorerConfig({
+        createLocalScorerConfig<number>({
           name: 'metric2',
           scorer_fn: metric2Scorer,
           scorable_types: [StepType.llm]
@@ -150,7 +159,7 @@ describe('metrics utility', () => {
 
   describe('populateLocalMetric', () => {
     it('should populate metrics for a scorable type', async () => {
-      const scores: MetricValueType[] = [];
+      const scores: number[] = [];
       await populateLocalMetric(llmSpan, simpleMetricConfig, scores);
 
       // Verify the metric was set on the span
@@ -159,7 +168,7 @@ describe('metrics utility', () => {
     });
 
     it('should not populate metrics for a non-scorable type', async () => {
-      const scores: MetricValueType[] = [];
+      const scores: number[] = [];
       await populateLocalMetric(workflowSpan, simpleMetricConfig, scores);
 
       // Verify the metric was not set on the span
@@ -168,7 +177,7 @@ describe('metrics utility', () => {
     });
 
     it('should populate metrics for child spans', async () => {
-      const scores: MetricValueType[] = [];
+      const scores: number[] = [];
       await populateLocalMetric(traceWithSpans, simpleMetricConfig, scores);
 
       // Verify metrics were set on child spans but not on the trace
@@ -178,8 +187,12 @@ describe('metrics utility', () => {
     });
 
     it('should aggregate metrics for parent spans', async () => {
-      const scores: MetricValueType[] = [];
-      await populateLocalMetric(traceWithSpans, aggregatingMetricConfig, scores);
+      const scores: number[] = [];
+      await populateLocalMetric(
+        traceWithSpans,
+        aggregatingMetricConfig,
+        scores
+      );
 
       // Verify metrics were set on child spans and aggregated on the trace
       expect(llmSpan.metrics['test_metric']).toBe(1.0);
@@ -188,8 +201,12 @@ describe('metrics utility', () => {
     });
 
     it('should handle dictionary aggregation', async () => {
-      const scores: MetricValueType[] = [];
-      await populateLocalMetric(traceWithSpans, dictAggregatingMetricConfig, scores);
+      const scores: number[] = [];
+      await populateLocalMetric(
+        traceWithSpans,
+        dictAggregatingMetricConfig,
+        scores
+      );
 
       // Verify metrics were set on child spans and aggregated metrics were set on the trace
       expect(llmSpan.metrics['test_metric']).toBe(1.0);
@@ -200,11 +217,18 @@ describe('metrics utility', () => {
 
     it('should handle nested spans recursively', async () => {
       // Create a custom metric config for nested spans
-      async function nestedMetricScorer(): Promise<number> { return 1.0; }
-      async function nestedMetricAggregator(scores: MetricValueType[]): Promise<number> {
-        return (scores as number[]).reduce((sum, score) => sum + (score as number), 0);
+      async function nestedMetricScorer(): Promise<number> {
+        return 1.0;
       }
-      
+      async function nestedMetricAggregator(
+        scores: MetricValueType[]
+      ): Promise<number> {
+        return (scores as number[]).reduce(
+          (sum, score) => sum + (score as number),
+          0
+        );
+      }
+
       const nestedMetricConfig = createLocalScorerConfig({
         name: 'test_metric',
         scorer_fn: nestedMetricScorer,
@@ -213,7 +237,7 @@ describe('metrics utility', () => {
         aggregatable_types: [StepType.trace, StepType.workflow]
       });
 
-      const scores: MetricValueType[] = [];
+      const scores: number[] = [];
       await populateLocalMetric(nestedTrace, nestedMetricConfig, scores);
 
       // Get the nested span and middle span

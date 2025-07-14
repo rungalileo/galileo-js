@@ -5,15 +5,22 @@ import {
 } from '../types/prompt-template.types';
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
-import { init, flush, GalileoSingleton } from '../singleton';
+import { init, flush } from '../singleton';
 import { ScorerConfig } from '../types/scorer.types';
 import {
   getScorers,
   getScorerVersion,
   createRunScorerSettings
 } from '../utils/scorers';
-import { Dataset } from '../types/dataset.types';
-import { getDataset, getDatasetContent } from '../utils/datasets';
+import {
+  deserializeFromString,
+  Dataset,
+  DatasetRecord
+} from '../types/dataset.types';
+import {
+  getDatasetRecordsFromArray,
+  getRecordsForDataset
+} from '../utils/datasets';
 import {
   LocalMetricConfig,
   MetricValueType,
@@ -24,96 +31,44 @@ import {
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 
-// Define possible parameter combinations
-type DatasetWithFunction<T extends Record<string, unknown>> = {
+type BaseRunExperimentParams = {
   name: string;
+  metrics?: (
+    | GalileoScorers
+    | string
+    | Metric
+    | LocalMetricConfig<MetricValueType>
+  )[];
+  projectName: string;
+};
+
+type RunExperimentWithFunctionParams = BaseRunExperimentParams & {
+  function: (input: string | Record<string, unknown>) => Promise<unknown>;
+};
+
+type RunExperimentWithPromptTemplateParams = BaseRunExperimentParams & {
+  promptTemplate: PromptTemplateType;
+  promptSettings?: PromptRunSettings;
+};
+
+type DatasetRunExperimentParams = BaseRunExperimentParams & {
   dataset: DatasetType;
-  function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (
-    | GalileoScorers
-    | string
-    | Metric
-    | LocalMetricConfig<MetricValueType>
-  )[];
-  projectName: string;
 };
-
-type DatasetIdWithFunction<T extends Record<string, unknown>> = {
-  name: string;
+type DatasetIdRunExperimentParams = BaseRunExperimentParams & {
   datasetId: string;
-  function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (
-    | GalileoScorers
-    | string
-    | Metric
-    | LocalMetricConfig<MetricValueType>
-  )[];
-  projectName: string;
 };
-
-type DatasetNameWithFunction<T extends Record<string, unknown>> = {
-  name: string;
+type DatasetNameRunExperimentParams = BaseRunExperimentParams & {
   datasetName: string;
-  function: (input: T, metadata?: Record<string, string>) => Promise<unknown>;
-  metrics?: (
-    | GalileoScorers
-    | string
-    | Metric
-    | LocalMetricConfig<MetricValueType>
-  )[];
-  projectName: string;
-};
-
-type DatasetWithPromptTemplate = {
-  name: string;
-  dataset: DatasetType;
-  promptTemplate: PromptTemplateType;
-  promptSettings?: PromptRunSettings;
-  metrics?: (
-    | GalileoScorers
-    | string
-    | Metric
-    | LocalMetricConfig<MetricValueType>
-  )[];
-  projectName: string;
-};
-
-type DatasetIdWithPromptTemplate = {
-  name: string;
-  datasetId: string;
-  promptTemplate: PromptTemplateType;
-  promptSettings?: PromptRunSettings;
-  metrics?: (
-    | GalileoScorers
-    | string
-    | Metric
-    | LocalMetricConfig<MetricValueType>
-  )[];
-  projectName: string;
-};
-
-type DatasetNameWithPromptTemplate = {
-  name: string;
-  datasetName: string;
-  promptTemplate: PromptTemplateType;
-  promptSettings?: PromptRunSettings;
-  metrics?: (
-    | GalileoScorers
-    | string
-    | Metric
-    | LocalMetricConfig<MetricValueType>
-  )[];
-  projectName: string;
 };
 
 // Union of all possible parameter combinations
-type RunExperimentParams<T extends Record<string, unknown>> =
-  | DatasetWithFunction<T>
-  | DatasetIdWithFunction<T>
-  | DatasetNameWithFunction<T>
-  | DatasetWithPromptTemplate
-  | DatasetIdWithPromptTemplate
-  | DatasetNameWithPromptTemplate;
+export type RunExperimentParams =
+  | (RunExperimentWithFunctionParams & DatasetRunExperimentParams)
+  | (RunExperimentWithFunctionParams & DatasetIdRunExperimentParams)
+  | (RunExperimentWithFunctionParams & DatasetNameRunExperimentParams)
+  | (RunExperimentWithPromptTemplateParams & DatasetRunExperimentParams)
+  | (RunExperimentWithPromptTemplateParams & DatasetIdRunExperimentParams)
+  | (RunExperimentWithPromptTemplateParams & DatasetNameRunExperimentParams);
 
 type RunExperimentOutput = {
   results?: string[];
@@ -189,37 +144,22 @@ export const getExperiment = async ({
  * @param processFn - The runner function to use for processing
  * @returns The processed output as a string
  */
-const processRow = async <T extends Record<string, unknown>>(
-  row: T,
-  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>
+const processRow = async (
+  row: DatasetRecord,
+  processFn: (input: string | Record<string, unknown>) => Promise<unknown>
 ): Promise<string> => {
-  const metadata: Record<string, string> = {
-    timestamp: new Date().toISOString()
-  };
+  console.log(`Processing dataset row: ${JSON.stringify(row)}`);
 
   let output: string = '';
 
   try {
     // Process the row with logging
-    console.log(`Processing dataset row: ${JSON.stringify(row as T)}`);
-    const result = await processFn(row as T, metadata);
+    const result = await processFn(deserializeFromString(row.input));
     output = JSON.stringify(result);
   } catch (error) {
     console.error(`Error processing dataset row:`, row, error);
     output = `Error: ${error instanceof Error ? error.message : String(error)}`;
   }
-
-  const logger = GalileoSingleton.getInstance().getClient();
-  if (!logger.traces.length) {
-    throw new Error('An error occurred while creating a trace');
-  }
-
-  // Conclude the trace
-  const startTime = logger.traces[0].createdAt;
-  logger.conclude({
-    output,
-    durationNs: Date.now() - startTime
-  });
 
   return output;
 };
@@ -234,11 +174,11 @@ const processRow = async <T extends Record<string, unknown>>(
  * @param metrics - The metrics to use for evaluation
  * @returns The processed outputs as an array of strings
  */
-const runExperimentWithFunction = async <T extends Record<string, unknown>>(
+const runExperimentWithFunction = async (
   experiment: Experiment,
   projectName: string,
-  datasetContent: Record<string, unknown>[],
-  processFn: (input: T, metadata?: Record<string, string>) => Promise<unknown>,
+  dataset: DatasetRecord[],
+  processFn: (input: string | Record<string, unknown>) => Promise<unknown>,
   localMetrics: LocalMetricConfig<MetricValueType>[]
 ): Promise<string[]> => {
   const outputs: string[] = [];
@@ -250,22 +190,18 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
     localMetrics: localMetrics
   });
 
-  // Wrap the processing function with the log wrapper
-  const loggedProcessFn = log(
-    {
-      name: experiment.name
-    },
-    async (input: T, metadata?: Record<string, string>) => {
-      return processFn(input, metadata);
-    }
-  );
-
   // Process each row in the dataset
-  for (const row of datasetContent as Record<string, unknown>[]) {
-    const output = await processRow(row as T, loggedProcessFn);
+  for (const row of dataset) {
+    const loggedProcessFn = log(
+      {
+        name: experiment.name,
+        datasetRecord: row
+      },
+      processFn
+    );
+    const output = await processRow(row, loggedProcessFn);
     outputs.push(output);
   }
-
   // Flush the logger
   await flush();
 
@@ -337,8 +273,8 @@ const getLinkToExperimentResults = (
  * @param projectName - Optional project name
  * @returns Array of outputs from the processing function
  */
-export const runExperiment = async <T extends Record<string, unknown>>(
-  params: RunExperimentParams<T>
+export const runExperiment = async (
+  params: RunExperimentParams
 ): Promise<RunExperimentOutput> => {
   const { name, metrics, projectName } = params;
 
@@ -439,7 +375,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   console.log('Retrieving the dataset...');
 
   // Determine the dataset source
-  let dataset: DatasetType;
+  let dataset: DatasetRecord[];
   let datasetId: string | undefined = undefined;
   if ('dataset' in params) {
     if (!(params.dataset instanceof Array)) {
@@ -449,16 +385,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       if (!columnNames) {
         throw new Error('Column names not found in dataset');
       }
-      const datasetContent = await getDatasetContent({
-        datasetId: params.dataset.id
-      });
-      dataset = datasetContent.map((row) => {
-        const record: Record<string, string> = {};
-        for (let i = 0; i < columnNames.length; i++) {
-          record[columnNames[i]] = (row.values[i] || '') as string;
-        }
-        return record;
-      });
+      dataset = await getRecordsForDataset({ datasetId: params.dataset.id });
     } else {
       // If dataset is an array of records
       if ('promptTemplate' in params) {
@@ -467,22 +394,13 @@ export const runExperiment = async <T extends Record<string, unknown>>(
         );
       }
 
-      dataset = params.dataset as Record<string, unknown>[];
+      dataset = await getDatasetRecordsFromArray(params.dataset);
     }
   } else if ('datasetId' in params) {
     // If datasetId is provided, get the dataset and its content as an array of records
-    datasetId = params.datasetId;
-    // const dataset_ = await getDataset({ id: datasetId });
-    const datasetContent = await getDatasetContent({ datasetId });
-    dataset = datasetContent.map((row) => row.values_dict);
+    dataset = await getRecordsForDataset({ datasetId: params.datasetId });
   } else if ('datasetName' in params) {
-    // If datasetName is provided, get the dataset and its content as an array of records
-    const dataset_ = await getDataset({ name: params.datasetName });
-    datasetId = dataset_.id;
-    const datasetContent = await getDatasetContent({
-      datasetName: params.datasetName
-    });
-    dataset = datasetContent.map((row) => row.values_dict);
+    dataset = await getRecordsForDataset({ datasetName: params.datasetName });
   } else {
     throw new Error(
       'One of dataset, datasetId, or datasetName must be provided'
@@ -505,7 +423,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const results = await runExperimentWithFunction(
       experiment,
       projectName,
-      dataset as Record<string, unknown>[],
+      dataset,
       processFn,
       localMetrics
     );

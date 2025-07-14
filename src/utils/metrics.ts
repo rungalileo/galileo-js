@@ -14,12 +14,12 @@ import {
  * @param step The trace or span to populate metrics for
  * @param localMetrics List of local metric configurations
  */
-export async function populateLocalMetrics(
+export async function populateLocalMetrics<T extends MetricValueType>(
   step: Trace | Span,
-  localMetrics: LocalMetricConfig<MetricValueType>[]
+  localMetrics: LocalMetricConfig<T>[]
 ): Promise<void> {
   for (const localMetric of localMetrics) {
-    await populateLocalMetric(step, localMetric, []);
+    await populateLocalMetric(step, localMetric, <T[]>[]);
   }
 }
 

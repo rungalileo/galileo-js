@@ -1,9 +1,9 @@
 /* galileo 2.0 Traces */
 
-import { StepWithChildSpans } from './span.types';
-import { BaseStepOptions, StepType } from './step.types';
+import { StepWithChildSpans, StepWithChildSpansOptions } from './span.types';
+import { StepType } from './step.types';
 
-export interface TraceOptions extends BaseStepOptions {
+export interface TraceOptions extends StepWithChildSpansOptions {
   input: string;
   output?: string;
 }
@@ -19,4 +19,3 @@ export class Trace extends StepWithChildSpans {
     this.output = data.output;
   }
 }
-

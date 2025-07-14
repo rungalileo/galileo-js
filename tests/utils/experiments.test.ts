@@ -12,6 +12,7 @@ import {
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
+import { isMessage } from '../../src/types/message.types';
 import {
   GalileoScorers,
   LocalMetricConfig,
@@ -21,6 +22,7 @@ import {
 import { GalileoSingleton } from '../../src/singleton';
 import { StepType } from '../../src/types/logging/step.types';
 import { Span } from '../../src/types/logging/span.types';
+import { sum, reduce, mean } from 'lodash';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -45,6 +47,7 @@ jest.mock('../../src/api-client', () => {
     GalileoApiClient: jest.fn().mockImplementation(() => {
       return {
         init: mockInit,
+        projectId: '00000000-0000-0000-0000-000000000000',
         getExperiment: mockGetExperiment,
         getExperiments: mockGetExperiments,
         createExperiment: mockCreateExperiment,
@@ -65,19 +68,21 @@ jest.mock('../../src/api-client', () => {
   };
 });
 
-jest.mock('../../src/utils/galileo-logger', () => {
-  return {
-    GalileoLogger: jest.fn().mockImplementation(() => ({
-      startTrace: jest.fn(),
-      addLlmSpan: jest.fn(),
-      addRetrieverSpan: jest.fn(),
-      addToolSpan: jest.fn(),
-      addWorkflowSpan: jest.fn(),
-      conclude: jest.fn(),
-      flush: jest.fn()
-    }))
-  };
-});
+// jest.mock('../../src/utils/galileo-logger', () => {
+//   return {
+//     GalileoLogger: jest.fn().mockImplementation(() => ({
+//       startTrace: jest.fn(),
+//       addLlmSpan: jest.fn(),
+//       addRetrieverSpan: jest.fn(),
+//       addToolSpan: jest.fn(),
+//       addWorkflowSpan: jest.fn(),
+//       conclude: jest.fn(),
+//       flush: jest.fn(),
+//       currentParent: jest.fn().mockReturnValue(undefined),
+//       traces: [ { created_at: '2023-01-01T00:00:00Z' } ],
+//     }))
+//   };
+// });
 
 const experimentId = 'exp-123';
 const experimentName = 'My Test Experiment';
@@ -106,7 +111,7 @@ const mockProject: Project = {
 const mockDataset: Dataset = {
   id: 'test-dataset-id',
   name: 'test-dataset',
-  column_names: ['country'],
+  column_names: ['input'],
   project_count: 1,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
@@ -119,8 +124,8 @@ const mockDataset: Dataset = {
 const mockDatasetRow: DatasetRow = {
   index: 0,
   row_id: 'row-123',
-  values: ['France'],
-  values_dict: { country: 'France' },
+  values: ['{ "country": "France" }'],
+  values_dict: { input: '{ "country": "France" }' },
   metadata: null
 };
 
@@ -137,7 +142,11 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   settings_changed: false,
   settings: {},
   created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z'
+  updated_at: '2023-01-01T00:00:00Z',
+  created_by_user: {
+    id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
+    email: 'b@b.com'
+  }
 };
 
 const mockPromptTemplate: PromptTemplate = {
@@ -152,7 +161,10 @@ const mockPromptTemplate: PromptTemplate = {
   max_version: 1,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
-  creator: null
+  created_by_user: {
+    id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
+    email: 'b@b.com'
+  }
 };
 
 const mockScorer: Scorer = {
@@ -162,21 +174,16 @@ const mockScorer: Scorer = {
 };
 
 // Helper functions for the local experiments test
-const dummyFunction = (
-  input: any,
-  metadata?: Record<string, string>
-): string => {
-  return 'dummy_function';
+const dummyFunction = async (input: string): Promise<string> => {
+  return input + 'dummy_function';
 };
 
-const complexTraceFunction = async (
-  input: any,
-  metadata?: Record<string, string>
-): Promise<string> => {
+const complexTraceFunction = async (): Promise<string> => {
   const logger = GalileoSingleton.getInstance().getClient();
-  const trace = logger.startTrace({ input: 'Which continent is Spain in?' });
 
-  const llmSpan = logger.addLlmSpan({
+  logger.startTrace({ input: 'Which continent is Spain in?' });
+
+  logger.addLlmSpan({
     input: [{ role: 'user', content: 'Which continent is Spain in?' }],
     output: { role: 'assistant', content: 'Europe' }
   });
@@ -191,9 +198,17 @@ const mockDatasetContent = [
   {
     index: 0,
     row_id: 'row-123',
-    values: ['Which continent is Spain in?'],
-    values_dict: { question: 'Which continent is Spain in?' },
-    metadata: { meta: 'data' }
+    values: [
+      '{ "question": "Which continent is Spain in?" }',
+      '{ "answer": "Europe" }',
+      '{"meta": "data"}'
+    ],
+    values_dict: {
+      input: '{ "question": "Which continent is Spain in?" }',
+      output: '{ "answer": "Europe" }',
+      metadata: '{"meta": "data"}'
+    },
+    metadata: null
   }
 ];
 
@@ -555,20 +570,17 @@ describe('experiments utility', () => {
 
   describe('runExperiment with local scorers', () => {
     // Setup test cases with different parameters
-    type TestCase = {
+    type TestCase<T extends MetricValueType> = {
       //
-      function: (
-        input: any,
-        metadata?: Record<string, string>
-      ) => string | Promise<string>;
-      metrics: LocalMetricConfig<MetricValueType>[];
+      function: (input: string | Record<string, unknown>) => Promise<unknown>;
+      metrics: LocalMetricConfig<T>[];
       numSpans: number;
       spanType: StepType;
-      results: MetricValueType[];
-      aggregateResults: MetricValueType[];
+      results: T[];
+      aggregateResults: T[];
     };
 
-    const testCases: TestCase[] = [
+    const testCases: TestCase<any>[] = [
       // Case 1: Simple function with no metrics
       {
         function: dummyFunction,
@@ -590,24 +602,41 @@ describe('experiments utility', () => {
               }
               return step.input.length;
             },
+            aggregator_fn: async (values: number[]) => {
+              return sum(values);
+            },
             scorable_types: [StepType.workflow],
             aggregatable_types: [StepType.trace]
           }),
           createLocalScorerConfig({
             name: 'output',
-            scorer_fn: async (step) => step.output,
+            scorer_fn: async (step) => {
+              if (typeof step.output !== 'string') {
+                throw Error('Output is not a string');
+              }
+              return step.output;
+            },
+            aggregator_fn: async (values: string[]) => {
+              return values.join(', ');
+            },
             scorable_types: [StepType.workflow],
             aggregatable_types: [StepType.trace]
           }),
           createLocalScorerConfig({
             name: 'decimal',
             scorer_fn: async () => 4.53,
+            aggregator_fn: async (values: number[]) => {
+              return mean(values);
+            },
             scorable_types: [StepType.workflow],
             aggregatable_types: [StepType.trace]
           }),
           createLocalScorerConfig({
             name: 'bool',
             scorer_fn: async () => true,
+            aggregator_fn: async (values: boolean[]) => {
+              return reduce(values, (a, b) => a || b, false);
+            },
             scorable_types: [StepType.workflow],
             aggregatable_types: [StepType.trace]
           })
@@ -636,6 +665,7 @@ describe('experiments utility', () => {
               if (
                 'input' in step &&
                 Array.isArray(step.input) &&
+                isMessage(step.input[0]) &&
                 step.input[0]?.content
               ) {
                 return step.input[0].content.length;
@@ -648,7 +678,11 @@ describe('experiments utility', () => {
           createLocalScorerConfig({
             name: 'output',
             scorer_fn: async (step) => {
-              if ('output' in step && step.output?.content) {
+              if (
+                'output' in step &&
+                isMessage(step.output) &&
+                step.output?.content
+              ) {
                 return step.output.content;
               }
               return '';
@@ -670,11 +704,10 @@ describe('experiments utility', () => {
         it(`should run experiment with local scorers - case ${index + 1} - thread pool: ${useThreadPool}`, async () => {
           // Mock API client responses
           mockGetProject.mockResolvedValue(mockProjectResponse());
-          mockGetExperiment.mockResolvedValue(mockExperimentResponse());
+          mockGetExperiments.mockResolvedValue([]);
           mockCreateExperiment.mockResolvedValue(mockExperimentResponse());
           mockGetDataset.mockResolvedValue(mockDataset);
           mockGetDatasetContent.mockResolvedValue(mockDatasetContent);
-          mockIngestTraces.mockResolvedValue(undefined);
 
           // Run the experiment
           const result = await runExperiment({
@@ -693,32 +726,35 @@ describe('experiments utility', () => {
           );
 
           // Verify API calls
-          expect(mockGetProject).toHaveBeenCalledWith(
-            expect.objectContaining({ name: 'awesome-new-project' })
-          );
-          expect(mockGetExperiment).toHaveBeenCalledWith(
-            '00000000-0000-0000-0000-000000000000',
-            'test_experiment'
-          );
-          expect(mockCreateExperiment).toHaveBeenCalledWith(
-            '00000000-0000-0000-0000-000000000000',
-            'test_experiment'
-          );
-          expect(mockGetDataset).toHaveBeenCalledWith({
-            id: '00000000-0000-4000-8000-000000000000',
-            name: undefined
+          expect(mockInit).toHaveBeenCalledWith({
+            projectName: 'awesome-new-project'
           });
-          expect(mockGetDatasetContent).toHaveBeenCalled();
+          expect(mockGetExperiments).toHaveBeenCalled();
+          expect(mockInit).toHaveBeenCalledWith({
+            projectName: 'awesome-new-project'
+          });
+          expect(mockCreateExperiment).toHaveBeenCalledWith('test_experiment');
+          expect(mockInit).toHaveBeenCalledWith({
+            projectName: 'awesome-new-project'
+          });
+          expect(mockGetDatasetContent).toHaveBeenCalledWith(
+            '00000000-0000-4000-8000-000000000000'
+          );
 
           // Check ingest traces call
           const ingestTracesCall = mockIngestTraces.mock.calls[0][0];
-          expect(ingestTracesCall.traces).toHaveLength(1);
+          expect(ingestTracesCall).toHaveLength(1);
 
           // Check trace properties
-          const trace = ingestTracesCall.traces[0];
-          expect(trace.dataset_input).toBe('Which continent is Spain in?');
-          expect(trace.dataset_output).toBe('Europe');
-          expect(trace.dataset_metadata).toEqual({ meta: 'data' });
+          const trace = ingestTracesCall[0];
+          expect(trace.input).toBe(
+            '{ "question": "Which continent is Spain in?" }'
+          );
+          expect(trace.datasetInput).toBe(
+            '{ "question": "Which continent is Spain in?" }'
+          );
+          expect(trace.datasetOutput).toBe('{ "answer": "Europe" }');
+          expect(trace.datasetMetadata).toEqual({ meta: 'data' });
 
           // Check metrics on trace
           if (testCase.metrics.length > 0) {
@@ -734,9 +770,11 @@ describe('experiments utility', () => {
             let spanCount = 1;
 
             // Check span properties
-            expect(span.dataset_input).toBe('Which continent is Spain in?');
-            expect(span.dataset_output).toBe('Europe');
-            expect(span.dataset_metadata).toEqual({ meta: 'data' });
+            expect(span.datasetInput).toBe(
+              '{ "question": "Which continent is Spain in?" }'
+            );
+            expect(span.datasetOutput).toBe('{ "answer": "Europe" }');
+            expect(span.datasetMetadata).toEqual({ meta: 'data' });
 
             // Check metrics on span
             if (

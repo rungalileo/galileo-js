@@ -23,7 +23,7 @@ export interface LocalMetricConfig<T extends MetricValueType> {
 
 /**
  * Creates a LocalMetricConfig object from a given configuration.
- * If scorable_types or aggregatable_types are not provided, they default to [NodeType.llm] and [NodeType.trace] respectively.
+ * If scorable_types or aggregatable_types are not provided, they default to [StepType.llm] and [StepType.trace] respectively.
  */
 export function createLocalScorerConfig<T extends MetricValueType>(config: {
   name: string;

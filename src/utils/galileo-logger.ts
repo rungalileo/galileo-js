@@ -197,6 +197,9 @@ class GalileoLogger {
     if (currentParent === undefined) {
       throw new Error('A trace needs to be created in order to add a span.');
     }
+    span.datasetInput = currentParent.datasetInput;
+    span.datasetOutput = currentParent.datasetOutput;
+    span.datasetMetadata = currentParent.datasetMetadata;
     currentParent.addChildSpan(span);
   }
 
@@ -243,7 +246,10 @@ class GalileoLogger {
     createdAt,
     durationNs,
     metadata,
-    tags
+    tags,
+    datasetInput,
+    datasetOutput,
+    datasetMetadata
   }: {
     input: string;
     output?: string;
@@ -252,6 +258,9 @@ class GalileoLogger {
     durationNs?: number;
     metadata?: Record<string, string>;
     tags?: string[];
+    datasetInput?: string;
+    datasetOutput?: string;
+    datasetMetadata?: Record<string, string>;
   }): Trace {
     if (this.currentParent() !== undefined) {
       throw new Error(
@@ -266,7 +275,10 @@ class GalileoLogger {
       createdAt,
       metadata,
       tags,
-      metrics: new Metrics({ durationNs: durationNs })
+      metrics: new Metrics({ durationNs: durationNs }),
+      datasetInput,
+      datasetOutput,
+      datasetMetadata
     });
 
     this.traces.push(trace);
