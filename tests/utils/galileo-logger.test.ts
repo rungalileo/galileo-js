@@ -699,7 +699,10 @@ describe('GalileoLogger', () => {
         createdAt,
         durationNs: 1000,
         metadata: { test: 'trace test' },
-        tags: ['trace test']
+        tags: ['trace test'],
+        datasetInput: 'dataset input',
+        datasetOutput: 'dataset output',
+        datasetMetadata: { test: 'dataset test' }
       });
       logger.addWorkflowSpan({
         input: 'workflow input',
@@ -753,6 +756,9 @@ describe('GalileoLogger', () => {
       expect(trace.userMetadata).toEqual({ test: 'trace test' });
       expect(trace.tags).toEqual(['trace test']);
       expect(trace.statusCode).toBe(200);
+      expect(trace.datasetInput).toBe('dataset input');
+      expect(trace.datasetOutput).toBe('dataset output');
+      expect(trace.datasetMetadata).toEqual({ test: 'dataset test' });
 
       expect(trace.spans.length).toBe(1);
       expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
@@ -767,6 +773,9 @@ describe('GalileoLogger', () => {
       expect(workflowSpan.tags).toEqual(['workflow test']);
       expect(workflowSpan.statusCode).toBe(200);
       expect(workflowSpan.stepNumber).toBe(1);
+      expect(workflowSpan.datasetInput).toBe('dataset input');
+      expect(workflowSpan.datasetOutput).toBe('dataset output');
+      expect(workflowSpan.datasetMetadata).toEqual({ test: 'dataset test' });
 
       expect(workflowSpan.spans.length).toBe(2);
 
@@ -782,6 +791,9 @@ describe('GalileoLogger', () => {
       expect(retrieverSpan.tags).toEqual(['retriever test']);
       expect(retrieverSpan.statusCode).toBe(200);
       expect(retrieverSpan.stepNumber).toBe(2);
+      expect(retrieverSpan.datasetInput).toBe('dataset input');
+      expect(retrieverSpan.datasetOutput).toBe('dataset output');
+      expect(retrieverSpan.datasetMetadata).toEqual({ test: 'dataset test' });
 
       const llmSpan = workflowSpan.spans[1] as LlmSpan;
       expect(llmSpan.input).toEqual([{ content: 'llm input', role: 'user' }]);
@@ -792,10 +804,17 @@ describe('GalileoLogger', () => {
       expect(llmSpan.name).toBe('llm span');
       expect(llmSpan.createdAt).toBe(createdAt);
       expect(llmSpan.metrics.durationNs).toBe(1000);
+      expect(llmSpan.metrics.numInputTokens).toBe(1);
+      expect(llmSpan.metrics.numOutputTokens).toBe(1);
+      expect(llmSpan.metrics.numTotalTokens).toBe(2);
+      expect(llmSpan.metrics.timeToFirstTokenNs).toBe(1000);
       expect(llmSpan.userMetadata).toEqual({ test: 'llm test' });
       expect(llmSpan.tags).toEqual(['llm test']);
       expect(llmSpan.statusCode).toBe(200);
       expect(llmSpan.stepNumber).toBe(3);
+      expect(llmSpan.datasetInput).toBe('dataset input');
+      expect(llmSpan.datasetOutput).toBe('dataset output');
+      expect(llmSpan.datasetMetadata).toEqual({ test: 'dataset test' });
     });
   });
 
