@@ -13,6 +13,7 @@ import {
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
 import { GalileoScorers } from '../../src/types/metrics.types';
+import { Trace } from '../../src/types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -62,6 +63,7 @@ const experimentName = 'My Test Experiment';
 const projectId = 'proj-123';
 const projectName = 'test-project';
 const promptRunJobCreatedSuccessMessage = 'Prompt run job created';
+const experimentCompletedMessage = 'Experiment completed.';
 
 const mockExperiment: Experiment = {
   id: experimentId,
@@ -97,8 +99,16 @@ const mockDataset: Dataset = {
 const mockDatasetRow: DatasetRow = {
   index: 0,
   row_id: 'row-123',
-  values: ['{ "country": "France" }'],
-  values_dict: { input: '{ "country": "France" }' },
+  values: [
+    '{"country":"France"}',
+    '{"value":"Paris"}',
+    '{"iteration":"alpha"}'
+  ],
+  values_dict: {
+    input: '{"country":"France"}',
+    output: '{"value":"Paris"}',
+    metadata: '{"iteration":"alpha"}'
+  },
   metadata: null
 };
 
@@ -362,6 +372,68 @@ describe('experiments utility', () => {
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
+    });
+
+    const verifyLocalExperimentTraces = (traces: Trace[]) => {
+      expect(traces.length).toBe(1);
+      expect(traces[0].input).toBe('{"input":"{\\"country\\":\\"France\\"}"}');
+      expect(traces[0].output).toEqual('{"country":"France"}');
+      expect(traces[0].name).toBe('My Test Experiment');
+      expect(traces[0].metrics).toEqual({});
+      expect(traces[0].datasetInput).toBe('{"country":"France"}');
+      expect(traces[0].datasetOutput).toBe('{"value":"Paris"}');
+      expect(traces[0].datasetMetadata).toEqual({ iteration: 'alpha' });
+
+      const spans = traces[0].spans;
+      expect(spans.length).toBe(1);
+      expect(spans[0].type).toBe('workflow');
+      expect(spans[0].input).toBe('{"input":"{\\"country\\":\\"France\\"}"}');
+      expect(spans[0].output).toEqual('{"country":"France"}');
+      expect(spans[0].name).toBe('My Test Experiment');
+      expect(spans[0].metrics).toEqual({});
+      expect(spans[0].datasetInput).toBe('{"country":"France"}');
+      expect(spans[0].datasetOutput).toBe('{"value":"Paris"}');
+      expect(spans[0].datasetMetadata).toEqual({ iteration: 'alpha' });
+    };
+
+    it('should run an experiment with a dataset ID and a function', async () => {
+      const result = await runExperiment({
+        name: 'Test Experiment',
+        datasetId: 'test-dataset-id',
+        function: (input: Record<string, unknown>) => Promise.resolve(input),
+        projectName
+      });
+      expect(result).toHaveProperty('message', experimentCompletedMessage);
+      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockIngestTraces).toHaveBeenCalled();
+      verifyLocalExperimentTraces(mockIngestTraces.mock.calls[0][0]);
+    });
+
+    it('should run an experiment with a dataset name and a function', async () => {
+      const result = await runExperiment({
+        name: 'Test Experiment',
+        datasetName: 'test-dataset',
+        function: (input: Record<string, unknown>) => Promise.resolve(input),
+        projectName
+      });
+      expect(result).toHaveProperty('message', experimentCompletedMessage);
+      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockGetDatasetByName).toHaveBeenCalled();
+      expect(mockIngestTraces).toHaveBeenCalled();
+      verifyLocalExperimentTraces(mockIngestTraces.mock.calls[0][0]);
+    });
+
+    it('should run an experiment with a dataset object and a function', async () => {
+      const result = await runExperiment({
+        name: 'Test Experiment',
+        dataset: mockDataset,
+        function: (input: Record<string, unknown>) => Promise.resolve(input),
+        projectName
+      });
+      expect(result).toHaveProperty('message', experimentCompletedMessage);
+      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockIngestTraces).toHaveBeenCalled();
+      verifyLocalExperimentTraces(mockIngestTraces.mock.calls[0][0]);
     });
 
     it('should handle string metric names', async () => {
