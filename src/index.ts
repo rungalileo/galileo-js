@@ -6,12 +6,14 @@ import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
 import { GalileoScorers } from './types/metrics.types';
 import {
-  getDatasets,
+  addRowsToDataset,
   createDataset,
-  getDatasetContent,
-  getDataset,
+  createDatasetRecord,
   deleteDataset,
-  addRowsToDataset
+  deserializeInputFromString,
+  getDatasets,
+  getDatasetContent,
+  getDataset
 } from './utils/datasets';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
@@ -61,6 +63,8 @@ export {
   getDataset,
   deleteDataset,
   addRowsToDataset,
+  createDatasetRecord,
+  deserializeInputFromString,
   // Prompt templates
   getPromptTemplate,
   getPromptTemplates,

@@ -19,7 +19,7 @@ import {
 import { version } from '../../package.json';
 import { AgentFinish } from '@langchain/core/dist/agents.js';
 import GalileoObserveApiClient from './api-client';
-import { StepType } from '../types/legacy-step.types';
+import { NodeType } from '../types/legacy-step.types';
 
 /**
  * @deprecated This class is no longer actively maintained. Please use `GalileoCallback` instead.
@@ -143,7 +143,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       temperature: temperature,
       tags: tags,
       user_metadata: metadata,
-      node_type: StepType.llm,
+      node_type: NodeType.llm,
       version: this.version,
       has_children: false
     };
@@ -280,7 +280,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       temperature: temperature,
       tags: tags,
       user_metadata: metadata,
-      node_type: StepType.chat,
+      node_type: NodeType.chat,
       version: this.version,
       has_children: false
     };
@@ -356,7 +356,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       created_at: new Date().toISOString(),
       tags: tags,
       user_metadata: metadata,
-      node_type: StepType.chain,
+      node_type: NodeType.chain,
       version: this.version,
       has_children: false
     };
@@ -420,7 +420,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       created_at: new Date().toISOString(),
       tags: tags,
       user_metadata: metadata,
-      node_type: StepType.tool,
+      node_type: NodeType.tool,
       version: this.version,
       has_children: false
     };
@@ -464,7 +464,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
     const [node_id, latency_ms] = this._end_node(runId);
     const record = this.records[node_id];
     record.latency_ms = latency_ms;
-    record.node_type = StepType.agent;
+    record.node_type = NodeType.agent;
     record.status_code = 200;
 
     await this._finalize_node(record);
@@ -491,7 +491,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       created_at: new Date().toISOString(),
       tags: tags,
       user_metadata: metadata,
-      node_type: StepType.retriever,
+      node_type: NodeType.retriever,
       version: this.version,
       has_children: false
     };

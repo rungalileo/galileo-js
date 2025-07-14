@@ -1,16 +1,18 @@
 import { Document, ChunkMetaDataValueType } from '../types/document.types';
 import { Message, MessageRole, ToolCall } from '../types/message.types';
 import {
-  LlmStepAllowedIOType,
-  RetrieverStepAllowedOutputType
-} from '../types/step.types';
+  LlmSpanAllowedInputType,
+  LlmSpanAllowedOutputType,
+  RetrieverSpanAllowedOutputType
+} from '../types/logging/step.types';
 
 /**
  * Attempt to convert an object to a Message, or return null if not possible
  */
-export const tryConvertToMessage = (
-  obj: string | Record<string, string> | Message
-): Message | null => {
+export const convertToMessage = (
+  obj: string | Record<string, string> | Message,
+  defaultRole: MessageRole = MessageRole.user
+): Message => {
   try {
     // If it has role and content but they need type conversion
     if (obj && typeof obj === 'object' && 'role' in obj && 'content' in obj) {
@@ -58,71 +60,49 @@ export const tryConvertToMessage = (
     console.log('Unable to convert to Message', e);
   }
 
-  return null;
+  if (typeof obj === 'string') {
+    return {
+      content: obj,
+      role: defaultRole
+    };
+  }
+
+  // Record that didn't convert to a Message
+  return {
+    content: JSON.stringify(obj),
+    role: defaultRole
+  };
 };
 
-export const convertLlmInputOutput = (
-  value: LlmStepAllowedIOType,
+export const convertLlmInput = (
+  value: LlmSpanAllowedInputType,
   defaultRole: MessageRole = MessageRole.user
 ): Message[] => {
-  // Already a Message array
-  if (Array.isArray(value) && value.length > 0) {
+  if (Array.isArray(value)) {
+    // Already a Message array
     try {
       return value as Message[];
     } catch (e) {
       console.log('Unable to convert to Message', e);
     }
-  }
 
-  // Single Message
-  if (!Array.isArray(value)) {
-    const message = tryConvertToMessage(value);
-    if (message) {
-      return [message];
-    }
-  }
-
-  // Array of potential Messages
-  if (Array.isArray(value)) {
+    // some other kind of array
     const messages: Message[] = [];
-
     for (const item of value) {
-      const message = tryConvertToMessage(item);
-      if (message) {
-        messages.push(message);
-      } else if (typeof item === 'string') {
-        messages.push({
-          content: item,
-          role: defaultRole
-        });
-      } else {
-        messages.push({
-          content: JSON.stringify(item),
-          role: defaultRole
-        });
-      }
+      messages.push(convertToMessage(item, defaultRole));
     }
-
     return messages;
   }
 
-  // String
-  if (typeof value === 'string') {
-    return [
-      {
-        content: value,
-        role: defaultRole
-      }
-    ];
-  }
+  // single message
+  return [convertToMessage(value, defaultRole)];
+};
 
-  // Record that didn't convert to a Message
-  return [
-    {
-      content: JSON.stringify(value),
-      role: defaultRole
-    }
-  ];
+export const convertLlmOutput = (
+  value: LlmSpanAllowedOutputType,
+  defaultRole: MessageRole = MessageRole.user
+): Message => {
+  return convertToMessage(value, defaultRole);
 };
 
 export const tryConvertToDocument = (value: object): Document | null => {
@@ -145,7 +125,7 @@ export const tryConvertToDocument = (value: object): Document | null => {
 };
 
 export const convertRetrieverOutput = (
-  value: RetrieverStepAllowedOutputType
+  value: RetrieverSpanAllowedOutputType
 ): Document[] => {
   try {
     if (!Array.isArray(value)) {

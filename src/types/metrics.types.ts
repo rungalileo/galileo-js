@@ -1,13 +1,8 @@
-export interface Metrics {
-  durationNs?: number;
-}
-
-export interface LlmMetrics extends Metrics {
-  numInputTokens?: number;
-  numOutputTokens?: number;
-  numTotalTokens?: number;
-  timeToFirstTokenNs?: number;
-}
+export type SingleMetricValue = number | string | boolean;
+export type MetricValueType =
+  | SingleMetricValue
+  | SingleMetricValue[]
+  | Record<string, SingleMetricValue>;
 
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 export enum GalileoScorers {

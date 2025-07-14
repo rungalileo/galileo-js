@@ -1,4 +1,4 @@
-import { StepType } from './legacy-step.types';
+import { NodeType } from './legacy-step.types';
 
 export enum TransactionLoggingMethod {
   js_langchain = 'js_langchain',
@@ -24,7 +24,7 @@ export interface TransactionRecord {
   tags?: string[];
   user_metadata?: Record<string, unknown>;
   temperature?: number;
-  node_type: StepType;
+  node_type: NodeType;
   has_children: boolean;
   time_to_first_token_ms?: number;
   version?: string;

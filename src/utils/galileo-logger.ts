@@ -1,21 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GalileoApiClient } from '../api-client';
 import {
+  BaseSpan,
+  AgentSpan,
+  AgentType,
+  LlmMetrics,
   LlmSpan,
   RetrieverSpan,
   Span,
   StepWithChildSpans,
   ToolSpan,
-  Trace,
-  WorkflowSpan,
-  AgentSpan,
-  AgentType
-} from '../types/log.types';
+  WorkflowSpan
+} from '../types/logging/span.types';
+import { Trace } from '../types/logging/trace.types';
 import {
-  LlmStepAllowedIOType,
-  RetrieverStepAllowedOutputType,
-  BaseStep
-} from '../types/step.types';
+  RetrieverSpanAllowedOutputType,
+  Metrics,
+  LlmSpanAllowedOutputType,
+  LlmSpanAllowedInputType
+} from '../types/logging/step.types';
 import { toStringValue } from './serialization';
 
 class GalileoLoggerConfig {
@@ -156,7 +159,7 @@ class GalileoLogger {
     return this.loggingDisabled;
   }
 
-  static getLastOutput(node?: BaseStep): string | undefined {
+  static getLastOutput(node?: BaseSpan): string | undefined {
     if (node === undefined) {
       return undefined;
     }
@@ -189,6 +192,9 @@ class GalileoLogger {
     if (currentParent === undefined) {
       throw new Error('A trace needs to be created in order to add a span.');
     }
+    span.datasetInput = currentParent.datasetInput;
+    span.datasetOutput = currentParent.datasetOutput;
+    span.datasetMetadata = currentParent.datasetMetadata;
     currentParent.addChildSpan(span);
   }
 
@@ -235,7 +241,10 @@ class GalileoLogger {
     createdAt,
     durationNs,
     metadata,
-    tags
+    tags,
+    datasetInput,
+    datasetOutput,
+    datasetMetadata
   }: {
     input: string;
     output?: string;
@@ -244,6 +253,9 @@ class GalileoLogger {
     durationNs?: number;
     metadata?: Record<string, string>;
     tags?: string[];
+    datasetInput?: string;
+    datasetOutput?: string;
+    datasetMetadata?: Record<string, string>;
   }): Trace {
     if (this.currentParent() !== undefined) {
       throw new Error(
@@ -255,10 +267,13 @@ class GalileoLogger {
       input,
       output,
       name,
-      createdAtNs: createdAt,
-      metadata: metadata,
+      createdAt,
+      metadata,
       tags,
-      durationNs
+      metrics: new Metrics({ durationNs: durationNs }),
+      datasetInput,
+      datasetOutput,
+      datasetMetadata
     });
 
     this.traces.push(trace);
@@ -279,13 +294,16 @@ class GalileoLogger {
     numInputTokens,
     numOutputTokens,
     totalTokens,
-    timeToFirstTokenNs,
     temperature,
     statusCode,
-    spanStepNumber
+    spanStepNumber,
+    timeToFirstTokenNs,
+    datasetInput,
+    datasetOutput,
+    datasetMetadata
   }: {
-    input: LlmStepAllowedIOType;
-    output: LlmStepAllowedIOType;
+    input: LlmSpanAllowedInputType;
+    output: LlmSpanAllowedOutputType;
     model?: string;
     tools?: any[];
     name?: string;
@@ -296,10 +314,13 @@ class GalileoLogger {
     numInputTokens?: number;
     numOutputTokens?: number;
     totalTokens?: number;
-    timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
     spanStepNumber?: number;
+    timeToFirstTokenNs?: number;
+    datasetInput?: string;
+    datasetOutput?: string;
+    datasetMetadata?: Record<string, string>;
   }): Trace {
     /**
      * Create a new trace with a single span and add it to the list of traces.
@@ -311,32 +332,39 @@ class GalileoLogger {
     }
 
     const trace = new Trace({
-      input,
-      output,
+      input: typeof input === 'string' ? input : JSON.stringify(input),
+      output: typeof output === 'string' ? output : JSON.stringify(output),
       name,
-      createdAtNs: createdAt,
-      metadata: metadata,
-      tags
+      metadata,
+      tags,
+      datasetInput,
+      datasetOutput,
+      datasetMetadata
     });
 
     trace.addChildSpan(
       new LlmSpan({
+        name,
+        createdAt,
+        metadata,
+        tags,
         input,
         output,
-        model,
+        metrics: new LlmMetrics({
+          durationNs,
+          numInputTokens,
+          numOutputTokens,
+          numTotalTokens: totalTokens,
+          timeToFirstTokenNs
+        }),
         tools,
-        name,
-        createdAtNs: createdAt,
-        metadata: metadata,
-        tags,
-        durationNs,
-        inputTokens: numInputTokens,
-        outputTokens: numOutputTokens,
-        totalTokens,
-        timeToFirstTokenNs,
+        model,
         temperature,
         statusCode,
-        stepNumber: spanStepNumber
+        stepNumber: spanStepNumber,
+        datasetInput,
+        datasetOutput,
+        datasetMetadata
       })
     );
 
@@ -364,8 +392,8 @@ class GalileoLogger {
     statusCode,
     stepNumber
   }: {
-    input: LlmStepAllowedIOType;
-    output: LlmStepAllowedIOType;
+    input: LlmSpanAllowedInputType;
+    output: LlmSpanAllowedOutputType;
     model?: string;
     tools?: any[];
     name?: string;
@@ -390,14 +418,16 @@ class GalileoLogger {
       model,
       tools,
       name,
-      createdAtNs: createdAt,
+      createdAt: createdAt,
       metadata: metadata,
       tags,
-      durationNs,
-      inputTokens: numInputTokens,
-      outputTokens: numOutputTokens,
-      totalTokens,
-      timeToFirstTokenNs,
+      metrics: new LlmMetrics({
+        durationNs,
+        numInputTokens,
+        numOutputTokens,
+        numTotalTokens: totalTokens,
+        timeToFirstTokenNs
+      }),
       temperature,
       statusCode,
       stepNumber
@@ -419,7 +449,7 @@ class GalileoLogger {
     stepNumber
   }: {
     input: string;
-    output: RetrieverStepAllowedOutputType;
+    output: RetrieverSpanAllowedOutputType;
     name?: string;
     durationNs?: number;
     createdAt?: number;
@@ -435,11 +465,11 @@ class GalileoLogger {
       input,
       output,
       name,
-      createdAtNs: createdAt,
+      createdAt: createdAt,
       metadata: metadata,
       tags,
       statusCode,
-      durationNs,
+      metrics: new Metrics({ durationNs: durationNs }),
       stepNumber
     });
 
@@ -477,12 +507,12 @@ class GalileoLogger {
       input,
       output,
       name,
-      createdAtNs: createdAt,
+      createdAt: createdAt,
       metadata: metadata,
       tags,
       statusCode,
       toolCallId,
-      durationNs,
+      metrics: new Metrics({ durationNs: durationNs }),
       stepNumber
     });
 
@@ -518,10 +548,10 @@ class GalileoLogger {
       input,
       output,
       name,
-      createdAtNs: createdAt,
+      createdAt: createdAt,
       metadata: metadata,
       tags,
-      durationNs,
+      metrics: new Metrics({ durationNs: durationNs }),
       stepNumber
     });
 
@@ -558,10 +588,10 @@ class GalileoLogger {
       input,
       output,
       name,
-      createdAtNs: createdAt,
+      createdAt: createdAt,
       metadata: metadata,
       tags,
-      durationNs,
+      metrics: new Metrics({ durationNs: durationNs }),
       agentType,
       stepNumber
     });

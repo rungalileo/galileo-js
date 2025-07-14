@@ -1,6 +1,7 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Trace, SessionCreateResponse } from '../../types/log.types';
+import { Trace } from '../../types/logging/trace.types';
+import { SessionCreateResponse } from '../../types/logging/session.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;

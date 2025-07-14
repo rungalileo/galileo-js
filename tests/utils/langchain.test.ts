@@ -4,7 +4,8 @@ import { AgentFinish } from '@langchain/core/agents';
 import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
 import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
-import { LlmSpan, NodeType, WorkflowSpan } from '../../src/types/log.types';
+import { StepType } from '../../src/types/logging/step.types';
+import { LlmSpan, WorkflowSpan } from '../../src/types/logging/span.types';
 
 // Mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -120,7 +121,7 @@ describe('GalileoCallback', () => {
       const trace = traces[0];
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.input).toStrictEqual(
         JSON.stringify({ query: 'test question' })
       );
@@ -155,7 +156,7 @@ describe('GalileoCallback', () => {
 
       const traces = callback._galileoLogger.traces;
       expect(traces).toHaveLength(1);
-      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].type).toBe(StepType.workflow);
       expect(traces[0].spans[0].input).toStrictEqual(JSON.stringify(inputs));
       expect(traces[0].spans[0].output).toStrictEqual(JSON.stringify(outputs));
     });
@@ -188,7 +189,7 @@ describe('GalileoCallback', () => {
 
       const traces = callback._galileoLogger.traces;
       expect(traces).toHaveLength(1);
-      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].type).toBe(StepType.workflow);
       expect(traces[0].spans[0].input).toStrictEqual(JSON.stringify(inputs));
       expect(traces[0].spans[0].output).toStrictEqual(JSON.stringify(outputs));
     });
@@ -231,7 +232,7 @@ describe('GalileoCallback', () => {
       );
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.input).toBe(JSON.stringify({ input: 'test input' }));
       expect(span.output).toBe(
         JSON.stringify({
@@ -322,7 +323,7 @@ describe('GalileoCallback', () => {
       );
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.input).toBe(JSON.stringify({ query: 'test' }));
       expect(span.output).toBe(
         JSON.stringify({
@@ -331,7 +332,7 @@ describe('GalileoCallback', () => {
       );
       expect(span.spans.length).toBe(1);
       const llmSpan = span.spans[0] as LlmSpan;
-      expect(llmSpan.type).toBe(NodeType.llm);
+      expect(llmSpan.type).toBe(StepType.llm);
       expect(llmSpan.input).toEqual([
         { content: 'Tell me about AI', role: 'user' }
       ]);
@@ -339,9 +340,9 @@ describe('GalileoCallback', () => {
         content: '{"text":"AI is a technology...","generationInfo":{}}',
         role: 'assistant'
       });
-      expect(llmSpan.inputTokens).toBe(10);
-      expect(llmSpan.outputTokens).toBe(20);
-      expect(llmSpan.totalTokens).toBe(30);
+      expect(llmSpan.metrics.numInputTokens).toBe(10);
+      expect(llmSpan.metrics.numOutputTokens).toBe(20);
+      expect(llmSpan.metrics.numTotalTokens).toBe(30);
     });
 
     it('should handle chat model start correctly', async () => {
@@ -737,11 +738,11 @@ describe('GalileoCallback', () => {
       const trace = callback._galileoLogger.traces[0];
       expect(trace.spans.length).toBe(1);
       const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(NodeType.workflow);
+      expect(span.type).toBe(StepType.workflow);
       expect(span.spans.length).toBe(3);
-      expect(span.spans[0].type).toBe(NodeType.retriever);
-      expect(span.spans[1].type).toBe(NodeType.llm);
-      expect(span.spans[2].type).toBe(NodeType.tool);
+      expect(span.spans[0].type).toBe(StepType.retriever);
+      expect(span.spans[1].type).toBe(StepType.llm);
+      expect(span.spans[2].type).toBe(StepType.tool);
     });
   });
 
@@ -785,7 +786,7 @@ describe('GalileoCallback', () => {
         outputArgs: {
           output: '4'
         },
-        expectedType: NodeType.tool
+        expectedType: StepType.tool
       },
       {
         nodeType: 'llm',
@@ -809,7 +810,7 @@ describe('GalileoCallback', () => {
             llmOutput: { tokenUsage: { totalTokens: 100 } }
           }
         },
-        expectedType: NodeType.llm
+        expectedType: StepType.llm
       },
       {
         nodeType: 'retriever',
@@ -827,7 +828,7 @@ describe('GalileoCallback', () => {
             }
           ]
         },
-        expectedType: NodeType.retriever
+        expectedType: StepType.retriever
       },
       {
         nodeType: 'chain',
@@ -845,7 +846,7 @@ describe('GalileoCallback', () => {
         outputArgs: {
           outputs: { result: 'answer' }
         },
-        expectedType: NodeType.workflow
+        expectedType: StepType.workflow
       },
       {
         nodeType: 'agent',
@@ -863,7 +864,7 @@ describe('GalileoCallback', () => {
         outputArgs: {
           outputs: { result: 'answer' }
         },
-        expectedType: NodeType.workflow
+        expectedType: StepType.workflow
       }
     ];
 
@@ -1006,7 +1007,7 @@ describe('GalileoCallback', () => {
 
       const traces = callback._galileoLogger.traces;
       expect(traces).toHaveLength(1);
-      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].type).toBe(StepType.workflow);
       expect(traces[0].spans[0].stepNumber).toBeUndefined();
     });
 
@@ -1033,7 +1034,7 @@ describe('GalileoCallback', () => {
 
       const traces = callback._galileoLogger.traces;
       expect(traces).toHaveLength(1);
-      expect(traces[0].spans[0].type).toBe(NodeType.workflow);
+      expect(traces[0].spans[0].type).toBe(StepType.workflow);
       expect(traces[0].spans[0].stepNumber).toBeUndefined();
     });
   });

@@ -15,3 +15,17 @@ export interface Dataset {
 }
 
 export type DatasetRow = components['schemas']['DatasetRow'];
+
+export interface DatasetRecord {
+  id?: string;
+  input?: string;
+  output?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface DatasetRecordOptions {
+  id?: string;
+  input: unknown;
+  output?: unknown;
+  metadata?: unknown;
+}
