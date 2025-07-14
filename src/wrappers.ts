@@ -1,8 +1,9 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
 import { argsToDict, extractParamsInfo } from './utils/serialization';
-import { RetrieverStepAllowedOutputType } from './types/step.types';
+import { RetrieverSpanAllowedOutputType } from './types/logging/step.types';
 import { Document } from './types/document.types';
+import { DatasetRecord } from './types';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -10,6 +11,7 @@ export interface LogOptions {
   spanType?: SpanType;
   name?: string;
   params?: Record<string, unknown>;
+  datasetRecord?: DatasetRecord;
 }
 
 function _isRetrieverOutput<R>(output: R): boolean {
@@ -83,7 +85,13 @@ export function log<T extends unknown[], R>(
       logger = GalileoSingleton.getInstance().getClient();
 
       if (!logger.currentParent()) {
-        logger.startTrace({ input: argsToString, output: undefined, name });
+        logger.startTrace({
+          input: argsToString,
+          name: name,
+          datasetInput: options.datasetRecord?.input,
+          datasetOutput: options.datasetRecord?.output,
+          datasetMetadata: options.datasetRecord?.metadata
+        });
       }
 
       if (!options.spanType || options.spanType === 'workflow') {
@@ -122,7 +130,7 @@ export function log<T extends unknown[], R>(
           input: argsToString,
           output:
             result && _isRetrieverOutput(result)
-              ? (result! as RetrieverStepAllowedOutputType)
+              ? (result! as RetrieverSpanAllowedOutputType)
               : resultToString,
           name
         });

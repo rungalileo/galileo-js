@@ -57,20 +57,6 @@ jest.mock('../../src/api-client', () => {
   };
 });
 
-jest.mock('../../src/utils/galileo-logger', () => {
-  return {
-    GalileoLogger: jest.fn().mockImplementation(() => ({
-      startTrace: jest.fn(),
-      addLlmSpan: jest.fn(),
-      addRetrieverSpan: jest.fn(),
-      addToolSpan: jest.fn(),
-      addWorkflowSpan: jest.fn(),
-      conclude: jest.fn(),
-      flush: jest.fn()
-    }))
-  };
-});
-
 const experimentId = 'exp-123';
 const experimentName = 'My Test Experiment';
 const projectId = 'proj-123';
@@ -98,7 +84,7 @@ const mockProject: Project = {
 const mockDataset: Dataset = {
   id: 'test-dataset-id',
   name: 'test-dataset',
-  column_names: ['country'],
+  column_names: ['input'],
   project_count: 1,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
@@ -111,8 +97,8 @@ const mockDataset: Dataset = {
 const mockDatasetRow: DatasetRow = {
   index: 0,
   row_id: 'row-123',
-  values: ['France'],
-  values_dict: { country: 'France' },
+  values: ['{ "country": "France" }'],
+  values_dict: { input: '{ "country": "France" }' },
   metadata: null
 };
 
@@ -130,7 +116,10 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   settings: {},
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
-  created_by_user: null
+  created_by_user: {
+    id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
+    email: 'b@b.com'
+  }
 };
 
 const mockPromptTemplate: PromptTemplate = {
@@ -145,7 +134,10 @@ const mockPromptTemplate: PromptTemplate = {
   max_version: 1,
   created_at: '2023-01-01T00:00:00Z',
   updated_at: '2023-01-01T00:00:00Z',
-  created_by_user: null
+  created_by_user: {
+    id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
+    email: 'b@b.com'
+  }
 };
 
 const mockScorer: Scorer = {

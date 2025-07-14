@@ -21,12 +21,12 @@ import { DatasetService, DatasetAppendRow } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
-import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
+import { SessionCreateResponse } from '../types/logging/session.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;

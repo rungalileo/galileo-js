@@ -1,5 +1,9 @@
 import { GalileoApiClient, DatasetRow } from '../api-client';
-import { Dataset } from '../types/dataset.types';
+import {
+  createDatasetRecord,
+  Dataset,
+  DatasetRecord
+} from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -179,18 +183,62 @@ export const getDatasetContent = async ({
     throw new Error('Either datasetId or datasetName must be provided');
   }
 
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
   if (datasetName) {
-    const datasets = await getDatasets();
-    const dataset = datasets.find((d) => d.name === datasetName);
+    const dataset = await apiClient.getDatasetByName(datasetName);
     if (!dataset) {
       throw new Error(`Dataset not found: ${datasetName}`);
     }
     datasetId = dataset.id;
   }
 
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
   return await apiClient.getDatasetContent(datasetId!);
+};
+
+export const getRecordsForDataset = async ({
+  datasetId,
+  datasetName
+}: {
+  datasetId?: string;
+  datasetName?: string;
+}): Promise<DatasetRecord[]> => {
+  const datasetRows = await getDatasetContent({ datasetId, datasetName });
+  return Promise.all(
+    datasetRows.map((row) => convertDatasetRowToRecord({ datasetRow: row }))
+  );
+};
+
+export const getDatasetRecordsFromArray = async (
+  recordsArray: Record<string, unknown>[]
+): Promise<DatasetRecord[]> => {
+  return Promise.all(
+    recordsArray.map((row) =>
+      createDatasetRecord({
+        input: row['input'],
+        output: row['output'],
+        metadata: row['metadata']
+      })
+    )
+  );
+};
+
+export const convertDatasetRowToRecord = async ({
+  datasetRow
+}: {
+  datasetRow: DatasetRow;
+}): Promise<DatasetRecord> => {
+  const valuesDict = datasetRow.values_dict;
+  if (!('input' in valuesDict)) {
+    throw new Error('DatasetRow must have an "input" field');
+  }
+  return createDatasetRecord({
+    id: datasetRow.row_id,
+    input: valuesDict.input,
+    output: valuesDict['output'],
+    metadata: valuesDict['metadata']
+  });
 };
 
 /*
