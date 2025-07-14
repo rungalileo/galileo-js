@@ -213,7 +213,7 @@ export const createDatasetRecord = ({
       } catch (error) {
         if (
           error instanceof SyntaxError &&
-          error.message.includes('JSON.parse')
+          error.message.includes('is not valid JSON')
         ) {
           record = { metadata: metadata };
         } else {
@@ -251,7 +251,10 @@ export const deserializeInputFromString = (
   try {
     return JSON.parse(value);
   } catch (error) {
-    if (error instanceof SyntaxError && error.message.includes('JSON.parse')) {
+    if (
+      error instanceof SyntaxError &&
+      error.message.includes('is not valid JSON')
+    ) {
       return { value: value };
     } else {
       throw error;

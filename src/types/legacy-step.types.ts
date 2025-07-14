@@ -11,6 +11,9 @@ export enum NodeType {
   workflow = 'workflow'
 }
 
+// backward compatibility
+export const StepType = NodeType;
+
 interface BaseStepType {
   createdAtNs: number;
   durationNs: number;
