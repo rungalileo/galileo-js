@@ -332,8 +332,8 @@ class GalileoLogger {
     }
 
     const trace = new Trace({
-      input: JSON.stringify(input),
-      output: JSON.stringify(output),
+      input: typeof input === 'string' ? input : JSON.stringify(input),
+      output: typeof output === 'string' ? output : JSON.stringify(output),
       name,
       metadata,
       tags,
