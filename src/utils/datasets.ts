@@ -213,7 +213,9 @@ export const createDatasetRecord = ({
       } catch (error) {
         if (
           error instanceof SyntaxError &&
-          error.message.includes('is not valid JSON')
+          (error.message.includes('is not valid JSON') ||
+            (error.message.includes('Unexpected token') &&
+              error.message.includes('in JSON')))
         ) {
           record = { metadata: metadata };
         } else {
