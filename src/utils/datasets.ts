@@ -262,7 +262,9 @@ export const deserializeInputFromString = (
 const isJsonParseError = (error: unknown): boolean => {
   return (
     error instanceof SyntaxError &&
+    // ts 20+
     (error.message.includes('is not valid JSON') ||
+      // ts 18
       (error.message.includes('Unexpected token') &&
         error.message.includes('in JSON')))
   );
