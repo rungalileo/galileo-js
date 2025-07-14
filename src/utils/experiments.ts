@@ -12,12 +12,9 @@ import {
   getScorerVersion,
   createRunScorerSettings
 } from '../utils/scorers';
+import { Dataset, DatasetRecord } from '../types/dataset.types';
 import {
   deserializeInputFromString,
-  Dataset,
-  DatasetRecord
-} from '../types/dataset.types';
-import {
   getDatasetRecordsFromArray,
   getRecordsForDataset
 } from '../utils/datasets';
