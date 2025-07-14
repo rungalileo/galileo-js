@@ -248,8 +248,11 @@ const serializeToString = (value: unknown): string => {
 };
 
 export const deserializeInputFromString = (
-  value: string
+  value?: string
 ): Record<string, unknown> => {
+  if (value === undefined) {
+    return {};
+  }
   try {
     return JSON.parse(value);
   } catch (error) {
@@ -302,7 +305,7 @@ export const convertDatasetRowToRecord = async ({
   }
   return createDatasetRecord({
     id: datasetRow.row_id,
-    input: valuesDict.input,
+    input: valuesDict['input'],
     output: valuesDict['output'],
     metadata: valuesDict['metadata']
   });

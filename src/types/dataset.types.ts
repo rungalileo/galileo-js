@@ -18,7 +18,7 @@ export type DatasetRow = components['schemas']['DatasetRow'];
 
 export interface DatasetRecord {
   id?: string;
-  input: string;
+  input?: string;
   output?: string;
   metadata?: Record<string, string>;
 }
