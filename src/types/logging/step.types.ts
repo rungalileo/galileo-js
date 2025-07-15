@@ -252,6 +252,12 @@ function isRecordStringString(obj: any): obj is Record<string, string> {
   if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
     return false;
   }
+
+  // Ensure that the object is not a Message
+  if (isMessage(obj)) {
+    return false;
+  }
+
   for (const key in obj) {
     if (typeof key !== 'string' || typeof obj[key] !== 'string') {
       return false;
