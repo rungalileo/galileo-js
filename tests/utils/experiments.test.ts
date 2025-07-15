@@ -14,7 +14,6 @@ import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
 import { GalileoScorers } from '../../src/types/metrics.types';
 import { Trace } from '../../src/types';
-import { GalileoSingleton } from '../../src/singleton';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
