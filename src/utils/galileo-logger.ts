@@ -249,7 +249,7 @@ class GalileoLogger {
     input: string;
     output?: string;
     name?: string;
-    createdAt?: number;
+    createdAt?: Date;
     durationNs?: number;
     metadata?: Record<string, string>;
     tags?: string[];
@@ -307,7 +307,7 @@ class GalileoLogger {
     model?: string;
     tools?: any[];
     name?: string;
-    createdAt?: number;
+    createdAt?: Date;
     durationNs?: number;
     metadata?: Record<string, string>;
     tags?: string[];
@@ -397,7 +397,7 @@ class GalileoLogger {
     model?: string;
     tools?: any[];
     name?: string;
-    createdAt?: number;
+    createdAt?: Date;
     durationNs?: number;
     metadata?: Record<string, string>;
     tags?: string[];
@@ -452,7 +452,7 @@ class GalileoLogger {
     output: RetrieverSpanAllowedOutputType;
     name?: string;
     durationNs?: number;
-    createdAt?: number;
+    createdAt?: Date;
     metadata?: Record<string, string>;
     tags?: string[];
     statusCode?: number;
@@ -493,7 +493,7 @@ class GalileoLogger {
     output?: string;
     name?: string;
     durationNs?: number;
-    createdAt?: number;
+    createdAt?: Date;
     metadata?: Record<string, string>;
     tags?: string[];
     statusCode?: number;
@@ -534,7 +534,7 @@ class GalileoLogger {
     output?: string;
     name?: string;
     durationNs?: number;
-    createdAt?: number;
+    createdAt?: Date;
     metadata?: Record<string, string>;
     tags?: string[];
     stepNumber?: number;
@@ -575,7 +575,7 @@ class GalileoLogger {
     output?: string;
     name?: string;
     durationNs?: number;
-    createdAt?: number;
+    createdAt?: Date;
     metadata?: Record<string, string>;
     tags?: string[];
     agentType?: AgentType;

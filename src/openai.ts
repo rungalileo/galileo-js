@@ -75,7 +75,7 @@ export function wrapOpenAI<T extends OpenAIType>(
                   ) {
                     return async function wrappedCreate(...args: any[]) {
                       const [requestData] = args;
-                      const startTime = Date.now();
+                      const startTime = new Date();
                       if (!logger) {
                         logger = GalileoSingleton.getInstance().getClient();
                       }
@@ -123,8 +123,9 @@ export function wrapOpenAI<T extends OpenAIType>(
                         );
                       }
 
-                      const endTime = Date.now();
-                      const durationNs = (endTime - startTime) * 1_000_000;
+                      const endTime = new Date();
+                      const durationNs =
+                        (endTime.getTime() - startTime.getTime()) * 1_000_000;
                       const output = response?.choices?.map((choice: any) =>
                         JSON.parse(JSON.stringify(choice.message))
                       );
@@ -175,7 +176,7 @@ export function wrapOpenAI<T extends OpenAIType>(
  */
 class StreamWrapper implements AsyncIterable<any> {
   private chunks: any[] = [];
-  private completionStartTime: number | null = null;
+  private completionStartTime: Date | null = null;
   private completeOutput: any = {
     content: '',
     role: 'assistant',
@@ -188,7 +189,7 @@ class StreamWrapper implements AsyncIterable<any> {
     private stream: AsyncIterable<any>,
     private requestData: any,
     private logger: GalileoLogger,
-    private startTime: number,
+    private startTime: Date,
     private shouldCompleteTrace: boolean
   ) {
     this.iterator = this.stream[Symbol.asyncIterator]();
@@ -204,7 +205,7 @@ class StreamWrapper implements AsyncIterable<any> {
           if (!result.done) {
             // Record the first chunk arrival time
             if (this.completionStartTime === null) {
-              this.completionStartTime = Date.now();
+              this.completionStartTime = new Date();
             }
 
             // Store the chunk for later processing
@@ -314,7 +315,7 @@ class StreamWrapper implements AsyncIterable<any> {
   private finalize() {
     if (this.chunks.length === 0) return;
 
-    const endTime = Date.now();
+    const endTime = new Date();
     const startTimeForMetrics = this.completionStartTime || this.startTime;
 
     // Clean up output format for log
@@ -341,7 +342,7 @@ class StreamWrapper implements AsyncIterable<any> {
       model: this.requestData.model || 'unknown',
       numInputTokens: inputTokensEstimate,
       numOutputTokens: outputTokensEstimate,
-      durationNs: Number(endTime - startTimeForMetrics),
+      durationNs: (endTime.getTime() - startTimeForMetrics.getTime()) * 1000000,
       metadata: this.requestData.metadata || {},
       statusCode: 200
     });
@@ -350,7 +351,7 @@ class StreamWrapper implements AsyncIterable<any> {
     if (this.shouldCompleteTrace) {
       this.logger.conclude({
         output: JSON.stringify(finalOutput),
-        durationNs: Number(endTime - this.startTime)
+        durationNs: (endTime.getTime() - this.startTime.getTime()) * 1000000
       });
     }
   }
