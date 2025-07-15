@@ -1,23 +1,39 @@
 import 'dotenv/config';
 import {
   createDataset,
+  getDataset,
   runExperiment,
   GalileoScorers
 } from '../../dist/index.js';
 
-// Create a dataset
-const dataset = await createDataset(
-  {
-    input: ['{"food": "cheese"}', '{"food": "beef"}', '{"food": "spinach"}'],
-    output: [
-      '{"category": "dairy"}',
-      '{"category": "meat"}',
-      '{"category": "vegetable"}'
-    ]
-  },
-  'food_types'
-);
-console.log('Created dataset:', dataset);
+const datasetName = 'food_types';
+let dataset;
+try {
+  dataset = await getDataset({ name: datasetName });
+  console.log('Dataset found: ', datasetName);
+} catch (error) {
+  if (error.message.includes('not found')) {
+    console.log('Dataset ', datasetName, ' not found, creating...');
+    dataset = await createDataset(
+      {
+        input: [
+          '{"food": "cheese"}',
+          '{"food": "beef"}',
+          '{"food": "spinach"}'
+        ],
+        output: [
+          '{"category": "dairy"}',
+          '{"category": "meat"}',
+          '{"category": "vegetable"}'
+        ]
+      },
+      datasetName
+    );
+    console.log('Created dataset: ', datasetName);
+  } else {
+    throw error;
+  }
+}
 
 const runner = function (input) {
   switch (input['food']) {
