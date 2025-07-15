@@ -14,6 +14,7 @@ import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { Dataset, DatasetRow } from '../../src/types/dataset.types';
 import { GalileoScorers } from '../../src/types/metrics.types';
 import { Trace } from '../../src/types';
+import { GalileoSingleton } from '../../src/singleton';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -309,7 +310,7 @@ describe('experiments utility', () => {
     });
   });
 
-  describe('runExperiment', () => {
+  describe('runExperiment - prompt', () => {
     it('should run an experiment with a dataset ID and promptTemplate', async () => {
       const result = await runExperiment({
         name: 'Test Experiment',
@@ -373,13 +374,34 @@ describe('experiments utility', () => {
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
+  });
+
+  describe('runExperiment - local', () => {
+    const mockDate = new Date('2024-01-01T00:00:00.000Z');
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.useFakeTimers();
+      jest.setSystemTime(mockDate);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    const identityFunction = async (input: Record<string, unknown>) => {
+      jest.advanceTimersByTime(1);
+      return input;
+    };
 
     const verifyLocalExperimentTraces = (traces: Trace[]) => {
       expect(traces.length).toBe(1);
-      expect(traces[0].input).toBe('{"input":"{\\"country\\":\\"France\\"}"}');
+      expect(traces[0].input).toBe('{"country":"France"}');
       expect(traces[0].output).toEqual('{"country":"France"}');
       expect(traces[0].name).toBe('My Test Experiment');
-      expect(traces[0].metrics).toEqual({});
+      expect(traces[0].metrics).toEqual({
+        durationNs: 1_000_000
+      });
       expect(traces[0].datasetInput).toBe('{"country":"France"}');
       expect(traces[0].datasetOutput).toBe('{"value":"Paris"}');
       expect(traces[0].datasetMetadata).toEqual({ iteration: 'alpha' });
@@ -387,10 +409,12 @@ describe('experiments utility', () => {
       const spans = traces[0].spans;
       expect(spans.length).toBe(1);
       expect(spans[0].type).toBe('workflow');
-      expect(spans[0].input).toBe('{"input":"{\\"country\\":\\"France\\"}"}');
+      expect(spans[0].input).toBe('{"country":"France"}');
       expect(spans[0].output).toEqual('{"country":"France"}');
       expect(spans[0].name).toBe('My Test Experiment');
-      expect(spans[0].metrics).toEqual({});
+      expect(spans[0].metrics).toEqual({
+        durationNs: 1_000_000
+      });
       expect(spans[0].datasetInput).toBe('{"country":"France"}');
       expect(spans[0].datasetOutput).toBe('{"value":"Paris"}');
       expect(spans[0].datasetMetadata).toEqual({ iteration: 'alpha' });
@@ -400,7 +424,7 @@ describe('experiments utility', () => {
       const result = await runExperiment({
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
-        function: (input: Record<string, unknown>) => Promise.resolve(input),
+        function: identityFunction,
         projectName
       });
       expect(result).toHaveProperty('message', experimentCompletedMessage);
@@ -413,7 +437,7 @@ describe('experiments utility', () => {
       const result = await runExperiment({
         name: 'Test Experiment',
         datasetName: 'test-dataset',
-        function: (input: Record<string, unknown>) => Promise.resolve(input),
+        function: identityFunction,
         projectName
       });
       expect(result).toHaveProperty('message', experimentCompletedMessage);
@@ -427,7 +451,7 @@ describe('experiments utility', () => {
       const result = await runExperiment({
         name: 'Test Experiment',
         dataset: mockDataset,
-        function: (input: Record<string, unknown>) => Promise.resolve(input),
+        function: identityFunction,
         projectName
       });
       expect(result).toHaveProperty('message', experimentCompletedMessage);

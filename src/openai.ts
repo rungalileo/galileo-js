@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
+import { calculateDurationNs } from './utils/utils';
 
 try {
   require.resolve('openai');
@@ -105,7 +106,8 @@ export function wrapOpenAI<T extends OpenAIType>(
                         if (startTrace) {
                           // If a trace was started, conclude it
                           logger!.conclude({
-                            output: `Error: ${errorMessage}`
+                            output: `Error: ${errorMessage}`,
+                            durationNs: calculateDurationNs(startTime)
                           });
                         }
                         throw error;
@@ -124,8 +126,10 @@ export function wrapOpenAI<T extends OpenAIType>(
                       }
 
                       const endTime = new Date();
-                      const durationNs =
-                        (endTime.getTime() - startTime.getTime()) * 1_000_000;
+                      const durationNs = calculateDurationNs(
+                        startTime,
+                        endTime
+                      );
                       const output = response?.choices?.map((choice: any) =>
                         JSON.parse(JSON.stringify(choice.message))
                       );
@@ -134,6 +138,7 @@ export function wrapOpenAI<T extends OpenAIType>(
                         input: JSON.parse(JSON.stringify(requestData.messages)),
                         output,
                         name: 'openai-client-generation',
+                        createdAt: startTime,
                         model: requestData.model || 'unknown',
                         numInputTokens: response?.usage?.prompt_tokens || 0,
                         numOutputTokens:
@@ -339,10 +344,11 @@ class StreamWrapper implements AsyncIterable<any> {
       input: JSON.parse(JSON.stringify(this.requestData.messages)),
       output: finalOutput,
       name: 'openai-client-generation',
+      createdAt: endTime,
       model: this.requestData.model || 'unknown',
       numInputTokens: inputTokensEstimate,
       numOutputTokens: outputTokensEstimate,
-      durationNs: (endTime.getTime() - startTimeForMetrics.getTime()) * 1000000,
+      durationNs: calculateDurationNs(startTimeForMetrics, endTime),
       metadata: this.requestData.metadata || {},
       statusCode: 200
     });
@@ -351,7 +357,7 @@ class StreamWrapper implements AsyncIterable<any> {
     if (this.shouldCompleteTrace) {
       this.logger.conclude({
         output: JSON.stringify(finalOutput),
-        durationNs: (endTime.getTime() - this.startTime.getTime()) * 1000000
+        durationNs: calculateDurationNs(this.startTime, endTime)
       });
     }
   }

@@ -11,6 +11,7 @@ import {
   isRetrieverSpanAllowedOutputType
 } from './types/logging/step.types';
 import { DatasetRecord } from './types';
+import { calculateDurationNs } from './utils/utils';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -146,7 +147,7 @@ export function log<T extends unknown[], R>(
       console.warn('Error while executing function:', error);
       throw error;
     } finally {
-      const durationNs = (Date.now() - createdAt.getTime()) * 1000000;
+      const durationNs = calculateDurationNs(createdAt);
       conclude(result, durationNs);
     }
   };

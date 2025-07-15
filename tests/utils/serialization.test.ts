@@ -36,7 +36,7 @@ describe('Convert Arguments to Dictionary', () => {
     const args = [1, 'test'];
     const dict = argsToDict(paramsInfo, args);
     expect(dict).toEqual({
-      a: '1',
+      a: 1,
       b: 'test',
       c: undefined
     });
