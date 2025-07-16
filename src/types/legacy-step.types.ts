@@ -1,7 +1,7 @@
 import { Document } from './document.types';
 import { Message } from './message.types';
 
-export enum StepType {
+export enum NodeType {
   llm = 'llm',
   chat = 'chat',
   chain = 'chain',
@@ -10,6 +10,9 @@ export enum StepType {
   retriever = 'retriever',
   workflow = 'workflow'
 }
+
+// backward compatibility
+export const StepType = NodeType;
 
 interface BaseStepType {
   createdAtNs: number;
@@ -46,7 +49,7 @@ export class StepWithChildren implements StepWithChildrenType {
   parent: AWorkflow | null;
   statusCode?: number | undefined;
   steps: AWorkflowStep[] = [];
-  type?: StepType.agent | StepType.workflow;
+  type?: NodeType.agent | NodeType.workflow;
   constructor(step: StepWithChildrenType) {
     this.createdAtNs = step.createdAtNs ?? new Date().getTime() * 1000000;
     this.durationNs = step.durationNs ?? 0;
@@ -81,7 +84,7 @@ export class StepWithChildren implements StepWithChildrenType {
 export type AgentStepType = StepWithChildrenType;
 
 export class AgentStep extends StepWithChildren {
-  type: StepType.agent = StepType.agent;
+  type: NodeType.agent = NodeType.agent;
   constructor(step: AgentStepType) {
     super(step);
   }
@@ -90,7 +93,7 @@ export class AgentStep extends StepWithChildren {
 export type WorkflowStepType = StepWithChildrenType;
 
 export class WorkflowStep extends StepWithChildren {
-  type: StepType.workflow = StepType.workflow;
+  type: NodeType.workflow = NodeType.workflow;
   constructor(step: WorkflowStepType) {
     super(step);
   }
@@ -116,7 +119,7 @@ export class StepWithoutChildren implements StepWithoutChildrenType {
   name?: string;
   output: StepIOType | LlmStepIOType | RetrieverStepOutputType;
   statusCode?: number | undefined;
-  type?: StepType.llm | StepType.retriever | StepType.tool;
+  type?: NodeType.llm | NodeType.retriever | NodeType.tool;
   constructor(step: StepWithoutChildrenType) {
     this.createdAtNs = step.createdAtNs ?? new Date().getTime() * 1000000;
     this.durationNs = step.durationNs ?? 0;
@@ -153,7 +156,7 @@ export class LlmStep extends StepWithoutChildren {
   outputTokens?: number;
   temperature?: number;
   totalTokens?: number;
-  type: StepType.llm = StepType.llm;
+  type: NodeType.llm = NodeType.llm;
   constructor(step: LlmStepType) {
     super(step);
     this.inputTokens = step.inputTokens;
@@ -171,7 +174,7 @@ export interface RetrieverStepType extends StepWithoutChildrenType {
 }
 
 export class RetrieverStep extends StepWithoutChildren {
-  type: StepType.retriever = StepType.retriever;
+  type: NodeType.retriever = NodeType.retriever;
   constructor(step: RetrieverStepType) {
     super(step);
   }
@@ -180,7 +183,7 @@ export class RetrieverStep extends StepWithoutChildren {
 export type ToolStepType = StepWithoutChildrenType;
 
 export class ToolStep extends StepWithoutChildren {
-  type: StepType.tool = StepType.tool;
+  type: NodeType.tool = NodeType.tool;
   constructor(step: ToolStepType) {
     super(step);
   }

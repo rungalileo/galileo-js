@@ -1,9 +1,9 @@
 import {
   GalileoLogger,
-  Trace,
   LlmSpan,
   RetrieverSpan,
   ToolSpan,
+  Trace,
   WorkflowSpan
 } from '../../src/utils/galileo-logger';
 import { Message, MessageRole } from '../../src/types/message.types';
@@ -687,15 +687,22 @@ describe('GalileoLogger', () => {
   });
 
   describe('Validating data on flush', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+
     it('should validate trace and span data on flush', async () => {
-      const createdAt = Date.now() * 1000000;
+      const createdAt = new Date();
       logger.startTrace({
         input: 'test input',
         name: 'test trace',
         createdAt,
         durationNs: 1000,
         metadata: { test: 'trace test' },
-        tags: ['trace test']
+        tags: ['trace test'],
+        datasetInput: 'dataset input',
+        datasetOutput: 'dataset output',
+        datasetMetadata: { test: 'dataset test' }
       });
       logger.addWorkflowSpan({
         input: 'workflow input',
@@ -744,11 +751,14 @@ describe('GalileoLogger', () => {
       expect(trace.input).toBe('test input');
       expect(trace.output).toBe('trace output');
       expect(trace.name).toBe('test trace');
-      expect(trace.createdAtNs).toBe(createdAt);
-      expect(trace.durationNs).toBe(1000);
+      expect(trace.createdAt).toBe(createdAt);
+      expect(trace.metrics.durationNs).toBe(1000);
       expect(trace.userMetadata).toEqual({ test: 'trace test' });
       expect(trace.tags).toEqual(['trace test']);
       expect(trace.statusCode).toBe(200);
+      expect(trace.datasetInput).toBe('dataset input');
+      expect(trace.datasetOutput).toBe('dataset output');
+      expect(trace.datasetMetadata).toEqual({ test: 'dataset test' });
 
       expect(trace.spans.length).toBe(1);
       expect(trace.spans[0]).toBeInstanceOf(WorkflowSpan);
@@ -757,12 +767,15 @@ describe('GalileoLogger', () => {
       expect(workflowSpan.input).toBe('workflow input');
       expect(workflowSpan.output).toBe('workflow output');
       expect(workflowSpan.name).toBe('workflow span');
-      expect(workflowSpan.createdAtNs).toBe(createdAt);
-      expect(workflowSpan.durationNs).toBe(1000);
+      expect(workflowSpan.createdAt).toBe(createdAt);
+      expect(workflowSpan.metrics.durationNs).toBe(1000);
       expect(workflowSpan.userMetadata).toEqual({ test: 'workflow test' });
       expect(workflowSpan.tags).toEqual(['workflow test']);
       expect(workflowSpan.statusCode).toBe(200);
       expect(workflowSpan.stepNumber).toBe(1);
+      expect(workflowSpan.datasetInput).toBe('dataset input');
+      expect(workflowSpan.datasetOutput).toBe('dataset output');
+      expect(workflowSpan.datasetMetadata).toEqual({ test: 'dataset test' });
 
       expect(workflowSpan.spans.length).toBe(2);
 
@@ -772,12 +785,15 @@ describe('GalileoLogger', () => {
         { content: 'retriever output', metadata: {} }
       ]);
       expect(retrieverSpan.name).toBe('retriever span');
-      expect(retrieverSpan.createdAtNs).toBe(createdAt);
-      expect(retrieverSpan.durationNs).toBe(1000);
+      expect(retrieverSpan.createdAt).toBe(createdAt);
+      expect(retrieverSpan.metrics.durationNs).toBe(1000);
       expect(retrieverSpan.userMetadata).toEqual({ test: 'retriever test' });
       expect(retrieverSpan.tags).toEqual(['retriever test']);
       expect(retrieverSpan.statusCode).toBe(200);
       expect(retrieverSpan.stepNumber).toBe(2);
+      expect(retrieverSpan.datasetInput).toBe('dataset input');
+      expect(retrieverSpan.datasetOutput).toBe('dataset output');
+      expect(retrieverSpan.datasetMetadata).toEqual({ test: 'dataset test' });
 
       const llmSpan = workflowSpan.spans[1] as LlmSpan;
       expect(llmSpan.input).toEqual([{ content: 'llm input', role: 'user' }]);
@@ -786,12 +802,134 @@ describe('GalileoLogger', () => {
         role: 'assistant'
       });
       expect(llmSpan.name).toBe('llm span');
-      expect(llmSpan.createdAtNs).toBe(createdAt);
-      expect(llmSpan.durationNs).toBe(1000);
+      expect(llmSpan.createdAt).toBe(createdAt);
+      expect(llmSpan.metrics.durationNs).toBe(1000);
+      expect(llmSpan.metrics.numInputTokens).toBe(1);
+      expect(llmSpan.metrics.numOutputTokens).toBe(1);
+      expect(llmSpan.metrics.numTotalTokens).toBe(2);
+      expect(llmSpan.metrics.timeToFirstTokenNs).toBe(1000);
       expect(llmSpan.userMetadata).toEqual({ test: 'llm test' });
       expect(llmSpan.tags).toEqual(['llm test']);
       expect(llmSpan.statusCode).toBe(200);
       expect(llmSpan.stepNumber).toBe(3);
+      expect(llmSpan.datasetInput).toBe('dataset input');
+      expect(llmSpan.datasetOutput).toBe('dataset output');
+      expect(llmSpan.datasetMetadata).toEqual({ test: 'dataset test' });
+    });
+  });
+
+  describe('Serializing spans', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+
+    it('should serialize token values correctly', () => {
+      const createdAt = new Date();
+
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'trace test' },
+        tags: ['trace test']
+      });
+
+      const llmSpan = logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        name: 'llm span',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'llm test' },
+        tags: ['llm test'],
+        numInputTokens: 1,
+        numOutputTokens: 1,
+        totalTokens: 2,
+        timeToFirstTokenNs: 1000,
+        temperature: 0.7,
+        statusCode: 200,
+        stepNumber: 3
+      });
+
+      logger.conclude({ output: 'trace output', statusCode: 200 });
+
+      const serializedSpan = llmSpan.toJSON();
+      expect(serializedSpan['metrics']['num_input_tokens']).toBe(1);
+      expect(serializedSpan['metrics']['num_output_tokens']).toBe(1);
+      expect(serializedSpan['metrics']['num_total_tokens']).toBe(2);
+      expect(serializedSpan['metrics']['time_to_first_token_ns']).toBe(1000);
+      expect(serializedSpan['metrics']['duration_ns']).toBe(1000);
+    });
+
+    it('should serialize duration values correctly', () => {
+      const createdAt = new Date();
+
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        createdAt,
+        durationNs: 1000,
+        metadata: { test: 'trace test' },
+        tags: ['trace test']
+      });
+
+      const workflowSpan = logger.addWorkflowSpan({
+        input: 'workflow input',
+        name: 'workflow span',
+        createdAt,
+        durationNs: 1000
+      });
+
+      const agentSpan = logger.addAgentSpan({
+        input: 'agent input',
+        output: 'agent output',
+        name: 'agent span',
+        createdAt,
+        durationNs: 2000
+      });
+
+      const llmSpan = logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        name: 'llm span',
+        createdAt,
+        durationNs: 3000
+      });
+
+      const retrieverSpan = logger.addRetrieverSpan({
+        input: 'retriever input',
+        output: 'retriever output',
+        name: 'retriever span',
+        createdAt,
+        durationNs: 4000
+      });
+
+      const toolSpan = logger.addToolSpan({
+        input: 'tool input',
+        output: 'tool output',
+        name: 'tool span',
+        createdAt,
+        durationNs: 5000
+      });
+
+      logger.conclude({ output: 'Workflow span output', statusCode: 200 });
+      logger.conclude({ output: 'trace output', statusCode: 200 });
+
+      const serializedWorkflowSpan = workflowSpan.toJSON();
+      expect(serializedWorkflowSpan['metrics']['duration_ns']).toBe(1000);
+
+      const serializedAgentSpan = agentSpan.toJSON();
+      expect(serializedAgentSpan['metrics']['duration_ns']).toBe(2000);
+
+      const serializedLlmSpan = llmSpan.toJSON();
+      expect(serializedLlmSpan['metrics']['duration_ns']).toBe(3000);
+
+      const serializedRetrieverSpan = retrieverSpan.toJSON();
+      expect(serializedRetrieverSpan['metrics']['duration_ns']).toBe(4000);
+
+      const serializedToolSpan = toolSpan.toJSON();
+      expect(serializedToolSpan['metrics']['duration_ns']).toBe(5000);
     });
   });
 

@@ -23,7 +23,6 @@ import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
 import { JobService } from './services/job-service';
 import { RunService } from './services/run-service';
-import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings
@@ -41,6 +40,7 @@ import {
   LogRecordsQueryRequest,
   LogRecordsQueryResponse
 } from '../types/search.types';
+import { SessionCreateResponse } from '../types/logging/session.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;

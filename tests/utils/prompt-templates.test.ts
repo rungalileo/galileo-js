@@ -33,7 +33,8 @@ const EXAMPLE_PROMPT_TEMPLATE_VERSION: PromptTemplateVersion = {
   lines_removed: 0,
   lines_edited: 1,
   created_at: '2025-06-20T19:39:14.084318Z',
-  updated_at: '2025-06-20T19:39:14.084320Z'
+  updated_at: '2025-06-20T19:39:14.084320Z',
+  created_by_user: null
 };
 
 const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
@@ -54,7 +55,8 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
     lines_removed: 0,
     lines_edited: 0,
     created_at: '2025-06-20T20:01:46.135165Z',
-    updated_at: '2025-06-20T20:01:46.135166Z'
+    updated_at: '2025-06-20T20:01:46.135166Z',
+    created_by_user: null
   },
   selected_version_id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
   all_versions: [
@@ -71,7 +73,8 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
       lines_removed: 0,
       lines_edited: 0,
       created_at: '2025-06-20T20:01:46.135165Z',
-      updated_at: '2025-06-20T20:01:46.135166Z'
+      updated_at: '2025-06-20T20:01:46.135166Z',
+      created_by_user: null
     }
   ],
   all_available_versions: [0],
@@ -79,7 +82,7 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
   max_version: 0,
   created_at: '2025-06-20T20:01:46.094860Z',
   updated_at: '2025-06-20T20:01:46.094863Z',
-  creator: {
+  created_by_user: {
     id: 'e12b8715-19f1-4224-92cb-5554ee316e6c',
     email: 'juan@rungalileo.io',
     first_name: 'Juan',

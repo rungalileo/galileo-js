@@ -3,7 +3,9 @@ import { setupServer } from 'msw/node';
 import {
   addRowsToDataset,
   createDataset,
+  createDatasetRecord,
   deleteDataset,
+  deserializeInputFromString,
   getDatasetContent,
   getDatasets
 } from '../../src';
@@ -103,38 +105,174 @@ const createDatasetCases: DatasetType[] = [
   [{ col1: { key1: 'val1' }, col2: { key2: 'val2' } }] // rows with objects
 ];
 
-test.each(createDatasetCases)('create dataset with data: %j', async (data) => {
-  const dataset = await createDataset(data, 'My Dataset');
-  expect(dataset).toEqual(EXAMPLE_DATASET);
-  expect(postDatasetsHandler).toHaveBeenCalled();
-});
+describe('datasets utils', () => {
+  test.each(createDatasetCases)(
+    'create dataset with data: %j',
+    async (data) => {
+      const dataset = await createDataset(data, 'My Dataset');
+      expect(dataset).toEqual(EXAMPLE_DATASET);
+      expect(postDatasetsHandler).toHaveBeenCalled();
+    }
+  );
 
-test('test get datasets', async () => {
-  const datasets = await getDatasets();
-  expect(datasets).toEqual([EXAMPLE_DATASET]);
-  expect(getDatasetsHandler).toHaveBeenCalled();
-});
-
-test('test get dataset content', async () => {
-  const rows = await getDatasetContent({ datasetId: EXAMPLE_DATASET.id });
-  expect(rows).toEqual([EXAMPLE_DATASET_ROW]);
-});
-
-test('delete dataset by id', async () => {
-  await deleteDataset({ id: EXAMPLE_DATASET.id });
-  expect(deleteDatasetHandler).toHaveBeenCalled();
-});
-
-test('delete dataset by name', async () => {
-  await deleteDataset({ name: EXAMPLE_DATASET.name });
-  expect(getDatasetByNameHandler).toHaveBeenCalled();
-  expect(deleteDatasetHandler).toHaveBeenCalled();
-});
-
-test('add rows to dataset', async () => {
-  await addRowsToDataset({
-    datasetId: EXAMPLE_DATASET.id,
-    rows: [{ col1: 'val1', col2: 'val2' }]
+  test('test get datasets', async () => {
+    const datasets = await getDatasets();
+    expect(datasets).toEqual([EXAMPLE_DATASET]);
+    expect(getDatasetsHandler).toHaveBeenCalled();
   });
-  expect(addRowsToDatasetHandler).toHaveBeenCalled();
+
+  test('test get dataset content', async () => {
+    const rows = await getDatasetContent({ datasetId: EXAMPLE_DATASET.id });
+    expect(rows).toEqual([EXAMPLE_DATASET_ROW]);
+  });
+
+  test('delete dataset by id', async () => {
+    await deleteDataset({ id: EXAMPLE_DATASET.id });
+    expect(deleteDatasetHandler).toHaveBeenCalled();
+  });
+
+  test('delete dataset by name', async () => {
+    await deleteDataset({ name: EXAMPLE_DATASET.name });
+    expect(getDatasetByNameHandler).toHaveBeenCalled();
+    expect(deleteDatasetHandler).toHaveBeenCalled();
+  });
+
+  test('add rows to dataset', async () => {
+    await addRowsToDataset({
+      datasetId: EXAMPLE_DATASET.id,
+      rows: [{ col1: 'val1', col2: 'val2' }]
+    });
+    expect(addRowsToDatasetHandler).toHaveBeenCalled();
+  });
+
+  describe('createDatasetRecord', () => {
+    it('should create a record with string input/output', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'output text'
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: 'input text',
+        output: 'output text',
+        metadata: undefined
+      });
+    });
+
+    it('should create a record with object input/output', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: { key: 'value' },
+        output: { key: 'value' }
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: '{"key":"value"}',
+        output: '{"key":"value"}',
+        metadata: undefined
+      });
+    });
+
+    it('should handle undefined output', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text'
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: 'input text',
+        output: undefined,
+        metadata: undefined
+      });
+    });
+
+    it('should handle metadata as a JSON string', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input',
+        metadata: '{"meta_key":"meta_value"}'
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: 'input',
+        output: undefined,
+        metadata: { meta_key: 'meta_value' }
+      });
+    });
+
+    it('should handle metadata as an object', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input',
+        metadata: { meta_key: 'meta_value' }
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: 'input',
+        output: undefined,
+        metadata: { meta_key: 'meta_value' }
+      });
+    });
+
+    it('should handle metadata as a non-JSON string', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input',
+        metadata: 'plain string'
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: 'input',
+        output: undefined,
+        metadata: { metadata: 'plain string' }
+      });
+    });
+
+    it('should handle null metadata', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input',
+        metadata: null
+      });
+      expect(record).toEqual({
+        id: '1',
+        input: 'input',
+        output: undefined,
+        metadata: undefined
+      });
+    });
+
+    it('should throw an error for metadata with non-string values', () => {
+      expect(() => {
+        createDatasetRecord({
+          id: '1',
+          input: 'input',
+          metadata: { key: 123 }
+        });
+      }).toThrow('Dataset metadata values must be strings');
+    });
+
+    it('should throw an error for invalid metadata type', () => {
+      expect(() => {
+        createDatasetRecord({
+          id: '1',
+          input: 'input',
+          metadata: 12345
+        });
+      }).toThrow('Dataset metadata must be a string or object');
+    });
+  });
+
+  describe('deserializeInputFromString', () => {
+    it('should deserialize a JSON string', () => {
+      const result = deserializeInputFromString('{"key":"value"}');
+      expect(result).toEqual({ key: 'value' });
+    });
+
+    it('should handle a non-JSON string', () => {
+      const result = deserializeInputFromString('plain string');
+      expect(result).toEqual({ value: 'plain string' });
+    });
+  });
 });
