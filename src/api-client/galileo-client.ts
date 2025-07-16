@@ -23,10 +23,12 @@ import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
 import { JobService } from './services/job-service';
 import { RunService } from './services/run-service';
+import { ExportService } from './services/export-service';
 import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
+import { LogRecordsExportRequest } from '../types/export.types';
 import {
   RunScorerSettingsResponse,
   SegmentFilter
@@ -77,6 +79,7 @@ export class GalileoApiClient extends BaseClient {
   private experimentService?: ExperimentService;
   private scorerService?: ScorerService;
   private runService?: RunService;
+  private exportService?: ExportService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -214,6 +217,11 @@ export class GalileoApiClient extends BaseClient {
         this.jobService = new JobService(this.apiUrl, this.token, this.projectId);
         this.scorerService = new ScorerService(this.apiUrl, this.token);
         this.runService = new RunService(this.apiUrl, this.token, this.projectId);
+        this.exportService = new ExportService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
       }
     }
   }
@@ -565,6 +573,14 @@ export class GalileoApiClient extends BaseClient {
   public async deleteScorer(scorerId: string): Promise<void> {
     this.ensureService(this.scorerService);
     return this.scorerService!.deleteScorer(scorerId);
+  }
+
+  // Export methods - delegate to ExportService
+  public async exportRecords(
+    body: LogRecordsExportRequest
+  ): Promise<Record<string, any>[]> {
+    this.ensureService(this.exportService);
+    return this.exportService!.records(body);
   }
 
   // Helper to ensure service is initialized

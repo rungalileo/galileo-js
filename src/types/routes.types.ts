@@ -26,6 +26,7 @@ export enum Routes {
   tracesSearch = 'projects/{project_id}/traces/search',
   sessionsSearch = 'projects/{project_id}/sessions/search',
   sessions = 'projects/{project_id}/sessions',
+  exportRecords = 'projects/{project_id}/export_records',
   scorers = 'scorers/list',
   scorerVersion = 'scorers/{scorer_id}/version',
   runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings',
