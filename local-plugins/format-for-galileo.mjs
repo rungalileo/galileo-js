@@ -93,6 +93,20 @@ function fix_paths(line, page) {
     }
   }
 
+  // Some lines have the file location in GitHub with a sha. Replace these with the main branch to reduce the size of the
+  // PRs! We don't need to review every line
+  // This is the format: https://github.com/rungalileo/galileo-js/blob/c528f23c1c57652accf00d6c9afe71a289cabe7d/src/handlers/langchain.ts#L62
+  // The SHA needs to be replaced with the main branch name
+  const shaRegex =
+    /https:\/\/github\.com\/rungalileo\/galileo-js\/blob\/[a-z0-9]+/;
+  if (shaRegex.test(line)) {
+    // Replace the SHA with the main branch name
+    line = line.replace(
+      shaRegex,
+      'https://github.com/rungalileo/galileo-js/blob/main'
+    );
+  }
+
   // otherwise return the line unchanged
   return line;
 }
