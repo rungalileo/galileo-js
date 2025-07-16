@@ -9,37 +9,38 @@ const logger = new GalileoLogger({
 dotenv.config();
 
 // Create a new trace
-const trace = logger.startTrace(
-  'Example trace input', // input
-  undefined, // output (will be set later)
-  'Example Trace', // name
-  Date.now() * 1000000, // createdAt in nanoseconds
-  undefined, // durationNs
-  { source: 'test-script' }, // userMetadata
-  ['test', 'example'] // tags
-);
+const trace = logger.startTrace({
+  input: 'Example trace input',
+  name: 'Example Trace',
+  createdAt: new Date(),
+  durationNs: undefined,
+  metadata: { source: 'test-script' },
+  tags: ['test', 'example'],
+  datasetInput: undefined,
+  datasetOutput: undefined,
+  datasetMetadata: undefined
+});
 
 // Add a workflow span (parent span)
-const workflowSpan = logger.addWorkflowSpan(
-  'Processing workflow', // input
-  undefined, // output (will be set later)
-  'Main Workflow', // name
-  undefined, // durationNs
-  Date.now() * 1000000, // createdAt in nanoseconds
-  { workflow_type: 'test' }, // userMetadata
-  ['workflow'] // tags
-);
+const workflowSpan = logger.addWorkflowSpan({
+  input: 'Processing workflow',
+  name: 'Main Workflow',
+  durationNs: undefined,
+  createdAt: new Date(),
+  metadata: { workflow_type: 'test' },
+  tags: ['workflow']
+});
 
 // Add a tool span as a child of the workflow span
-logger.addToolSpan(
-  'Tool input data', // input
-  'Tool output result', // output
-  'Example Tool', // name
-  500000000, // durationNs (500ms)
-  Date.now() * 1000000, // createdAt in nanoseconds
-  { tool_type: 'utility' }, // userMetadata
-  ['tool'] // tags
-);
+logger.addToolSpan({
+  input: 'Tool input data',
+  output: 'Tool output result',
+  name: 'Example Tool',
+  durationNs: 500000000, // durationNs (500ms)
+  createdAt: new Date(),
+  metadata: { tool_type: 'utility' },
+  tags: ['tool']
+});
 
 // Add an LLM span as a child of the workflow span
 logger.addLlmSpan({
@@ -55,8 +56,8 @@ logger.addLlmSpan({
   numOutputTokens: 20, // number of output tokens
   totalTokens: 30, // total tokens
   timeToFirstTokenNs: 500000000, // time to first token in nanoseconds
-  userMetadata: { temperature: '0.7' }, // userMetadata
-  tags: ['llm', 'chat'] // tags
+  metadata: { temperature: '0.7' },
+  tags: ['llm', 'chat']
 });
 
 // Add an LLM span as a child of the workflow span
@@ -69,8 +70,8 @@ logger.addAgentSpan({
   model: 'gpt-3.5-turbo', // model name
   name: 'Agent Span', // name
   durationNs: 1000000000, // durationNs (1s)
-  userMetadata: { temperature: '0.7' }, // userMetadata
-  tags: ['agent', 'span'] // tags
+  metadata: { temperature: '0.7' },
+  tags: ['agent', 'span']
 });
 
 // Conclude the workflow span
@@ -80,21 +81,21 @@ logger.conclude({
 });
 
 // Add a retriever span directly to the trace
-logger.addRetrieverSpan(
-  'Search query', // input
-  [
+logger.addRetrieverSpan({
+  input: 'Search query',
+  output: [
     {
       id: '1',
       content: 'Document content',
       metadata: { source: 'database' }
     }
-  ], // documents
-  'Document Retrieval', // name
-  300000000, // durationNs (300ms)
-  Date.now() * 1000000, // createdAt in nanoseconds
-  { retriever_type: 'vector_db' }, // userMetadata
-  ['retrieval'] // tags
-);
+  ],
+  name: 'Document Retrieval',
+  durationNs: 300000000, // durationNs (300ms)
+  createdAt: new Date(),
+  metadata: { retriever_type: 'vector_db' },
+  tags: ['retrieval']
+});
 
 // Conclude the trace
 logger.conclude({
