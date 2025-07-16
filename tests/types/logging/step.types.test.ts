@@ -11,12 +11,7 @@ import { Document } from '../../../src/types/document.types';
 describe('step.types', () => {
   describe('isDocument', () => {
     it('should return true for a Document instance', () => {
-      class Doc extends Document {
-        constructor(content: string, metadata?: Record<string, any>) {
-          super({ content, metadata });
-        }
-      }
-      const doc = new Doc('test content');
+      const doc = new Document({ content: 'test content' });
       expect(isDocument(doc)).toBe(true);
     });
 
