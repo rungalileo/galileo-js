@@ -42,6 +42,7 @@ import {
   getExperiment,
   runExperiment
 } from './utils/experiments';
+import { updateScorerSettings } from './utils/runs';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush, getLogger } from './singleton';
 import { log } from './wrappers';
@@ -105,4 +106,6 @@ export {
   getTraces,
   getSpans,
   getSessions,
+  // Runs
+  updateScorerSettings,
 };

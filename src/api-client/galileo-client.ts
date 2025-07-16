@@ -22,11 +22,16 @@ import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
 import { JobService } from './services/job-service';
+import { RunService } from './services/run-service';
 import { SessionCreateResponse } from '../types/log.types';
 import {
   CreateJobResponse,
   PromptRunSettings
 } from '../types/experiment.types';
+import {
+  RunScorerSettingsResponse,
+  SegmentFilter
+} from '../types/run.types';
 import { Message } from '../types/message.types';
 import {
   MetricSearchRequest,
@@ -71,6 +76,7 @@ export class GalileoApiClient extends BaseClient {
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
   private scorerService?: ScorerService;
+  private runService?: RunService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -207,6 +213,7 @@ export class GalileoApiClient extends BaseClient {
         );
         this.jobService = new JobService(this.apiUrl, this.token, this.projectId);
         this.scorerService = new ScorerService(this.apiUrl, this.token);
+        this.runService = new RunService(this.apiUrl, this.token, this.projectId);
       }
     }
   }
@@ -482,6 +489,19 @@ export class GalileoApiClient extends BaseClient {
       experimentId,
       projectId,
       scorers
+    );
+  }
+
+  public async updateRunScorerSettings(
+    runId: string,
+    scorers: ScorerConfig[],
+    segmentFilters?: SegmentFilter[]
+  ): Promise<RunScorerSettingsResponse> {
+    this.ensureService(this.runService);
+    return this.runService!.updateScorerSettings(
+      runId,
+      scorers,
+      segmentFilters
     );
   }
 
