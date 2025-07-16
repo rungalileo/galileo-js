@@ -692,7 +692,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should validate trace and span data on flush', async () => {
-      const createdAt = Date.now() * 1000000;
+      const createdAt = new Date();
       logger.startTrace({
         input: 'test input',
         name: 'test trace',
@@ -824,7 +824,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should serialize token values correctly', () => {
-      const createdAt = Date.now() * 1000000;
+      const createdAt = new Date();
 
       logger.startTrace({
         input: 'test input',
@@ -863,7 +863,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should serialize duration values correctly', () => {
-      const createdAt = Date.now() * 1000000;
+      const createdAt = new Date();
 
       logger.startTrace({
         input: 'test input',

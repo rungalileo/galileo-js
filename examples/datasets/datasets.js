@@ -26,4 +26,7 @@ const content = await getDatasetContent({ datasetId: dataset.id });
 console.log('Dataset content:', content);
 
 // Add a new row to the dataset
-await addRowsToDataset(dataset.id, [{ input: 4, output: 'd' }]);
+await addRowsToDataset({
+  datasetId: dataset.id,
+  rows: [{ input: 4, output: 'd' }]
+});

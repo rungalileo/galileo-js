@@ -1,5 +1,5 @@
 import { Document } from '../document.types';
-import { Message } from '../message.types';
+import { isMessage, Message } from '../message.types';
 import { MetricValueType } from '../metrics.types';
 
 export type StepAllowedInputType =
@@ -89,7 +89,7 @@ export interface BaseStepOptions {
   input?: StepAllowedInputType;
   output?: StepAllowedOutputType;
   name?: string;
-  createdAt?: number;
+  createdAt?: Date;
   metadata?: Record<string, string>;
   tags?: string[];
   statusCode?: number;
@@ -106,7 +106,7 @@ export class BaseStep {
   input?: StepAllowedInputType;
   output?: StepAllowedOutputType;
   name: string = '';
-  createdAt: number = Date.now() * 1000000; // Convert to nanoseconds
+  createdAt: Date = new Date();
   userMetadata: Record<string, string> = {};
   tags?: string[];
   statusCode?: number;
@@ -122,8 +122,7 @@ export class BaseStep {
     this.input = data.input;
     this.output = data.output;
     this.name = data.name || type;
-    this.createdAt =
-      data.createdAt !== undefined ? data.createdAt : Date.now() * 1000000;
+    this.createdAt = data.createdAt || new Date();
     this.userMetadata = data.metadata || {};
     this.tags = data.tags || [];
     this.statusCode = data.statusCode;
@@ -142,9 +141,14 @@ export class BaseStep {
   validateInputOutputSerializable<
     T = StepAllowedInputType | StepAllowedOutputType
   >(val: T): T {
-    // Make sure we can serialize input/output to JSON string
-    JSON.stringify(val);
-    return val;
+    try {
+      JSON.stringify(val);
+      return val;
+    } catch (e) {
+      throw new Error(
+        `Input/output is not serializable. Please use a different format. Received: ${val}`
+      );
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,15 +158,110 @@ export class BaseStep {
       input: this.input,
       output: this.output,
       name: this.name,
-      created_at: this.createdAt,
+      created_at: this.createdAt.toISOString(),
       user_metadata: this.userMetadata,
       tags: this.tags,
       status_code: this.statusCode,
       metrics: this.metrics.toJSON(),
       external_id: this.externalId,
+      step_number: this.stepNumber,
       dataset_input: this.datasetInput,
       dataset_output: this.datasetOutput,
       dataset_metadata: this.datasetMetadata
     };
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isDocument(obj: any): obj is Document {
+  return obj instanceof Document;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isStepAllowedInputType(obj: any): obj is StepAllowedInputType {
+  if (typeof obj === 'string') return true;
+  if (Array.isArray(obj)) {
+    return obj.every(
+      (item) =>
+        typeof item === 'string' ||
+        isMessage(item) ||
+        isRecordStringString(item)
+    );
+  }
+  if (isMessage(obj)) return true;
+  if (isRecordStringString(obj)) return true;
+  return false;
+}
+
+export function isStepAllowedOutputType(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: any
+): obj is StepAllowedOutputType {
+  if (typeof obj === 'string') return true;
+  if (Array.isArray(obj)) {
+    return obj.every(
+      (item) =>
+        typeof item === 'string' ||
+        isDocument(item) ||
+        isRecordStringString(item)
+    );
+  }
+  if (isMessage(obj)) return true;
+  if (isDocument(obj)) return true;
+  if (isRecordStringString(obj)) return true;
+  return false;
+}
+
+export function isLlmSpanAllowedInputType(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: any
+): obj is LlmSpanAllowedInputType {
+  return isStepAllowedInputType(obj);
+}
+
+export function isLlmSpanAllowedOutputType(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: any
+): obj is LlmSpanAllowedOutputType {
+  if (typeof obj === 'string') return true;
+  if (isMessage(obj)) return true;
+  if (isRecordStringString(obj)) return true;
+  return false;
+}
+
+export function isRetrieverSpanAllowedOutputType(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: any
+): obj is RetrieverSpanAllowedOutputType {
+  if (typeof obj === 'string') return true;
+  if (isDocument(obj)) return true;
+  if (isRecordStringString(obj)) return true;
+  if (Array.isArray(obj)) {
+    return obj.every(
+      (item) =>
+        typeof item === 'string' ||
+        isDocument(item) ||
+        isRecordStringString(item)
+    );
+  }
+  return false;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isRecordStringString(obj: any): obj is Record<string, string> {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+    return false;
+  }
+
+  // Ensure that the object is not a Message
+  if (isMessage(obj)) {
+    return false;
+  }
+
+  for (const key in obj) {
+    if (typeof key !== 'string' || typeof obj[key] !== 'string') {
+      return false;
+    }
+  }
+  return true;
 }

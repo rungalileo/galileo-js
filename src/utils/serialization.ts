@@ -102,16 +102,16 @@ export const extractParamsInfo = <T extends unknown[], R>(
 export const argsToDict = <T extends unknown[]>(
   paramsInfo: { name: string; defaultValue?: unknown }[],
   args: T
-): Record<string, string> => {
-  const result: Record<string, string> = {};
+): Record<string, unknown> => {
+  const result: Record<string, unknown> = {};
 
   paramsInfo.forEach((param, index) => {
     if (index < args.length) {
       // Use the provided argument
-      result[param.name] = toStringValue(args[index]);
+      result[param.name] = args[index];
     } else if (param.defaultValue !== undefined) {
       // Use the default value when no argument is provided
-      result[param.name] = toStringValue(param.defaultValue);
+      result[param.name] = param.defaultValue;
     }
   });
 

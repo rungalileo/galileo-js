@@ -1,9 +1,17 @@
 import { GalileoLogger } from './utils/galileo-logger';
 import { GalileoSingleton } from './singleton';
-import { argsToDict, extractParamsInfo } from './utils/serialization';
-import { RetrieverSpanAllowedOutputType } from './types/logging/step.types';
-import { Document } from './types/document.types';
+import {
+  argsToDict,
+  extractParamsInfo,
+  toStringValue
+} from './utils/serialization';
+import {
+  isLlmSpanAllowedInputType,
+  isLlmSpanAllowedOutputType,
+  isRetrieverSpanAllowedOutputType
+} from './types/logging/step.types';
 import { DatasetRecord } from './types';
+import { calculateDurationNs } from './utils/utils';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
 
@@ -12,41 +20,6 @@ export interface LogOptions {
   name?: string;
   params?: Record<string, unknown>;
   datasetRecord?: DatasetRecord;
-}
-
-function _isRetrieverOutput<R>(output: R): boolean {
-  try {
-    const isString = (value: unknown) => typeof value === 'string';
-
-    const isDocument = (value: unknown) => value instanceof Document;
-
-    const isStringArray = (value: unknown) =>
-      Array.isArray(value) && (value.length === 0 || isString(value[0]));
-
-    const isDocumentArray = (value: unknown) =>
-      Array.isArray(value) && (value.length === 0 || isDocument(value[0]));
-
-    const isStringObject = (value: unknown) =>
-      typeof value === 'object' &&
-      value !== null &&
-      !Array.isArray(value) &&
-      Object.values(value).every(isString);
-
-    const isStringObjectArray = (value: unknown) =>
-      Array.isArray(value) && (value.length === 0 || isStringObject(value[0]));
-
-    return (
-      isString(output) ||
-      isStringArray(output) ||
-      isDocument(output) ||
-      isDocumentArray(output) ||
-      isStringObject(output) ||
-      isStringObjectArray(output)
-    );
-  } catch (e) {
-    console.warn('Unable to check if output is a retriever output', e);
-    return false;
-  }
 }
 
 /**
@@ -62,23 +35,44 @@ export function log<T extends unknown[], R>(
   return async (...args: T): Promise<R> => {
     let logger: GalileoLogger | undefined = undefined;
     let result: R = {} as R;
-    let concludeSpan = false;
 
-    const argsDict: Record<string, string> = argsToDict(paramsInfo, args);
-    const argsToString = JSON.stringify(argsDict);
-    const name = options?.name || fn.name || 'Function';
+    let argsDict: Record<string, unknown> = argsToDict(paramsInfo, args);
+    if (!('input' in argsDict)) {
+      argsDict = { input: argsDict };
+    }
+    const input: unknown = argsDict['input'];
+    const inputString: string = toStringValue(input);
+    const name: string =
+      argsDict?.name !== undefined
+        ? toStringValue(argsDict.name)
+        : options?.name || fn.name || 'Function';
+    let createdAt: Date;
+    if (argsDict?.createdAt instanceof Date) {
+      createdAt = argsDict.createdAt;
+    } else if (
+      typeof argsDict?.createdAt === 'number' ||
+      typeof argsDict?.createdAt === 'string'
+    ) {
+      createdAt = new Date(argsDict.createdAt);
+    } else {
+      createdAt = new Date();
+    }
 
-    const conclude = (result: R) => {
-      if (!logger || !concludeSpan) {
+    let concludeCount = 0;
+    const conclude = (result: R, durationNs?: number) => {
+      if (!logger || concludeCount == 0) {
         return;
       }
       try {
         logger.conclude({
-          output: JSON.stringify(result)
+          output: toStringValue(result),
+          durationNs: durationNs
         });
       } catch (error) {
         console.error(error);
       }
+      concludeCount = concludeCount - 1;
+      conclude(result, durationNs);
     };
 
     try {
@@ -86,21 +80,24 @@ export function log<T extends unknown[], R>(
 
       if (!logger.currentParent()) {
         logger.startTrace({
-          input: argsToString,
+          input: inputString,
           name: name,
+          createdAt: createdAt,
           datasetInput: options.datasetRecord?.input,
           datasetOutput: options.datasetRecord?.output,
           datasetMetadata: options.datasetRecord?.metadata
         });
+        concludeCount = concludeCount + 1;
       }
 
       if (!options.spanType || options.spanType === 'workflow') {
         logger.addWorkflowSpan({
-          input: argsToString,
+          input: inputString,
+          createdAt: createdAt,
           output: undefined,
           name
         });
-        concludeSpan = true;
+        concludeCount = concludeCount + 1;
       }
     } catch (error) {
       console.error(error);
@@ -113,9 +110,11 @@ export function log<T extends unknown[], R>(
 
       if (options.spanType === 'llm') {
         logger?.addLlmSpan({
-          input: argsDict,
-          output: resultToString,
-          model: 'model' in argsDict ? argsDict['model'] : undefined
+          input: isLlmSpanAllowedInputType(input) ? input : inputString,
+          output: isLlmSpanAllowedOutputType(result) ? result : resultToString,
+          createdAt: createdAt,
+          model:
+            'model' in argsDict ? toStringValue(argsDict['model']) : undefined
           // TODO: add a param mapper to apply span values
           //   model: options.model,
           //   tools: options.tools,
@@ -127,18 +126,19 @@ export function log<T extends unknown[], R>(
         });
       } else if (options.spanType === 'retriever') {
         logger?.addRetrieverSpan({
-          input: argsToString,
-          output:
-            result && _isRetrieverOutput(result)
-              ? (result! as RetrieverSpanAllowedOutputType)
-              : resultToString,
-          name
+          input: inputString,
+          output: isRetrieverSpanAllowedOutputType(result)
+            ? result
+            : resultToString,
+          createdAt: createdAt,
+          name: name
         });
       } else if (options.spanType === 'tool') {
         logger?.addToolSpan({
-          input: argsToString,
+          input: inputString,
           output: resultToString,
-          name
+          createdAt: createdAt,
+          name: name
         });
       }
 
@@ -147,7 +147,8 @@ export function log<T extends unknown[], R>(
       console.warn('Error while executing function:', error);
       throw error;
     } finally {
-      conclude(result);
+      const durationNs = calculateDurationNs(createdAt);
+      conclude(result, durationNs);
     }
   };
 }

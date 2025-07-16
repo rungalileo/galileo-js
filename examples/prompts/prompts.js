@@ -1,5 +1,5 @@
-const dotenv = await import('dotenv/config');
-const {
+import dotenv from 'dotenv';
+import {
   createPrompt,
   getPrompts,
   getPrompt,
@@ -8,7 +8,9 @@ const {
   createPromptTemplate,
   getPromptTemplates,
   getPromptTemplate
-} = await import('galileo');
+} from '../../dist/index.js';
+
+dotenv.config();
 
 // ---------------  Create a template  -----------------
 

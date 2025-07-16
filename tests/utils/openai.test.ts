@@ -71,16 +71,27 @@ describe('OpenAI Wrapper', () => {
     conclude: jest.fn()
   };
 
+  const mockDate = new Date('2024-01-01T00:00:00.000Z');
+
   beforeEach(() => {
     jest.clearAllMocks();
     GalileoSingleton.getInstance = jest.fn().mockReturnValue({
       getClient: jest.fn().mockReturnValue(mockLogger)
     });
-    Date.now = jest.fn().mockReturnValue(1000);
+    jest.useFakeTimers();
+    jest.setSystemTime(mockDate);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    mockLogger.startTrace = jest.fn();
   });
 
   test('should correctly wrap OpenAI and handle non-streaming requests', async () => {
     // Setup
+    mockLogger.startTrace = jest.fn(() => {
+      jest.advanceTimersByTime(1);
+    });
     mockCreateMethod.mockResolvedValueOnce(mockResponse);
     const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
     const requestData = {
@@ -95,38 +106,30 @@ describe('OpenAI Wrapper', () => {
     expect(mockCreateMethod).toHaveBeenCalledWith(requestData);
     expect(result).toEqual(mockResponse);
     expect(mockLogger.startTrace).toHaveBeenCalledWith({
-      createdAt: 1000,
+      createdAt: mockDate,
       input: '[{"role":"user","content":"Say hello world!"}]',
       name: 'openai-client-generation',
       output: undefined
     });
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith({
+      createdAt: mockDate,
       input: requestData.messages,
       output: [mockResponse.choices[0].message],
       name: 'openai-client-generation',
       model: 'gpt-4o',
       numInputTokens: 10,
       numOutputTokens: 5,
-      durationNs: 0,
+      durationNs: 1_000_000,
       metadata: {},
       statusCode: 200
     });
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: JSON.stringify([mockResponse.choices[0].message]),
-      durationNs: 0
+      durationNs: 1000000
     });
   });
 
   test('should handle streaming responses correctly', async () => {
-    // Setup mock Date.now to simulate elapsed time
-    const times = [1000, 1100, 1200, 1300];
-    Date.now = jest
-      .fn()
-      .mockReturnValueOnce(times[0])
-      .mockReturnValueOnce(times[1])
-      .mockReturnValueOnce(times[2])
-      .mockReturnValueOnce(times[3]);
-
     // Create async iterable for streaming response
     const mockStream = {
       [Symbol.asyncIterator]: () => {
@@ -134,6 +137,7 @@ describe('OpenAI Wrapper', () => {
         return {
           next: async () => {
             if (index < mockStreamingChunks.length) {
+              jest.advanceTimersByTime(1);
               return { done: false, value: mockStreamingChunks[index++] };
             }
             return { done: true, value: undefined };
@@ -162,12 +166,13 @@ describe('OpenAI Wrapper', () => {
     expect(mockCreateMethod).toHaveBeenCalledWith(requestData);
     expect(chunks).toEqual(mockStreamingChunks);
     expect(mockLogger.startTrace).toHaveBeenCalledWith({
-      createdAt: 1000,
+      createdAt: mockDate,
       input: '[{"role":"user","content":"Say hello world!"}]',
       name: 'openai-client-generation',
       output: undefined
     });
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith({
+      createdAt: new Date(mockDate.getTime() + 3),
       input: requestData.messages,
       output: {
         content: 'Hello world!',
@@ -177,7 +182,7 @@ describe('OpenAI Wrapper', () => {
       model: 'gpt-4o',
       numInputTokens: 0, // Note: The wrapper doesn't calculate tokens for streaming responses
       numOutputTokens: 0,
-      durationNs: times[3] - times[2], // completion start to end time
+      durationNs: 2_000_000,
       metadata: {},
       statusCode: 200
     });
@@ -186,7 +191,7 @@ describe('OpenAI Wrapper', () => {
         content: 'Hello world!',
         role: 'assistant'
       }),
-      durationNs: times[3] - times[1] // total duration from request to end
+      durationNs: 3_000_000
     });
   });
 
@@ -410,6 +415,9 @@ describe('OpenAI Wrapper', () => {
 
   test('should handle errors in non-streaming requests', async () => {
     // Setup
+    mockLogger.startTrace = jest.fn(() => {
+      jest.advanceTimersByTime(1);
+    });
     const error = new Error('API Error');
     mockCreateMethod.mockRejectedValueOnce(error);
 
@@ -426,7 +434,8 @@ describe('OpenAI Wrapper', () => {
 
     expect(mockLogger.startTrace).toHaveBeenCalled();
     expect(mockLogger.conclude).toHaveBeenCalledWith({
-      output: 'Error: API Error'
+      output: 'Error: API Error',
+      durationNs: 1_000_000
     });
   });
 
