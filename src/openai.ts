@@ -125,11 +125,7 @@ export function wrapOpenAI<T extends OpenAIType>(
                         );
                       }
 
-                      const endTime = new Date();
-                      const durationNs = calculateDurationNs(
-                        startTime,
-                        endTime
-                      );
+                      const durationNs = calculateDurationNs(startTime);
                       const output = response?.choices?.map((choice: any) =>
                         JSON.parse(JSON.stringify(choice.message))
                       );
