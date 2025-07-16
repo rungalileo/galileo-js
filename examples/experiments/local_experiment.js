@@ -52,10 +52,7 @@ await runExperiment({
   name: 'food-experiment',
   dataset: dataset,
   function: runner,
-  metrics: [
-    GalileoScorers.GroundTruthAdherence,
-    GalileoScorers.ContextAdherence
-  ],
+  metrics: [GalileoScorers.GroundTruthAdherence],
   // Set the project name here
   projectName: 'e2e-working-demo'
 });
