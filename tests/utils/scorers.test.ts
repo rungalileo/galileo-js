@@ -189,16 +189,16 @@ describe('scorers utility', () => {
     it('should call createLlmScorerVersion with userPrompt instead of instructions/chainPollTemplate', async () => {
       await createLlmScorerVersion(
         'scorer-uuid',
-        undefined,           // instructions
-        undefined,           // chainPollTemplate
+        undefined, // instructions
+        undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
         'gpt-4',
         3
       );
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
-        undefined,           // instructions
-        undefined,           // chainPollTemplate
+        undefined, // instructions
+        undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
         'gpt-4',
         3
@@ -208,8 +208,8 @@ describe('scorers utility', () => {
     it('should return the created scorer version when using userPrompt', async () => {
       const result = await createLlmScorerVersion(
         'scorer-uuid',
-        undefined,           // instructions
-        undefined,           // chainPollTemplate
+        undefined, // instructions
+        undefined, // chainPollTemplate
         'custom user prompt' // userPrompt
       );
       expect(result).toEqual(mockVersion);
