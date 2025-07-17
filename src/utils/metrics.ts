@@ -1,4 +1,4 @@
-import { ChainPollTemplate, ScorerTypes } from '../types';
+import { ScorerTypes } from '../types';
 import {
   createScorer,
   createLlmScorerVersion,

@@ -121,7 +121,13 @@ export class ScorerService extends BaseClient {
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> => {
-    const scorerVersionPayload: any = {};
+    const scorerVersionPayload: {
+      model_name?: string;
+      num_judges?: number;
+      instructions?: string;
+      chain_poll_template?: ChainPollTemplate;
+      user_prompt?: string;
+    } = {};
 
     if (modelName !== undefined && modelName !== null) {
       scorerVersionPayload.model_name = modelName;
