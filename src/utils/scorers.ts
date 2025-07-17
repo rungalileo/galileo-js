@@ -109,16 +109,18 @@ export const createScorer = async (
  * Creates a new LLM scorer version for a given scorer.
  *
  * @param scorerId - The unique identifier of the scorer.
- * @param instructions - Instructions for the scorer version.
- * @param chainPollTemplate - The chain poll template for the scorer version.
+ * @param instructions - (Optional) Instructions for the scorer version.
+ * @param chainPollTemplate - (Optional) The chain poll template for the scorer version.
+ * @param userPrompt - (Optional) The user prompt for the scorer version.
  * @param modelName - (Optional) The model name to use.
  * @param numJudges - (Optional) The number of judges to use.
  * @returns A promise that resolves to the created {@link ScorerVersion}.
  */
 export const createLlmScorerVersion = async (
   scorerId: string,
-  instructions: string,
-  chainPollTemplate: ChainPollTemplate,
+  instructions?: string,
+  chainPollTemplate?: ChainPollTemplate,
+  userPrompt?: string,
   modelName?: string,
   numJudges?: number
 ): Promise<ScorerVersion> => {
@@ -129,6 +131,7 @@ export const createLlmScorerVersion = async (
     scorerId,
     instructions,
     chainPollTemplate,
+    userPrompt,
     modelName,
     numJudges
   );

@@ -115,17 +115,35 @@ export class ScorerService extends BaseClient {
    */
   public createLLMScorerVersion = async (
     scorerId: string,
-    instructions: string,
-    chainPollTemplate: ChainPollTemplate,
+    instructions?: string,
+    chainPollTemplate?: ChainPollTemplate,
+    userPrompt?: string,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> => {
-    const scorerVersionPayload = {
-      model_name: modelName,
-      num_judges: numJudges,
-      instructions: instructions,
-      chain_poll_template: chainPollTemplate
-    };
+    const scorerVersionPayload: {
+      model_name?: string;
+      num_judges?: number;
+      instructions?: string;
+      chain_poll_template?: ChainPollTemplate;
+      user_prompt?: string;
+    } = {};
+
+    if (modelName !== undefined && modelName !== null) {
+      scorerVersionPayload.model_name = modelName;
+    }
+    if (numJudges !== undefined && numJudges !== null) {
+      scorerVersionPayload.num_judges = numJudges;
+    }
+    if (instructions !== undefined && instructions !== null) {
+      scorerVersionPayload.instructions = instructions;
+    }
+    if (chainPollTemplate !== undefined && chainPollTemplate !== null) {
+      scorerVersionPayload.chain_poll_template = chainPollTemplate;
+    }
+    if (userPrompt !== undefined && userPrompt !== null) {
+      scorerVersionPayload.user_prompt = userPrompt;
+    }
 
     const path = Routes.llmScorerVersion.replace('{scorer_id}', scorerId);
 
