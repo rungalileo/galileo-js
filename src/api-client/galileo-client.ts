@@ -475,8 +475,9 @@ export class GalileoApiClient extends BaseClient {
 
   public async createLlmScorerVersion(
     scorerId: string,
-    instructions: string,
-    chainPollTemplate: ChainPollTemplate,
+    instructions?: string,
+    chainPollTemplate?: ChainPollTemplate,
+    userPrompt?: string,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> {
@@ -485,6 +486,7 @@ export class GalileoApiClient extends BaseClient {
       scorerId,
       instructions,
       chainPollTemplate,
+      userPrompt,
       modelName,
       numJudges
     );

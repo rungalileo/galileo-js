@@ -20,8 +20,7 @@ import {
  */
 export const createCustomLlmMetric = async (
   name: string,
-  instructions: string,
-  chainPollTemplate: ChainPollTemplate,
+  userPrompt: string,
   modelName: string = 'GPT-4o',
   numJudges: number = 3,
   description: string = '',
@@ -42,8 +41,9 @@ export const createCustomLlmMetric = async (
 
   await createLlmScorerVersion(
     scorer.id,
-    instructions,
-    chainPollTemplate,
+    undefined,
+    undefined,
+    userPrompt,
     modelName,
     numJudges
   );

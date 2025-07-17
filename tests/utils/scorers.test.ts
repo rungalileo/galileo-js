@@ -153,6 +153,7 @@ describe('scorers utility', () => {
         'scorer-uuid',
         'instructions',
         { template: 'foo' },
+        undefined,
         'gpt-4',
         3
       );
@@ -160,6 +161,7 @@ describe('scorers utility', () => {
         'scorer-uuid',
         'instructions',
         { template: 'foo' },
+        undefined,
         'gpt-4',
         3
       );
@@ -182,6 +184,35 @@ describe('scorers utility', () => {
           template: 'foo'
         })
       ).rejects.toThrow(apiError);
+    });
+
+    it('should call createLlmScorerVersion with userPrompt instead of instructions/chainPollTemplate', async () => {
+      await createLlmScorerVersion(
+        'scorer-uuid',
+        undefined,           // instructions
+        undefined,           // chainPollTemplate
+        'custom user prompt', // userPrompt
+        'gpt-4',
+        3
+      );
+      expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
+        'scorer-uuid',
+        undefined,           // instructions
+        undefined,           // chainPollTemplate
+        'custom user prompt', // userPrompt
+        'gpt-4',
+        3
+      );
+    });
+
+    it('should return the created scorer version when using userPrompt', async () => {
+      const result = await createLlmScorerVersion(
+        'scorer-uuid',
+        undefined,           // instructions
+        undefined,           // chainPollTemplate
+        'custom user prompt' // userPrompt
+      );
+      expect(result).toEqual(mockVersion);
     });
   });
 
