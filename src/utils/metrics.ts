@@ -21,6 +21,8 @@ import {
 export const createCustomLlmMetric = async (
   name: string,
   userPrompt: string,
+  nodeLevel: string = 'llm',
+  cotEnabled: boolean = true,
   modelName: string = 'GPT-4o',
   numJudges: number = 3,
   description: string = '',
@@ -44,6 +46,8 @@ export const createCustomLlmMetric = async (
     undefined,
     undefined,
     userPrompt,
+    nodeLevel,
+    cotEnabled,
     modelName,
     numJudges
   );

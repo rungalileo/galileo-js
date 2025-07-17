@@ -478,6 +478,8 @@ export class GalileoApiClient extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
+    nodeLevel?: string,
+    cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> {
@@ -487,6 +489,8 @@ export class GalileoApiClient extends BaseClient {
       instructions,
       chainPollTemplate,
       userPrompt,
+      nodeLevel,
+      cotEnabled,
       modelName,
       numJudges
     );

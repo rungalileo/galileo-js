@@ -153,7 +153,9 @@ describe('scorers utility', () => {
         'scorer-uuid',
         'instructions',
         { template: 'foo' },
-        undefined,
+        undefined, // userPrompt
+        'trace', // nodeLevel
+        true, // cotEnabled
         'gpt-4',
         3
       );
@@ -161,7 +163,9 @@ describe('scorers utility', () => {
         'scorer-uuid',
         'instructions',
         { template: 'foo' },
-        undefined,
+        undefined, // userPrompt
+        'trace', // nodeLevel
+        true, // cotEnabled
         'gpt-4',
         3
       );
@@ -192,6 +196,8 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
+        'session',
+        false,
         'gpt-4',
         3
       );
@@ -200,6 +206,8 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
+        'session',
+        false,
         'gpt-4',
         3
       );
