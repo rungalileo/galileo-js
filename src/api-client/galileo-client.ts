@@ -27,6 +27,7 @@ import {
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
+import { StepType } from '../types/logging/step.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -478,6 +479,8 @@ export class GalileoApiClient extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
+    nodeLevel?: StepType,
+    cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> {
@@ -487,6 +490,8 @@ export class GalileoApiClient extends BaseClient {
       instructions,
       chainPollTemplate,
       userPrompt,
+      nodeLevel,
+      cotEnabled,
       modelName,
       numJudges
     );

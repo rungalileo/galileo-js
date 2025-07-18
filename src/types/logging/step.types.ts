@@ -37,6 +37,7 @@ export type RetrieverSpanAllowedOutputType =
   | Document[];
 
 export enum StepType {
+  session = 'session',
   trace = 'trace',
   workflow = 'workflow',
   llm = 'llm',

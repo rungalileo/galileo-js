@@ -8,6 +8,7 @@ import {
   ScorerVersion
 } from '../../types/scorer.types';
 import { ScorerTypes } from '../../types/scorer.types';
+import { StepType } from '../../types/logging/step.types';
 
 export class ScorerService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -109,6 +110,9 @@ export class ScorerService extends BaseClient {
    * @param scorerId - The unique identifier of the scorer.
    * @param instructions - Instructions for the scorer version.
    * @param chainPollTemplate - The chain poll template for the scorer version.
+   * @param userPrompt - (Optional) The user prompt for the scorer version.
+   * @param nodeLevel - (Optional) The node level for the scorer version. Defaults to 'llm'.
+   * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to
    * @param modelName - (Optional) The model name to use.
    * @param numJudges - (Optional) The number of judges to use.
    * @returns A promise that resolves to the created {@link ScorerVersion}.
@@ -118,6 +122,8 @@ export class ScorerService extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
+    nodeLevel?: StepType,
+    cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> => {
@@ -127,6 +133,8 @@ export class ScorerService extends BaseClient {
       instructions?: string;
       chain_poll_template?: ChainPollTemplate;
       user_prompt?: string;
+      node_level?: string;
+      cot_enabled?: boolean;
     } = {};
 
     if (modelName !== undefined && modelName !== null) {
@@ -143,6 +151,12 @@ export class ScorerService extends BaseClient {
     }
     if (userPrompt !== undefined && userPrompt !== null) {
       scorerVersionPayload.user_prompt = userPrompt;
+    }
+    if (nodeLevel !== undefined && nodeLevel !== null) {
+      scorerVersionPayload.node_level = nodeLevel;
+    }
+    if (cotEnabled !== undefined && cotEnabled !== null) {
+      scorerVersionPayload.cot_enabled = cotEnabled;
     }
 
     const path = Routes.llmScorerVersion.replace('{scorer_id}', scorerId);
