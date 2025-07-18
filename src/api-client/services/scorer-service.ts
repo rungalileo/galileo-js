@@ -8,6 +8,7 @@ import {
   ScorerVersion
 } from '../../types/scorer.types';
 import { ScorerTypes } from '../../types/scorer.types';
+import { StepType } from '../../types/logging/step.types';
 
 export class ScorerService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -121,7 +122,7 @@ export class ScorerService extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
-    nodeLevel?: string,
+    nodeLevel?: StepType,
     cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number

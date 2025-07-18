@@ -1,4 +1,4 @@
-import { ScorerTypes } from '../types';
+import { ScorerTypes, StepType } from '../types';
 import {
   createScorer,
   createLlmScorerVersion,
@@ -21,7 +21,7 @@ import {
 export const createCustomLlmMetric = async (
   name: string,
   userPrompt: string,
-  nodeLevel: string = 'llm',
+  nodeLevel: StepType = StepType.llm,
   cotEnabled: boolean = true,
   modelName: string = 'GPT-4o',
   numJudges: number = 3,

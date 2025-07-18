@@ -9,6 +9,7 @@ import {
   ScorerVersion,
   ScorerTypes
 } from '../../src/types/scorer.types';
+import { StepType } from '../../src/types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -154,7 +155,7 @@ describe('scorers utility', () => {
         'instructions',
         { template: 'foo' },
         undefined, // userPrompt
-        'trace', // nodeLevel
+        StepType.trace, // nodeLevel
         true, // cotEnabled
         'gpt-4',
         3
@@ -164,7 +165,7 @@ describe('scorers utility', () => {
         'instructions',
         { template: 'foo' },
         undefined, // userPrompt
-        'trace', // nodeLevel
+        StepType.trace, // nodeLevel
         true, // cotEnabled
         'gpt-4',
         3
@@ -196,7 +197,7 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
-        'session',
+        StepType.session,
         false,
         'gpt-4',
         3
@@ -206,7 +207,7 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
-        'session',
+        StepType.session,
         false,
         'gpt-4',
         3

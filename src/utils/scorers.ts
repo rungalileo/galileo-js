@@ -7,6 +7,7 @@ import {
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
+import { StepType } from '../types/logging/step.types';
 
 export const getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
   const client = new GalileoApiClient();
@@ -123,7 +124,7 @@ export const createLlmScorerVersion = async (
   instructions?: string,
   chainPollTemplate?: ChainPollTemplate,
   userPrompt?: string,
-  nodeLevel?: string,
+  nodeLevel?: StepType,
   cotEnabled?: boolean,
   modelName?: string,
   numJudges?: number
