@@ -479,7 +479,7 @@ export class GalileoApiClient extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
-    nodeLevel?: StepType,
+    scoreableNodeTypes?: StepType[],
     cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
@@ -490,7 +490,7 @@ export class GalileoApiClient extends BaseClient {
       instructions,
       chainPollTemplate,
       userPrompt,
-      nodeLevel,
+      scoreableNodeTypes,
       cotEnabled,
       modelName,
       numJudges

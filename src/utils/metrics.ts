@@ -41,12 +41,13 @@ export const createCustomLlmMetric = async (
     undefined
   );
 
+  const scoreableNodeTypes = [nodeLevel];
   await createLlmScorerVersion(
     scorer.id,
     undefined,
     undefined,
     userPrompt,
-    nodeLevel,
+    scoreableNodeTypes,
     cotEnabled,
     modelName,
     numJudges

@@ -155,7 +155,7 @@ describe('scorers utility', () => {
         'instructions',
         { template: 'foo' },
         undefined, // userPrompt
-        StepType.trace, // nodeLevel
+        [StepType.trace], // scoreableNodeTypes
         true, // cotEnabled
         'gpt-4',
         3
@@ -165,7 +165,7 @@ describe('scorers utility', () => {
         'instructions',
         { template: 'foo' },
         undefined, // userPrompt
-        StepType.trace, // nodeLevel
+        [StepType.trace], // scoreableNodeTypes
         true, // cotEnabled
         'gpt-4',
         3
@@ -197,7 +197,7 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
-        StepType.session,
+        [StepType.session],
         false,
         'gpt-4',
         3
@@ -207,7 +207,7 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
-        StepType.session,
+        [StepType.session],
         false,
         'gpt-4',
         3

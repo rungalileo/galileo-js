@@ -111,7 +111,7 @@ export class ScorerService extends BaseClient {
    * @param instructions - Instructions for the scorer version.
    * @param chainPollTemplate - The chain poll template for the scorer version.
    * @param userPrompt - (Optional) The user prompt for the scorer version.
-   * @param nodeLevel - (Optional) The node level for the scorer version. Defaults to 'llm'.
+   * @param scoreableNodeTypes - (Optional) The node level for the scorer version. Defaults to ['llm'].
    * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to
    * @param modelName - (Optional) The model name to use.
    * @param numJudges - (Optional) The number of judges to use.
@@ -122,7 +122,7 @@ export class ScorerService extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
-    nodeLevel?: StepType,
+    scoreableNodeTypes?: StepType[],
     cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
@@ -133,7 +133,7 @@ export class ScorerService extends BaseClient {
       instructions?: string;
       chain_poll_template?: ChainPollTemplate;
       user_prompt?: string;
-      node_level?: string;
+      scoreableNodeTypes?: StepType[];
       cot_enabled?: boolean;
     } = {};
 
@@ -152,8 +152,8 @@ export class ScorerService extends BaseClient {
     if (userPrompt !== undefined && userPrompt !== null) {
       scorerVersionPayload.user_prompt = userPrompt;
     }
-    if (nodeLevel !== undefined && nodeLevel !== null) {
-      scorerVersionPayload.node_level = nodeLevel;
+    if (scoreableNodeTypes !== undefined && scoreableNodeTypes !== null) {
+      scorerVersionPayload.scoreableNodeTypes = scoreableNodeTypes;
     }
     if (cotEnabled !== undefined && cotEnabled !== null) {
       scorerVersionPayload.cot_enabled = cotEnabled;
