@@ -113,7 +113,7 @@ export const createScorer = async (
  * @param instructions - (Optional) Instructions for the scorer version.
  * @param chainPollTemplate - (Optional) The chain poll template for the scorer version.
  * @param userPrompt - (Optional) The user prompt for the scorer version.
- * @param nodeLevel - (Optional) The node level for the scorer version. Defaults to 'llm'.
+ * @param scoreableNodeTypes - (Optional) The node level for the scorer version. Defaults to ['llm'].
  * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to true
  * @param modelName - (Optional) The model name to use.
  * @param numJudges - (Optional) The number of judges to use.
@@ -124,7 +124,7 @@ export const createLlmScorerVersion = async (
   instructions?: string,
   chainPollTemplate?: ChainPollTemplate,
   userPrompt?: string,
-  nodeLevel?: StepType,
+  scoreableNodeTypes?: StepType[],
   cotEnabled?: boolean,
   modelName?: string,
   numJudges?: number
@@ -137,7 +137,7 @@ export const createLlmScorerVersion = async (
     instructions,
     chainPollTemplate,
     userPrompt,
-    nodeLevel,
+    scoreableNodeTypes,
     cotEnabled,
     modelName,
     numJudges
