@@ -322,7 +322,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
       if (!scorer) {
         throw new Error(
-          `Metric ${metric} not found. Please check the name is correct.`
+          `Metric ${metricName} not found. Please check the name is correct.`
         );
       }
 
