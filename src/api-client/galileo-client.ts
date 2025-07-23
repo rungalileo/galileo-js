@@ -408,9 +408,12 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentService!.createExperiment(name);
   }
 
-  public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
+  public async getScorers(options?: {
+    type?: ScorerTypes;
+    names?: string[];
+  }): Promise<Scorer[]> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorers(type);
+    return this.scorerService!.getScorers(options);
   }
 
   public async getScorerVersion(

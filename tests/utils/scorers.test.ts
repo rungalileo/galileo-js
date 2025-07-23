@@ -2,7 +2,8 @@ import {
   createScorer,
   createLlmScorerVersion,
   deleteScorer,
-  getScorerVersion
+  getScorerVersion,
+  getScorers
 } from '../../src/utils/scorers';
 import {
   Scorer,
@@ -17,6 +18,7 @@ const mockCreateScorer = jest.fn();
 const mockCreateLlmScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
+const mockGetScorers = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -27,7 +29,8 @@ jest.mock('../../src/api-client', () => {
         createLlmScorerVersion: (...args: unknown[]) =>
           mockCreateLlmScorerVersion(...args),
         deleteScorer: mockDeleteScorer,
-        getScorerVersion: mockGetScorerVersion
+        getScorerVersion: mockGetScorerVersion,
+        getScorers: mockGetScorers
       };
     })
   };
@@ -250,6 +253,50 @@ describe('scorers utility', () => {
       const apiError = new Error('API error');
       mockDeleteScorer.mockRejectedValueOnce(apiError);
       await expect(deleteScorer('scorer-uuid')).rejects.toThrow(apiError);
+    });
+  });
+
+  describe('getScorers', () => {
+    const mockScorers: Scorer[] = [
+      { id: '1', name: 'foo', scorer_type: ScorerTypes.llm },
+      { id: '2', name: 'bar', scorer_type: ScorerTypes.llm }
+    ];
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockInit.mockResolvedValue(undefined);
+      mockGetScorers.mockResolvedValue(mockScorers);
+    });
+
+    it('should initialize the API client', async () => {
+      await getScorers();
+      expect(mockInit).toHaveBeenCalled();
+    });
+
+    it('should call getScorers with no filters', async () => {
+      await getScorers();
+      expect(mockGetScorers).toHaveBeenCalled();
+    });
+
+    it('should call getScorers with type filter', async () => {
+      await getScorers({ type: ScorerTypes.llm });
+      expect(mockGetScorers).toHaveBeenCalledWith({ type: ScorerTypes.llm });
+    });
+
+    it('should call getScorers with names filter', async () => {
+      await getScorers({ names: ['foo', 'bar'] });
+      expect(mockGetScorers).toHaveBeenCalledWith({ names: ['foo', 'bar'] });
+    });
+
+    it('should return the scorers from the API', async () => {
+      const result = await getScorers();
+      expect(result).toEqual(mockScorers);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      const apiError = new Error('API error');
+      mockGetScorers.mockRejectedValueOnce(apiError);
+      await expect(getScorers()).rejects.toThrow(apiError);
     });
   });
 });

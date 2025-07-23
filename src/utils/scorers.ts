@@ -9,10 +9,13 @@ import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
 import { StepType } from '../types/logging/step.types';
 
-export const getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+export const getScorers = async (options?: {
+  type?: ScorerTypes;
+  names?: string[];
+}): Promise<Scorer[]> => {
   const client = new GalileoApiClient();
   await client.init();
-  return await client.getScorers(type);
+  return await client.getScorers(options);
 };
 
 /**

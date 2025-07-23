@@ -1,4 +1,4 @@
-import { ScorerTypes, StepType } from '../types';
+import { ScorerTypes, ScorerVersion, StepType } from '../types';
 import {
   createScorer,
   createLlmScorerVersion,
@@ -27,7 +27,7 @@ export const createCustomLlmMetric = async (
   numJudges: number = 3,
   description: string = '',
   tags: string[] = []
-): Promise<void> => {
+): Promise<ScorerVersion> => {
   const scorer = await createScorer(
     name,
     ScorerTypes.llm,
@@ -42,7 +42,7 @@ export const createCustomLlmMetric = async (
   );
 
   const scoreableNodeTypes = [nodeLevel];
-  await createLlmScorerVersion(
+  return await createLlmScorerVersion(
     scorer.id,
     undefined,
     undefined,
@@ -66,10 +66,12 @@ export const deleteMetric = async (
   scorerName: string,
   scorerType: ScorerTypes
 ): Promise<void> => {
-  const scorers = await getScorers(scorerType);
-  const scorer = scorers.find((s) => s.name === scorerName);
-  if (!scorer) {
+  const names: string[] = [scorerName];
+  console.log('Deleting metric with names:', names);
+  const scorers = await getScorers({ type: scorerType, names: names });
+  if (scorers.length === 0) {
     throw new Error(`Scorer with name ${scorerName} not found.`);
   }
+  const scorer = scorers[0]; // There should only ever be one here
   await deleteScorer(scorer.id);
 };
