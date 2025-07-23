@@ -24,7 +24,10 @@ export class ScorerService extends BaseClient {
    * @param type - (Optional) The type of scorer to filter by.
    * @returns A promise that resolves to an array of {@link Scorer} objects.
    */
-  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+  public getScorers = async (
+    type?: ScorerTypes,
+    limit: number = 1000
+  ): Promise<Scorer[]> => {
     const response = await this.makeRequest<{ scorers: Scorer[] }>(
       RequestMethod.POST,
       Routes.scorers,
@@ -38,7 +41,10 @@ export class ScorerService extends BaseClient {
               }
             ]
           }
-        : {}
+        : {},
+      {
+        limit: limit
+      }
     );
 
     return response.scorers;
