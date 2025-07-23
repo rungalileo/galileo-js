@@ -279,13 +279,13 @@ describe('scorers utility', () => {
     });
 
     it('should call getScorers with type filter', async () => {
-      await getScorers({type: ScorerTypes.llm});
-      expect(mockGetScorers).toHaveBeenCalledWith({type: ScorerTypes.llm});
+      await getScorers({ type: ScorerTypes.llm });
+      expect(mockGetScorers).toHaveBeenCalledWith({ type: ScorerTypes.llm });
     });
 
     it('should call getScorers with names filter', async () => {
-      await getScorers({names: ['foo', 'bar']});
-      expect(mockGetScorers).toHaveBeenCalledWith({names: ['foo', 'bar']});
+      await getScorers({ names: ['foo', 'bar'] });
+      expect(mockGetScorers).toHaveBeenCalledWith({ names: ['foo', 'bar'] });
     });
 
     it('should return the scorers from the API', async () => {
