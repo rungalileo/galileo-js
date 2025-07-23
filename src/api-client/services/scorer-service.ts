@@ -24,23 +24,29 @@ export class ScorerService extends BaseClient {
    * @param type - (Optional) The type of scorer to filter by.
    * @returns A promise that resolves to an array of {@link Scorer} objects.
    */
-  public getScorers = async (
-    type?: ScorerTypes,
-    names?: string[]
-  ): Promise<Scorer[]> => {
+  public getScorers = async (options?: {
+    type?: ScorerTypes;
+    names?: string[];
+  }): Promise<Scorer[]> => {
     const filters = [];
-    if (type) {
+    if (options?.type) {
       filters.push({
         name: 'scorer_type',
-        value: type,
+        value: options.type,
         operator: 'eq'
       });
     }
 
-    if (names && names.length > 1) {
+    if (options?.names && options.names.length === 1) {
       filters.push({
         name: 'name',
-        value: names,
+        value: options.names[0],
+        operator: 'eq'
+      });
+    } else if (options?.names && options.names.length > 1) {
+      filters.push({
+        name: 'name',
+        value: options.names,
         operator: 'one_of'
       });
     }

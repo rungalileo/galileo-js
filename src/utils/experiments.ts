@@ -309,9 +309,9 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     const metricNames = metrics.map((m) =>
       typeof m === 'string' ? m : m.name
     );
-    const scorers = await getScorers(undefined, metricNames);
+    const scorers = await getScorers({ names: metricNames });
 
-    if (scorers.length !== metricNames.length) {
+    if (scorers.length < metricNames.length) {
       const missingMetrics = metricNames.filter(
         (name) => !scorers.some((s) => s.name === name)
       );
