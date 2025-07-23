@@ -311,18 +311,21 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     );
     const scorers = await getScorers(undefined, metricNames);
 
-    const scorerToMetricMap = new Map();
-    for (const scorer of scorers) {
-      const metric = metrics?.find(
-        (m) => (typeof m === 'string' ? m : m.name) === scorer.name
+    if (scorers.length !== metricNames.length) {
+      const missingMetrics = metricNames.filter(
+        (name) => !scorers.some((s) => s.name === name)
       );
-      scorerToMetricMap.set(scorer, metric);
+      throw new Error(
+        `Metrics not found: ${missingMetrics.join(', ')}. Please create them first.`
+      );
     }
 
     for (const scorer of scorers) {
       // This is a string, GalileoScorers, or Metric
       let metricVersion: number | undefined = undefined;
-      const metric = scorerToMetricMap.get(scorer);
+      const metric = metrics?.find(
+        (m) => (typeof m === 'string' ? m : m.name) === scorer.name
+      );
       if (
         metric &&
         typeof metric === 'object' &&

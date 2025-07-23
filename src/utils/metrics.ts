@@ -69,9 +69,9 @@ export const deleteMetric = async (
   const names: string[] = [scorerName];
   console.log('Deleting metric with names:', names);
   const scorers = await getScorers(scorerType, names);
-  const scorer = scorers[0]; // There should only ever be one here
-  if (!scorer) {
+  if (scorers.length === 0) {
     throw new Error(`Scorer with name ${scorerName} not found.`);
   }
+  const scorer = scorers[0]; // There should only ever be one here
   await deleteScorer(scorer.id);
 };
