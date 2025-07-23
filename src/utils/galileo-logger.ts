@@ -99,7 +99,7 @@ class GalileoLogger {
 
     const emptySpanData = {
       input: '',
-      redactedInput: undefined, 
+      redactedInput: undefined,
       output: '',
       redactedOutput: undefined
     };
@@ -161,19 +161,27 @@ class GalileoLogger {
     return this.loggingDisabled;
   }
 
-  static getLastOutput(node?: BaseSpan): { output?: string; redactedOutput?: string } | undefined {
+  static getLastOutput(
+    node?: BaseSpan
+  ): { output?: string; redactedOutput?: string } | undefined {
     if (node === undefined) {
       return undefined;
     }
-  
-    const output = node.output !== undefined 
-      ? (typeof node.output === 'string' ? node.output : toStringValue(node.output))
-      : undefined;
-      
-    const redactedOutput = node.redactedOutput !== undefined
-      ? (typeof node.redactedOutput === 'string' ? node.redactedOutput : toStringValue(node.redactedOutput))
-      : undefined;
-  
+
+    const output =
+      node.output !== undefined
+        ? typeof node.output === 'string'
+          ? node.output
+          : toStringValue(node.output)
+        : undefined;
+
+    const redactedOutput =
+      node.redactedOutput !== undefined
+        ? typeof node.redactedOutput === 'string'
+          ? node.redactedOutput
+          : toStringValue(node.redactedOutput)
+        : undefined;
+
     if (output !== undefined || redactedOutput !== undefined) {
       return { output, redactedOutput };
     }
@@ -351,13 +359,19 @@ class GalileoLogger {
 
     const trace = new Trace({
       input: typeof input === 'string' ? input : JSON.stringify(input),
-      redactedInput: redactedInput !== undefined 
-        ? (typeof redactedInput === 'string' ? redactedInput : JSON.stringify(redactedInput))
-        : undefined,
+      redactedInput:
+        redactedInput !== undefined
+          ? typeof redactedInput === 'string'
+            ? redactedInput
+            : JSON.stringify(redactedInput)
+          : undefined,
       output: typeof output === 'string' ? output : JSON.stringify(output),
-      redactedOutput: redactedOutput !== undefined
-        ? (typeof redactedOutput === 'string' ? redactedOutput : JSON.stringify(redactedOutput))
-        : undefined,
+      redactedOutput:
+        redactedOutput !== undefined
+          ? typeof redactedOutput === 'string'
+            ? redactedOutput
+            : JSON.stringify(redactedOutput)
+          : undefined,
       name,
       metadata,
       tags,
@@ -678,7 +692,8 @@ class GalileoLogger {
     }
 
     currentParent.output = output || currentParent.output;
-    currentParent.redactedOutput = redactedOutput || currentParent.redactedOutput;
+    currentParent.redactedOutput =
+      redactedOutput || currentParent.redactedOutput;
     currentParent.statusCode = statusCode;
     if (durationNs !== undefined) {
       currentParent.metrics.durationNs = durationNs;
@@ -710,7 +725,12 @@ class GalileoLogger {
     concludeAll?: boolean;
   }): StepWithChildSpans | undefined {
     if (!concludeAll) {
-      return this.concludeCurrentParent({ output, redactedOutput, durationNs, statusCode });
+      return this.concludeCurrentParent({
+        output,
+        redactedOutput,
+        durationNs,
+        statusCode
+      });
     }
     let currentParent: StepWithChildSpans | undefined = undefined;
     while (this.currentParent() !== undefined) {
@@ -735,7 +755,11 @@ class GalileoLogger {
       if (currentParent !== undefined) {
         console.info('Concluding the active trace...');
         const lastOutputs = GalileoLogger.getLastOutput(currentParent);
-        this.conclude({ output: lastOutputs?.output, redactedOutput: lastOutputs?.redactedOutput, concludeAll: true });
+        this.conclude({
+          output: lastOutputs?.output,
+          redactedOutput: lastOutputs?.redactedOutput,
+          concludeAll: true
+        });
       }
 
       await this.client.init({
