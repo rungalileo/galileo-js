@@ -254,6 +254,40 @@ describe('GalileoLogger', () => {
     it('should not throw error for terminate when logging is disabled', async () => {
       await expect(logger.terminate()).resolves.toBeUndefined();
     });
+
+    it('should handle redacted data correctly when logging is disabled', () => {
+      const trace = logger.startTrace({ 
+        input: 'test input',
+        redactedInput: 'redacted input',
+        output: 'test output',
+        redactedOutput: 'redacted output'
+      });
+      
+      expect(trace).toBeInstanceOf(Trace);
+      expect(trace.input).toBe('');
+      expect(trace.redactedInput).toBeUndefined();
+      expect(trace.output).toBe('');
+      expect(trace.redactedOutput).toBeUndefined();
+      expect(logger['traces'].length).toBe(0);
+    });
+    
+    it('should handle redacted data in addLlmSpan when logging is disabled', () => {
+      logger.startTrace({ input: 'test input' });
+    
+      const span = logger.addLlmSpan({
+        input: 'test input',
+        redactedInput: 'redacted input',
+        output: 'test output',
+        redactedOutput: 'redacted output',
+        model: 'gpt-4'
+      });
+    
+      expect(span).toBeInstanceOf(LlmSpan);
+      expect(span.input).toStrictEqual([{ content: '', role: 'user' } as Message]);
+      expect(span.redactedInput).toBeUndefined();
+      expect(span.output).toStrictEqual({ content: '', role: 'assistant' } as Message);
+      expect(span.redactedOutput).toBeUndefined();
+    });
   });
 
   describe('Logger behavior when logging is enabled', () => {
@@ -542,10 +576,10 @@ describe('GalileoLogger', () => {
         output: 'llm output'
       });
 
-      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
-      expect(lastOutput).toBe('{"content":"llm output","role":"assistant"}');
+      const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutputs?.output).toBe('{"content":"llm output","role":"assistant"}');
 
-      logger.conclude({ output: lastOutput, concludeAll: true }); // This will conclude both workflow spans and the trace
+      logger.conclude({ output: lastOutputs?.output, concludeAll: true }); // This will conclude both workflow spans and the trace
 
       const trace = logger.traces[0];
 
@@ -554,9 +588,9 @@ describe('GalileoLogger', () => {
       expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
         WorkflowSpan
       );
-      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutput);
-      expect(trace.spans[0].output).toBe(lastOutput);
-      expect(trace.output).toBe(lastOutput);
+      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutputs?.output);
+      expect(trace.spans[0].output).toBe(lastOutputs?.output);
+      expect(trace.output).toBe(lastOutputs?.output);
     });
 
     it('should conclude only the current span with called without concludeAll', async () => {
@@ -572,10 +606,10 @@ describe('GalileoLogger', () => {
         output: 'llm output'
       });
 
-      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
-      expect(lastOutput).toBe('{"content":"llm output","role":"assistant"}');
+      const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutputs?.output).toBe('{"content":"llm output","role":"assistant"}');
 
-      logger.conclude({ output: lastOutput }); // This will conclude only the current span
+      logger.conclude({ output: lastOutputs?.output }); // This will conclude only the current span
 
       const trace = logger.traces[0];
 
@@ -584,7 +618,7 @@ describe('GalileoLogger', () => {
       expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
         WorkflowSpan
       );
-      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutput);
+      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutputs?.output);
       expect(trace.spans[0].output).toBe(undefined);
       expect(trace.output).toBe(undefined);
     });
@@ -594,10 +628,10 @@ describe('GalileoLogger', () => {
       logger.addToolSpan({
         input: 'tool input 1'
       });
-      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
-      expect(lastOutput).toBe(undefined);
+      const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutputs).toBe(undefined);
 
-      logger.conclude({ output: lastOutput, concludeAll: true }); // This will conclude only the current span
+      logger.conclude({ output: lastOutputs?.output, concludeAll: true }); // This will conclude only the current span
 
       const trace = logger.traces[0];
 
@@ -626,10 +660,10 @@ describe('GalileoLogger', () => {
         input: 'workflow input 3'
       });
 
-      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
-      expect(lastOutput).toBe(undefined);
+      const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutputs).toBe(undefined);
 
-      logger.conclude({ output: lastOutput, concludeAll: true }); // This will conclude only the current span
+      logger.conclude({ output: lastOutputs?.output, concludeAll: true }); // This will conclude only the current span
 
       const trace = logger.traces[0];
 
@@ -661,8 +695,8 @@ describe('GalileoLogger', () => {
         output: 'llm output'
       });
 
-      const lastOutput = GalileoLogger.getLastOutput(logger.currentParent());
-      expect(lastOutput).toBe('{"content":"llm output","role":"assistant"}');
+      const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+      expect(lastOutputs?.output).toBe('{"content":"llm output","role":"assistant"}');
 
       const flushedTraces = await logger.flush();
       expect(flushedTraces.length).toBe(1);
@@ -674,9 +708,9 @@ describe('GalileoLogger', () => {
       expect((trace.spans[0] as WorkflowSpan).spans[0]).toBeInstanceOf(
         WorkflowSpan
       );
-      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutput);
-      expect(trace.spans[0].output).toBe(lastOutput);
-      expect(trace.output).toBe(lastOutput);
+      expect((trace.spans[0] as WorkflowSpan).spans[0].output).toBe(lastOutputs?.output);
+      expect(trace.spans[0].output).toBe(lastOutputs?.output);
+      expect(trace.output).toBe(lastOutputs?.output);
     });
 
     it('should throw error when concluding without an active trace', () => {
@@ -1014,6 +1048,296 @@ describe('GalileoLogger', () => {
         sessionId: sessionId
       });
       expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
+    });
+  });
+
+  describe('Redacted Input and Output Support', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+  
+    describe('startTrace with redacted data', () => {
+      it('should support redactedInput and redactedOutput in startTrace', () => {
+        const trace = logger.startTrace({
+          input: 'sensitive user data',
+          redactedInput: 'user data [REDACTED]',
+          output: 'sensitive response',
+          redactedOutput: 'response [REDACTED]'
+        });
+  
+        expect(trace.input).toBe('sensitive user data');
+        expect(trace.redactedInput).toBe('user data [REDACTED]');
+        expect(trace.output).toBe('sensitive response');
+        expect(trace.redactedOutput).toBe('response [REDACTED]');
+      });
+  
+      it('should handle undefined redacted fields in startTrace', () => {
+        const trace = logger.startTrace({
+          input: 'regular input',
+          output: 'regular output'
+        });
+  
+        expect(trace.input).toBe('regular input');
+        expect(trace.redactedInput).toBeUndefined();
+        expect(trace.output).toBe('regular output');
+        expect(trace.redactedOutput).toBeUndefined();
+      });
+    });
+  
+    describe('addSingleLlmSpanTrace with redacted data', () => {
+      it('should support redactedInput and redactedOutput in addSingleLlmSpanTrace', () => {
+        const input = [{ role: MessageRole.user, content: 'Is my SSN 123-45-6789?' }];
+        const redactedInput = [{ role: MessageRole.user, content: 'Is my SSN [REDACTED]?' }];
+        const output = { role: MessageRole.assistant, content: 'Your SSN is 123-45-6789' };
+        const redactedOutput = { role: MessageRole.assistant, content: 'Your SSN is [REDACTED]' };
+  
+        const trace = logger.addSingleLlmSpanTrace({
+          input,
+          redactedInput,
+          output,
+          redactedOutput,
+          model: 'gpt-4'
+        });
+  
+        expect(trace).toBeInstanceOf(Trace);
+        expect(trace.spans.length).toBe(1);
+        
+        const llmSpan = trace.spans[0] as LlmSpan;
+        expect(llmSpan.input).toEqual([{ role: 'user', content: 'Is my SSN 123-45-6789?' }]);
+        expect(llmSpan.redactedInput).toEqual([{ role: 'user', content: 'Is my SSN [REDACTED]?' }]);
+        expect(llmSpan.output).toEqual({ role: 'assistant', content: 'Your SSN is 123-45-6789' });
+        expect(llmSpan.redactedOutput).toEqual({ role: 'assistant', content: 'Your SSN is [REDACTED]' });
+      });
+  
+      it('should handle undefined redacted fields in addSingleLlmSpanTrace', () => {
+        const input = [{ role: MessageRole.user, content: 'Hello' }];
+        const output = { role: MessageRole.assistant, content: 'Hi there' };
+  
+        const trace = logger.addSingleLlmSpanTrace({
+          input,
+          output,
+          model: 'gpt-4'
+        });
+  
+        const llmSpan = trace.spans[0] as LlmSpan;
+        expect(llmSpan.redactedInput).toBeUndefined();
+        expect(llmSpan.redactedOutput).toBeUndefined();
+      });
+    });
+  
+    describe('addLlmSpan with redacted data', () => {
+      it('should support redactedInput and redactedOutput in addLlmSpan', () => {
+        logger.startTrace({ input: 'test input' });
+  
+        const input = [{ role: MessageRole.user, content: 'My credit card is 4111-1111-1111-1111' }];
+        const redactedInput = [{ role: MessageRole.user, content: 'My credit card is [REDACTED]' }];
+        const output = { role: MessageRole.assistant, content: 'Your card ending in 1111 is valid' };
+        const redactedOutput = { role: MessageRole.assistant, content: 'Your card ending in [REDACTED] is valid' };
+  
+        const llmSpan = logger.addLlmSpan({
+          input,
+          redactedInput,
+          output,
+          redactedOutput,
+          model: 'gpt-4'
+        });
+  
+        expect(llmSpan.input).toEqual([{ role: 'user', content: 'My credit card is 4111-1111-1111-1111' }]);
+        expect(llmSpan.redactedInput).toEqual([{ role: 'user', content: 'My credit card is [REDACTED]' }]);
+        expect(llmSpan.output).toEqual({ role: 'assistant', content: 'Your card ending in 1111 is valid' });
+        expect(llmSpan.redactedOutput).toEqual({ role: 'assistant', content: 'Your card ending in [REDACTED] is valid' });
+      });
+    });
+  
+    describe('addRetrieverSpan with redacted data', () => {
+      it('should support redactedInput and redactedOutput in addRetrieverSpan', () => {
+        logger.startTrace({ input: 'test input' });
+  
+        const input = 'search for documents about user ID 12345';
+        const redactedInput = 'search for documents about user ID [REDACTED]';
+        const output = [new Document({ content: 'User 12345 has these documents...' })];
+        const redactedOutput = [new Document({ content: 'User [REDACTED] has these documents...' })];
+  
+        const retrieverSpan = logger.addRetrieverSpan({
+          input,
+          redactedInput,
+          output,
+          redactedOutput
+        });
+  
+        expect(retrieverSpan.input).toBe('search for documents about user ID 12345');
+        expect(retrieverSpan.redactedInput).toBe('search for documents about user ID [REDACTED]');
+        expect(retrieverSpan.output).toEqual([{ content: 'User 12345 has these documents...', metadata: {} }]);
+        expect(retrieverSpan.redactedOutput).toEqual([{ content: 'User [REDACTED] has these documents...', metadata: {} }]);
+      });
+    });
+  
+    describe('addToolSpan with redacted data', () => {
+      it('should support redactedInput and redactedOutput in addToolSpan', () => {
+        logger.startTrace({ input: 'test input' });
+  
+        const input = 'execute function with API key abc123';
+        const redactedInput = 'execute function with API key [REDACTED]';
+        const output = 'API call successful with key abc123';
+        const redactedOutput = 'API call successful with key [REDACTED]';
+  
+        const toolSpan = logger.addToolSpan({
+          input,
+          redactedInput,
+          output,
+          redactedOutput
+        });
+  
+        expect(toolSpan.input).toBe('execute function with API key abc123');
+        expect(toolSpan.redactedInput).toBe('execute function with API key [REDACTED]');
+        expect(toolSpan.output).toBe('API call successful with key abc123');
+        expect(toolSpan.redactedOutput).toBe('API call successful with key [REDACTED]');
+      });
+    });
+  
+    describe('addWorkflowSpan with redacted data', () => {
+      it('should support redactedInput and redactedOutput in addWorkflowSpan', () => {
+        logger.startTrace({ input: 'test input' });
+  
+        const input = 'process user email john@example.com';
+        const redactedInput = 'process user email [REDACTED]';
+        const output = 'processed john@example.com successfully';
+        const redactedOutput = 'processed [REDACTED] successfully';
+  
+        const workflowSpan = logger.addWorkflowSpan({
+          input,
+          redactedInput,
+          output,
+          redactedOutput
+        });
+  
+        expect(workflowSpan.input).toBe('process user email john@example.com');
+        expect(workflowSpan.redactedInput).toBe('process user email [REDACTED]');
+        expect(workflowSpan.output).toBe('processed john@example.com successfully');
+        expect(workflowSpan.redactedOutput).toBe('processed [REDACTED] successfully');
+      });
+    });
+  
+    describe('addAgentSpan with redacted data', () => {
+      it('should support redactedInput and redactedOutput in addAgentSpan', () => {
+        logger.startTrace({ input: 'test input' });
+  
+        const input = 'agent action with password secret123';
+        const redactedInput = 'agent action with password [REDACTED]';
+        const output = 'agent completed task with secret123';
+        const redactedOutput = 'agent completed task with [REDACTED]';
+  
+        const agentSpan = logger.addAgentSpan({
+          input,
+          redactedInput,
+          output,
+          redactedOutput
+        });
+  
+        expect(agentSpan.input).toBe('agent action with password secret123');
+        expect(agentSpan.redactedInput).toBe('agent action with password [REDACTED]');
+        expect(agentSpan.output).toBe('agent completed task with secret123');
+        expect(agentSpan.redactedOutput).toBe('agent completed task with [REDACTED]');
+      });
+    });
+  
+    describe('conclude with redacted data', () => {
+      it('should support redactedOutput in conclude', () => {
+        logger.startTrace({ input: 'test input' });
+        logger.addWorkflowSpan({ input: 'workflow input' });
+  
+        logger.conclude({
+          output: 'sensitive final result with token xyz789',
+          redactedOutput: 'final result with token [REDACTED]'
+        });
+  
+        const trace = logger.traces[0];
+        const workflowSpan = trace.spans[0] as WorkflowSpan;
+        
+        expect(workflowSpan.output).toBe('sensitive final result with token xyz789');
+        expect(workflowSpan.redactedOutput).toBe('final result with token [REDACTED]');
+      });
+    });
+  
+    describe('getLastOutput with redacted data', () => {
+      it('should return both output and redactedOutput when available', () => {
+        logger.startTrace({ input: 'test input' });
+        logger.addLlmSpan({
+          input: 'test',
+          output: 'response with sensitive data',
+          redactedOutput: 'response with [REDACTED]'
+        });
+  
+        const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+        
+        expect(lastOutputs?.output).toBe('{"content":"response with sensitive data","role":"assistant"}');
+        expect(lastOutputs?.redactedOutput).toBe('{"content":"response with [REDACTED]","role":"assistant"}');
+      });
+  
+      it('should return only output when redactedOutput is not available', () => {
+        logger.startTrace({ input: 'test input' });
+        logger.addLlmSpan({
+          input: 'test',
+          output: 'regular response'
+        });
+  
+        const lastOutputs = GalileoLogger.getLastOutput(logger.currentParent());
+        
+        expect(lastOutputs?.output).toBe('{"content":"regular response","role":"assistant"}');
+        expect(lastOutputs?.redactedOutput).toBeUndefined();
+      });
+    });
+  
+    describe('flush with redacted data', () => {
+      it('should preserve redacted data through flush operation', async () => {
+        logger.startTrace({ 
+          input: 'sensitive input data',
+          redactedInput: 'input [REDACTED]'
+        });
+  
+        logger.addLlmSpan({
+          input: 'query with password 123',
+          redactedInput: 'query with password [REDACTED]',
+          output: 'result with token abc',
+          redactedOutput: 'result with token [REDACTED]'
+        });
+  
+        logger.conclude({ 
+          output: 'trace completed with secret',
+          redactedOutput: 'trace completed with [REDACTED]'
+        });
+  
+        const flushedTraces = await logger.flush();
+        expect(flushedTraces.length).toBe(1);
+  
+        const trace = flushedTraces[0];
+        expect(trace.input).toBe('sensitive input data');
+        expect(trace.redactedInput).toBe('input [REDACTED]');
+        expect(trace.output).toBe('trace completed with secret');
+        expect(trace.redactedOutput).toBe('trace completed with [REDACTED]');
+  
+        const llmSpan = trace.spans[0] as LlmSpan;
+        expect(llmSpan.redactedInput).toEqual([{ role: 'user', content: 'query with password [REDACTED]' }]);
+        expect(llmSpan.redactedOutput).toEqual({ role: 'assistant', content: 'result with token [REDACTED]' });
+      });
+    });
+  
+    describe('redacted data serialization', () => {
+      it('should include redacted fields in span JSON serialization', () => {
+        logger.startTrace({ input: 'test input' });
+  
+        const llmSpan = logger.addLlmSpan({
+          input: 'sensitive query',
+          redactedInput: 'query [REDACTED]',
+          output: 'sensitive response',
+          redactedOutput: 'response [REDACTED]'
+        });
+  
+        const serialized = llmSpan.toJSON();
+        
+        expect(serialized.input).toEqual([{ role: 'user', content: 'sensitive query' }]);
+        expect(serialized.output).toEqual({ role: 'assistant', content: 'sensitive response' });
+      });
     });
   });
 });

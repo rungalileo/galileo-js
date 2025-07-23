@@ -99,7 +99,9 @@ class GalileoLogger {
 
     const emptySpanData = {
       input: '',
-      output: ''
+      redactedInput: undefined, 
+      output: '',
+      redactedOutput: undefined
     };
 
     this.addChildSpanToParent = skipIfDisabled(
@@ -159,15 +161,21 @@ class GalileoLogger {
     return this.loggingDisabled;
   }
 
-  static getLastOutput(node?: BaseSpan): string | undefined {
+  static getLastOutput(node?: BaseSpan): { output?: string; redactedOutput?: string } | undefined {
     if (node === undefined) {
       return undefined;
     }
-
-    if (node.output !== undefined) {
-      return typeof node.output === 'string'
-        ? node.output
-        : toStringValue(node.output);
+  
+    const output = node.output !== undefined 
+      ? (typeof node.output === 'string' ? node.output : toStringValue(node.output))
+      : undefined;
+      
+    const redactedOutput = node.redactedOutput !== undefined
+      ? (typeof node.redactedOutput === 'string' ? node.redactedOutput : toStringValue(node.redactedOutput))
+      : undefined;
+  
+    if (output !== undefined || redactedOutput !== undefined) {
+      return { output, redactedOutput };
     }
 
     if (node instanceof StepWithChildSpans && node.spans.length > 0) {
@@ -236,7 +244,9 @@ class GalileoLogger {
 
   startTrace({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     name,
     createdAt,
     durationNs,
@@ -247,7 +257,9 @@ class GalileoLogger {
     datasetMetadata
   }: {
     input: string;
+    redactedInput?: string;
     output?: string;
+    redactedOutput?: string;
     name?: string;
     createdAt?: Date;
     durationNs?: number;
@@ -265,7 +277,9 @@ class GalileoLogger {
 
     const trace = new Trace({
       input,
+      redactedInput,
       output,
+      redactedOutput,
       name,
       createdAt,
       metadata,
@@ -283,7 +297,9 @@ class GalileoLogger {
 
   addSingleLlmSpanTrace({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     model,
     tools,
     name,
@@ -303,7 +319,9 @@ class GalileoLogger {
     datasetMetadata
   }: {
     input: LlmSpanAllowedInputType;
+    redactedInput?: LlmSpanAllowedInputType;
     output: LlmSpanAllowedOutputType;
+    redactedOutput?: LlmSpanAllowedOutputType;
     model?: string;
     tools?: any[];
     name?: string;
@@ -333,7 +351,13 @@ class GalileoLogger {
 
     const trace = new Trace({
       input: typeof input === 'string' ? input : JSON.stringify(input),
+      redactedInput: redactedInput !== undefined 
+        ? (typeof redactedInput === 'string' ? redactedInput : JSON.stringify(redactedInput))
+        : undefined,
       output: typeof output === 'string' ? output : JSON.stringify(output),
+      redactedOutput: redactedOutput !== undefined
+        ? (typeof redactedOutput === 'string' ? redactedOutput : JSON.stringify(redactedOutput))
+        : undefined,
       name,
       metadata,
       tags,
@@ -349,7 +373,9 @@ class GalileoLogger {
         metadata,
         tags,
         input,
+        redactedInput,
         output,
+        redactedOutput,
         metrics: new LlmMetrics({
           durationNs,
           numInputTokens,
@@ -376,7 +402,9 @@ class GalileoLogger {
 
   addLlmSpan({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     model,
     tools,
     name,
@@ -393,7 +421,9 @@ class GalileoLogger {
     stepNumber
   }: {
     input: LlmSpanAllowedInputType;
+    redactedInput?: LlmSpanAllowedInputType;
     output: LlmSpanAllowedOutputType;
+    redactedOutput?: LlmSpanAllowedOutputType;
     model?: string;
     tools?: any[];
     name?: string;
@@ -414,7 +444,9 @@ class GalileoLogger {
      */
     const span = new LlmSpan({
       input,
+      redactedInput,
       output,
+      redactedOutput,
       model,
       tools,
       name,
@@ -439,7 +471,9 @@ class GalileoLogger {
 
   addRetrieverSpan({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     name,
     durationNs,
     createdAt,
@@ -449,7 +483,9 @@ class GalileoLogger {
     stepNumber
   }: {
     input: string;
+    redactedInput?: string;
     output: RetrieverSpanAllowedOutputType;
+    redactedOutput?: RetrieverSpanAllowedOutputType;
     name?: string;
     durationNs?: number;
     createdAt?: Date;
@@ -463,7 +499,9 @@ class GalileoLogger {
      */
     const span = new RetrieverSpan({
       input,
+      redactedInput,
       output,
+      redactedOutput,
       name,
       createdAt: createdAt,
       metadata: metadata,
@@ -479,7 +517,9 @@ class GalileoLogger {
 
   addToolSpan({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     name,
     durationNs,
     createdAt,
@@ -490,7 +530,9 @@ class GalileoLogger {
     stepNumber
   }: {
     input: string;
+    redactedInput?: string;
     output?: string;
+    redactedOutput?: string;
     name?: string;
     durationNs?: number;
     createdAt?: Date;
@@ -505,7 +547,9 @@ class GalileoLogger {
      */
     const span = new ToolSpan({
       input,
+      redactedInput,
       output,
+      redactedOutput,
       name,
       createdAt: createdAt,
       metadata: metadata,
@@ -522,7 +566,9 @@ class GalileoLogger {
 
   addWorkflowSpan({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     name,
     durationNs,
     createdAt,
@@ -531,7 +577,9 @@ class GalileoLogger {
     stepNumber
   }: {
     input: string;
+    redactedInput?: string;
     output?: string;
+    redactedOutput?: string;
     name?: string;
     durationNs?: number;
     createdAt?: Date;
@@ -546,7 +594,9 @@ class GalileoLogger {
      */
     const span = new WorkflowSpan({
       input,
+      redactedInput,
       output,
+      redactedOutput,
       name,
       createdAt: createdAt,
       metadata: metadata,
@@ -562,7 +612,9 @@ class GalileoLogger {
 
   addAgentSpan({
     input,
+    redactedInput,
     output,
+    redactedOutput,
     name,
     durationNs,
     createdAt,
@@ -572,7 +624,9 @@ class GalileoLogger {
     stepNumber
   }: {
     input: string;
+    redactedInput?: string;
     output?: string;
+    redactedOutput?: string;
     name?: string;
     durationNs?: number;
     createdAt?: Date;
@@ -586,7 +640,9 @@ class GalileoLogger {
      */
     const span = new AgentSpan({
       input,
+      redactedInput,
       output,
+      redactedOutput,
       name,
       createdAt: createdAt,
       metadata: metadata,
@@ -603,10 +659,12 @@ class GalileoLogger {
 
   private concludeCurrentParent({
     output,
+    redactedOutput,
     durationNs,
     statusCode
   }: {
     output?: string;
+    redactedOutput?: string;
     durationNs?: number;
     statusCode?: number;
   }): StepWithChildSpans | undefined {
@@ -620,6 +678,7 @@ class GalileoLogger {
     }
 
     currentParent.output = output || currentParent.output;
+    currentParent.redactedOutput = redactedOutput || currentParent.redactedOutput;
     currentParent.statusCode = statusCode;
     if (durationNs !== undefined) {
       currentParent.metrics.durationNs = durationNs;
@@ -639,22 +698,25 @@ class GalileoLogger {
 
   conclude({
     output,
+    redactedOutput,
     durationNs,
     statusCode,
     concludeAll
   }: {
     output?: string;
+    redactedOutput?: string;
     durationNs?: number;
     statusCode?: number;
     concludeAll?: boolean;
   }): StepWithChildSpans | undefined {
     if (!concludeAll) {
-      return this.concludeCurrentParent({ output, durationNs, statusCode });
+      return this.concludeCurrentParent({ output, redactedOutput, durationNs, statusCode });
     }
     let currentParent: StepWithChildSpans | undefined = undefined;
     while (this.currentParent() !== undefined) {
       currentParent = this.concludeCurrentParent({
         output,
+        redactedOutput,
         durationNs,
         statusCode
       });
@@ -672,8 +734,8 @@ class GalileoLogger {
       const currentParent = this.currentParent();
       if (currentParent !== undefined) {
         console.info('Concluding the active trace...');
-        const lastOutput = GalileoLogger.getLastOutput(currentParent);
-        this.conclude({ output: lastOutput, concludeAll: true });
+        const lastOutputs = GalileoLogger.getLastOutput(currentParent);
+        this.conclude({ output: lastOutputs?.output, redactedOutput: lastOutputs?.redactedOutput, concludeAll: true });
       }
 
       await this.client.init({
