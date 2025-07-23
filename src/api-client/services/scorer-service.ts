@@ -24,21 +24,34 @@ export class ScorerService extends BaseClient {
    * @param type - (Optional) The type of scorer to filter by.
    * @returns A promise that resolves to an array of {@link Scorer} objects.
    */
-  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+  public getScorers = async (
+    type?: ScorerTypes,
+    names?: string[]
+  ): Promise<Scorer[]> => {
+    const filters = [];
+    if (type) {
+      filters.push({
+        name: 'scorer_type',
+        value: type,
+        operator: 'eq'
+      });
+    }
+
+    if (names && names.length > 1) {
+      filters.push({
+        name: 'name',
+        value: names,
+        operator: 'one_of'
+      });
+    }
+
+    const payload = filters.length > 0 ? { filters } : {};
+    console.log('Scorer request payload:', JSON.stringify(payload));
+
     const response = await this.makeRequest<{ scorers: Scorer[] }>(
       RequestMethod.POST,
       Routes.scorers,
-      type
-        ? {
-            filters: [
-              {
-                name: 'scorer_type',
-                value: type,
-                operator: 'eq'
-              }
-            ]
-          }
-        : {}
+      payload
     );
 
     return response.scorers;
@@ -133,7 +146,7 @@ export class ScorerService extends BaseClient {
       instructions?: string;
       chain_poll_template?: ChainPollTemplate;
       user_prompt?: string;
-      scoreableNodeTypes?: StepType[];
+      scoreable_node_types?: StepType[];
       cot_enabled?: boolean;
     } = {};
 
@@ -153,7 +166,7 @@ export class ScorerService extends BaseClient {
       scorerVersionPayload.user_prompt = userPrompt;
     }
     if (scoreableNodeTypes !== undefined && scoreableNodeTypes !== null) {
-      scorerVersionPayload.scoreableNodeTypes = scoreableNodeTypes;
+      scorerVersionPayload.scoreable_node_types = scoreableNodeTypes;
     }
     if (cotEnabled !== undefined && cotEnabled !== null) {
       scorerVersionPayload.cot_enabled = cotEnabled;
