@@ -199,7 +199,7 @@ describe('step.types', () => {
       it('should handle custom metadata and tags', () => {
         const customDate = new Date('2023-01-01');
         const customMetrics = new Metrics({ durationNs: 1000 });
-        
+
         const step = new BaseStep(StepType.llm, {
           input: 'test input',
           createdAt: customDate,
@@ -235,9 +235,15 @@ describe('step.types', () => {
       });
 
       it('should validate serializable values correctly', () => {
-        expect(() => step.validateInputOutputSerializable('string')).not.toThrow();
-        expect(() => step.validateInputOutputSerializable(['array'])).not.toThrow();
-        expect(() => step.validateInputOutputSerializable({ key: 'value' })).not.toThrow();
+        expect(() =>
+          step.validateInputOutputSerializable('string')
+        ).not.toThrow();
+        expect(() =>
+          step.validateInputOutputSerializable(['array'])
+        ).not.toThrow();
+        expect(() =>
+          step.validateInputOutputSerializable({ key: 'value' })
+        ).not.toThrow();
         expect(() => step.validateInputOutputSerializable(123)).not.toThrow();
         expect(() => step.validateInputOutputSerializable(null)).not.toThrow();
       });
