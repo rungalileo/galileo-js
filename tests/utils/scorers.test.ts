@@ -8,7 +8,8 @@ import {
 import {
   Scorer,
   ScorerVersion,
-  ScorerTypes
+  ScorerTypes,
+  OutputType
 } from '../../src/types/scorer.types';
 import { StepType } from '../../src/types';
 
@@ -161,7 +162,8 @@ describe('scorers utility', () => {
         [StepType.trace], // scoreableNodeTypes
         true, // cotEnabled
         'gpt-4',
-        3
+        3,
+        OutputType.CATEGORICAL
       );
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
@@ -171,7 +173,8 @@ describe('scorers utility', () => {
         [StepType.trace], // scoreableNodeTypes
         true, // cotEnabled
         'gpt-4',
-        3
+        3,
+        OutputType.CATEGORICAL
       );
     });
 
@@ -203,7 +206,8 @@ describe('scorers utility', () => {
         [StepType.session],
         false,
         'gpt-4',
-        3
+        3,
+        OutputType.CATEGORICAL
       );
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
@@ -213,7 +217,8 @@ describe('scorers utility', () => {
         [StepType.session],
         false,
         'gpt-4',
-        3
+        3,
+        OutputType.CATEGORICAL
       );
     });
 

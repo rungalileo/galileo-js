@@ -67,3 +67,12 @@ export interface Scorer {
   scorer_type: ScorerTypes;
   defaults?: ScorerDefaults;
 }
+
+export enum OutputType {
+  BOOLEAN = "boolean",
+  CATEGORICAL = "categorical",
+  COUNT = "count",
+  DISCRETE = "discrete",
+  FREEFORM = "freeform",
+  PERCENTAGE = "percentage"
+}
