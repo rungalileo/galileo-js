@@ -69,10 +69,10 @@ export interface Scorer {
 }
 
 export enum OutputType {
-  BOOLEAN = "boolean",
-  CATEGORICAL = "categorical",
-  COUNT = "count",
-  DISCRETE = "discrete",
-  FREEFORM = "freeform",
-  PERCENTAGE = "percentage"
+  BOOLEAN = 'boolean',
+  CATEGORICAL = 'categorical',
+  COUNT = 'count',
+  DISCRETE = 'discrete',
+  FREEFORM = 'freeform',
+  PERCENTAGE = 'percentage'
 }
