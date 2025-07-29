@@ -3,6 +3,7 @@ import { Routes } from '../../types/routes.types';
 import {
   ChainPollTemplate,
   ModelType,
+  OutputType,
   Scorer,
   ScorerDefaults,
   ScorerVersion
@@ -134,6 +135,7 @@ export class ScorerService extends BaseClient {
    * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to
    * @param modelName - (Optional) The model name to use.
    * @param numJudges - (Optional) The number of judges to use.
+   * @param outputType - (Optional) The output type for the scorer version.
    * @returns A promise that resolves to the created {@link ScorerVersion}.
    */
   public createLLMScorerVersion = async (
@@ -144,7 +146,8 @@ export class ScorerService extends BaseClient {
     scoreableNodeTypes?: StepType[],
     cotEnabled?: boolean,
     modelName?: string,
-    numJudges?: number
+    numJudges?: number,
+    outputType?: OutputType
   ): Promise<ScorerVersion> => {
     const scorerVersionPayload: {
       model_name?: string;
@@ -154,6 +157,7 @@ export class ScorerService extends BaseClient {
       user_prompt?: string;
       scoreable_node_types?: StepType[];
       cot_enabled?: boolean;
+      output_type?: OutputType;
     } = {};
 
     if (modelName !== undefined && modelName !== null) {
@@ -176,6 +180,9 @@ export class ScorerService extends BaseClient {
     }
     if (cotEnabled !== undefined && cotEnabled !== null) {
       scorerVersionPayload.cot_enabled = cotEnabled;
+    }
+    if (outputType !== undefined && outputType !== null) {
+      scorerVersionPayload.output_type = outputType;
     }
 
     const path = Routes.llmScorerVersion.replace('{scorer_id}', scorerId);

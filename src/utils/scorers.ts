@@ -1,6 +1,7 @@
 import {
   ChainPollTemplate,
   ModelType,
+  OutputType,
   Scorer,
   ScorerConfig,
   ScorerVersion
@@ -120,6 +121,7 @@ export const createScorer = async (
  * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to true
  * @param modelName - (Optional) The model name to use.
  * @param numJudges - (Optional) The number of judges to use.
+ * @param outputType - (Optional) The output type for the scorer version. Defaults to OutputType.BOOLEAN.
  * @returns A promise that resolves to the created {@link ScorerVersion}.
  */
 export const createLlmScorerVersion = async (
@@ -130,7 +132,8 @@ export const createLlmScorerVersion = async (
   scoreableNodeTypes?: StepType[],
   cotEnabled?: boolean,
   modelName?: string,
-  numJudges?: number
+  numJudges?: number,
+  outputType?: OutputType
 ): Promise<ScorerVersion> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -143,7 +146,8 @@ export const createLlmScorerVersion = async (
     scoreableNodeTypes,
     cotEnabled,
     modelName,
-    numJudges
+    numJudges,
+    outputType
   );
 };
 

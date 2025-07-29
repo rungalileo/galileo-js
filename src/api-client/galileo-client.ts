@@ -6,7 +6,8 @@ import {
   ScorerTypes,
   ScorerVersion,
   ModelType,
-  ChainPollTemplate
+  ChainPollTemplate,
+  OutputType
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
@@ -485,7 +486,8 @@ export class GalileoApiClient extends BaseClient {
     scoreableNodeTypes?: StepType[],
     cotEnabled?: boolean,
     modelName?: string,
-    numJudges?: number
+    numJudges?: number,
+    outputType?: OutputType
   ): Promise<ScorerVersion> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createLLMScorerVersion(
@@ -496,7 +498,8 @@ export class GalileoApiClient extends BaseClient {
       scoreableNodeTypes,
       cotEnabled,
       modelName,
-      numJudges
+      numJudges,
+      outputType
     );
   }
 
