@@ -2079,10 +2079,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -2197,10 +2214,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -2351,8 +2385,8 @@ export interface components {
         | components['schemas']['AgentSpanRecordWithChildren']
         | components['schemas']['WorkflowSpanRecordWithChildren']
         | components['schemas']['LlmSpanRecord']
-        | components['schemas']['ToolSpanRecord']
-        | components['schemas']['RetrieverSpanRecord']
+        | components['schemas']['ToolSpanRecordWithChildren']
+        | components['schemas']['RetrieverSpanRecordWithChildren']
       )[];
       /**
        * @description Type of the trace, span or session. (enum property replaced by openapi-typescript)
@@ -2367,10 +2401,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -2897,6 +2948,15 @@ export interface components {
       target: string;
       /** Weight */
       weight: number;
+      /** Occurrences */
+      occurrences: number;
+    };
+    /** AggregatedTraceViewGraph */
+    AggregatedTraceViewGraph: {
+      /** Nodes */
+      nodes: components['schemas']['AggregatedTraceViewNode'][];
+      /** Edges */
+      edges: components['schemas']['AggregatedTraceViewEdge'][];
     };
     /** AggregatedTraceViewNode */
     AggregatedTraceViewNode: {
@@ -2911,6 +2971,14 @@ export interface components {
       parent_id: string | null;
       /** Has Children */
       has_children: boolean;
+      /** Metrics */
+      metrics: {
+        [key: string]: components['schemas']['SystemMetricInfo'];
+      };
+      /** Trace Count */
+      trace_count: number;
+      /** Weight */
+      weight: number;
     };
     /** AggregatedTraceViewRequest */
     AggregatedTraceViewRequest: {
@@ -2920,13 +2988,31 @@ export interface components {
        * @description Log stream id associated with the traces.
        */
       log_stream_id: string;
+      /**
+       * Filters
+       * @description Filters to apply on the traces
+       */
+      filters?: (
+        | components['schemas']['LogRecordsIDFilter']
+        | components['schemas']['LogRecordsDateFilter']
+        | components['schemas']['LogRecordsNumberFilter']
+        | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsTextFilter']
+      )[];
     };
     /** AggregatedTraceViewResponse */
     AggregatedTraceViewResponse: {
-      /** Nodes */
-      nodes: components['schemas']['AggregatedTraceViewNode'][];
-      /** Edges */
-      edges: components['schemas']['AggregatedTraceViewEdge'][];
+      graph: components['schemas']['AggregatedTraceViewGraph'];
+      /**
+       * Num Traces
+       * @description Number of traces in the aggregated view
+       */
+      num_traces: number;
+      /**
+       * Num Sessions
+       * @description Number of sessions in the aggregated view
+       */
+      num_sessions: number;
     };
     /**
      * ApiKeyAction
@@ -2953,8 +3039,10 @@ export interface components {
       /** Name */
       name: string;
       /** Instructions */
-      instructions: string;
+      instructions?: string | null;
       chain_poll_template: components['schemas']['ChainPollTemplate'];
+      /** User Prompt */
+      user_prompt?: string | null;
     };
     /**
      * BasePromptTemplateResponse
@@ -3040,14 +3128,28 @@ export interface components {
       id: string;
       /** Model Changed */
       model_changed: boolean;
+      /**
+       * Lines Added
+       * @deprecated
+       * @default 0
+       */
+      lines_added?: number;
+      /**
+       * Lines Edited
+       * @deprecated
+       * @default 0
+       */
+      lines_edited?: number;
+      /**
+       * Lines Removed
+       * @deprecated
+       * @default 0
+       */
+      lines_removed?: number;
       /** Settings Changed */
       settings_changed: boolean;
-      /** Lines Added */
-      lines_added: number;
-      /** Lines Removed */
-      lines_removed: number;
-      /** Lines Edited */
-      lines_edited: number;
+      /** Content Changed */
+      content_changed: boolean;
       /**
        * Created At
        * Format: date-time
@@ -3125,6 +3227,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -3150,6 +3256,20 @@ export interface components {
       model_name?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /**
+       * Scoreable Node Types
+       * @description List of node types that can be scored by this scorer. Defaults to llm/chat.
+       */
+      scoreable_node_types?: string[] | null;
+      /**
+       * Cot Enabled
+       * @description Whether to enable chain of thought for this scorer. Defaults to False for llm scorers.
+       */
+      cot_enabled?: boolean | null;
+      /** @description What type of output to use for model-based scorers (sessions_normalized, trace_io_only, etc.). */
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      /** @description What type of input to use for model-based scorers (sessions_normalized, trace_io_only, etc.). */
+      input_type?: components['schemas']['InputTypeEnum'] | null;
     };
     /** BaseScorerVersionResponse */
     BaseScorerVersionResponse: {
@@ -3170,6 +3290,13 @@ export interface components {
       model_name?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      /** @description What type of input to use for model-based scorers (sessions_normalized, trace_io_only, etc.). */
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /**
        * Created At
        * Format: date-time
@@ -3535,6 +3662,12 @@ export interface components {
        * @description List of types applicable for this column.
        */
       applicable_types?: components['schemas']['StepType'][];
+      /**
+       * Complex
+       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
+       * @default false
+       */
+      complex?: boolean;
     };
     /** ColumnMapping */
     ColumnMapping: {
@@ -4060,9 +4193,17 @@ export interface components {
       model_name?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Instructions */
-      instructions: string;
-      chain_poll_template: components['schemas']['ChainPollTemplate'];
+      instructions?: string | null;
+      chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** User Prompt */
+      user_prompt?: string | null;
     };
     /**
      * CreatePromptTemplateWithVersionRequestBody
@@ -4114,6 +4255,12 @@ export interface components {
       model_name?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
     };
     /** CreateUpdateRegisteredScorerResponse */
     CreateUpdateRegisteredScorerResponse: {
@@ -4229,6 +4376,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4318,6 +4469,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4397,6 +4552,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4475,6 +4634,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4563,6 +4726,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4648,6 +4815,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4733,6 +4904,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4818,6 +4993,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4903,6 +5082,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4988,6 +5171,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5078,6 +5265,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5163,6 +5354,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5252,6 +5447,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5337,6 +5536,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5422,6 +5625,10 @@ export interface components {
       generated_scorer_id?: string | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
+      /** Cot Enabled */
+      cot_enabled?: boolean | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6079,6 +6286,11 @@ export interface components {
       rank?: number | null;
       /** Winner */
       winner?: boolean | null;
+      /** Playground Id */
+      playground_id?: string | null;
+      prompt_run_settings?: components['schemas']['PromptRunSettings'] | null;
+      /** Model */
+      model?: string | null;
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -6291,8 +6503,10 @@ export interface components {
       /** Name */
       name: string;
       /** Instructions */
-      instructions: string;
+      instructions?: string | null;
       chain_poll_template: components['schemas']['ChainPollTemplate'];
+      /** User Prompt */
+      user_prompt?: string | null;
       /**
        * Created By
        * Format: uuid4
@@ -6824,6 +7038,22 @@ export interface components {
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
     };
+    /**
+     * InputTypeEnum
+     * @description Enumeration of input types.
+     * @enum {string}
+     */
+    InputTypeEnum:
+      | 'basic'
+      | 'llm_spans'
+      | 'retriever_spans'
+      | 'sessions_normalized'
+      | 'sessions_trace_io_only'
+      | 'tool_spans'
+      | 'trace_input_only'
+      | 'trace_io_only'
+      | 'trace_normalized'
+      | 'trace_output_only';
     /**
      * InsightType
      * @enum {string}
@@ -7366,11 +7596,19 @@ export interface components {
       filters?: (
         | components['schemas']['ScorerNameFilter']
         | components['schemas']['ScorerTypeFilter']
+        | components['schemas']['ScorerModelTypeFilter']
         | components['schemas']['ScorerTagsFilter']
         | components['schemas']['ScorerCreatorFilter']
         | components['schemas']['ScorerCreatedAtFilter']
         | components['schemas']['ScorerUpdatedAtFilter']
       )[];
+      /** Sort */
+      sort?:
+        | (
+            | components['schemas']['ScorerNameSort']
+            | components['schemas']['ScorerEnabledInRunSort']
+          )
+        | null;
     };
     /** ListScorersResponse */
     ListScorersResponse: {
@@ -7458,8 +7696,19 @@ export interface components {
        * @description Input to the trace or span.
        */
       input: components['schemas']['galileo_core__schemas__logging__llm__Message'][];
+      /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
       /** @description Output of the trace or span. */
       output: components['schemas']['galileo_core__schemas__logging__llm__Message'];
+      /** @description Redacted output of the trace or span. */
+      redacted_output?:
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -7575,8 +7824,19 @@ export interface components {
        * @description Input to the trace or span.
        */
       input: components['schemas']['galileo_core__schemas__logging__llm__Message'][];
+      /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
       /** @description Output of the trace or span. */
       output: components['schemas']['galileo_core__schemas__logging__llm__Message'];
+      /** @description Redacted output of the trace or span. */
+      redacted_output?:
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -7879,11 +8139,13 @@ export interface components {
       /**
        * Start Time
        * Format: date-time
+       * @description Include traces from this time onward.
        */
       start_time: string;
       /**
        * End Time
        * Format: date-time
+       * @description Include traces up to this time.
        */
       end_time: string;
       /**
@@ -8275,6 +8537,11 @@ export interface components {
       project_id: string;
       /** Created By */
       created_by?: string | null;
+      /**
+       * Has User Created Sessions
+       * @default false
+       */
+      has_user_created_sessions?: boolean;
     };
     /** LogStreamUpdateRequest */
     LogStreamUpdateRequest: {
@@ -8815,7 +9082,7 @@ export interface components {
      * ModelType
      * @enum {string}
      */
-    ModelType: 'slm' | 'llm';
+    ModelType: 'slm' | 'llm' | 'code';
     /**
      * NodeNameFilter
      * @description Filters on node names in scorer jobs.
@@ -8995,6 +9262,18 @@ export interface components {
        */
       num_judges?: number | null;
     };
+    /**
+     * OutputTypeEnum
+     * @description Enumeration of output types.
+     * @enum {string}
+     */
+    OutputTypeEnum:
+      | 'boolean'
+      | 'categorical'
+      | 'count'
+      | 'discrete'
+      | 'freeform'
+      | 'percentage';
     /** OverrideAction */
     OverrideAction: {
       /**
@@ -9277,6 +9556,10 @@ export interface components {
        * @default false
        */
       bookmark?: boolean;
+      /** Description */
+      description?: string | null;
+      /** Labels */
+      labels?: components['schemas']['ProjectLabels'][];
     };
     /** ProjectDBThin */
     ProjectDBThin: {
@@ -9377,7 +9660,20 @@ export interface components {
        */
       num_experiments?: number | null;
       created_by_user?: components['schemas']['UserInfo'] | null;
+      /** Description */
+      description?: string | null;
+      /**
+       * Labels
+       * @description List of labels associated with the project.
+       */
+      labels?: components['schemas']['ProjectLabels'][];
     };
+    /**
+     * ProjectLabels
+     * @description Enum for project labels used in the UI.
+     * @enum {string}
+     */
+    ProjectLabels: 'sample';
     /** ProjectNameFilter */
     ProjectNameFilter: {
       /**
@@ -9504,6 +9800,10 @@ export interface components {
       /** Created By */
       created_by?: string | null;
       type?: components['schemas']['ProjectType'] | null;
+      /** Labels */
+      labels?: string[] | null;
+      /** Description */
+      description?: string | null;
     };
     /** ProjectUpdateResponse */
     ProjectUpdateResponse: {
@@ -9527,6 +9827,10 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+      /** Labels */
+      labels?: components['schemas']['ProjectLabels'][];
+      /** Description */
+      description?: string | null;
     };
     /** ProjectUpdatedAtFilter */
     ProjectUpdatedAtFilter: {
@@ -10158,10 +10462,20 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output: components['schemas']['Document'][];
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: components['schemas']['Document'][] | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -10240,6 +10554,17 @@ export interface components {
        * @description Galileo ID of the parent of this span
        */
       parent_id?: string | null;
+      /**
+       * Spans
+       * @description Child spans.
+       */
+      spans?: (
+        | components['schemas']['AgentSpan']
+        | components['schemas']['WorkflowSpan']
+        | components['schemas']['LlmSpan']
+        | components['schemas']['RetrieverSpan']
+        | components['schemas']['ToolSpan']
+      )[];
     };
     /** RetrieverSpanRecord */
     RetrieverSpanRecord: {
@@ -10254,10 +10579,189 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output: components['schemas']['Document'][];
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: components['schemas']['Document'][] | null;
+      /**
+       * Name
+       * @description Name of the trace, span or session.
+       * @default
+       */
+      name?: string;
+      /**
+       * Created
+       * Format: date-time
+       * @description Timestamp of the trace or span's creation.
+       */
+      created_at?: string;
+      /**
+       * User Metadata
+       * @description Metadata associated with this trace or span.
+       */
+      user_metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * Tags
+       * @description Tags associated with this trace or span.
+       */
+      tags?: string[];
+      /**
+       * Status Code
+       * @description Status code of the trace or span. Used for logging failure or error states.
+       */
+      status_code?: number | null;
+      /** @description Metrics associated with this trace or span. */
+      metrics?: components['schemas']['Metrics'];
+      /**
+       * External Id
+       * @description A user-provided session, trace or span ID.
+       */
+      external_id?: string | null;
+      /**
+       * Dataset Input
+       * @description Input to the dataset associated with this trace
+       */
+      dataset_input?: string | null;
+      /**
+       * Dataset Output
+       * @description Output from the dataset associated with this trace
+       */
+      dataset_output?: string | null;
+      /**
+       * Dataset Metadata
+       * @description Metadata from the dataset associated with this trace
+       */
+      dataset_metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * ID
+       * Format: uuid4
+       * @description Galileo ID of the session, trace or span
+       */
+      id: string;
+      /**
+       * Session ID
+       * Format: uuid4
+       * @description Galileo ID of the session containing the trace (or the same value as id for a trace)
+       */
+      session_id: string;
+      /**
+       * Trace ID
+       * @description Galileo ID of the trace containing the span (or the same value as id for a trace)
+       */
+      trace_id?: string | null;
+      /**
+       * Project ID
+       * Format: uuid4
+       * @description Galileo ID of the project associated with this trace or span
+       */
+      project_id: string;
+      /**
+       * Run ID
+       * Format: uuid4
+       * @description Galileo ID of the run (log stream or experiment) associated with this trace or span
+       */
+      run_id: string;
+      /**
+       * Last Updated
+       * @description Timestamp of the session or trace or span's last update
+       */
+      updated_at?: string | null;
+      /**
+       * Has Children
+       * @description Whether or not this trace or span has child spans
+       */
+      has_children?: boolean | null;
+      /**
+       * Metrics Batch Id
+       * @description Galileo ID of the metrics batch associated with this trace or span
+       */
+      metrics_batch_id?: string | null;
+      /**
+       * Session Batch Id
+       * @description Galileo ID of the metrics batch associated with this trace or span
+       */
+      session_batch_id?: string | null;
+      /**
+       * Metric Info
+       * @description Detailed information about the metrics associated with this trace or span
+       */
+      metric_info?: {
+        [key: string]:
+          | components['schemas']['MetricNotComputed']
+          | components['schemas']['MetricPending']
+          | components['schemas']['MetricComputing']
+          | components['schemas']['MetricNotApplicable']
+          | components['schemas']['MetricSuccess']
+          | components['schemas']['MetricError']
+          | components['schemas']['MetricFailed'];
+      } | null;
+      /**
+       * Parent ID
+       * Format: uuid4
+       * @description Galileo ID of the parent of this span
+       */
+      parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
+      /**
+       * Step Number
+       * @description Topological step number of the span.
+       */
+      step_number?: number | null;
+    };
+    /** RetrieverSpanRecordWithChildren */
+    RetrieverSpanRecordWithChildren: {
+      /** Spans */
+      spans?: (
+        | components['schemas']['AgentSpanRecordWithChildren']
+        | components['schemas']['WorkflowSpanRecordWithChildren']
+        | components['schemas']['LlmSpanRecord']
+        | components['schemas']['ToolSpanRecordWithChildren']
+        | components['schemas']['RetrieverSpanRecordWithChildren']
+      )[];
+      /**
+       * @description Type of the trace, span or session. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'retriever';
+      /**
+       * Input
+       * @description Input to the trace or span.
+       */
+      input: string;
+      /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
+       * Output
+       * @description Output of the trace or span.
+       */
+      output: components['schemas']['Document'][];
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: components['schemas']['Document'][] | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -10791,10 +11295,14 @@ export interface components {
        */
       scoreable_node_types?: string[] | null;
       /**
-       * @description Type of input that this scorer accepts. Defaults to ScorerInputType.basic.
-       * @default basic
+       * Cot Enabled
+       * @description Whether to enable chain of thought for this scorer. Defaults to False for llm scorers.
        */
-      input_type?: components['schemas']['ScorerInputType'] | null;
+      cot_enabled?: boolean | null;
+      /** @description What type of output to use for model-based scorers (boolean, categorical, etc.). */
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      /** @description What type of input to use for model-based scorers (sessions_normalized, trace_io_only, etc..). */
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /**
        * Id
        * Format: uuid4
@@ -10861,17 +11369,47 @@ export interface components {
        */
       scoreable_node_types?: string[] | null;
       /**
-       * @description Type of input that this scorer accepts. Defaults to ScorerInputType.basic.
-       * @default basic
+       * Cot Enabled
+       * @description Whether to enable chain of thought for this scorer. Defaults to False for llm scorers.
        */
-      input_type?: components['schemas']['ScorerInputType'] | null;
+      cot_enabled?: boolean | null;
+      /** @description What type of output to use for model-based scorers (boolean, categorical, etc.). */
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      /** @description What type of input to use for model-based scorers (sessions_normalized, trace_io_only, etc..). */
+      input_type?: components['schemas']['InputTypeEnum'] | null;
     };
-    /**
-     * ScorerInputType
-     * @description Enum for the type of input that a scorer can accept.
-     * @enum {string}
-     */
-    ScorerInputType: 'basic' | 'normalized';
+    /** ScorerEnabledInRunSort */
+    ScorerEnabledInRunSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'enabled_in_run';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default custom_uuid
+       * @constant
+       */
+      sort_type?: 'custom_uuid';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** ScorerModelTypeFilter */
+    ScorerModelTypeFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'model_type';
+    };
     /**
      * ScorerName
      * @enum {string}
@@ -10957,6 +11495,25 @@ export interface components {
        * @default false
        */
       case_sensitive?: boolean;
+    };
+    /** ScorerNameSort */
+    ScorerNameSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
     };
     /** ScorerResponse */
     ScorerResponse: {
@@ -11379,10 +11936,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -11524,10 +12098,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -11881,6 +12472,21 @@ export interface components {
       url: string;
     };
     /**
+     * SyntheticDataSourceDataset
+     * @description Configuration for dataset examples in synthetic data generation.
+     */
+    SyntheticDataSourceDataset: {
+      /**
+       * Dataset Id
+       * Format: uuid4
+       */
+      dataset_id: string;
+      /** Dataset Version Index */
+      dataset_version_index?: number | null;
+      /** Row Ids */
+      row_ids?: string[] | null;
+    };
+    /**
      * SyntheticDataTypes
      * @enum {string}
      */
@@ -11903,7 +12509,10 @@ export interface components {
       /** Instructions */
       instructions?: string | null;
       /** Examples */
-      examples?: string[] | null;
+      examples?: string[];
+      source_dataset?:
+        | components['schemas']['SyntheticDataSourceDataset']
+        | null;
       /** Data Types */
       data_types?: components['schemas']['SyntheticDataTypes'][] | null;
       /**
@@ -11922,6 +12531,31 @@ export interface components {
        * Format: uuid4
        */
       dataset_id: string;
+    };
+    /** SystemMetricInfo */
+    SystemMetricInfo: {
+      /** Name */
+      name: string;
+      /** Label */
+      label: string;
+      /** Values */
+      values?: number[];
+      /** Mean */
+      mean?: number | null;
+      /** Median */
+      median?: number | null;
+      /** P5 */
+      p5?: number | null;
+      /** P25 */
+      p25?: number | null;
+      /** P75 */
+      p75?: number | null;
+      /** P95 */
+      p95?: number | null;
+      /** Min */
+      min?: number | null;
+      /** Max */
+      max?: number | null;
     };
     /** TagsAggregate */
     TagsAggregate: {
@@ -12249,10 +12883,20 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?: string | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: string | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -12332,6 +12976,17 @@ export interface components {
        */
       parent_id?: string | null;
       /**
+       * Spans
+       * @description Child spans.
+       */
+      spans?: (
+        | components['schemas']['AgentSpan']
+        | components['schemas']['WorkflowSpan']
+        | components['schemas']['LlmSpan']
+        | components['schemas']['RetrieverSpan']
+        | components['schemas']['ToolSpan']
+      )[];
+      /**
        * Tool Call Id
        * @description ID of the tool call.
        */
@@ -12350,10 +13005,194 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?: string | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: string | null;
+      /**
+       * Name
+       * @description Name of the trace, span or session.
+       * @default
+       */
+      name?: string;
+      /**
+       * Created
+       * Format: date-time
+       * @description Timestamp of the trace or span's creation.
+       */
+      created_at?: string;
+      /**
+       * User Metadata
+       * @description Metadata associated with this trace or span.
+       */
+      user_metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * Tags
+       * @description Tags associated with this trace or span.
+       */
+      tags?: string[];
+      /**
+       * Status Code
+       * @description Status code of the trace or span. Used for logging failure or error states.
+       */
+      status_code?: number | null;
+      /** @description Metrics associated with this trace or span. */
+      metrics?: components['schemas']['Metrics'];
+      /**
+       * External Id
+       * @description A user-provided session, trace or span ID.
+       */
+      external_id?: string | null;
+      /**
+       * Dataset Input
+       * @description Input to the dataset associated with this trace
+       */
+      dataset_input?: string | null;
+      /**
+       * Dataset Output
+       * @description Output from the dataset associated with this trace
+       */
+      dataset_output?: string | null;
+      /**
+       * Dataset Metadata
+       * @description Metadata from the dataset associated with this trace
+       */
+      dataset_metadata?: {
+        [key: string]: string;
+      };
+      /**
+       * ID
+       * Format: uuid4
+       * @description Galileo ID of the session, trace or span
+       */
+      id: string;
+      /**
+       * Session ID
+       * Format: uuid4
+       * @description Galileo ID of the session containing the trace (or the same value as id for a trace)
+       */
+      session_id: string;
+      /**
+       * Trace ID
+       * @description Galileo ID of the trace containing the span (or the same value as id for a trace)
+       */
+      trace_id?: string | null;
+      /**
+       * Project ID
+       * Format: uuid4
+       * @description Galileo ID of the project associated with this trace or span
+       */
+      project_id: string;
+      /**
+       * Run ID
+       * Format: uuid4
+       * @description Galileo ID of the run (log stream or experiment) associated with this trace or span
+       */
+      run_id: string;
+      /**
+       * Last Updated
+       * @description Timestamp of the session or trace or span's last update
+       */
+      updated_at?: string | null;
+      /**
+       * Has Children
+       * @description Whether or not this trace or span has child spans
+       */
+      has_children?: boolean | null;
+      /**
+       * Metrics Batch Id
+       * @description Galileo ID of the metrics batch associated with this trace or span
+       */
+      metrics_batch_id?: string | null;
+      /**
+       * Session Batch Id
+       * @description Galileo ID of the metrics batch associated with this trace or span
+       */
+      session_batch_id?: string | null;
+      /**
+       * Metric Info
+       * @description Detailed information about the metrics associated with this trace or span
+       */
+      metric_info?: {
+        [key: string]:
+          | components['schemas']['MetricNotComputed']
+          | components['schemas']['MetricPending']
+          | components['schemas']['MetricComputing']
+          | components['schemas']['MetricNotApplicable']
+          | components['schemas']['MetricSuccess']
+          | components['schemas']['MetricError']
+          | components['schemas']['MetricFailed'];
+      } | null;
+      /**
+       * Parent ID
+       * Format: uuid4
+       * @description Galileo ID of the parent of this span
+       */
+      parent_id: string;
+      /**
+       * Is Complete
+       * @description Whether the parent trace is complete or not
+       * @default true
+       */
+      is_complete?: boolean;
+      /**
+       * Step Number
+       * @description Topological step number of the span.
+       */
+      step_number?: number | null;
+      /**
+       * Tool Call Id
+       * @description ID of the tool call.
+       */
+      tool_call_id?: string | null;
+    };
+    /** ToolSpanRecordWithChildren */
+    ToolSpanRecordWithChildren: {
+      /** Spans */
+      spans?: (
+        | components['schemas']['AgentSpanRecordWithChildren']
+        | components['schemas']['WorkflowSpanRecordWithChildren']
+        | components['schemas']['LlmSpanRecord']
+        | components['schemas']['ToolSpanRecordWithChildren']
+        | components['schemas']['RetrieverSpanRecordWithChildren']
+      )[];
+      /**
+       * @description Type of the trace, span or session. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'tool';
+      /**
+       * Input
+       * @description Input to the trace or span.
+       */
+      input: string;
+      /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
+       * Output
+       * @description Output of the trace or span.
+       */
+      output?: string | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: string | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -12581,10 +13420,20 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?: string | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: string | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -12715,10 +13564,20 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?: string | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: string | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -12857,8 +13716,8 @@ export interface components {
         | components['schemas']['AgentSpanRecordWithChildren']
         | components['schemas']['WorkflowSpanRecordWithChildren']
         | components['schemas']['LlmSpanRecord']
-        | components['schemas']['ToolSpanRecord']
-        | components['schemas']['RetrieverSpanRecord']
+        | components['schemas']['ToolSpanRecordWithChildren']
+        | components['schemas']['RetrieverSpanRecordWithChildren']
       )[];
       /**
        * Type
@@ -12873,10 +13732,20 @@ export interface components {
        */
       input: string;
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?: string | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?: string | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?: string | null;
       /**
        * Name
        * @description Name of the trace, span or session.
@@ -13229,10 +14098,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -13342,10 +14228,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -13491,8 +14394,8 @@ export interface components {
         | components['schemas']['AgentSpanRecordWithChildren']
         | components['schemas']['WorkflowSpanRecordWithChildren']
         | components['schemas']['LlmSpanRecord']
-        | components['schemas']['ToolSpanRecord']
-        | components['schemas']['RetrieverSpanRecord']
+        | components['schemas']['ToolSpanRecordWithChildren']
+        | components['schemas']['RetrieverSpanRecordWithChildren']
       )[];
       /**
        * @description Type of the trace, span or session. (enum property replaced by openapi-typescript)
@@ -13507,10 +14410,27 @@ export interface components {
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
+       * Redacted Input
+       * @description Redacted input of the trace or span.
+       */
+      redacted_input?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
+        | null;
+      /**
        * Output
        * @description Output of the trace or span.
        */
       output?:
+        | string
+        | components['schemas']['galileo_core__schemas__logging__llm__Message']
+        | components['schemas']['Document'][]
+        | null;
+      /**
+       * Redacted Output
+       * @description Redacted output of the trace or span.
+       */
+      redacted_output?:
         | string
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
         | components['schemas']['Document'][]
@@ -15749,6 +16669,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        trace_id: string;
         project_id: string;
       };
       cookie?: never;
@@ -15801,8 +16722,8 @@ export interface operations {
             | components['schemas']['AgentSpanRecordWithChildren']
             | components['schemas']['WorkflowSpanRecordWithChildren']
             | components['schemas']['LlmSpanRecord']
-            | components['schemas']['ToolSpanRecord']
-            | components['schemas']['RetrieverSpanRecord'];
+            | components['schemas']['ToolSpanRecordWithChildren']
+            | components['schemas']['RetrieverSpanRecordWithChildren'];
         };
       };
       /** @description Validation Error */
@@ -15821,6 +16742,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        span_id: string;
         project_id: string;
       };
       cookie?: never;
