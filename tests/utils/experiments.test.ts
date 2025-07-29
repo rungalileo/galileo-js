@@ -121,6 +121,7 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   lines_added: 0,
   lines_removed: 0,
   lines_edited: 0,
+  content_changed: false,
   model_changed: false,
   settings_changed: false,
   settings: {},
