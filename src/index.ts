@@ -15,12 +15,7 @@ import {
   getDatasetContent,
   getDataset
 } from './utils/datasets';
-import {
-  getMetrics,
-  getTraces,
-  getSpans,
-  getSessions
-} from './utils/search';
+import { getMetrics, getTraces, getSpans, getSessions } from './utils/search';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import { getJobProgress, getScorerJobsStatus } from './utils/jobs';
 import {
@@ -45,6 +40,7 @@ import {
   runExperiment
 } from './utils/experiments';
 import { updateScorerSettings } from './utils/runs';
+import { getScorers } from './utils/scorers';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush, getLogger } from './singleton';
 import { log } from './wrappers';
@@ -112,4 +108,6 @@ export {
   getSessions,
   // Runs
   updateScorerSettings,
+  // Scorers
+  getScorers
 };

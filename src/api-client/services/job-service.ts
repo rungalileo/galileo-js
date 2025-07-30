@@ -19,7 +19,7 @@ export class JobService extends BaseClient {
       Routes.job,
       undefined,
       {
-        job_id: jobId,
+        job_id: jobId
       }
     );
   }
@@ -37,7 +37,7 @@ export class JobService extends BaseClient {
       undefined,
       {
         project_id: this.projectId,
-        run_id: runId,
+        run_id: runId
       },
       status ? { status } : undefined
     );

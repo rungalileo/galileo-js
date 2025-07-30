@@ -87,7 +87,6 @@ export class TraceService extends BaseClient {
     );
   }
 
-
   public async searchMetrics(
     request: MetricSearchRequest
   ): Promise<MetricSearchResponse> {

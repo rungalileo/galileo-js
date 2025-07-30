@@ -3,7 +3,7 @@ import {
   MetricSearchRequest,
   MetricSearchResponse,
   LogRecordsQueryRequest,
-  LogRecordsQueryResponse,
+  LogRecordsQueryResponse
 } from '../types/search.types';
 
 export const getMetrics = async (

@@ -4,7 +4,7 @@ import {
   JobStatus,
   isJobIncomplete,
   isJobFailed,
-  RequestData,
+  RequestData
 } from '../types/job.types';
 
 const apiClient = new GalileoApiClient();
@@ -22,7 +22,7 @@ export const createProgressBar = (
   const bar = new cliProgress.SingleBar(
     {
       format: '{message} {bar} {percentage}% | {value}/{total}',
-      hideCursor: true,
+      hideCursor: true
     },
     cliProgress.Presets.shades_classic
   );
@@ -43,11 +43,7 @@ export const getJobProgress = async (
   const totalSteps = job.steps_total ?? 0;
   const bar =
     totalSteps > 0 && isJobIncomplete(job.status as JobStatus)
-      ? createProgressBar(
-          totalSteps,
-          job.steps_completed,
-          job.progress_message
-        )
+      ? createProgressBar(totalSteps, job.steps_completed, job.progress_message)
       : null;
 
   while (isJobIncomplete(job.status as JobStatus)) {
@@ -103,7 +99,7 @@ const SCORER_ALIASES: Record<string, string> = {
   tool_error_rate: 'tool_errors_plus',
   tool_selection_quality: 'tool_selection_quality',
   agentic_workflow_success: 'action_advancement_plus',
-  agentic_session_success: 'action_completion_plus',
+  agentic_session_success: 'action_completion_plus'
 };
 
 const getCanonicalScorerName = (name: string) => SCORER_ALIASES[name] ?? name;
@@ -123,6 +119,7 @@ export const getScorerJobsStatus = async (
 
     if (!scorerSettings) {
       console.debug(`Scorer job ${job.id} has no scorer settings.`);
+      console.debug(job);
       continue;
     }
 

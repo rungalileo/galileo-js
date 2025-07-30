@@ -6,13 +6,13 @@ import {
 } from '../types';
 
 export const updateScorerSettings = async (
-  projectId: string,
+  projectName: string,
   runId: string,
   scorers: ScorerConfig[],
   segmentFilters?: SegmentFilter[]
 ): Promise<RunScorerSettingsResponse | null> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectId, runId });
+  await apiClient.init({ projectName, runId });
 
   try {
     return await apiClient.updateRunScorerSettings(

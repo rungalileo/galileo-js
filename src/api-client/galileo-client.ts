@@ -29,10 +29,7 @@ import {
   PromptRunSettings
 } from '../types/experiment.types';
 import { LogRecordsExportRequest } from '../types/export.types';
-import {
-  RunScorerSettingsResponse,
-  SegmentFilter
-} from '../types/run.types';
+import { RunScorerSettingsResponse, SegmentFilter } from '../types/run.types';
 import { Message } from '../types/message.types';
 import {
   MetricSearchRequest,
@@ -214,9 +211,17 @@ export class GalileoApiClient extends BaseClient {
           this.token,
           this.projectId
         );
-        this.jobService = new JobService(this.apiUrl, this.token, this.projectId);
+        this.jobService = new JobService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
         this.scorerService = new ScorerService(this.apiUrl, this.token);
-        this.runService = new RunService(this.apiUrl, this.token, this.projectId);
+        this.runService = new RunService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
         this.exportService = new ExportService(
           this.apiUrl,
           this.token,
