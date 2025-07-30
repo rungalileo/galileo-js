@@ -1,6 +1,6 @@
 {
   "name": "galileo",
-  "version": "1.24.1",
+  "version": "1.25.0",
   "description": "JS client for Galileo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
