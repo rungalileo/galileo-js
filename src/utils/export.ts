@@ -3,12 +3,10 @@ import { GalileoApiClient } from '../api-client';
 import { LogRecordsExportRequest } from '../types/export.types';
 
 /**
- * Exports records from Galileo.
- *
- * This is a convenience function that handles client initialization.
+ * Exports records from a Galileo project.
  *
  * @param projectName The name of the project to export from.
- * @param body The parameters for the export operation.
+ * @param body The parameters for the export operation, including filters, sorting, and format.
  * @returns A promise that resolves to an array of records.
  */
 export async function exportRecords(

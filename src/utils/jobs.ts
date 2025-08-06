@@ -30,6 +30,13 @@ export const createProgressBar = (
   return bar;
 };
 
+/**
+ * Monitors the progress of a job and displays a progress bar.
+ * @param jobId The ID of the job to monitor.
+ * @param projectName The name of the project.
+ * @param runId The ID of the run.
+ * @returns A promise that resolves to the job ID when the job is complete.
+ */
 export const getJobProgress = async (
   jobId: string,
   projectName: string,
@@ -104,6 +111,12 @@ const SCORER_ALIASES: Record<string, string> = {
 
 const getCanonicalScorerName = (name: string) => SCORER_ALIASES[name] ?? name;
 
+/**
+ * Gets the status of all scorer jobs for a given project and run.
+ * @param projectName The name of the project.
+ * @param runId The ID of the run.
+ * @param status Optional status to filter jobs by.
+ */
 export const getScorerJobsStatus = async (
   projectName: string,
   runId: string,
@@ -111,20 +124,18 @@ export const getScorerJobsStatus = async (
 ): Promise<void> => {
   await apiClient.init({ projectName, runId });
 
-  const scorerJobs = await apiClient.getJobsForProjectRun(runId, status);
+  const jobs = await apiClient.getJobsForProjectRun(runId, status);
+  const scorerJobs = jobs.filter((job) => job.job_name === 'log_stream_scorer');
 
   for (const job of scorerJobs) {
     const scorerSettings = (job.request_data as RequestData)
       ?.prompt_scorer_settings;
 
-    if (!scorerSettings) {
-      console.debug(`Scorer job ${job.id} has no scorer settings.`);
-      console.debug(job);
-      continue;
-    }
+    let scorerName = 'scorer';
 
-    const scorerName = getCanonicalScorerName(scorerSettings.scorer_name);
-    console.debug(`Scorer job ${job.id} has scorer ${scorerName}.`);
+    if (scorerSettings) {
+      scorerName = getCanonicalScorerName(scorerSettings.scorer_name);
+    }
 
     const cleanName = scorerName.replace(/^_+/, '');
     if (isJobIncomplete(job.status as JobStatus)) {
@@ -135,4 +146,13 @@ export const getScorerJobsStatus = async (
       console.log(`${cleanName}: Done ✅`);
     }
   }
+};
+
+export const getScorerJobs = async (
+  projectName: string,
+  runId: string,
+  status?: string
+) => {
+  await apiClient.init({ projectName, runId });
+  return apiClient.getJobsForProjectRun(runId, status);
 };

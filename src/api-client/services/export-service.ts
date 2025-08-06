@@ -24,7 +24,9 @@ export class ExportService extends BaseClient {
       RequestMethod.POST,
       Routes.exportRecords,
       body,
-      { project_id: this.projectId }
+      { project_id: this.projectId },
+      undefined,
+      'text'
     );
 
     const rawData = response.data;

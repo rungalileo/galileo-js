@@ -6,6 +6,12 @@ import {
   LogRecordsQueryResponse
 } from '../types/search.types';
 
+/**
+ * Searches for metrics in a project.
+ * @param request The search query parameters.
+ * @param projectName The name of the project to search in.
+ * @returns A promise that resolves to the search results.
+ */
 export const getMetrics = async (
   request: MetricSearchRequest,
   projectName: string
@@ -15,6 +21,12 @@ export const getMetrics = async (
   return await apiClient.searchMetrics(request);
 };
 
+/**
+ * Searches for traces in a project.
+ * @param request The search query parameters.
+ * @param projectName The name of the project to search in.
+ * @returns A promise that resolves to the search results.
+ */
 export const getTraces = async (
   request: LogRecordsQueryRequest,
   projectName: string
@@ -24,6 +36,12 @@ export const getTraces = async (
   return await apiClient.searchTraces(request);
 };
 
+/**
+ * Searches for spans in a project.
+ * @param request The search query parameters.
+ * @param projectName The name of the project to search in.
+ * @returns A promise that resolves to the search results.
+ */
 export const getSpans = async (
   request: LogRecordsQueryRequest,
   projectName: string
@@ -33,6 +51,12 @@ export const getSpans = async (
   return await apiClient.searchSpans(request);
 };
 
+/**
+ * Searches for sessions in a project.
+ * @param request The search query parameters.
+ * @param projectName The name of the project to search in.
+ * @returns A promise that resolves to the search results.
+ */
 export const getSessions = async (
   request: LogRecordsQueryRequest,
   projectName: string
