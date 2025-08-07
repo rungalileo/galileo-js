@@ -69,5 +69,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rungalileo/galileo-js.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
