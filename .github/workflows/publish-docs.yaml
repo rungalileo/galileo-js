@@ -60,7 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
           PR_BODY: |
-            This PR contains the latest updates to the Python SDK documentation.
+            This PR contains the latest updates to the TypeScript SDK documentation.
 
             The SDK doc generation will not change the docs.json for new or removed files, so you will need to manually commit a change to this PR for any file changes.
 
