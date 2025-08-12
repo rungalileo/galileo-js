@@ -90,23 +90,6 @@ describe('JobService', () => {
       expect(result).toEqual(mockJobs);
     });
 
-    it('should call makeRequest with status filter if provided', async () => {
-      const status = 'completed';
-      mockMakeRequest.mockResolvedValue(mockJobs);
-
-      const result = await jobService.getJobsForProjectRun(runId, status);
-
-      expect(mockMakeRequest).toHaveBeenCalledTimes(1);
-      expect(mockMakeRequest).toHaveBeenCalledWith(
-        RequestMethod.GET,
-        Routes.jobsForProjectRun,
-        undefined,
-        { project_id: mockProjectId, run_id: runId },
-        { status }
-      );
-      expect(result).toEqual(mockJobs);
-    });
-
     it('should throw an error if project is not initialized', async () => {
       jobService = new JobService(mockApiUrl, mockToken, '');
       await expect(jobService.getJobsForProjectRun(runId)).rejects.toThrow(

@@ -22,4 +22,7 @@ export interface RequestData {
   prompt_scorer_settings?: {
     scorer_name: string;
   };
+  scorer_config?: {
+    name: string;
+  };
 }

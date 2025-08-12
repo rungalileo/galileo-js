@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { LogRecordsExportRequest } from '../../types/export.types';
+import {
+  LLMExportFormat,
+  LogRecordsExportRequest
+} from '../../types/export.types';
 import { parse as csvParse } from 'csv-parse/sync';
 
 export class ExportService extends BaseClient {
@@ -18,8 +21,9 @@ export class ExportService extends BaseClient {
   public async records(
     body: LogRecordsExportRequest
   ): Promise<Record<string, any>[]> {
-    const { export_format = 'jsonl' } = body;
+    const { export_format = LLMExportFormat.JSONL } = body;
 
+    // Unlike the Python implementation, this does not use streaming
     const response = await this.makeRequestRaw<string>(
       RequestMethod.POST,
       Routes.exportRecords,
@@ -35,7 +39,7 @@ export class ExportService extends BaseClient {
       return [];
     }
 
-    if (export_format === 'csv') {
+    if (export_format === LLMExportFormat.CSV) {
       return csvParse(rawData, {
         columns: true,
         skip_empty_lines: true

@@ -25,21 +25,23 @@ export class JobService extends BaseClient {
   }
 
   public async getJobsForProjectRun(
-    runId: string,
-    status?: string
+    runId: string
   ): Promise<Job[]> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    return await this.makeRequest<Job[]>(
+
+    const jobs = await this.makeRequest<Job[]>(
       RequestMethod.GET,
       Routes.jobsForProjectRun,
       undefined,
       {
         project_id: this.projectId,
         run_id: runId
-      },
-      status ? { status } : undefined
+      }
     );
+
+    // TODO Get this in an enum from the generated types
+    return jobs.filter((job) => job.job_name === 'log_stream_scorer');
   }
 }

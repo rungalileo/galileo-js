@@ -9,11 +9,9 @@ import {
 
 const apiClient = new GalileoApiClient();
 
-/** Promise-based sleep (ms). */
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Create a CLI progress bar (tqdm-style). */
 export const createProgressBar = (
   total: number,
   startValue: number,
@@ -45,26 +43,21 @@ export const getJobProgress = async (
   await apiClient.init({ projectName, runId });
 
   let job = await apiClient.getJob(jobId);
-  let backoff = Math.random(); // random 0-1 s
+  let backoff = Math.random();
 
-  const totalSteps = job.steps_total ?? 0;
-  const bar =
-    totalSteps > 0 && isJobIncomplete(job.status as JobStatus)
-      ? createProgressBar(totalSteps, job.steps_completed, job.progress_message)
-      : null;
+  if (isJobIncomplete(job.status as JobStatus)) {
+    const bar = createProgressBar(job.steps_total, job.steps_completed, job.progress_message);
 
-  while (isJobIncomplete(job.status as JobStatus)) {
-    await sleep(backoff * 1000);
-    job = await apiClient.getJob(jobId);
-
-    if (bar) {
+    while (isJobIncomplete(job.status as JobStatus)) {
+      await sleep(backoff * 1000);
+      job = await apiClient.getJob(jobId);
       bar.update(job.steps_completed, { message: job.progress_message });
+      backoff = Math.random();
     }
-
-    backoff = Math.random(); // new random back-off
+    bar.stop();
   }
 
-  bar?.stop();
+  console.debug(`Job ${jobId} status: ${job.status}.`);
 
   if (isJobFailed(job.status as JobStatus)) {
     throw new Error(`Job failed with error message ${job.error_message}.`);
@@ -73,12 +66,12 @@ export const getJobProgress = async (
   console.log(
     'Initial job complete, executing scorers asynchronously. Current status:'
   );
-  console.debug(`Job ${jobId} status: ${job.status}.`);
 
   await getScorerJobsStatus(projectName, runId);
   return job.id;
 };
 
+// TODO Get from generated resources
 const SCORER_ALIASES: Record<string, string> = {
   completeness_nli: 'completeness_luna',
   completeness_gpt: 'completeness_plus',
@@ -115,29 +108,33 @@ const getCanonicalScorerName = (name: string) => SCORER_ALIASES[name] ?? name;
  * Gets the status of all scorer jobs for a given project and run.
  * @param projectName The name of the project.
  * @param runId The ID of the run.
- * @param status Optional status to filter jobs by.
  */
 export const getScorerJobsStatus = async (
   projectName: string,
-  runId: string,
-  status?: string
+  runId: string
 ): Promise<void> => {
   await apiClient.init({ projectName, runId });
 
-  const jobs = await apiClient.getJobsForProjectRun(runId, status);
-  const scorerJobs = jobs.filter((job) => job.job_name === 'log_stream_scorer');
+  const scorerJobs = await apiClient.getJobsForProjectRun(runId);
 
   for (const job of scorerJobs) {
-    const scorerSettings = (job.request_data as RequestData)
-      ?.prompt_scorer_settings;
+    const requestData = job.request_data as RequestData;
+    let scorerName: string | undefined;
 
-    let scorerName = 'scorer';
-
-    if (scorerSettings) {
-      scorerName = getCanonicalScorerName(scorerSettings.scorer_name);
+    if (requestData?.prompt_scorer_settings?.scorer_name) {
+      scorerName = requestData.prompt_scorer_settings.scorer_name;
+    } else if (requestData?.scorer_config?.name) {
+      scorerName = requestData.scorer_config.name;
     }
 
-    const cleanName = scorerName.replace(/^_+/, '');
+    if (!scorerName) {
+      console.debug(`Scorer job ${job.id} has no scorer name.`);
+      continue;
+    }
+
+    const canonicalScorerName = getCanonicalScorerName(scorerName);
+    const cleanName = canonicalScorerName.replace(/^_+/, '');
+
     if (isJobIncomplete(job.status as JobStatus)) {
       console.log(`${cleanName}: Computing 🚧`);
     } else if (isJobFailed(job.status as JobStatus)) {
@@ -148,11 +145,7 @@ export const getScorerJobsStatus = async (
   }
 };
 
-export const getScorerJobs = async (
-  projectName: string,
-  runId: string,
-  status?: string
-) => {
+export const getScorerJobs = async (projectName: string, runId: string) => {
   await apiClient.init({ projectName, runId });
-  return apiClient.getJobsForProjectRun(runId, status);
+  return apiClient.getJobsForProjectRun(runId);
 };
