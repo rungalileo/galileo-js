@@ -1,22 +1,14 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import {
-  getMetrics,
-  getTraces,
-  getSpans,
-  getSessions
-} from '../../src';
-import {
-  MetricSearchResponse,
-  LogRecordsQueryResponse
-} from '../../src/types';
+import { getMetrics, getTraces, getSpans, getSessions } from '../../src';
+import { MetricSearchResponse, LogRecordsQueryResponse } from '../../src/types';
 import { commonHandlers, TEST_HOST } from '../common';
 
 const EXAMPLE_METRIC_SEARCH_RESPONSE: MetricSearchResponse = {
   group_by_columns: [],
   aggregate_metrics: {
-    'metric1': 10,
-    'metric2': 20
+    metric1: 10,
+    metric2: 20
   },
   bucketed_metrics: {}
 };

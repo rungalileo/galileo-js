@@ -30,7 +30,7 @@ describe('JobService', () => {
       run_id: 'test-run-id',
       request_data: {},
       progress_percent: 100,
-      retries: 0,
+      retries: 0
     };
 
     it('should call makeRequest with correct parameters and return its result', async () => {
@@ -70,8 +70,8 @@ describe('JobService', () => {
         run_id: runId,
         request_data: {},
         progress_percent: 100,
-        retries: 0,
-      },
+        retries: 0
+      }
     ];
 
     it('should call makeRequest with correct parameters and return its result', async () => {

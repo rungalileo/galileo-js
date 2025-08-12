@@ -384,9 +384,7 @@ export class GalileoApiClient extends BaseClient {
     return this.jobService!.getJob(jobId);
   }
 
-  public async getJobsForProjectRun(
-    runId: string,
-  ): Promise<any[]> {
+  public async getJobsForProjectRun(runId: string): Promise<any[]> {
     this.ensureService(this.jobService);
     return this.jobService!.getJobsForProjectRun(runId);
   }

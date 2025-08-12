@@ -18,7 +18,7 @@ const mockJob: Job = {
   run_id: runId,
   request_data: {},
   progress_percent: 100,
-  retries: 0,
+  retries: 0
 };
 
 const getJobHandler = jest.fn();
@@ -35,18 +35,12 @@ export const handlers = [
     getJobsForProjectRunHandler
   ),
   http.get(`${TEST_HOST}/projects`, getProjectByNameHandler),
-  http.get(
-    `${TEST_HOST}/projects/${projectId}/log_streams`,
-    () => {
-      return HttpResponse.json([]);
-    }
-  ),
-  http.post(
-    `${TEST_HOST}/projects/${projectId}/log_streams`,
-    () => {
-      return HttpResponse.json({ id: 'test-log-stream-id', name: 'default' });
-    }
-  ),
+  http.get(`${TEST_HOST}/projects/${projectId}/log_streams`, () => {
+    return HttpResponse.json([]);
+  }),
+  http.post(`${TEST_HOST}/projects/${projectId}/log_streams`, () => {
+    return HttpResponse.json({ id: 'test-log-stream-id', name: 'default' });
+  })
 ];
 
 const server = setupServer(...handlers);
@@ -63,8 +57,8 @@ describe('Job Utils', () => {
       return HttpResponse.json([
         {
           id: projectId,
-          name: 'test-project',
-        },
+          name: 'test-project'
+        }
       ]);
     });
   });
@@ -103,7 +97,7 @@ describe('Job Utils', () => {
       const failedJob = {
         ...mockJob,
         status: JobStatus.failed,
-        error_message: 'Test error',
+        error_message: 'Test error'
       };
       getJobHandler.mockImplementation(() => {
         return HttpResponse.json(failedJob);
@@ -140,7 +134,9 @@ describe('Job Utils', () => {
 
   describe('getScorerJobsStatus', () => {
     it('should log the correct status and handle aliased and unknown scorers', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, 'log')
+        .mockImplementation(() => {});
       const consoleDebugSpy = jest
         .spyOn(console, 'debug')
         .mockImplementation(() => {});
@@ -152,8 +148,8 @@ describe('Job Utils', () => {
           id: 'job-1',
           status: JobStatus.completed,
           request_data: {
-            prompt_scorer_settings: { scorer_name: 'completeness_gpt' },
-          },
+            prompt_scorer_settings: { scorer_name: 'completeness_gpt' }
+          }
         },
         // Test case 2: A pending job with a non-aliased scorer name
         {
@@ -161,8 +157,8 @@ describe('Job Utils', () => {
           id: 'job-2',
           status: JobStatus.pending,
           request_data: {
-            prompt_scorer_settings: { scorer_name: 'a_new_scorer' },
-          },
+            prompt_scorer_settings: { scorer_name: 'a_new_scorer' }
+          }
         },
         // Test case 3: A failed job
         {
@@ -171,16 +167,16 @@ describe('Job Utils', () => {
           status: JobStatus.failed,
           error_message: 'Something went wrong.',
           request_data: {
-            prompt_scorer_settings: { scorer_name: 'factuality' },
-          },
+            prompt_scorer_settings: { scorer_name: 'factuality' }
+          }
         },
         // Test case 4: A job with no scorer settings, which should be skipped
         {
           ...mockJob,
           id: 'job-4',
           status: JobStatus.completed,
-          request_data: {},
-        },
+          request_data: {}
+        }
       ];
 
       getJobsForProjectRunHandler.mockImplementation(() => {

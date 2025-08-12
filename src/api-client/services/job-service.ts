@@ -24,9 +24,7 @@ export class JobService extends BaseClient {
     );
   }
 
-  public async getJobsForProjectRun(
-    runId: string
-  ): Promise<Job[]> {
+  public async getJobsForProjectRun(runId: string): Promise<Job[]> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }

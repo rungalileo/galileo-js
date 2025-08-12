@@ -46,7 +46,11 @@ export const getJobProgress = async (
   let backoff = Math.random();
 
   if (isJobIncomplete(job.status as JobStatus)) {
-    const bar = createProgressBar(job.steps_total, job.steps_completed, job.progress_message);
+    const bar = createProgressBar(
+      job.steps_total,
+      job.steps_completed,
+      job.progress_message
+    );
 
     while (isJobIncomplete(job.status as JobStatus)) {
       await sleep(backoff * 1000);

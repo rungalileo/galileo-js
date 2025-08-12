@@ -50,11 +50,7 @@ describe('updateScorerSettings', () => {
         model_name: 'gpt-4'
       }
     ];
-    const response = await updateScorerSettings(
-      'projectId',
-      'runId',
-      scorers
-    );
+    const response = await updateScorerSettings('projectId', 'runId', scorers);
     expect(response).toEqual(mockResponse);
     expect(mockUpdateScorerSettings).toHaveBeenCalledWith(
       'runId',

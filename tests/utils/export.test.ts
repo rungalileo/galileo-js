@@ -21,7 +21,9 @@ describe('exportRecords', () => {
 
   it('should initialize the client and call exportRecords with the correct parameters', async () => {
     const mockExportRecords = jest.fn().mockResolvedValue([]);
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.init = jest
+      .fn()
+      .mockResolvedValue(undefined);
     mockGalileoApiClient.prototype.exportRecords = mockExportRecords;
 
     const projectName = 'test-project';
@@ -39,14 +41,14 @@ describe('exportRecords', () => {
   });
 
   it('should correctly parse a JSONL response', async () => {
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
-    mockGalileoApiClient.prototype.exportRecords = jest
+    mockGalileoApiClient.prototype.init = jest
       .fn()
-      .mockResolvedValue([
-        { a: 1, b: 2 },
-        { a: 3, b: 4 },
-        { a: 5, b: 6 }
-      ]);
+      .mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.exportRecords = jest.fn().mockResolvedValue([
+      { a: 1, b: 2 },
+      { a: 3, b: 4 },
+      { a: 5, b: 6 }
+    ]);
 
     const projectName = 'test-project';
     const body: LogRecordsExportRequest = {
@@ -64,14 +66,14 @@ describe('exportRecords', () => {
   });
 
   it('should correctly parse a CSV response', async () => {
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
-    mockGalileoApiClient.prototype.exportRecords = jest
+    mockGalileoApiClient.prototype.init = jest
       .fn()
-      .mockResolvedValue([
-        { a: '1', b: '2' },
-        { a: '3', b: '4' },
-        { a: '5', b: '6' }
-      ]);
+      .mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.exportRecords = jest.fn().mockResolvedValue([
+      { a: '1', b: '2' },
+      { a: '3', b: '4' },
+      { a: '5', b: '6' }
+    ]);
 
     const projectName = 'test-project';
     const body: LogRecordsExportRequest = {
@@ -90,12 +92,17 @@ describe('exportRecords', () => {
 
   it('should handle column_ids and sort', async () => {
     const mockExportRecords = jest.fn().mockResolvedValue([]);
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.init = jest
+      .fn()
+      .mockResolvedValue(undefined);
     mockGalileoApiClient.prototype.exportRecords = mockExportRecords;
 
     const projectName = 'test-project';
     const column_ids = ['id', 'input', 'output'];
-    const sort: LogRecordsSortClause = { column_id: 'created_at', ascending: true };
+    const sort: LogRecordsSortClause = {
+      column_id: 'created_at',
+      ascending: true
+    };
     const body: LogRecordsExportRequest = {
       root_type: 'trace',
       column_ids,
@@ -114,7 +121,9 @@ describe('exportRecords', () => {
 
   it('should handle log_stream_id', async () => {
     const mockExportRecords = jest.fn().mockResolvedValue([]);
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.init = jest
+      .fn()
+      .mockResolvedValue(undefined);
     mockGalileoApiClient.prototype.exportRecords = mockExportRecords;
 
     const projectName = 'test-project';
@@ -135,7 +144,9 @@ describe('exportRecords', () => {
 
   it('should handle filters', async () => {
     const mockExportRecords = jest.fn().mockResolvedValue([]);
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.init = jest
+      .fn()
+      .mockResolvedValue(undefined);
     mockGalileoApiClient.prototype.exportRecords = mockExportRecords;
 
     const projectName = 'test-project';
@@ -158,7 +169,9 @@ describe('exportRecords', () => {
 
   it('should throw an error on API failure', async () => {
     const errorMessage = 'Bad Request';
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.init = jest
+      .fn()
+      .mockResolvedValue(undefined);
     mockGalileoApiClient.prototype.exportRecords = jest
       .fn()
       .mockRejectedValue(new Error(errorMessage));
@@ -168,7 +181,9 @@ describe('exportRecords', () => {
       root_type: 'trace'
     };
 
-    await expect(exportRecords(projectName, body)).rejects.toThrow(errorMessage);
+    await expect(exportRecords(projectName, body)).rejects.toThrow(
+      errorMessage
+    );
   });
 
   it.each([['trace'], ['span'], ['session']])(
@@ -196,8 +211,12 @@ describe('exportRecords', () => {
   );
 
   it('should handle an empty response', async () => {
-    mockGalileoApiClient.prototype.init = jest.fn().mockResolvedValue(undefined);
-    mockGalileoApiClient.prototype.exportRecords = jest.fn().mockResolvedValue([]);
+    mockGalileoApiClient.prototype.init = jest
+      .fn()
+      .mockResolvedValue(undefined);
+    mockGalileoApiClient.prototype.exportRecords = jest
+      .fn()
+      .mockResolvedValue([]);
 
     const projectName = 'test-project';
     const body: LogRecordsExportRequest = {
