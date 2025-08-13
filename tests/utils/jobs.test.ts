@@ -176,6 +176,15 @@ describe('Job Utils', () => {
           id: 'job-4',
           status: JobStatus.completed,
           request_data: {}
+        },
+        // Test case 5: A job with scorer_config
+        {
+          ...mockJob,
+          id: 'job-5',
+          status: JobStatus.completed,
+          request_data: {
+            scorer_config: { name: 'my_custom_scorer' }
+          }
         }
       ];
 
@@ -193,6 +202,7 @@ describe('Job Utils', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         'correctness: Failed ❌, error was: Something went wrong.'
       );
+      expect(consoleSpy).toHaveBeenCalledWith('my_custom_scorer: Done ✅');
 
       // Verify that the job with no scorer settings was skipped
       expect(consoleSpy).not.toHaveBeenCalledWith(
