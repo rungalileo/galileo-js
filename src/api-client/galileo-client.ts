@@ -388,6 +388,7 @@ export class GalileoApiClient extends BaseClient {
     this.ensureService(this.jobService);
     return this.jobService!.getJobsForProjectRun(runId);
   }
+
   // PromptTemplate methods - delegate to PromptTemplateService
   public async getPromptTemplates() {
     this.ensureService(this.promptTemplateService);

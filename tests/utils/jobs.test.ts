@@ -13,7 +13,7 @@ const mockJob: Job = {
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   status: JobStatus.completed,
-  job_name: 'test-job',
+  job_name: 'log_stream_scorer',
   project_id: projectId,
   run_id: runId,
   request_data: {},
@@ -199,7 +199,7 @@ describe('Job Utils', () => {
         expect.stringContaining('job-4')
       );
       expect(consoleDebugSpy).toHaveBeenCalledWith(
-        'Scorer job job-4 has no scorer settings.'
+        'Scorer job job-4 has no scorer name.'
       );
 
       consoleSpy.mockRestore();
