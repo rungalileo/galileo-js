@@ -4,7 +4,12 @@ import GalileoObserveApiClient from './observe/api-client';
 import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
-import { GalileoScorers } from './types/metrics.types';
+import {
+  GalileoScorers,
+  RootType,
+  LLMExportFormat,
+  LogRecordsTextFilter
+} from './types';
 import {
   addRowsToDataset,
   createDataset,
@@ -15,7 +20,14 @@ import {
   getDatasetContent,
   getDataset
 } from './utils/datasets';
+import { getMetrics, getTraces, getSpans, getSessions } from './utils/search';
+import { exportRecords } from './utils/export';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
+import {
+  getJobProgress,
+  getScorerJobs,
+  getScorerJobsStatus
+} from './utils/jobs';
 import {
   getPromptTemplate,
   getPromptTemplates,
@@ -37,6 +49,8 @@ import {
   getExperiment,
   runExperiment
 } from './utils/experiments';
+import { updateScorerSettings } from './utils/runs';
+import { getScorers } from './utils/scorers';
 import { GalileoLogger } from './utils/galileo-logger';
 import { init, flush, getLogger } from './singleton';
 import { log } from './wrappers';
@@ -54,6 +68,9 @@ export {
   GalileoLogger,
   GalileoCallback,
   GalileoScorers,
+  RootType,
+  LLMExportFormat,
+  LogRecordsTextFilter,
   // OpenAI
   wrapOpenAI,
   // Datasets
@@ -93,5 +110,19 @@ export {
   getLogger,
   // Metrics
   createCustomLlmMetric,
-  deleteMetric
+  deleteMetric,
+  getMetrics,
+  // Jobs
+  getJobProgress,
+  getScorerJobs,
+  getScorerJobsStatus,
+  // Traces
+  getTraces,
+  getSpans,
+  getSessions,
+  exportRecords,
+  // Runs
+  updateScorerSettings,
+  // Scorers
+  getScorers
 };
