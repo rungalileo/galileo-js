@@ -65,7 +65,7 @@ describe('JobService', () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         status: JobStatus.completed,
-        job_name: 'test-job-1',
+        job_name: 'log_stream_scorer',
         project_id: mockProjectId,
         run_id: runId,
         request_data: {},
@@ -84,8 +84,7 @@ describe('JobService', () => {
         RequestMethod.GET,
         Routes.jobsForProjectRun,
         undefined,
-        { project_id: mockProjectId, run_id: runId },
-        undefined
+        { project_id: mockProjectId, run_id: runId }
       );
       expect(result).toEqual(mockJobs);
     });
