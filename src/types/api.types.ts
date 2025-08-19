@@ -2113,6 +2113,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/scorers/llm/validate/log_record': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Validate Llm Scorer Log Record */
+    post: operations['validate_llm_scorer_log_record_scorers_llm_validate_log_record_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/stages': {
     parameters: {
       query?: never;
@@ -3422,6 +3439,12 @@ export interface components {
        * @default false
        */
       complex?: boolean;
+      /**
+       * Is Optional
+       * @description Whether the column is optional.
+       * @default false
+       */
+      is_optional?: boolean;
     };
     /** ColumnMapping */
     ColumnMapping: {
@@ -6138,6 +6161,10 @@ export interface components {
       /** Prompt Model */
       prompt_model?: string | null;
       prompt?: components['schemas']['ExperimentPrompt'] | null;
+      /** Tags */
+      tags?: {
+        [key: string]: components['schemas']['RunTagDB'][];
+      };
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -14042,11 +14069,12 @@ export interface components {
       | 14
       | 15
       | 16
-      | 17;
+      | 17
+      | 18;
     /** TemplateStubRequest */
     TemplateStubRequest: {
-      /** Template */
-      template: string;
+      /** Templates */
+      templates: string[];
     };
     /** TextRating */
     TextRating: {
@@ -14831,6 +14859,73 @@ export interface components {
      * @enum {string}
      */
     UserRole: 'admin' | 'manager' | 'user' | 'read_only';
+    /**
+     * ValidateLLMScorerLogRecordRequest
+     * @description Request to validate a new LLM scorer based on a log record.
+     *     This is used to create a new experiment with the copied log records to store the metric testing results.
+     */
+    ValidateLLMScorerLogRecordRequest: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /** Filters */
+      filters?: (
+        | components['schemas']['LogRecordsIDFilter']
+        | components['schemas']['LogRecordsDateFilter']
+        | components['schemas']['LogRecordsNumberFilter']
+        | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsTextFilter']
+      )[];
+      /** @default {
+       *       "column_id": "created_at",
+       *       "ascending": false,
+       *       "sort_type": "column"
+       *     } */
+      sort?: components['schemas']['LogRecordsSortClause'];
+      /**
+       * Truncate Fields
+       * @default false
+       */
+      truncate_fields?: boolean;
+      /** Query */
+      query: string;
+      /** Response */
+      response: string;
+      chain_poll_template: components['schemas']['ChainPollTemplate'];
+      scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /** User Prompt */
+      user_prompt: string;
+    };
+    /**
+     * ValidateLLMScorerLogRecordResponse
+     * @description Response model for validating a new LLM scorer based on a log record.
+     *
+     *     Returns the uuid of the experiment created with the copied log records to store the metric testing results.
+     */
+    ValidateLLMScorerLogRecordResponse: {
+      /**
+       * Metrics Experiment Id
+       * Format: uuid4
+       */
+      metrics_experiment_id: string;
+    };
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -19622,6 +19717,39 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['GeneratedScorerValidationResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  validate_llm_scorer_log_record_scorers_llm_validate_log_record_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ValidateLLMScorerLogRecordRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ValidateLLMScorerLogRecordResponse'];
         };
       };
       /** @description Validation Error */
