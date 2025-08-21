@@ -1,5 +1,13 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
+import {
+  MetricSearchRequest,
+  MetricSearchResponse
+} from '../../types/search.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../../types/search.types';
 import { Trace } from '../../types/logging/trace.types';
 import { SessionCreateResponse } from '../../types/logging/session.types';
 
@@ -76,6 +84,66 @@ export class TraceService extends BaseClient {
     // eslint-disable-next-line no-console
     console.log(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
+    );
+  }
+
+  public async searchMetrics(
+    request: MetricSearchRequest
+  ): Promise<MetricSearchResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<MetricSearchResponse>(
+      RequestMethod.POST,
+      Routes.metricsSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchTraces(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.tracesSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchSpans(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.spansSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchSessions(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.sessionsSearch,
+      request,
+      { project_id: this.projectId }
     );
   }
 }
