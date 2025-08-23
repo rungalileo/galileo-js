@@ -6138,6 +6138,8 @@ export interface components {
       /** Prompt Model */
       prompt_model?: string | null;
       prompt?: components['schemas']['ExperimentPrompt'] | null;
+      /** Tags */
+      tags?: components['schemas']['RunTagDB'][];
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
