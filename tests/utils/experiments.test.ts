@@ -299,12 +299,27 @@ describe('experiments utility', () => {
       const result = await createExperiment('Test Experiment', projectName);
 
       // Verify the correct method was called with the right name
-      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment');
+      expect(mockCreateExperiment).toHaveBeenCalledWith(
+        'Test Experiment',
+        undefined
+      );
       expect(result).toEqual(mockExperiment);
     });
     it('should throw an error if name is empty', async () => {
       await expect(createExperiment('', projectName)).rejects.toThrow(
         'A valid `name` must be provided to create an experiment'
+      );
+    });
+
+    it('should pass the dataset to the api client', async () => {
+      const dataset = {
+        dataset_id: 'dataset-id',
+        version_index: 1
+      };
+      await createExperiment('Test Experiment', projectName, dataset);
+      expect(mockCreateExperiment).toHaveBeenCalledWith(
+        'Test Experiment',
+        dataset
       );
     });
   });
@@ -321,7 +336,10 @@ describe('experiments utility', () => {
         'message',
         promptRunJobCreatedSuccessMessage
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+        dataset_id: 'test-dataset-id',
+        version_index: 1
+      });
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
 
@@ -354,7 +372,10 @@ describe('experiments utility', () => {
         'message',
         promptRunJobCreatedSuccessMessage
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+        dataset_id: 'test-dataset-id',
+        version_index: 1
+      });
       expect(mockGetDatasetByName).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -370,7 +391,10 @@ describe('experiments utility', () => {
         'message',
         promptRunJobCreatedSuccessMessage
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+        dataset_id: 'test-dataset-id',
+        version_index: 1
+      });
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
   });

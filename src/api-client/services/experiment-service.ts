@@ -4,7 +4,8 @@ import { ScorerConfig } from '../../types/scorer.types';
 import {
   Experiment,
   PromptRunSettings,
-  CreateJobResponse
+  CreateJobResponse,
+  ExperimentDatasetRequest
 } from '../../types/experiment.types';
 
 export class ExperimentService extends BaseClient {
@@ -39,13 +40,17 @@ export class ExperimentService extends BaseClient {
     );
   };
 
-  public createExperiment = async (name: string): Promise<Experiment> => {
+  public createExperiment = async (
+    name: string,
+    dataset?: ExperimentDatasetRequest | null
+  ): Promise<Experiment> => {
     return await this.makeRequest<Experiment>(
       RequestMethod.POST,
       Routes.experiments,
       {
         name,
-        task_type: 16
+        task_type: 16,
+        dataset
       },
       {
         project_id: this.projectId

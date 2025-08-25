@@ -7,6 +7,7 @@ import {
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { RunExperimentParams } from './experiments';
 
 export const getDatasets = async (): Promise<Dataset[]> => {
   const apiClient = new GalileoApiClient();
@@ -402,4 +403,23 @@ export const deleteDataset = async ({
   }
 
   await apiClient.deleteDataset(id!);
+};
+
+export const loadDataset = async <T extends Record<string, unknown>>(
+  params: RunExperimentParams<T>,
+  projectName: string
+): Promise<Dataset | undefined> => {
+  if ('dataset' in params && params.dataset) {
+    if (!(params.dataset instanceof Array)) {
+      return params.dataset as Dataset;
+    }
+  } else if ('datasetId' in params) {
+    const apiClient = new GalileoApiClient();
+    await apiClient.init({ projectName });
+    return await apiClient.getDataset(params.datasetId);
+  } else if ('datasetName' in params) {
+    const apiClient = new GalileoApiClient();
+    await apiClient.init({ projectName });
+    return await apiClient.getDatasetByName(params.datasetName);
+  }
 };

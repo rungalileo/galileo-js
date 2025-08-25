@@ -13,7 +13,8 @@ import {
   deserializeInputFromString,
   getDatasets,
   getDatasetContent,
-  getDataset
+  getDataset,
+  loadDataset
 } from './utils/datasets';
 import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
 import {
@@ -65,6 +66,7 @@ export {
   addRowsToDataset,
   createDatasetRecord,
   deserializeInputFromString,
+  loadDataset,
   // Prompt templates
   getPromptTemplate,
   getPromptTemplates,

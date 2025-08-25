@@ -23,6 +23,7 @@ import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
 import {
   CreateJobResponse,
+  ExperimentDatasetRequest,
   PromptRunSettings
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
@@ -402,9 +403,12 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentService!.getExperiment(id);
   }
 
-  public async createExperiment(name: string) {
+  public async createExperiment(
+    name: string,
+    dataset?: ExperimentDatasetRequest | null
+  ) {
     this.ensureService(this.experimentService);
-    return this.experimentService!.createExperiment(name);
+    return this.experimentService!.createExperiment(name, dataset);
   }
 
   public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
