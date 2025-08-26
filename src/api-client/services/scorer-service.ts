@@ -3,11 +3,13 @@ import { Routes } from '../../types/routes.types';
 import {
   ChainPollTemplate,
   ModelType,
+  OutputType,
   Scorer,
   ScorerDefaults,
   ScorerVersion
 } from '../../types/scorer.types';
 import { ScorerTypes } from '../../types/scorer.types';
+import { StepType } from '../../types/logging/step.types';
 
 export class ScorerService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -23,21 +25,40 @@ export class ScorerService extends BaseClient {
    * @param type - (Optional) The type of scorer to filter by.
    * @returns A promise that resolves to an array of {@link Scorer} objects.
    */
-  public getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+  public getScorers = async (options?: {
+    type?: ScorerTypes;
+    names?: string[];
+  }): Promise<Scorer[]> => {
+    const filters = [];
+    if (options?.type) {
+      filters.push({
+        name: 'scorer_type',
+        value: options.type,
+        operator: 'eq'
+      });
+    }
+
+    if (options?.names && options.names.length === 1) {
+      filters.push({
+        name: 'name',
+        value: options.names[0],
+        operator: 'eq'
+      });
+    } else if (options?.names && options.names.length > 1) {
+      filters.push({
+        name: 'name',
+        value: options.names,
+        operator: 'one_of'
+      });
+    }
+
+    const payload = filters.length > 0 ? { filters } : {};
+    console.log('Scorer request payload:', JSON.stringify(payload));
+
     const response = await this.makeRequest<{ scorers: Scorer[] }>(
       RequestMethod.POST,
       Routes.scorers,
-      type
-        ? {
-            filters: [
-              {
-                name: 'scorer_type',
-                value: type,
-                operator: 'eq'
-              }
-            ]
-          }
-        : {}
+      payload
     );
 
     return response.scorers;
@@ -109,23 +130,60 @@ export class ScorerService extends BaseClient {
    * @param scorerId - The unique identifier of the scorer.
    * @param instructions - Instructions for the scorer version.
    * @param chainPollTemplate - The chain poll template for the scorer version.
+   * @param userPrompt - (Optional) The user prompt for the scorer version.
+   * @param scoreableNodeTypes - (Optional) The node level for the scorer version. Defaults to ['llm'].
+   * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to
    * @param modelName - (Optional) The model name to use.
    * @param numJudges - (Optional) The number of judges to use.
+   * @param outputType - (Optional) The output type for the scorer version.
    * @returns A promise that resolves to the created {@link ScorerVersion}.
    */
   public createLLMScorerVersion = async (
     scorerId: string,
-    instructions: string,
-    chainPollTemplate: ChainPollTemplate,
+    instructions?: string,
+    chainPollTemplate?: ChainPollTemplate,
+    userPrompt?: string,
+    scoreableNodeTypes?: StepType[],
+    cotEnabled?: boolean,
     modelName?: string,
-    numJudges?: number
+    numJudges?: number,
+    outputType?: OutputType
   ): Promise<ScorerVersion> => {
-    const scorerVersionPayload = {
-      model_name: modelName,
-      num_judges: numJudges,
-      instructions: instructions,
-      chain_poll_template: chainPollTemplate
-    };
+    const scorerVersionPayload: {
+      model_name?: string;
+      num_judges?: number;
+      instructions?: string;
+      chain_poll_template?: ChainPollTemplate;
+      user_prompt?: string;
+      scoreable_node_types?: StepType[];
+      cot_enabled?: boolean;
+      output_type?: OutputType;
+    } = {};
+
+    if (modelName !== undefined && modelName !== null) {
+      scorerVersionPayload.model_name = modelName;
+    }
+    if (numJudges !== undefined && numJudges !== null) {
+      scorerVersionPayload.num_judges = numJudges;
+    }
+    if (instructions !== undefined && instructions !== null) {
+      scorerVersionPayload.instructions = instructions;
+    }
+    if (chainPollTemplate !== undefined && chainPollTemplate !== null) {
+      scorerVersionPayload.chain_poll_template = chainPollTemplate;
+    }
+    if (userPrompt !== undefined && userPrompt !== null) {
+      scorerVersionPayload.user_prompt = userPrompt;
+    }
+    if (scoreableNodeTypes !== undefined && scoreableNodeTypes !== null) {
+      scorerVersionPayload.scoreable_node_types = scoreableNodeTypes;
+    }
+    if (cotEnabled !== undefined && cotEnabled !== null) {
+      scorerVersionPayload.cot_enabled = cotEnabled;
+    }
+    if (outputType !== undefined && outputType !== null) {
+      scorerVersionPayload.output_type = outputType;
+    }
 
     const path = Routes.llmScorerVersion.replace('{scorer_id}', scorerId);
 

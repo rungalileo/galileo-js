@@ -324,26 +324,34 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   console.log('Retrieving metrics...');
 
   if (metrics && metrics.length > 0) {
-    const scorers = await getScorers();
+    const metricNames = metrics.map((m) =>
+      typeof m === 'string' ? m : m.name
+    );
+    const scorers = await getScorers({ names: metricNames });
 
-    for (const metric of metrics) {
+    if (scorers.length < metricNames.length) {
+      const missingMetrics = metricNames.filter(
+        (name) => !scorers.some((s) => s.name === name)
+      );
+      throw new Error(
+        `Metrics not found: ${missingMetrics.join(', ')}. Please create them first.`
+      );
+    }
+
+    for (const scorer of scorers) {
       // This is a string, GalileoScorers, or Metric
-      let metricName: string = '';
       let metricVersion: number | undefined = undefined;
-      if (typeof metric === 'string') {
-        metricName = metric;
-      } else {
-        metricName = metric.name;
+      const metric = metrics?.find(
+        (m) => (typeof m === 'string' ? m : m.name) === scorer.name
+      );
+      if (
+        metric &&
+        typeof metric === 'object' &&
+        'version' in metric &&
+        metric.version !== undefined
+      ) {
         metricVersion = metric.version;
       }
-      const scorer = scorers.find((scorer) => scorer.name === metricName);
-
-      if (!scorer) {
-        throw new Error(
-          `Metric ${metric} not found. Please check the name is correct.`
-        );
-      }
-
       const scorerConfig: ScorerConfig = {
         id: scorer.id,
         name: scorer.name,

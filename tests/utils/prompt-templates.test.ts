@@ -31,7 +31,8 @@ const EXAMPLE_PROMPT_TEMPLATE_VERSION: PromptTemplateVersion = {
   settings_changed: false,
   lines_added: 0,
   lines_removed: 0,
-  lines_edited: 1,
+  lines_edited: 0,
+  content_changed: true,
   created_at: '2025-06-20T19:39:14.084318Z',
   updated_at: '2025-06-20T19:39:14.084320Z',
   created_by_user: null
@@ -51,9 +52,10 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
     id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
     model_changed: false,
     settings_changed: false,
-    lines_added: 1,
+    lines_added: 0,
     lines_removed: 0,
     lines_edited: 0,
+    content_changed: true,
     created_at: '2025-06-20T20:01:46.135165Z',
     updated_at: '2025-06-20T20:01:46.135166Z',
     created_by_user: null
@@ -69,9 +71,10 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
       id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
       model_changed: false,
       settings_changed: false,
-      lines_added: 1,
+      lines_added: 0,
       lines_removed: 0,
       lines_edited: 0,
+      content_changed: true,
       created_at: '2025-06-20T20:01:46.135165Z',
       updated_at: '2025-06-20T20:01:46.135166Z',
       created_by_user: null

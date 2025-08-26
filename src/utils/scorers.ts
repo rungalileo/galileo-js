@@ -1,17 +1,22 @@
 import {
   ChainPollTemplate,
   ModelType,
+  OutputType,
   Scorer,
   ScorerConfig,
   ScorerVersion
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
+import { StepType } from '../types/logging/step.types';
 
-export const getScorers = async (type?: ScorerTypes): Promise<Scorer[]> => {
+export const getScorers = async (options?: {
+  type?: ScorerTypes;
+  names?: string[];
+}): Promise<Scorer[]> => {
   const client = new GalileoApiClient();
   await client.init();
-  return await client.getScorers(type);
+  return await client.getScorers(options);
 };
 
 /**
@@ -109,18 +114,26 @@ export const createScorer = async (
  * Creates a new LLM scorer version for a given scorer.
  *
  * @param scorerId - The unique identifier of the scorer.
- * @param instructions - Instructions for the scorer version.
- * @param chainPollTemplate - The chain poll template for the scorer version.
+ * @param instructions - (Optional) Instructions for the scorer version.
+ * @param chainPollTemplate - (Optional) The chain poll template for the scorer version.
+ * @param userPrompt - (Optional) The user prompt for the scorer version.
+ * @param scoreableNodeTypes - (Optional) The node level for the scorer version. Defaults to ['llm'].
+ * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to true
  * @param modelName - (Optional) The model name to use.
  * @param numJudges - (Optional) The number of judges to use.
+ * @param outputType - (Optional) The output type for the scorer version. Defaults to OutputType.BOOLEAN.
  * @returns A promise that resolves to the created {@link ScorerVersion}.
  */
 export const createLlmScorerVersion = async (
   scorerId: string,
-  instructions: string,
-  chainPollTemplate: ChainPollTemplate,
+  instructions?: string,
+  chainPollTemplate?: ChainPollTemplate,
+  userPrompt?: string,
+  scoreableNodeTypes?: StepType[],
+  cotEnabled?: boolean,
   modelName?: string,
-  numJudges?: number
+  numJudges?: number,
+  outputType?: OutputType
 ): Promise<ScorerVersion> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -129,8 +142,12 @@ export const createLlmScorerVersion = async (
     scorerId,
     instructions,
     chainPollTemplate,
+    userPrompt,
+    scoreableNodeTypes,
+    cotEnabled,
     modelName,
-    numJudges
+    numJudges,
+    outputType
   );
 };
 

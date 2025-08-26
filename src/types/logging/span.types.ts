@@ -20,14 +20,17 @@ import { MetricValueType } from '../metrics.types';
 
 export interface BaseSpanOptions extends BaseStepOptions {
   input: StepAllowedInputType;
+  redactedInput?: StepAllowedInputType;
 }
 
 export class BaseSpan extends BaseStep {
   input: StepAllowedInputType;
+  redactedInput?: StepAllowedInputType;
 
   constructor(type: StepType, data: BaseSpanOptions) {
     super(type, data);
     this.input = data.input;
+    this.redactedInput = data.redactedInput;
   }
 }
 
@@ -61,7 +64,9 @@ export class StepWithChildSpans extends BaseSpan {
 
 export interface WorkflowSpanOptions extends StepWithChildSpansOptions {
   input: string;
+  redactedInput?: string;
   output?: string;
+  redactedOutput?: string;
 }
 
 export class WorkflowSpan extends StepWithChildSpans {
@@ -141,7 +146,9 @@ export class LlmMetrics extends Metrics {
 
 export interface LlmSpanOptions extends BaseSpanOptions {
   input: LlmSpanAllowedInputType;
+  redactedInput?: LlmSpanAllowedInputType;
   output: LlmSpanAllowedOutputType;
+  redactedOutput?: LlmSpanAllowedOutputType;
   metrics?: LlmMetrics;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools?: Record<string, any>[];
@@ -153,7 +160,9 @@ export interface LlmSpanOptions extends BaseSpanOptions {
 export class LlmSpan extends BaseSpan {
   type: StepType = StepType.llm;
   input: Message[];
+  redactedInput?: Message[];
   output: Message;
+  redactedOutput?: Message;
   metrics: LlmMetrics = new LlmMetrics({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools?: Record<string, any>[];
@@ -164,10 +173,19 @@ export class LlmSpan extends BaseSpan {
   constructor(data: LlmSpanOptions) {
     super(StepType.llm, data);
     this.input = convertLlmInput(structuredClone(data.input));
+    this.redactedInput = data.redactedInput
+      ? convertLlmInput(structuredClone(data.redactedInput))
+      : undefined;
     this.output = convertLlmOutput(
       structuredClone(data.output),
       MessageRole.assistant
     );
+    this.redactedOutput = data.redactedOutput
+      ? convertLlmOutput(
+          structuredClone(data.redactedOutput),
+          MessageRole.assistant
+        )
+      : undefined;
     this.metrics = data.metrics || new LlmMetrics({});
     this.tools = data.tools;
     this.model = data.model;
@@ -189,18 +207,26 @@ export class LlmSpan extends BaseSpan {
 
 export interface RetrieverSpanOptions extends BaseSpanOptions {
   input: string;
+  redactedInput?: string;
   output?: RetrieverSpanAllowedOutputType;
+  redactedOutput?: RetrieverSpanAllowedOutputType;
 }
 
 export class RetrieverSpan extends BaseStep {
   type: StepType = StepType.retriever;
   input: string;
+  redactedInput?: string;
   output: Document[] = [];
+  redactedOutput?: Document[];
 
   constructor(data: RetrieverSpanOptions) {
     super(StepType.retriever, data);
     this.input = data.input;
+    this.redactedInput = data.redactedInput;
     this.output = data.output ? convertRetrieverOutput(data.output) : [];
+    this.redactedOutput = data.redactedOutput
+      ? convertRetrieverOutput(data.redactedOutput)
+      : undefined;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -216,24 +242,38 @@ export interface ToolSpanOptions extends BaseSpanOptions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   input: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  redactedInput?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   output?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  redactedOutput?: any;
   toolCallId?: string;
 }
 
 export class ToolSpan extends BaseStep {
   type: StepType = StepType.tool;
   input: string;
+  redactedInput?: string;
   output: string;
+  redactedOutput?: string;
   toolCallId?: string;
 
   constructor(data: ToolSpanOptions) {
     super(StepType.tool, data);
     this.input =
       typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
+    this.redactedInput =
+      typeof data.redactedInput === 'string'
+        ? data.redactedInput
+        : JSON.stringify(data.redactedInput);
     this.output =
       typeof data.output === 'string'
         ? (data.output ?? '')
         : JSON.stringify(data.output);
+    this.redactedOutput =
+      typeof data.redactedOutput === 'string'
+        ? (data.redactedOutput ?? '')
+        : JSON.stringify(data.redactedOutput);
     this.toolCallId = data.toolCallId;
   }
 

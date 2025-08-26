@@ -6,7 +6,8 @@ import {
   ScorerTypes,
   ScorerVersion,
   ModelType,
-  ChainPollTemplate
+  ChainPollTemplate,
+  OutputType
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
@@ -17,7 +18,13 @@ import {
   PromptTemplateService,
   GlobalPromptTemplateService
 } from './services/prompt-template-service';
-import { DatasetService, DatasetAppendRow } from './services/dataset-service';
+import {
+  DatasetService,
+  DatasetAppendRow,
+  SyntheticDatasetExtensionRequest,
+  SyntheticDatasetExtensionResponse,
+  JobProgress
+} from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
@@ -28,6 +35,7 @@ import {
 } from '../types/experiment.types';
 import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
+import { StepType } from '../types/logging/step.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -297,6 +305,18 @@ export class GalileoApiClient extends BaseClient {
     );
   }
 
+  public async extendDataset(
+    params: SyntheticDatasetExtensionRequest
+  ): Promise<SyntheticDatasetExtensionResponse> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.extendDataset(params);
+  }
+
+  public async getExtendDatasetStatus(datasetId: string): Promise<JobProgress> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.getExtendDatasetStatus(datasetId);
+  }
+
   // Trace methods - delegate to TraceService
   public async ingestTraces(traces: any[]) {
     this.ensureService(this.traceService);
@@ -411,9 +431,12 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentService!.createExperiment(name, dataset);
   }
 
-  public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
+  public async getScorers(options?: {
+    type?: ScorerTypes;
+    names?: string[];
+  }): Promise<Scorer[]> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorers(type);
+    return this.scorerService!.getScorers(options);
   }
 
   public async getScorerVersion(
@@ -479,18 +502,26 @@ export class GalileoApiClient extends BaseClient {
 
   public async createLlmScorerVersion(
     scorerId: string,
-    instructions: string,
-    chainPollTemplate: ChainPollTemplate,
+    instructions?: string,
+    chainPollTemplate?: ChainPollTemplate,
+    userPrompt?: string,
+    scoreableNodeTypes?: StepType[],
+    cotEnabled?: boolean,
     modelName?: string,
-    numJudges?: number
+    numJudges?: number,
+    outputType?: OutputType
   ): Promise<ScorerVersion> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createLLMScorerVersion(
       scorerId,
       instructions,
       chainPollTemplate,
+      userPrompt,
+      scoreableNodeTypes,
+      cotEnabled,
       modelName,
-      numJudges
+      numJudges,
+      outputType
     );
   }
 

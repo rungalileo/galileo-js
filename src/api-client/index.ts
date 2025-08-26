@@ -10,7 +10,9 @@ export {
   DatasetContent,
   Dataset,
   DatasetFormat,
-  ListDatasetResponse
+  ListDatasetResponse,
+  SyntheticDatasetExtensionRequest,
+  JobProgress
 } from './services/dataset-service';
 export { TraceService } from './services/trace-service';
 export { ExperimentService } from './services/experiment-service';
