@@ -1,4 +1,8 @@
-import { Experiment, PromptRunSettings } from '../types/experiment.types';
+import {
+  Experiment,
+  ExperimentDatasetRequest,
+  PromptRunSettings
+} from '../types/experiment.types';
 import {
   PromptTemplate,
   PromptTemplateVersion
@@ -16,7 +20,8 @@ import { Dataset, DatasetRecord } from '../types/dataset.types';
 import {
   deserializeInputFromString,
   getDatasetRecordsFromArray,
-  getRecordsForDataset
+  getRecordsForDataset,
+  loadDataset
 } from '../utils/datasets';
 import { GalileoScorers, Metric } from '../types/metrics.types';
 
@@ -84,14 +89,15 @@ export const getExperiments = async (
  */
 export const createExperiment = async (
   name: string,
-  projectName: string
+  projectName: string,
+  dataset?: ExperimentDatasetRequest | null
 ): Promise<Experiment> => {
   if (!name) {
     throw new Error('A valid `name` must be provided to create an experiment');
   }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
-  return await apiClient.createExperiment(name);
+  return await apiClient.createExperiment(name, dataset);
 };
 
 /*
@@ -293,7 +299,19 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     experimentName = `${name} ${timestamp}`;
   }
 
-  experiment = await createExperiment(experimentName, projectName);
+  const datasetObj = await loadDataset(params, projectName);
+  const datasetRequest: ExperimentDatasetRequest | undefined = datasetObj
+    ? {
+        dataset_id: datasetObj.id,
+        version_index: datasetObj.current_version_index
+      }
+    : undefined;
+
+  experiment = await createExperiment(
+    experimentName,
+    projectName,
+    datasetRequest
+  );
 
   if (!experiment) {
     throw new Error(`Experiment ${experimentName} could not be created`);

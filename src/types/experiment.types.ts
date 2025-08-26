@@ -13,3 +13,6 @@ type PromptRunSettingsInput = components['schemas']['PromptRunSettings'];
 export interface PromptRunSettings extends PromptRunSettingsInput {}
 
 export type CreateJobResponse = components['schemas']['CreateJobResponse'];
+
+export type ExperimentDatasetRequest =
+  components['schemas']['ExperimentDatasetRequest'];
