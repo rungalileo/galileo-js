@@ -290,7 +290,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       id: projectId
     });
   } catch (error) {
-    throw "Exactly one of 'projectId' or 'projectName' must be provided, or set in the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT";
+    throw new Error("Exactly one of 'projectId' or 'projectName' must be provided, or set in the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT");
   }
 
   let experiment: Experiment | undefined = undefined;
