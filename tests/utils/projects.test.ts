@@ -1,5 +1,8 @@
-import { Project, ProjectTypes } from "../../src/types";
-import { getProject, getProjectWithEnvFallbacks } from '../../src/utils/projects';
+import { Project, ProjectTypes } from '../../src/types';
+import {
+  getProject,
+  getProjectWithEnvFallbacks
+} from '../../src/utils/projects';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
