@@ -18,16 +18,8 @@ import {
   DatasetRow,
   JobProgress
 } from '../../src/api-client';
-import { LogStream } from '../../src/types/log-stream.types';
 import { DatasetType } from '../../src/utils/datasets';
 import { RunExperimentParams } from '../../src/utils/experiments';
-import { Project, ProjectTypes } from '../../src/types';
-
-const mockProject: Project = {
-  id: 'proj-123',
-  name: 'test-project',
-  type: ProjectTypes.genAI
-};
 
 const EXAMPLE_DATASET: Dataset = {
   id: 'c7b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3d',
@@ -40,15 +32,6 @@ const EXAMPLE_DATASET: Dataset = {
   created_by_user: null,
   current_version_index: 1,
   draft: false
-};
-
-const mockLogStream: LogStream = {
-  id: 'ls-123',
-  name: 'default',
-  created_at: new Date('2021-09-10T00:00:00Z'),
-  updated_at: new Date('2021-09-10T00:00:00Z'),
-  project_id: mockProject.id,
-  created_by: null
 };
 
 const EXAMPLE_DATASET_ROW: DatasetRow = {
@@ -145,29 +128,8 @@ const getExtendedDatasetContentHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(response);
 });
 
-const getProjectByNameHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json([mockProject]);
-});
-
-const getLogStreamsHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json([]);
-});
-
-const createLogStreamHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json(mockLogStream);
-});
-
 export const handlers = [
   ...commonHandlers,
-  http.get(`${TEST_HOST}/projects`, getProjectByNameHandler),
-  http.get(
-    `${TEST_HOST}/projects/${mockProject.id}/log_streams`,
-    getLogStreamsHandler
-  ),
-  http.post(
-    `${TEST_HOST}/projects/${mockProject.id}/log_streams`,
-    createLogStreamHandler
-  ),
   http.post(`${TEST_HOST}/datasets`, postDatasetsHandler),
   http.get(`${TEST_HOST}/datasets`, getDatasetsHandler),
   http.get(
