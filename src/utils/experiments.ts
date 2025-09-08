@@ -24,6 +24,8 @@ import {
   loadDataset
 } from '../utils/datasets';
 import { GalileoScorers, Metric } from '../types/metrics.types';
+import { Project } from '../types';
+import { getProjectWithEnvFallbacks } from './projects';
 
 type DatasetType = Dataset | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
@@ -31,7 +33,8 @@ type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 type BaseRunExperimentParams = {
   name: string;
   metrics?: (GalileoScorers | string | Metric)[];
-  projectName: string;
+  projectName?: string;
+  projectId?: string;
 };
 
 type RunExperimentWithFunctionParams<T extends Record<string, unknown>> =
@@ -263,30 +266,46 @@ const getLinkToExperimentResults = (
  *   projectName: 'my-project'
  * });
  * ```
+ * The project can be specified by providing exactly one of the project name
+ * (via the 'project' parameter or the GALILEO_PROJECT environment variable)
+ * or the project ID (via the 'project_id' parameter or the GALILEO_PROJECT_ID environment variable).
  *
  * @param name - The name of the experiment
  * @param dataset - Array of data records to process
  * @param function - Function that processes each record
  * @param metrics - Array of metrics to evaluate
- * @param projectName - Optional project name
+ * @param projectName - Optional project name. Takes preference over the GALILEO_PROJECT environment variable. Leave empty if using projectId.
+ * @param projectId - Optional project Id. Takes preference over the GALILEO_PROJECT_ID environment variable. Leave empty if using projectName.
+ * @param promptTemplate - Optional prompt template to use instead of a function
+ * @param promptSettings - Optional settings for the prompt run
  * @returns Array of outputs from the processing function
  */
 export const runExperiment = async <T extends Record<string, unknown>>(
   params: RunExperimentParams<T>
 ): Promise<RunExperimentOutput> => {
-  const { name, metrics, projectName } = params;
+  const { name, metrics, projectName, projectId } = params;
 
   console.log(`Preparing to run experiment '${name}'...`);
 
-  if (!projectName) {
-    throw new Error('Project name is required');
+  let project: Project | undefined = undefined;
+
+  // Get the project by passing the name and Id. If none are provided, this will use the environment variables
+  try {
+    project = await getProjectWithEnvFallbacks({
+      name: projectName,
+      id: projectId
+    });
+  } catch (error) {
+    throw new Error(
+      "Exactly one of 'projectId' or 'projectName' must be provided, or set in the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT"
+    );
   }
 
   let experiment: Experiment | undefined = undefined;
 
   // Check if experiment with the same name already exists
   let experimentName = name;
-  experiment = await getExperiment({ name, projectName });
+  experiment = await getExperiment({ name, projectName: project.name });
   if (experiment) {
     console.warn(
       `Experiment with name '${name}' already exists, adding a timestamp`
@@ -299,7 +318,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     experimentName = `${name} ${timestamp}`;
   }
 
-  const datasetObj = await loadDataset(params, projectName);
+  const datasetObj = await loadDataset(params, project.name);
   const datasetRequest: ExperimentDatasetRequest | undefined = datasetObj
     ? {
         dataset_id: datasetObj.id,
@@ -309,7 +328,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
   experiment = await createExperiment(
     experimentName,
-    projectName,
+    project.name,
     datasetRequest
   );
 
@@ -376,7 +395,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     console.log('Adding metrics to the experiment...');
     await createRunScorerSettings({
       experimentId: experiment.id,
-      projectName,
+      projectName: project.name,
       scorers: scorersToUse
     });
   }
@@ -417,21 +436,20 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   }
 
   const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectName });
-  const projectId = apiClient.projectId;
-  const linkToResults = getLinkToExperimentResults(experiment.id, projectId);
+  await apiClient.init({ projectName: project.name });
+  const linkToResults = getLinkToExperimentResults(experiment.id, project.id);
 
   // Process using either a runner function or a prompt template
   if ('function' in params) {
     const processFn = params.function;
 
     console.log(
-      `Processing runner function experiment ${experiment.name} for project ${projectName}...`
+      `Processing runner function experiment ${experiment.name} for project ${project.name}...`
     );
 
     const results = await runExperimentWithFunction(
       experiment,
-      projectName,
+      project.name,
       dataset,
       processFn
     );
@@ -488,12 +506,12 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       } as PromptRunSettings);
 
     console.log(
-      `Starting prompt experiment ${experiment.name} for project ${projectName}...`
+      `Starting prompt experiment ${experiment.name} for project ${project.name}...`
     );
 
     const response = await apiClient.createPromptRunJob(
       experiment.id,
-      projectId,
+      project.id,
       promptTemplateVersionId,
       datasetId!,
       scorersToUse,
