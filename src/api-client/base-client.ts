@@ -4,6 +4,7 @@ import createClient, { Client } from 'openapi-fetch';
 import { decode } from 'jsonwebtoken';
 import type { paths } from '../types/api.types';
 import { Routes } from '../types/routes.types';
+import { getSdkIdentifier } from '../utils/version';
 
 export enum RequestMethod {
   GET = 'GET',
@@ -38,7 +39,7 @@ export class BaseClient {
         baseUrl: this.apiUrl,
         headers: {
           Authorization: `Bearer ${this.token}`,
-          'client-type': 'sdk-js'
+          'X-Galileo-SDK': getSdkIdentifier()
         }
       });
     }
@@ -133,9 +134,11 @@ export class BaseClient {
   ): Promise<AxiosResponse<T>> {
     await this.refreshTokenIfNeeded(endpoint);
 
-    let headers: Record<string, any> = { 'client-type': 'sdk-js' };
+    let headers: Record<string, any> = {
+      'X-Galileo-SDK': getSdkIdentifier()
+    };
     if (this.token) {
-      headers = this.getAuthHeader(this.token);
+      headers = { ...this.getAuthHeader(this.token), ...headers };
     }
 
     headers = { ...headers, ...extraHeaders };
