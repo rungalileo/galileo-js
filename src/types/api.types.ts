@@ -827,6 +827,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/projects/{project_id}/metrics-testing/available_columns': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Metrics Testing Available Columns */
+    post: operations['metrics_testing_available_columns_projects__project_id__metrics_testing_available_columns_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/spans/available_columns': {
     parameters: {
       query?: never;
@@ -1946,6 +1963,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/scorers/{scorer_id}/version/luna': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Luna Scorer Version */
+    post: operations['create_luna_scorer_version_scorers__scorer_id__version_luna_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/scorers/list': {
     parameters: {
       query?: never;
@@ -2107,6 +2141,23 @@ export interface paths {
     put?: never;
     /** Manual Llm Validate */
     post: operations['manual_llm_validate_scorers_llm_validate_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/llm/validate/log_record': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Validate Llm Scorer Log Record */
+    post: operations['validate_llm_scorer_log_record_scorers_llm_validate_log_record_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2783,6 +2834,24 @@ export interface components {
      * @enum {string}
      */
     AuthMethod: 'email' | 'google' | 'github' | 'okta' | 'azure-ad' | 'custom';
+    /** BaseFinetunedScorerDB */
+    BaseFinetunedScorerDB: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /** Lora Task Id */
+      lora_task_id: number;
+      /** Prompt */
+      prompt: string;
+      /** @description Executor pipeline. Defaults to finetuned scorer pipeline but can run custom galileo score pipelines. */
+      executor?:
+        | components['schemas']['galileo_core__schemas__shared__scorers__scorer_name__ScorerName']
+        | null;
+    };
     /** BaseGeneratedScorerDB */
     BaseGeneratedScorerDB: {
       /**
@@ -2814,7 +2883,7 @@ export interface components {
        */
       permissions?: components['schemas']['Permission'][];
       /** Name */
-      name: string;
+      name: string | components['schemas']['Name'];
       /** Template */
       template: string;
       selected_version: components['schemas']['BasePromptTemplateVersionResponse'];
@@ -2953,7 +3022,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -2970,6 +3039,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -2979,6 +3050,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -3006,6 +3079,7 @@ export interface components {
       registered_scorer?:
         | components['schemas']['BaseRegisteredScorerDB']
         | null;
+      finetuned_scorer?: components['schemas']['BaseFinetunedScorerDB'] | null;
       /** Model Name */
       model_name?: string | null;
       /** Num Judges */
@@ -3040,6 +3114,9 @@ export interface components {
       registered_scorer?:
         | components['schemas']['CreateUpdateRegisteredScorerResponse']
         | null;
+      finetuned_scorer?:
+        | components['schemas']['FineTunedScorerResponse']
+        | null;
       /** Model Name */
       model_name?: string | null;
       /** Num Judges */
@@ -3061,6 +3138,7 @@ export interface components {
        * Format: date-time
        */
       updated_at: string;
+      chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
     };
     /** BleuScorer */
     BleuScorer: {
@@ -3102,6 +3180,11 @@ export interface components {
       hidden?: boolean;
       /** Name */
       name?: string | null;
+      /**
+       * Append Suffix If Duplicate
+       * @default false
+       */
+      append_suffix_if_duplicate?: boolean;
       /** File */
       file?: string | null;
       /** Copy From Dataset Id */
@@ -3344,7 +3427,8 @@ export interface components {
       | 'user_metadata'
       | 'dataset_metadata'
       | 'dataset'
-      | 'feedback';
+      | 'feedback'
+      | 'tags';
     /** ColumnInfo */
     ColumnInfo: {
       /**
@@ -3422,6 +3506,12 @@ export interface components {
        * @default false
        */
       complex?: boolean;
+      /**
+       * Is Optional
+       * @description Whether the column is optional.
+       * @default false
+       */
+      is_optional?: boolean;
     };
     /** ColumnMapping */
     ColumnMapping: {
@@ -3623,6 +3713,17 @@ export interface components {
        */
       num_judges?: number | null;
     };
+    /** CreateCustomLunaScorerVersionRequest */
+    CreateCustomLunaScorerVersionRequest: {
+      /** Lora Task Id */
+      lora_task_id: number;
+      /** Prompt */
+      prompt: string;
+      /** @description Executor pipeline. Defaults to finetuned scorer pipeline but can run custom galileo score pipelines. */
+      executor?:
+        | components['schemas']['galileo_core__schemas__shared__scorers__scorer_name__ScorerName']
+        | null;
+    };
     /** CreateJobRequest */
     CreateJobRequest: {
       resource_limits?: components['schemas']['TaskResourceLimits'] | null;
@@ -3760,7 +3861,7 @@ export interface components {
       prompt_scorer_settings?: components['schemas']['BaseScorer'] | null;
       scorer_config?: components['schemas']['ScorerConfig'] | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
       prompt_optimization_configuration?:
@@ -3917,7 +4018,7 @@ export interface components {
       prompt_scorer_settings?: components['schemas']['BaseScorer'] | null;
       scorer_config?: components['schemas']['ScorerConfig'] | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
       prompt_optimization_configuration?:
@@ -3991,7 +4092,7 @@ export interface components {
       /** Output Type */
       output_type?: string | null;
       /** Name */
-      name: string;
+      name: string | components['schemas']['Name'];
       /**
        * Hidden
        * @default false
@@ -4012,6 +4113,8 @@ export interface components {
       defaults?: components['schemas']['ScorerDefaults'] | null;
       scorer_type: components['schemas']['ScorerTypes'];
       model_type?: components['schemas']['ModelType'] | null;
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /** Default Version Id */
       default_version_id?: string | null;
     };
@@ -4101,7 +4204,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4131,6 +4234,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['AgenticSessionSuccessTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4140,6 +4245,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4194,7 +4301,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4224,6 +4331,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['AgenticWorkflowSuccessTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4233,6 +4342,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4288,7 +4399,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4307,6 +4418,8 @@ export interface components {
        *       "metric_few_shot_examples": []
        *     } */
       chainpoll_template?: components['schemas']['ChunkAttributionUtilizationTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4316,6 +4429,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4370,7 +4485,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4389,6 +4504,8 @@ export interface components {
        *       "metric_few_shot_examples": []
        *     } */
       chainpoll_template?: components['schemas']['CompletenessTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4398,6 +4515,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4452,7 +4571,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4481,6 +4600,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['FactualityTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4490,6 +4611,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4549,7 +4672,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4570,6 +4693,8 @@ export interface components {
        *       "metric_few_shot_examples": []
        *     } */
       chainpoll_template?: components['schemas']['GroundTruthAdherenceTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4579,6 +4704,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4633,7 +4760,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4659,6 +4786,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['GroundednessTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4668,6 +4797,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4722,7 +4853,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4748,6 +4879,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['InputSexistTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4757,6 +4890,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4811,7 +4946,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4837,6 +4972,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['InputToxicityTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4846,6 +4983,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4900,7 +5039,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -4926,6 +5065,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['InstructionAdherenceTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -4935,6 +5076,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -4994,7 +5137,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -5020,6 +5163,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['PromptInjectionTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -5029,6 +5174,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -5083,7 +5230,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -5109,6 +5256,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['SexistTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -5118,6 +5267,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -5172,7 +5323,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -5202,6 +5353,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['ToolErrorRateTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -5211,6 +5364,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -5265,7 +5420,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -5291,6 +5446,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['ToolSelectionQualityTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -5300,6 +5457,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -5354,7 +5513,7 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Sub Scorers */
-      sub_scorers?: components['schemas']['ScorerName'][];
+      sub_scorers?: components['schemas']['promptgalileo__schemas__scorer_name__ScorerName'][];
       /** Filters */
       filters?:
         | (
@@ -5380,6 +5539,8 @@ export interface components {
        *       ]
        *     } */
       chainpoll_template?: components['schemas']['ToxicityTemplate'];
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /**
        * Regex Field
        * @default
@@ -5389,6 +5550,8 @@ export interface components {
       registered_scorer_id?: string | null;
       /** Generated Scorer Id */
       generated_scorer_id?: string | null;
+      /** Can Copy To Llm */
+      can_copy_to_llm?: boolean | null;
       /** Scoreable Node Types */
       scoreable_node_types?: components['schemas']['NodeType'][] | null;
       /** Cot Enabled */
@@ -5411,7 +5574,12 @@ export interface components {
       | 'floating_point'
       | 'boolean'
       | 'timestamp'
-      | 'string_list';
+      | 'string_list'
+      | 'tag'
+      | 'dataset'
+      | 'prompt'
+      | 'playground'
+      | 'rank';
     /**
      * DataTypeOptions
      * @enum {string}
@@ -6138,6 +6306,10 @@ export interface components {
       /** Prompt Model */
       prompt_model?: string | null;
       prompt?: components['schemas']['ExperimentPrompt'] | null;
+      /** Tags */
+      tags?: {
+        [key: string]: components['schemas']['RunTagDB'][];
+      };
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -6533,7 +6705,7 @@ export interface components {
        * Input
        * @description Input to the trace or span.
        */
-      input: components['schemas']['galileo_core__schemas__logging__llm__Message'][];
+      input?: components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -6542,7 +6714,7 @@ export interface components {
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
         | null;
       /** @description Output of the trace or span. */
-      output: components['schemas']['galileo_core__schemas__logging__llm__Message'];
+      output?: components['schemas']['galileo_core__schemas__logging__llm__Message'];
       /** @description Redacted output of the trace or span. */
       redacted_output?:
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
@@ -6715,8 +6887,9 @@ export interface components {
       /**
        * Input
        * @description Input to the trace or span.
+       * @default
        */
-      input: string;
+      input?: string;
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -6726,7 +6899,7 @@ export interface components {
        * Output
        * @description Output of the trace or span.
        */
-      output: components['schemas']['Document'][];
+      output?: components['schemas']['Document'][];
       /**
        * Redacted Output
        * @description Redacted output of the trace or span.
@@ -6884,8 +7057,9 @@ export interface components {
       /**
        * Input
        * @description Input to the trace or span.
+       * @default
        */
-      input: string;
+      input?: string;
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -6895,7 +7069,7 @@ export interface components {
        * Output
        * @description Output of the trace or span.
        */
-      output: components['schemas']['Document'][];
+      output?: components['schemas']['Document'][];
       /**
        * Redacted Output
        * @description Redacted output of the trace or span.
@@ -7365,8 +7539,9 @@ export interface components {
       /**
        * Input
        * @description Input to the trace or span.
+       * @default
        */
-      input: string;
+      input?: string;
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -7539,8 +7714,9 @@ export interface components {
       /**
        * Input
        * @description Input to the trace or span.
+       * @default
        */
-      input: string;
+      input?: string;
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -8549,6 +8725,39 @@ export interface components {
      * @enum {string}
      */
     FineTunedScorerAction: 'update' | 'delete';
+    /** FineTunedScorerResponse */
+    FineTunedScorerResponse: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /** Lora Task Id */
+      lora_task_id: number;
+      /** Prompt */
+      prompt: string;
+      /** @description Executor pipeline. Defaults to finetuned scorer pipeline but can run custom galileo score pipelines. */
+      executor?:
+        | components['schemas']['galileo_core__schemas__shared__scorers__scorer_name__ScorerName']
+        | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      /**
+       * Created By
+       * Format: uuid4
+       */
+      created_by: string;
+    };
     /**
      * GeneratedScorerAction
      * @enum {string}
@@ -9846,7 +10055,7 @@ export interface components {
        * Input
        * @description Input to the trace or span.
        */
-      input: components['schemas']['galileo_core__schemas__logging__llm__Message'][];
+      input?: components['schemas']['galileo_core__schemas__logging__llm__Message'][];
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -9855,7 +10064,7 @@ export interface components {
         | components['schemas']['galileo_core__schemas__logging__llm__Message'][]
         | null;
       /** @description Output of the trace or span. */
-      output: components['schemas']['galileo_core__schemas__logging__llm__Message'];
+      output?: components['schemas']['galileo_core__schemas__logging__llm__Message'];
       /** @description Redacted output of the trace or span. */
       redacted_output?:
         | components['schemas']['galileo_core__schemas__logging__llm__Message']
@@ -9975,6 +10184,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
     };
     /** LogRecordsAvailableColumnsResponse */
     LogRecordsAvailableColumnsResponse: {
@@ -10034,6 +10248,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Filters
        * @description Filters to apply on the export
@@ -10099,6 +10318,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** Filters */
       filters?: (
         | components['schemas']['LogRecordsIDFilter']
@@ -10182,6 +10406,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** Filters */
       filters?: (
         | components['schemas']['LogRecordsIDFilter']
@@ -10294,6 +10523,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10351,6 +10585,11 @@ export interface components {
        */
       experiment_id?: string | null;
       /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
        * Project Id
        * Format: uuid4
        * @description Project id associated with the traces.
@@ -10394,6 +10633,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10440,6 +10684,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Project Id
        * Format: uuid4
@@ -10532,6 +10781,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10588,6 +10842,11 @@ export interface components {
        */
       experiment_id?: string | null;
       /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
        * Project Id
        * Format: uuid4
        * @description Project id associated with the traces.
@@ -10631,6 +10890,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10670,6 +10934,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Project Id
        * Format: uuid4
@@ -10976,6 +11245,43 @@ export interface components {
     } & {
       [key: string]: unknown;
     };
+    /**
+     * MetricsTestingAvailableColumnsRequest
+     * @description Request to get the available columns for the metrics testing table.
+     */
+    MetricsTestingAvailableColumnsRequest: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
+       * Name
+       * @description Name of the metric that we are testing.
+       */
+      name: string;
+      /**
+       * @description Output type of the metrics testing table. If not provided, all columns are returned.
+       * @default boolean
+       */
+      output_type?: components['schemas']['OutputTypeEnum'];
+      /**
+       * Cot Enabled
+       * @description Whether the metrics testing table is using chain of thought (CoT) enabled scorers. If True, the columns will be generated for CoT enabled scorers.
+       * @default false
+       */
+      cot_enabled?: boolean;
+    };
     /** Model */
     Model: {
       /** Name */
@@ -11052,6 +11358,19 @@ export interface components {
      * @enum {string}
      */
     ModelType: 'slm' | 'llm' | 'code';
+    /**
+     * Name
+     * @description Global name class for handling unique naming across the application.
+     */
+    Name: {
+      /** Value */
+      value: string;
+      /**
+       * Append Suffix If Duplicate
+       * @default false
+       */
+      append_suffix_if_duplicate?: boolean;
+    };
     /**
      * NodeNameFilter
      * @description Filters on node names in scorer jobs.
@@ -11989,6 +12308,10 @@ export interface components {
       evaluation_model_alias: string;
       /** @default openai */
       integration_name?: components['schemas']['LLMIntegration'];
+      /** Reasoning Effort */
+      reasoning_effort?: string | null;
+      /** Verbosity */
+      verbosity?: string | null;
     };
     /** PromptPerplexityScorer */
     PromptPerplexityScorer: {
@@ -12033,11 +12356,21 @@ export interface components {
        * @default 1
        */
       n?: number;
+      /**
+       * Reasoning Effort
+       * @default medium
+       */
+      reasoning_effort?: string;
+      /**
+       * Verbosity
+       * @default medium
+       */
+      verbosity?: string;
       /** Deployment Name */
       deployment_name?: string | null;
       /**
        * Model Alias
-       * @default gpt-4.1-mini
+       * @default gpt-5-mini
        */
       model_alias?: string;
       /**
@@ -12359,6 +12692,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** Filters */
       filters?: (
         | components['schemas']['LogRecordsIDFilter']
@@ -12494,8 +12832,9 @@ export interface components {
       /**
        * Input
        * @description Input to the trace or span.
+       * @default
        */
-      input: string;
+      input?: string;
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -12505,7 +12844,7 @@ export interface components {
        * Output
        * @description Output of the trace or span.
        */
-      output: components['schemas']['Document'][];
+      output?: components['schemas']['Document'][];
       /**
        * Redacted Output
        * @description Redacted output of the trace or span.
@@ -12876,6 +13215,10 @@ export interface components {
       tool_choice?: string | null;
       /** Response Format */
       response_format?: string | null;
+      /** Reasoning Effort */
+      reasoning_effort?: string | null;
+      /** Verbosity */
+      verbosity?: string | null;
       /** Deployment Name */
       deployment_name?: string | null;
     };
@@ -13118,72 +13461,6 @@ export interface components {
        */
       name: 'model_type';
     };
-    /**
-     * ScorerName
-     * @enum {string}
-     */
-    ScorerName:
-      | '_completeness_gpt'
-      | '_context_adherence_luna'
-      | '_context_relevance'
-      | '_chunk_attribution_utilization_gpt'
-      | '_factuality'
-      | '_groundedness'
-      | '_latency'
-      | '_prompt_perplexity'
-      | '_protect_status'
-      | '_pii'
-      | '_input_pii'
-      | '_sexist'
-      | '_input_sexist'
-      | '_sexist_gpt'
-      | '_input_sexist_gpt'
-      | '_tone'
-      | '_input_tone'
-      | '_toxicity'
-      | '_toxicity_gpt'
-      | '_input_toxicity'
-      | '_input_toxicity_gpt'
-      | '_user_registered'
-      | '_user_submitted'
-      | '_user_generated'
-      | '_user_finetuned'
-      | '_uncertainty'
-      | '_bleu'
-      | '_cost'
-      | '_rouge'
-      | '_prompt_injection_gpt'
-      | '_prompt_injection'
-      | '_rag_nli'
-      | '_adherence_nli'
-      | '_completeness_nli'
-      | '_chunk_attribution_utilization_nli'
-      | '_instruction_adherence'
-      | '_ground_truth_adherence'
-      | '_tool_selection_quality'
-      | '_tool_selection_quality_luna'
-      | '_tool_error_rate'
-      | '_tool_error_rate_luna'
-      | '_action_completion_luna'
-      | '_agentic_session_success'
-      | '_action_advancement_luna'
-      | '_agentic_workflow_success'
-      | '_generic_wizard'
-      | '_customized_completeness_gpt'
-      | '_customized_factuality'
-      | '_customized_groundedness'
-      | '_customized_chunk_attribution_utilization_gpt'
-      | '_customized_instruction_adherence'
-      | '_customized_ground_truth_adherence'
-      | '_customized_prompt_injection_gpt'
-      | '_customized_tool_selection_quality'
-      | '_customized_tool_error_rate'
-      | '_customized_agentic_session_success'
-      | '_customized_agentic_workflow_success'
-      | '_customized_sexist_gpt'
-      | '_customized_input_sexist_gpt'
-      | '_customized_toxicity_gpt'
-      | '_customized_input_toxicity_gpt';
     /** ScorerNameFilter */
     ScorerNameFilter: {
       /**
@@ -13236,6 +13513,8 @@ export interface components {
       defaults?: components['schemas']['ScorerDefaults'] | null;
       latest_version?: components['schemas']['BaseScorerVersionDB'] | null;
       model_type?: components['schemas']['ModelType'] | null;
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /** Default Version Id */
       default_version_id?: string | null;
       default_version?: components['schemas']['BaseScorerVersionDB'] | null;
@@ -13253,6 +13532,9 @@ export interface components {
       included_fields?: string[];
       /** Description */
       description?: string | null;
+      chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** Metric Name */
+      metric_name?: string | null;
       /** Created By */
       created_by?: string | null;
       /** Created At */
@@ -13301,7 +13583,7 @@ export interface components {
      * ScorerTypes
      * @enum {string}
      */
-    ScorerTypes: 'llm' | 'code' | 'preset';
+    ScorerTypes: 'llm' | 'code' | 'luna' | 'preset';
     /** ScorerUpdatedAtFilter */
     ScorerUpdatedAtFilter: {
       /**
@@ -13576,6 +13858,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Name
        * @description Name of the session.
@@ -14042,11 +14329,12 @@ export interface components {
       | 14
       | 15
       | 16
-      | 17;
+      | 17
+      | 18;
     /** TemplateStubRequest */
     TemplateStubRequest: {
-      /** Template */
-      template: string;
+      /** Templates */
+      templates: string[];
     };
     /** TextRating */
     TextRating: {
@@ -14303,8 +14591,9 @@ export interface components {
       /**
        * Input
        * @description Input to the trace or span.
+       * @default
        */
-      input: string;
+      input?: string;
       /**
        * Redacted Input
        * @description Redacted input of the trace or span.
@@ -14674,7 +14963,7 @@ export interface components {
     /** UpdateDatasetRequest */
     UpdateDatasetRequest: {
       /** Name */
-      name?: string | null;
+      name?: string | components['schemas']['Name'] | null;
       column_mapping?: components['schemas']['ColumnMapping'] | null;
       /** Draft */
       draft?: false | null;
@@ -14687,7 +14976,7 @@ export interface components {
     /** UpdatePromptTemplateRequest */
     UpdatePromptTemplateRequest: {
       /** Name */
-      name?: string | null;
+      name?: string | components['schemas']['Name'] | null;
     };
     /** UpdateScorerRequest */
     UpdateScorerRequest: {
@@ -14699,6 +14988,8 @@ export interface components {
       tags?: string[] | null;
       defaults?: components['schemas']['ScorerDefaults'] | null;
       model_type?: components['schemas']['ModelType'] | null;
+      /** Ground Truth */
+      ground_truth?: boolean | null;
       /** Default Version Id */
       default_version_id?: string | null;
     };
@@ -14831,6 +15122,78 @@ export interface components {
      * @enum {string}
      */
     UserRole: 'admin' | 'manager' | 'user' | 'read_only';
+    /**
+     * ValidateLLMScorerLogRecordRequest
+     * @description Request to validate a new LLM scorer based on a log record.
+     *     This is used to create a new experiment with the copied log records to store the metric testing results.
+     */
+    ValidateLLMScorerLogRecordRequest: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /** Filters */
+      filters?: (
+        | components['schemas']['LogRecordsIDFilter']
+        | components['schemas']['LogRecordsDateFilter']
+        | components['schemas']['LogRecordsNumberFilter']
+        | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsTextFilter']
+      )[];
+      /** @default {
+       *       "column_id": "created_at",
+       *       "ascending": false,
+       *       "sort_type": "column"
+       *     } */
+      sort?: components['schemas']['LogRecordsSortClause'];
+      /**
+       * Truncate Fields
+       * @default false
+       */
+      truncate_fields?: boolean;
+      /** Query */
+      query: string;
+      /** Response */
+      response: string;
+      chain_poll_template: components['schemas']['ChainPollTemplate'];
+      scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /** User Prompt */
+      user_prompt: string;
+    };
+    /**
+     * ValidateLLMScorerLogRecordResponse
+     * @description Response model for validating a new LLM scorer based on a log record.
+     *
+     *     Returns the uuid of the experiment created with the copied log records to store the metric testing results.
+     */
+    ValidateLLMScorerLogRecordResponse: {
+      /**
+       * Metrics Experiment Id
+       * Format: uuid4
+       */
+      metrics_experiment_id: string;
+    };
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -15067,6 +15430,119 @@ export interface components {
       | 'system'
       | 'tool'
       | 'user';
+    /**
+     * ScorerName
+     * @enum {string}
+     */
+    galileo_core__schemas__shared__scorers__scorer_name__ScorerName:
+      | 'action_completion_luna'
+      | 'action_advancement_luna'
+      | 'agentic_session_success'
+      | 'agentic_session_success'
+      | 'agentic_workflow_success'
+      | 'agentic_workflow_success'
+      | 'bleu'
+      | 'chunk_attribution_utilization_luna'
+      | 'chunk_attribution_utilization'
+      | 'completeness_luna'
+      | 'completeness'
+      | 'context_adherence'
+      | 'context_adherence_luna'
+      | 'context_relevance'
+      | 'correctness'
+      | 'ground_truth_adherence'
+      | 'input_pii'
+      | 'input_sexist'
+      | 'input_sexist'
+      | 'input_sexist_luna'
+      | 'input_sexist_luna'
+      | 'input_tone'
+      | 'input_toxicity'
+      | 'input_toxicity_luna'
+      | 'instruction_adherence'
+      | 'output_pii'
+      | 'output_sexist'
+      | 'output_sexist'
+      | 'output_sexist_luna'
+      | 'output_sexist_luna'
+      | 'output_tone'
+      | 'output_toxicity'
+      | 'output_toxicity_luna'
+      | 'prompt_injection'
+      | 'prompt_injection_luna'
+      | 'prompt_perplexity'
+      | 'rouge'
+      | 'tool_error_rate'
+      | 'tool_error_rate_luna'
+      | 'tool_selection_quality'
+      | 'tool_selection_quality_luna'
+      | 'uncertainty';
+    /**
+     * ScorerName
+     * @enum {string}
+     */
+    promptgalileo__schemas__scorer_name__ScorerName:
+      | '_completeness_gpt'
+      | '_context_adherence_luna'
+      | '_context_relevance'
+      | '_chunk_attribution_utilization_gpt'
+      | '_factuality'
+      | '_groundedness'
+      | '_latency'
+      | '_prompt_perplexity'
+      | '_protect_status'
+      | '_pii'
+      | '_input_pii'
+      | '_sexist'
+      | '_input_sexist'
+      | '_sexist_gpt'
+      | '_input_sexist_gpt'
+      | '_tone'
+      | '_input_tone'
+      | '_toxicity'
+      | '_toxicity_gpt'
+      | '_input_toxicity'
+      | '_input_toxicity_gpt'
+      | '_user_registered'
+      | '_user_submitted'
+      | '_user_generated'
+      | '_user_finetuned'
+      | '_uncertainty'
+      | '_bleu'
+      | '_cost'
+      | '_rouge'
+      | '_prompt_injection_gpt'
+      | '_prompt_injection'
+      | '_rag_nli'
+      | '_adherence_nli'
+      | '_completeness_nli'
+      | '_chunk_attribution_utilization_nli'
+      | '_instruction_adherence'
+      | '_ground_truth_adherence'
+      | '_tool_selection_quality'
+      | '_tool_selection_quality_luna'
+      | '_tool_error_rate'
+      | '_tool_error_rate_luna'
+      | '_action_completion_luna'
+      | '_agentic_session_success'
+      | '_action_advancement_luna'
+      | '_agentic_workflow_success'
+      | '_generic_wizard'
+      | '_customized_completeness_gpt'
+      | '_customized_factuality'
+      | '_customized_groundedness'
+      | '_customized_chunk_attribution_utilization_gpt'
+      | '_customized_instruction_adherence'
+      | '_customized_ground_truth_adherence'
+      | '_customized_prompt_injection_gpt'
+      | '_customized_tool_selection_quality'
+      | '_customized_tool_error_rate'
+      | '_customized_agentic_session_success'
+      | '_customized_agentic_workflow_success'
+      | '_customized_sexist_gpt'
+      | '_customized_input_sexist_gpt'
+      | '_customized_toxicity_gpt'
+      | '_customized_input_toxicity_gpt';
   };
   responses: never;
   parameters: never;
@@ -17187,6 +17663,41 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['LogRecordsAvailableColumnsRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsAvailableColumnsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  metrics_testing_available_columns_projects__project_id__metrics_testing_available_columns_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricsTestingAvailableColumnsRequest'];
       };
     };
     responses: {
@@ -19343,6 +19854,41 @@ export interface operations {
       };
     };
   };
+  create_luna_scorer_version_scorers__scorer_id__version_luna_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateCustomLunaScorerVersionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   list_scorers_with_filters_scorers_list_post: {
     parameters: {
       query?: {
@@ -19622,6 +20168,39 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['GeneratedScorerValidationResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  validate_llm_scorer_log_record_scorers_llm_validate_log_record_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ValidateLLMScorerLogRecordRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ValidateLLMScorerLogRecordResponse'];
         };
       };
       /** @description Validation Error */
