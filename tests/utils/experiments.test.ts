@@ -3,7 +3,7 @@ import {
   getExperiment,
   getExperiments,
   runExperiment
-} from '../../src';
+} from '../../src/utils/experiments';
 import { Experiment } from '../../src/types/experiment.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
 import {

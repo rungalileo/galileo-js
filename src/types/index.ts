@@ -12,4 +12,8 @@ export * from './project.types';
 export * from './log-stream.types';
 export * from './models.types';
 export * from './scorer.types';
+export * from './search.types';
+export * from './job.types';
+export * from './run.types';
 export * from './metrics.types';
+export * from './export.types';
