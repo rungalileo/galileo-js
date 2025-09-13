@@ -827,6 +827,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/projects/{project_id}/metrics-testing/available_columns': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Metrics Testing Available Columns */
+    post: operations['metrics_testing_available_columns_projects__project_id__metrics_testing_available_columns_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/spans/available_columns': {
     parameters: {
       query?: never;
@@ -2107,6 +2124,23 @@ export interface paths {
     put?: never;
     /** Manual Llm Validate */
     post: operations['manual_llm_validate_scorers_llm_validate_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/llm/validate/log_record': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Validate Llm Scorer Log Record */
+    post: operations['validate_llm_scorer_log_record_scorers_llm_validate_log_record_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3422,6 +3456,12 @@ export interface components {
        * @default false
        */
       complex?: boolean;
+      /**
+       * Is Optional
+       * @description Whether the column is optional.
+       * @default false
+       */
+      is_optional?: boolean;
     };
     /** ColumnMapping */
     ColumnMapping: {
@@ -6138,6 +6178,10 @@ export interface components {
       /** Prompt Model */
       prompt_model?: string | null;
       prompt?: components['schemas']['ExperimentPrompt'] | null;
+      /** Tags */
+      tags?: {
+        [key: string]: components['schemas']['RunTagDB'][];
+      };
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -9975,6 +10019,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
     };
     /** LogRecordsAvailableColumnsResponse */
     LogRecordsAvailableColumnsResponse: {
@@ -10034,6 +10083,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Filters
        * @description Filters to apply on the export
@@ -10099,6 +10153,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** Filters */
       filters?: (
         | components['schemas']['LogRecordsIDFilter']
@@ -10182,6 +10241,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** Filters */
       filters?: (
         | components['schemas']['LogRecordsIDFilter']
@@ -10294,6 +10358,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10351,6 +10420,11 @@ export interface components {
        */
       experiment_id?: string | null;
       /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
        * Project Id
        * Format: uuid4
        * @description Project id associated with the traces.
@@ -10394,6 +10468,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10440,6 +10519,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Project Id
        * Format: uuid4
@@ -10532,6 +10616,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10588,6 +10677,11 @@ export interface components {
        */
       experiment_id?: string | null;
       /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
        * Project Id
        * Format: uuid4
        * @description Project id associated with the traces.
@@ -10631,6 +10725,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** @default api_direct */
       logging_method?: components['schemas']['LoggingMethod'];
       /** Client Version */
@@ -10670,6 +10769,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /**
        * Project Id
        * Format: uuid4
@@ -10975,6 +11079,43 @@ export interface components {
       duration_ns?: number | null;
     } & {
       [key: string]: unknown;
+    };
+    /**
+     * MetricsTestingAvailableColumnsRequest
+     * @description Request to get the available columns for the metrics testing table.
+     */
+    MetricsTestingAvailableColumnsRequest: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
+       * Name
+       * @description Name of the metric that we are testing.
+       */
+      name: string;
+      /**
+       * @description Output type of the metrics testing table. If not provided, all columns are returned.
+       * @default boolean
+       */
+      output_type?: components['schemas']['OutputTypeEnum'];
+      /**
+       * Cot Enabled
+       * @description Whether the metrics testing table is using chain of thought (CoT) enabled scorers. If True, the columns will be generated for CoT enabled scorers.
+       * @default false
+       */
+      cot_enabled?: boolean;
     };
     /** Model */
     Model: {
@@ -12359,6 +12500,11 @@ export interface components {
        * @description Experiment id associated with the traces.
        */
       experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
       /** Filters */
       filters?: (
         | components['schemas']['LogRecordsIDFilter']
@@ -13577,6 +13723,11 @@ export interface components {
        */
       experiment_id?: string | null;
       /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /**
        * Name
        * @description Name of the session.
        */
@@ -14042,11 +14193,12 @@ export interface components {
       | 14
       | 15
       | 16
-      | 17;
+      | 17
+      | 18;
     /** TemplateStubRequest */
     TemplateStubRequest: {
-      /** Template */
-      template: string;
+      /** Templates */
+      templates: string[];
     };
     /** TextRating */
     TextRating: {
@@ -14831,6 +14983,78 @@ export interface components {
      * @enum {string}
      */
     UserRole: 'admin' | 'manager' | 'user' | 'read_only';
+    /**
+     * ValidateLLMScorerLogRecordRequest
+     * @description Request to validate a new LLM scorer based on a log record.
+     *     This is used to create a new experiment with the copied log records to store the metric testing results.
+     */
+    ValidateLLMScorerLogRecordRequest: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /** Filters */
+      filters?: (
+        | components['schemas']['LogRecordsIDFilter']
+        | components['schemas']['LogRecordsDateFilter']
+        | components['schemas']['LogRecordsNumberFilter']
+        | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsTextFilter']
+      )[];
+      /** @default {
+       *       "column_id": "created_at",
+       *       "ascending": false,
+       *       "sort_type": "column"
+       *     } */
+      sort?: components['schemas']['LogRecordsSortClause'];
+      /**
+       * Truncate Fields
+       * @default false
+       */
+      truncate_fields?: boolean;
+      /** Query */
+      query: string;
+      /** Response */
+      response: string;
+      chain_poll_template: components['schemas']['ChainPollTemplate'];
+      scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /** User Prompt */
+      user_prompt: string;
+    };
+    /**
+     * ValidateLLMScorerLogRecordResponse
+     * @description Response model for validating a new LLM scorer based on a log record.
+     *
+     *     Returns the uuid of the experiment created with the copied log records to store the metric testing results.
+     */
+    ValidateLLMScorerLogRecordResponse: {
+      /**
+       * Metrics Experiment Id
+       * Format: uuid4
+       */
+      metrics_experiment_id: string;
+    };
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -17187,6 +17411,41 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['LogRecordsAvailableColumnsRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsAvailableColumnsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  metrics_testing_available_columns_projects__project_id__metrics_testing_available_columns_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricsTestingAvailableColumnsRequest'];
       };
     };
     responses: {
@@ -19622,6 +19881,39 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['GeneratedScorerValidationResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  validate_llm_scorer_log_record_scorers_llm_validate_log_record_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ValidateLLMScorerLogRecordRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ValidateLLMScorerLogRecordResponse'];
         };
       };
       /** @description Validation Error */
