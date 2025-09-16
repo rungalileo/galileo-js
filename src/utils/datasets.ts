@@ -409,7 +409,7 @@ export const deleteDataset = async ({
   await apiClient.deleteDataset(id!);
 };
 
-export const loadDataset = async <T extends Record<string, unknown>>(
+export const getDatasetMetadata = async <T extends Record<string, unknown>>(
   params: RunExperimentParams<T>,
   projectName: string
 ): Promise<Dataset | undefined> => {
@@ -417,11 +417,11 @@ export const loadDataset = async <T extends Record<string, unknown>>(
     if (!(params.dataset instanceof Array)) {
       return params.dataset as Dataset;
     }
-  } else if ('datasetId' in params) {
+  } else if ('datasetId' in params && params.datasetId) {
     const apiClient = new GalileoApiClient();
     await apiClient.init({ projectName });
     return await apiClient.getDataset(params.datasetId);
-  } else if ('datasetName' in params) {
+  } else if ('datasetName' in params && params.datasetName) {
     const apiClient = new GalileoApiClient();
     await apiClient.init({ projectName });
     return await apiClient.getDatasetByName(params.datasetName);

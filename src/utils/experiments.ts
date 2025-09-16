@@ -21,7 +21,7 @@ import {
   deserializeInputFromString,
   getDatasetRecordsFromArray,
   getRecordsForDataset,
-  loadDataset
+  getDatasetMetadata
 } from '../utils/datasets';
 import { GalileoScorers, Metric } from '../types/metrics.types';
 import { Project } from '../types';
@@ -318,7 +318,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     experimentName = `${name} ${timestamp}`;
   }
 
-  const datasetObj = await loadDataset(params, project.name);
+  const datasetObj = await getDatasetMetadata(params, project.name);
   const datasetRequest: ExperimentDatasetRequest | undefined = datasetObj
     ? {
         dataset_id: datasetObj.id,

@@ -9,7 +9,7 @@ import {
   extendDataset,
   getDatasetContent,
   getDatasets,
-  loadDataset
+  getDatasetMetadata
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
 import {
@@ -356,14 +356,14 @@ describe('datasets utils', () => {
     });
   });
 
-  describe('loadDataset', () => {
+  describe('getDatasetMetadata', () => {
     const projectName = 'test-project';
 
     it('should load a dataset by object', async () => {
       const params = {
         dataset: EXAMPLE_DATASET
       } as RunExperimentParams<Record<string, unknown>>;
-      const result = await loadDataset(params, projectName);
+      const result = await getDatasetMetadata(params, projectName);
       expect(result).toEqual(EXAMPLE_DATASET);
     });
 
@@ -371,7 +371,7 @@ describe('datasets utils', () => {
       const params = {
         datasetId: EXAMPLE_DATASET.id
       } as RunExperimentParams<Record<string, unknown>>;
-      await loadDataset(params, projectName);
+      await getDatasetMetadata(params, projectName);
       expect(getDatasetHandler).toHaveBeenCalled();
     });
 
@@ -379,7 +379,7 @@ describe('datasets utils', () => {
       const params = {
         datasetName: EXAMPLE_DATASET.name
       } as RunExperimentParams<Record<string, unknown>>;
-      await loadDataset(params, projectName);
+      await getDatasetMetadata(params, projectName);
       expect(getDatasetByNameHandler).toHaveBeenCalled();
     });
   });
