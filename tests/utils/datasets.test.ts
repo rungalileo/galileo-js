@@ -8,7 +8,8 @@ import {
   deserializeInputFromString,
   extendDataset,
   getDatasetContent,
-  getDatasets
+  getDatasets,
+  getDatasetMetadata
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
 import {
@@ -18,6 +19,7 @@ import {
   JobProgress
 } from '../../src/api-client';
 import { DatasetType } from '../../src/utils/datasets';
+import { RunExperimentParams } from '../../src/utils/experiments';
 
 const EXAMPLE_DATASET: Dataset = {
   id: 'c7b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3d',
@@ -77,6 +79,10 @@ const deleteDatasetHandler = jest.fn().mockImplementation(() => {
 
 const getDatasetByNameHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json({ datasets: [EXAMPLE_DATASET] });
+});
+
+const getDatasetHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json(EXAMPLE_DATASET);
 });
 
 const addRowsToDatasetHandler = jest.fn().mockImplementation(() => {
@@ -139,6 +145,7 @@ export const handlers = [
     `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
     addRowsToDatasetHandler
   ),
+  http.get(`${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}`, getDatasetHandler),
   http.post(`${TEST_HOST}/datasets/extend`, extendDatasetHandler),
   http.get(
     `${TEST_HOST}/datasets/extend/${EXTENDED_DATASET_ID}`,
@@ -346,6 +353,34 @@ describe('datasets utils', () => {
     it('should handle a non-JSON string', () => {
       const result = deserializeInputFromString('plain string');
       expect(result).toEqual({ value: 'plain string' });
+    });
+  });
+
+  describe('getDatasetMetadata', () => {
+    const projectName = 'test-project';
+
+    it('should load a dataset by object', async () => {
+      const params = {
+        dataset: EXAMPLE_DATASET
+      } as RunExperimentParams<Record<string, unknown>>;
+      const result = await getDatasetMetadata(params, projectName);
+      expect(result).toEqual(EXAMPLE_DATASET);
+    });
+
+    it('should load a dataset by id', async () => {
+      const params = {
+        datasetId: EXAMPLE_DATASET.id
+      } as RunExperimentParams<Record<string, unknown>>;
+      await getDatasetMetadata(params, projectName);
+      expect(getDatasetHandler).toHaveBeenCalled();
+    });
+
+    it('should load a dataset by name', async () => {
+      const params = {
+        datasetName: EXAMPLE_DATASET.name
+      } as RunExperimentParams<Record<string, unknown>>;
+      await getDatasetMetadata(params, projectName);
+      expect(getDatasetByNameHandler).toHaveBeenCalled();
     });
   });
 });
