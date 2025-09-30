@@ -1,15 +1,12 @@
 import {
-  ChainPollTemplate,
   CreateLlmScorerVersionParams,
   ModelType,
-  OutputType,
   Scorer,
   ScorerConfig,
   ScorerVersion
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
-import { StepType } from '../types/logging/step.types';
 
 export const getScorers = async (options?: {
   type?: ScorerTypes;

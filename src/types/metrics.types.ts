@@ -1,3 +1,6 @@
+import { OutputType } from './scorer.types';
+import { StepType } from './logging/step.types';
+
 export type SingleMetricValue = number | string | boolean;
 export type MetricValueType =
   | SingleMetricValue
@@ -90,8 +93,6 @@ export interface Metric {
   name: string;
   version?: number;
 }
-
-import { OutputType, StepType } from '.';
 
 export interface CreateCustomLlmMetricParams {
   name: string;
