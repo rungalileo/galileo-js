@@ -90,3 +90,17 @@ export interface Metric {
   name: string;
   version?: number;
 }
+
+import { OutputType, StepType } from '.';
+
+export interface CreateCustomLlmMetricParams {
+  name: string;
+  userPrompt: string;
+  nodeLevel?: StepType;
+  cotEnabled?: boolean;
+  modelName?: string;
+  numJudges?: number;
+  description?: string;
+  tags?: string[];
+  outputType?: OutputType;
+}

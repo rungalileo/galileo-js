@@ -147,24 +147,25 @@ describe('scorers utility', () => {
     });
 
     it('should initialize the API client', async () => {
-      await createLlmScorerVersion('scorer-uuid', 'instructions', {
-        template: 'foo'
+      await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        instructions: 'instructions',
+        chainPollTemplate: { template: 'foo' }
       });
       expect(mockInit).toHaveBeenCalled();
     });
 
     it('should call createLlmScorerVersion with correct parameters', async () => {
-      await createLlmScorerVersion(
-        'scorer-uuid',
-        'instructions',
-        { template: 'foo' },
-        undefined, // userPrompt
-        [StepType.trace], // scoreableNodeTypes
-        true, // cotEnabled
-        'gpt-4',
-        3,
-        OutputType.CATEGORICAL
-      );
+      await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        instructions: 'instructions',
+        chainPollTemplate: { template: 'foo' },
+        scoreableNodeTypes: [StepType.trace],
+        cotEnabled: true,
+        modelName: 'gpt-4',
+        numJudges: 3,
+        outputType: OutputType.CATEGORICAL
+      });
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
         'instructions',
@@ -179,11 +180,11 @@ describe('scorers utility', () => {
     });
 
     it('should return the created scorer version', async () => {
-      const result = await createLlmScorerVersion(
-        'scorer-uuid',
-        'instructions',
-        { template: 'foo' }
-      );
+      const result = await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        instructions: 'instructions',
+        chainPollTemplate: { template: 'foo' }
+      });
       expect(result).toEqual(mockVersion);
     });
 
@@ -191,24 +192,24 @@ describe('scorers utility', () => {
       const apiError = new Error('API error');
       mockCreateLlmScorerVersion.mockRejectedValueOnce(apiError);
       await expect(
-        createLlmScorerVersion('scorer-uuid', 'instructions', {
-          template: 'foo'
+        createLlmScorerVersion({
+          scorerId: 'scorer-uuid',
+          instructions: 'instructions',
+          chainPollTemplate: { template: 'foo' }
         })
       ).rejects.toThrow(apiError);
     });
 
     it('should call createLlmScorerVersion with userPrompt instead of instructions/chainPollTemplate', async () => {
-      await createLlmScorerVersion(
-        'scorer-uuid',
-        undefined, // instructions
-        undefined, // chainPollTemplate
-        'custom user prompt', // userPrompt
-        [StepType.session],
-        false,
-        'gpt-4',
-        3,
-        OutputType.CATEGORICAL
-      );
+      await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        userPrompt: 'custom user prompt',
+        scoreableNodeTypes: [StepType.session],
+        cotEnabled: false,
+        modelName: 'gpt-4',
+        numJudges: 3,
+        outputType: OutputType.CATEGORICAL
+      });
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
         undefined, // instructions
@@ -223,12 +224,10 @@ describe('scorers utility', () => {
     });
 
     it('should return the created scorer version when using userPrompt', async () => {
-      const result = await createLlmScorerVersion(
-        'scorer-uuid',
-        undefined, // instructions
-        undefined, // chainPollTemplate
-        'custom user prompt' // userPrompt
-      );
+      const result = await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        userPrompt: 'custom user prompt'
+      });
       expect(result).toEqual(mockVersion);
     });
   });

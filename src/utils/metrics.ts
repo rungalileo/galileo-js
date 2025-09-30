@@ -1,4 +1,10 @@
-import { OutputType, ScorerTypes, ScorerVersion, StepType } from '../types';
+import {
+  CreateCustomLlmMetricParams,
+  OutputType,
+  ScorerTypes,
+  ScorerVersion,
+  StepType
+} from '../types';
 import {
   createScorer,
   createLlmScorerVersion,
@@ -9,28 +15,20 @@ import {
 /**
  * Creates a custom LLM metric.
  *
- * @param name - The name of the custom metric.
- * @param userPrompt - The user prompt for the metric.
- * @param nodeLevel - (Optional) The node level for the metric, i.e. StepType.llm, StepType.trace. Defaults to StepType.llm.
- * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to true.
- * @param modelName - (Optional) The model name to use. Defaults to 'gpt-4.1-mini'.
- * @param numJudges - (Optional) The number of judges to use. Defaults to 3.
- * @param description - (Optional) A description for the metric.
- * @param tags - (Optional) Tags to associate with the metric.
- * @param outputType - (Optional) The output type for the metric. Defaults to OutputType.BOOLEAN.
+ * @param params - The parameters for creating the custom LLM metric.
  * @returns A promise that resolves when the metric is created.
  */
-export const createCustomLlmMetric = async (
-  name: string,
-  userPrompt: string,
-  nodeLevel: StepType = StepType.llm,
-  cotEnabled: boolean = true,
-  modelName: string = 'gpt-4.1-mini',
-  numJudges: number = 3,
-  description: string = '',
-  tags: string[] = [],
-  outputType: OutputType = OutputType.BOOLEAN
-): Promise<ScorerVersion> => {
+export const createCustomLlmMetric = async ({
+  name,
+  userPrompt,
+  nodeLevel = StepType.llm,
+  cotEnabled = true,
+  modelName = 'gpt-4.1-mini',
+  numJudges = 3,
+  description = '',
+  tags = [],
+  outputType = OutputType.BOOLEAN
+}: CreateCustomLlmMetricParams): Promise<ScorerVersion> => {
   const scorer = await createScorer(
     name,
     ScorerTypes.llm,
@@ -45,17 +43,15 @@ export const createCustomLlmMetric = async (
   );
 
   const scoreableNodeTypes = [nodeLevel];
-  return await createLlmScorerVersion(
-    scorer.id,
-    undefined,
-    undefined,
+  return await createLlmScorerVersion({
+    scorerId: scorer.id,
     userPrompt,
     scoreableNodeTypes,
     cotEnabled,
     modelName,
     numJudges,
     outputType
-  );
+  });
 };
 
 /**
