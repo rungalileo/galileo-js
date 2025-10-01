@@ -1,5 +1,6 @@
 import {
   CreateCustomLlmMetricParams,
+  DeleteMetricParams,
   OutputType,
   ScorerTypes,
   ScorerVersion,
@@ -63,10 +64,11 @@ export const createCustomLlmMetric = async ({
  * @throws Error if the scorer with the given name is not found.
  */
 export const deleteMetric = async (
-  scorerName: string,
-  scorerType: ScorerTypes
+  params: DeleteMetricParams
 ): Promise<void> => {
+  const { scorerName, scorerType } = params;
   const names: string[] = [scorerName];
+
   console.log('Deleting metric with names:', names);
   const scorers = await getScorers({ type: scorerType, names: names });
   if (scorers.length === 0) {

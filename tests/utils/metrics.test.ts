@@ -1,7 +1,13 @@
-import { createCustomLlmMetric } from '../../src/utils/metrics';
-import { createScorer, createLlmScorerVersion } from '../../src/utils/scorers';
+import { createCustomLlmMetric, deleteMetric } from '../../src/utils/metrics';
+import {
+  deleteScorer,
+  createScorer,
+  createLlmScorerVersion,
+  getScorers
+} from '../../src/utils/scorers';
 import {
   OutputType,
+  Scorer,
   ScorerTypes,
   ScorerVersion,
   StepType
@@ -9,7 +15,9 @@ import {
 
 jest.mock('../../src/utils/scorers', () => ({
   createScorer: jest.fn(),
-  createLlmScorerVersion: jest.fn()
+  createLlmScorerVersion: jest.fn(),
+  deleteScorer: jest.fn(),
+  getScorers: jest.fn()
 }));
 
 describe('createCustomLlmMetric', () => {
@@ -86,5 +94,38 @@ describe('createCustomLlmMetric', () => {
         userPrompt: 'Test prompt'
       })
     ).rejects.toThrow(apiError);
+  });
+});
+
+describe('deleteMetric', () => {
+  const mockScorer: Scorer = {
+    id: 'scorer-123',
+    name: 'Test Scorer',
+    scorer_type: ScorerTypes.llm
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getScorers as jest.Mock).mockResolvedValue([mockScorer]);
+  });
+
+  it('should call deleteScorer with the correct scorer ID', async () => {
+    await deleteMetric({
+      scorerName: 'Test Scorer',
+      scorerType: ScorerTypes.llm
+    });
+
+    expect(deleteScorer).toHaveBeenCalledWith(mockScorer.id);
+  });
+
+  it('should throw an error if the scorer is not found', async () => {
+    (getScorers as jest.Mock).mockResolvedValue([]);
+
+    await expect(
+      deleteMetric({
+        scorerName: 'Test Scorer',
+        scorerType: ScorerTypes.llm
+      })
+    ).rejects.toThrow('Scorer with name Test Scorer not found.');
   });
 });

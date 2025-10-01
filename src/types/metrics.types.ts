@@ -1,4 +1,4 @@
-import { OutputType } from './scorer.types';
+import { OutputType, ScorerTypes } from './scorer.types';
 import { StepType } from './logging/step.types';
 
 export type SingleMetricValue = number | string | boolean;
@@ -104,4 +104,9 @@ export interface CreateCustomLlmMetricParams {
   description?: string;
   tags?: string[];
   outputType?: OutputType;
+}
+
+export interface DeleteMetricParams {
+  scorerName: string;
+  scorerType: ScorerTypes;
 }
