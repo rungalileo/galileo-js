@@ -256,6 +256,14 @@ export class GalileoApiClient extends BaseClient {
     return this.logStreamService!.createLogStream(name);
   }
 
+  public async createLogStreamScorerSettings(
+    logStreamId: string,
+    scorers: ScorerConfig[]
+  ): Promise<void> {
+    this.ensureService(this.logStreamService);
+    return this.logStreamService!.createScorerSettings(logStreamId, scorers);
+  }
+
   // Dataset methods - delegate to DatasetService
   public async getDatasets() {
     this.ensureService(this.datasetService);

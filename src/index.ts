@@ -4,7 +4,11 @@ import GalileoObserveApiClient from './observe/api-client';
 import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
-import { GalileoScorers } from './types/metrics.types';
+import {
+  GalileoScorers,
+  LocalMetricConfig,
+  Metric
+} from './types/metrics.types';
 import {
   addRowsToDataset,
   createDataset,
@@ -17,7 +21,11 @@ import {
   getDatasetMetadata,
   extendDataset
 } from './utils/datasets';
-import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
+import {
+  createCustomLlmMetric,
+  deleteMetric,
+  createMetricConfigs
+} from './utils/metrics';
 import {
   getPromptTemplate,
   getPromptTemplates,
@@ -31,7 +39,8 @@ import { getProjects, createProject, getProject } from './utils/projects';
 import {
   getLogStreams,
   createLogStream,
-  getLogStream
+  getLogStream,
+  enableMetrics
 } from './utils/log-streams';
 import {
   getExperiments,
@@ -56,6 +65,8 @@ export {
   GalileoLogger,
   GalileoCallback,
   GalileoScorers,
+  Metric,
+  LocalMetricConfig,
   // OpenAI
   wrapOpenAI,
   // Datasets
@@ -90,6 +101,7 @@ export {
   getLogStreams,
   createLogStream,
   getLogStream,
+  enableMetrics,
   // Logging
   log,
   init,
@@ -97,5 +109,6 @@ export {
   getLogger,
   // Metrics
   createCustomLlmMetric,
-  deleteMetric
+  deleteMetric,
+  createMetricConfigs
 };

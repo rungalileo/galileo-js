@@ -11,11 +11,6 @@ import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush } from '../singleton';
 import { ScorerConfig } from '../types/scorer.types';
-import {
-  getScorers,
-  getScorerVersion,
-  createRunScorerSettings
-} from '../utils/scorers';
 import { Dataset, DatasetRecord } from '../types/dataset.types';
 import {
   deserializeInputFromString,
@@ -23,7 +18,12 @@ import {
   getRecordsForDataset,
   getDatasetMetadata
 } from '../utils/datasets';
-import { GalileoScorers, Metric } from '../types/metrics.types';
+import {
+  GalileoScorers,
+  LocalMetricConfig,
+  Metric
+} from '../types/metrics.types';
+import { createMetricConfigs } from './metrics';
 import { Project } from '../types';
 import { getProjectWithEnvFallbacks } from './projects';
 
@@ -32,7 +32,7 @@ type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 
 type BaseRunExperimentParams = {
   name: string;
-  metrics?: (GalileoScorers | string | Metric)[];
+  metrics?: (GalileoScorers | string | Metric | LocalMetricConfig)[];
   projectName?: string;
   projectId?: string;
 };
@@ -89,18 +89,35 @@ export const getExperiments = async (
 
 /*
  * Creates a new experiment.
+ *
+ * @param name - The name of the experiment
+ * @param projectName - The name of the project
+ * @param dataset - Optional dataset configuration
+ * @param metrics - Optional list of server-side metrics to configure for the experiment.
+ *                  Note: LocalMetricConfig is not supported here as it requires a runner function.
+ *                  Use runExperiment() with a function parameter to use local metrics.
+ * @returns The created experiment
  */
 export const createExperiment = async (
   name: string,
   projectName: string,
-  dataset?: ExperimentDatasetRequest | null
+  dataset?: ExperimentDatasetRequest | null,
+  metrics?: (GalileoScorers | Metric | string)[]
 ): Promise<Experiment> => {
   if (!name) {
     throw new Error('A valid `name` must be provided to create an experiment');
   }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName });
-  return await apiClient.createExperiment(name, dataset);
+  const experiment = await apiClient.createExperiment(name, dataset);
+
+  // Configure metrics if provided
+  if (metrics && metrics.length > 0) {
+    const project = await apiClient.getProjectByName(projectName);
+    await createMetricConfigs(project.id, experiment.id, metrics);
+  }
+
+  return experiment;
 };
 
 /*
@@ -172,20 +189,25 @@ const processRow = async <T extends Record<string, unknown>>(
  *
  * @param experiment - The experiment to run
  * @param projectName - The name of the project
- * @param datasetContent - The content of the dataset
+ * @param dataset - The content of the dataset
  * @param processFn - The runner function to use for processing
- * @param metrics - The metrics to use for evaluation
+ * @param localMetrics - The local metrics to use for client-side evaluation (not yet fully implemented)
  * @returns The processed outputs as an array of strings
  */
 const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   experiment: Experiment,
   projectName: string,
   dataset: DatasetRecord[],
-  processFn: (input: T, metadata?: Record<string, unknown>) => Promise<unknown>
+  processFn: (input: T, metadata?: Record<string, unknown>) => Promise<unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  localMetrics: LocalMetricConfig[] = []
 ): Promise<string[]> => {
   const outputs: string[] = [];
 
   // Initialize the singleton logger
+  // TODO: Local metrics support needs to be added to GalileoLogger/init
+  // For now, local metrics are validated and separated from server metrics,
+  // but not yet processed during logging. Full implementation pending.
   init({
     experimentId: experiment.id,
     projectName: projectName
@@ -338,66 +360,24 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
   console.log(`🚀 Experiment ${experimentName} created.`);
 
-  const scorersToUse: ScorerConfig[] = [];
-
-  console.log('Retrieving metrics...');
+  // Process metrics using the unified createMetricConfigs function
+  let scorerConfigs: ScorerConfig[] = [];
+  let localMetricConfigs: LocalMetricConfig[] = [];
 
   if (metrics && metrics.length > 0) {
-    const metricNames = metrics.map((m) =>
-      typeof m === 'string' ? m : m.name
+    console.log('Retrieving metrics...');
+    [scorerConfigs, localMetricConfigs] = await createMetricConfigs(
+      project.id,
+      experiment.id,
+      metrics
     );
-    const scorers = await getScorers({ names: metricNames });
-
-    if (scorers.length < metricNames.length) {
-      const missingMetrics = metricNames.filter(
-        (name) => !scorers.some((s) => s.name === name)
-      );
-      throw new Error(
-        `Metrics not found: ${missingMetrics.join(', ')}. Please create them first.`
-      );
-    }
-
-    for (const scorer of scorers) {
-      // This is a string, GalileoScorers, or Metric
-      let metricVersion: number | undefined = undefined;
-      const metric = metrics?.find(
-        (m) => (typeof m === 'string' ? m : m.name) === scorer.name
-      );
-      if (
-        metric &&
-        typeof metric === 'object' &&
-        'version' in metric &&
-        metric.version !== undefined
-      ) {
-        metricVersion = metric.version;
-      }
-      const scorerConfig: ScorerConfig = {
-        id: scorer.id,
-        name: scorer.name,
-        model_name: scorer.defaults?.model_name || 'gpt-4o',
-        num_judges: scorer.defaults?.num_judges || 3,
-        filters: scorer.defaults?.filters || [],
-        scoreable_node_types: scorer.defaults?.scoreable_node_types || [],
-        scorer_type: scorer.scorer_type
-      };
-
-      // If a version is specified, fetch the scorer version
-      if (metricVersion !== undefined) {
-        const scorerVersion = await getScorerVersion(scorer.id, metricVersion);
-        scorerConfig.scorer_version = scorerVersion;
-      }
-
-      scorersToUse.push(scorerConfig);
-    }
   }
 
-  if (scorersToUse.length > 0) {
-    console.log('Adding metrics to the experiment...');
-    await createRunScorerSettings({
-      experimentId: experiment.id,
-      projectName: project.name,
-      scorers: scorersToUse
-    });
+  // Validate local metrics usage
+  if (localMetricConfigs.length > 0 && 'promptTemplate' in params) {
+    throw new Error(
+      'Local metrics can only be used with a locally run experiment (function-based), not a prompt template experiment.'
+    );
   }
 
   console.log('Retrieving the dataset...');
@@ -451,10 +431,11 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       experiment,
       project.name,
       dataset,
-      processFn
+      processFn,
+      localMetricConfigs
     );
 
-    if (scorersToUse.length > 0) {
+    if (scorerConfigs.length > 0) {
       console.log(
         `Metrics are still being calculated for runner function experiment ${experiment.name}. Results will be available at ${linkToResults}`
       );
@@ -514,7 +495,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       project.id,
       promptTemplateVersionId,
       datasetId!,
-      scorersToUse,
+      scorerConfigs,
       promptSettings
     );
 
