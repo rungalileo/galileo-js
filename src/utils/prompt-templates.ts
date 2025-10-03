@@ -20,36 +20,25 @@ export const getPrompts = async ({
 
 export const getPrompt = async ({
   id,
-  name,
-  version
+  name
 }: {
   id?: string;
   name?: string;
-  version?: number;
-}): Promise<PromptTemplateVersion> => {
+}): Promise<PromptTemplate> => {
   if (!id && !name) {
     throw new Error('Either id or name must be provided');
   }
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectScoped: false });
   if (id) {
-    if (version) {
-      return await apiClient.getGlobalPromptTemplateVersion(id, version);
-    } else {
-      const template = await apiClient.getGlobalPromptTemplate(id);
-      version = template.selected_version.version;
-      return await apiClient.getGlobalPromptTemplateVersion(id, version);
-    }
+    return await apiClient.getGlobalPromptTemplate(id);
   } else {
     // lookup by name
     const templates = await getPrompts({
       name: name!
     });
     if (templates.length > 0) {
-      const template = templates[0];
-      version = template.selected_version.version;
-      id = template.id;
-      return await apiClient.getGlobalPromptTemplateVersion(id, version);
+      return templates[0];
     }
     throw new Error(`Prompt template with name '${name}' not found`);
   }
