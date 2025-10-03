@@ -76,3 +76,17 @@ export enum OutputType {
   FREEFORM = 'freeform',
   PERCENTAGE = 'percentage'
 }
+
+import { StepType } from './logging/step.types';
+
+export interface CreateLlmScorerVersionParams {
+  scorerId: string;
+  instructions?: string;
+  chainPollTemplate?: ChainPollTemplate;
+  userPrompt?: string;
+  scoreableNodeTypes?: StepType[];
+  cotEnabled?: boolean;
+  modelName?: string;
+  numJudges?: number;
+  outputType?: OutputType;
+}

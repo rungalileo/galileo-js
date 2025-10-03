@@ -1,14 +1,12 @@
 import {
-  ChainPollTemplate,
+  CreateLlmScorerVersionParams,
   ModelType,
-  OutputType,
   Scorer,
   ScorerConfig,
   ScorerVersion
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
-import { StepType } from '../types/logging/step.types';
 
 export const getScorers = async (options?: {
   type?: ScorerTypes;
@@ -113,28 +111,20 @@ export const createScorer = async (
 /**
  * Creates a new LLM scorer version for a given scorer.
  *
- * @param scorerId - The unique identifier of the scorer.
- * @param instructions - (Optional) Instructions for the scorer version.
- * @param chainPollTemplate - (Optional) The chain poll template for the scorer version.
- * @param userPrompt - (Optional) The user prompt for the scorer version.
- * @param scoreableNodeTypes - (Optional) The node level for the scorer version. Defaults to ['llm'].
- * @param cotEnabled - (Optional) Whether chain of thought is enabled. Defaults to true
- * @param modelName - (Optional) The model name to use.
- * @param numJudges - (Optional) The number of judges to use.
- * @param outputType - (Optional) The output type for the scorer version. Defaults to OutputType.BOOLEAN.
+ * @param params - The parameters for creating the LLM scorer version.
  * @returns A promise that resolves to the created {@link ScorerVersion}.
  */
-export const createLlmScorerVersion = async (
-  scorerId: string,
-  instructions?: string,
-  chainPollTemplate?: ChainPollTemplate,
-  userPrompt?: string,
-  scoreableNodeTypes?: StepType[],
-  cotEnabled?: boolean,
-  modelName?: string,
-  numJudges?: number,
-  outputType?: OutputType
-): Promise<ScorerVersion> => {
+export const createLlmScorerVersion = async ({
+  scorerId,
+  instructions,
+  chainPollTemplate,
+  userPrompt,
+  scoreableNodeTypes,
+  cotEnabled,
+  modelName,
+  numJudges,
+  outputType
+}: CreateLlmScorerVersionParams): Promise<ScorerVersion> => {
   const client = new GalileoApiClient();
   await client.init();
 

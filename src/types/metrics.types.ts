@@ -1,3 +1,6 @@
+import { OutputType, ScorerTypes } from './scorer.types';
+import { StepType } from './logging/step.types';
+
 export type SingleMetricValue = number | string | boolean;
 export type MetricValueType =
   | SingleMetricValue
@@ -89,4 +92,21 @@ export enum GalileoScorers {
 export interface Metric {
   name: string;
   version?: number;
+}
+
+export interface CreateCustomLlmMetricParams {
+  name: string;
+  userPrompt: string;
+  nodeLevel?: StepType;
+  cotEnabled?: boolean;
+  modelName?: string;
+  numJudges?: number;
+  description?: string;
+  tags?: string[];
+  outputType?: OutputType;
+}
+
+export interface DeleteMetricParams {
+  scorerName: string;
+  scorerType: ScorerTypes;
 }
