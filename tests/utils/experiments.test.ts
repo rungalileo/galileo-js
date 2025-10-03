@@ -552,8 +552,12 @@ describe('experiments utility', () => {
     });
 
     it('should handle multiple metrics with mixed formats', async () => {
-      mockGetScorers.mockImplementation(({ names }) => {
-        return (names || []).map((name: string) => ({
+      mockGetScorers.mockImplementation((options?: { names?: string[] }) => {
+        const names = options?.names || [];
+        // When called without names, return all available scorers
+        const availableScorers = ['correctness', 'toxicity'];
+        const scorersToReturn = names.length > 0 ? names : availableScorers;
+        return scorersToReturn.map((name: string) => ({
           id: `scorer-${name}`,
           name,
           scorer_type: ScorerTypes.preset
