@@ -153,7 +153,8 @@ export const createMetricConfigs = async (
   // Process server-side metrics
   const scorers: ScorerConfig[] = [];
   if (scorerNameVersions.length > 0) {
-    const allScorers = await getScorers();
+    const metricNames = scorerNameVersions.map(([name]) => name);
+    const allScorers = await getScorers({ names: metricNames });
     const knownMetrics = new Map(allScorers.map((s) => [s.name, s]));
     const unknownMetrics: string[] = [];
 
