@@ -6586,6 +6586,15 @@ export interface components {
        */
       metrics?: components['schemas']['BucketedMetric'][];
     };
+    /** ExperimentPhaseStatus */
+    ExperimentPhaseStatus: {
+      /**
+       * Progress Percent
+       * @description Progress percentage from 0.0 to 1.0
+       * @default 0
+       */
+      progress_percent?: number;
+    };
     /** ExperimentPlayground */
     ExperimentPlayground: {
       /** Playground Id */
@@ -6667,6 +6676,11 @@ export interface components {
       tags?: {
         [key: string]: components['schemas']['RunTagDB'][];
       };
+      status?: components['schemas']['ExperimentStatus'];
+    };
+    /** ExperimentStatus */
+    ExperimentStatus: {
+      log_generation?: components['schemas']['ExperimentPhaseStatus'];
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -10928,6 +10942,11 @@ export interface components {
         | components['schemas']['ExtendedRetrieverSpanRecord']
         | components['schemas']['ExtendedSessionRecord']
       )[];
+      /**
+       * Total Count
+       * @description Total number of records matching the query (before pagination)
+       */
+      total_count?: number | null;
     };
     /** LogRecordsSortClause */
     LogRecordsSortClause: {
