@@ -203,6 +203,12 @@ class GalileoLogger {
     return this.sessionId;
   }
 
+  /**
+   * Add a child span to the current parent (trace or workflow/agent span).
+   * This method automatically propagates dataset information from the parent to the child span.
+   * @param span - The span to add as a child to the current parent.
+   * @throws Error if no trace or parent span exists.
+   */
   addChildSpanToParent(span: Span): void {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
@@ -303,6 +309,34 @@ class GalileoLogger {
     return trace;
   }
 
+  /**
+   * Create a new trace with a single LLM span. This is a convenience method that combines trace creation
+   * and LLM span creation in one call. The trace is automatically concluded, so no need to call conclude().
+   * @param options - Configuration for the single LLM span trace. All parameters are optional except `input` and `output`.
+   * @param options.input - The input content for the LLM span.
+   * @param options.redactedInput - (Optional) Redacted version of the input content.
+   * @param options.output - The output content from the LLM span.
+   * @param options.redactedOutput - (Optional) Redacted version of the output content.
+   * @param options.model - (Optional) The name or identifier of the LLM model used (e.g., 'gpt-4o', 'claude-3-sonnet').
+   * @param options.tools - (Optional) Array of tool definitions. Expected format: Array<{ type: 'function', function: { name: string, description?: string, parameters?: object } }>.
+   * @param options.name - (Optional) Name for the span.
+   * @param options.createdAt - (Optional) The timestamp when the span was created.
+   * @param options.durationNs - (Optional) Duration of the span in nanoseconds.
+   * @param options.metadata - (Optional) Additional metadata as key-value pairs.
+   * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.numInputTokens - (Optional) Number of tokens in the input.
+   * @param options.numOutputTokens - (Optional) Number of tokens in the output.
+   * @param options.totalTokens - (Optional) Total number of tokens used (input + output).
+   * @param options.temperature - (Optional) The temperature parameter used for the LLM (typically 0.0-2.0).
+   * @param options.statusCode - (Optional) HTTP status code or execution status (e.g., 200 for success).
+   * @param options.spanStepNumber - (Optional) The step number for the span in a multi-step process.
+   * @param options.timeToFirstTokenNs - (Optional) Time to first token in nanoseconds (for streaming).
+   * @param options.datasetInput - (Optional) Input data for dataset evaluation.
+   * @param options.datasetOutput - (Optional) Expected output for dataset evaluation.
+   * @param options.datasetMetadata - (Optional) Metadata for dataset evaluation.
+   * @returns The created trace containing the single LLM span.
+   * @throws Error if a trace or span is already in progress.
+   */
   addSingleLlmSpanTrace({
     input,
     redactedInput,
@@ -348,9 +382,6 @@ class GalileoLogger {
     datasetOutput?: string;
     datasetMetadata?: Record<string, string>;
   }): Trace {
-    /**
-     * Create a new trace with a single span and add it to the list of traces.
-     */
     if (this.currentParent() !== undefined) {
       throw new Error(
         'A trace cannot be created within a parent trace or span, it must always be the root. You must conclude the existing trace before adding a new one.'
@@ -414,6 +445,29 @@ class GalileoLogger {
     return trace;
   }
 
+  /**
+   * Add a new LLM span to the current parent.
+   * @param options - Configuration for the LLM span. All parameters are optional except `input` and `output`.
+   * @param options.input - The input content for the LLM span. Accepts string, Message, or arrays of these.
+   * @param options.redactedInput - (Optional) Redacted version of the input content.
+   * @param options.output - The output content from the LLM span. Accepts string, Message, or arrays of these.
+   * @param options.redactedOutput - (Optional) Redacted version of the output content.
+   * @param options.model - (Optional) The name or identifier of the LLM model used (e.g., 'gpt-4o', 'claude-3-sonnet').
+   * @param options.tools - (Optional) Array of tool definitions available to the LLM.
+   * @param options.name - (Optional) Name for the span.
+   * @param options.createdAt - (Optional) The timestamp when the span was created. Defaults to current time if not provided.
+   * @param options.durationNs - (Optional) Duration of the span in nanoseconds.
+   * @param options.metadata - (Optional) Additional metadata as key-value pairs.
+   * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.numInputTokens - (Optional) Number of tokens in the input.
+   * @param options.numOutputTokens - (Optional) Number of tokens in the output.
+   * @param options.totalTokens - (Optional) Total number of tokens used (input + output).
+   * @param options.timeToFirstTokenNs - (Optional) Time to first token in nanoseconds (for streaming responses).
+   * @param options.temperature - (Optional) The temperature parameter used for the LLM (typically 0.0-2.0).
+   * @param options.statusCode - (Optional) HTTP status code or execution status (e.g., 200 for success).
+   * @param options.stepNumber - (Optional) The step number in a multi-step process.
+   * @returns The created LLM span, which is automatically added to the current parent.
+   */
   addLlmSpan({
     input,
     redactedInput,
@@ -453,9 +507,6 @@ class GalileoLogger {
     statusCode?: number;
     stepNumber?: number;
   }): LlmSpan {
-    /**
-     * Add a new llm span to the current parent.
-     */
     const span = new LlmSpan({
       input,
       redactedInput,
@@ -483,6 +534,22 @@ class GalileoLogger {
     return span;
   }
 
+  /**
+   * Add a new retriever span to the current parent.
+   * @param options - Configuration for the retriever span. All parameters are optional except `input` and `output`.
+   * @param options.input - The input query for the retriever.
+   * @param options.redactedInput - (Optional) Redacted version of the input query.
+   * @param options.output - The output documents or results. Accepts string, Record<string, string>, Document, or arrays of these. Document has properties: { content: string, metadata?: Record<string, string | number | boolean> }.
+   * @param options.redactedOutput - (Optional) Redacted version of the output.
+   * @param options.name - (Optional) Name for the span.
+   * @param options.durationNs - (Optional) Duration of the span in nanoseconds.
+   * @param options.createdAt - (Optional) The timestamp when the span was created.
+   * @param options.metadata - (Optional) Additional metadata as key-value pairs.
+   * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.statusCode - (Optional) HTTP status code or execution status (e.g., 200 for success).
+   * @param options.stepNumber - (Optional) The step number in a multi-step process.
+   * @returns The created retriever span.
+   */
   addRetrieverSpan({
     input,
     redactedInput,
@@ -508,9 +575,6 @@ class GalileoLogger {
     statusCode?: number;
     stepNumber?: number;
   }): RetrieverSpan {
-    /**
-     * Add a new retriever span to the current parent.
-     */
     const span = new RetrieverSpan({
       input,
       redactedInput,
@@ -529,6 +593,23 @@ class GalileoLogger {
     return span;
   }
 
+  /**
+   * Add a new tool span to the current parent.
+   * @param options - Configuration for the tool span. Only `input` is required.
+   * @param options.input - The input parameters for the tool.
+   * @param options.redactedInput - (Optional) Redacted version of the input.
+   * @param options.output - (Optional) The output result from the tool.
+   * @param options.redactedOutput - (Optional) Redacted version of the output.
+   * @param options.name - (Optional) Name for the span (e.g., the tool name or function name).
+   * @param options.durationNs - (Optional) Duration of the span in nanoseconds.
+   * @param options.createdAt - (Optional) The timestamp when the span was created.
+   * @param options.metadata - (Optional) Additional metadata as key-value pairs.
+   * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.statusCode - (Optional) HTTP status code or execution status (e.g., 200 for success).
+   * @param options.toolCallId - (Optional) Unique identifier for the tool call, typically from LLM tool_calls (e.g., 'call_abc123').
+   * @param options.stepNumber - (Optional) The step number in a multi-step process.
+   * @returns The created tool span.
+   */
   addToolSpan({
     input,
     redactedInput,
@@ -556,9 +637,6 @@ class GalileoLogger {
     toolCallId?: string;
     stepNumber?: number;
   }): ToolSpan {
-    /**
-     * Add a new tool span to the current parent.
-     */
     const span = new ToolSpan({
       input,
       redactedInput,
@@ -578,6 +656,23 @@ class GalileoLogger {
     return span;
   }
 
+  /**
+   * Add a workflow span to the current parent. This is useful when you want to create a nested workflow span
+   * within the trace or current workflow span. The next span you add will be a child of the current parent. To
+   * move out of the nested workflow, use conclude().
+   * @param options - Configuration for the workflow span. Only `input` is required. This creates a parent span that can contain child spans.
+   * @param options.input - The input content for the workflow.
+   * @param options.redactedInput - (Optional) Redacted version of the input.
+   * @param options.output - (Optional) The output result from the workflow.
+   * @param options.redactedOutput - (Optional) Redacted version of the output.
+   * @param options.name - (Optional) Name for the span (e.g., 'Data Processing Workflow').
+   * @param options.durationNs - (Optional) Duration of the span in nanoseconds.
+   * @param options.createdAt - (Optional) The timestamp when the span was created.
+   * @param options.metadata - (Optional) Additional metadata as key-value pairs.
+   * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.stepNumber - (Optional) The step number in a multi-step process.
+   * @returns The created workflow span.
+   */
   addWorkflowSpan({
     input,
     redactedInput,
@@ -601,11 +696,6 @@ class GalileoLogger {
     tags?: string[];
     stepNumber?: number;
   }): WorkflowSpan {
-    /**
-     * Add a workflow span to the current parent. This is useful when you want to create a nested workflow span
-     * within the trace or current workflow span. The next span you add will be a child of the current parent. To
-     * move out of the nested workflow, use conclude().
-     */
     const span = new WorkflowSpan({
       input,
       redactedInput,
@@ -624,6 +714,22 @@ class GalileoLogger {
     return span;
   }
 
+  /**
+   * Add an agent span to the current parent. Agent spans can contain child spans (like workflow spans).
+   * @param options - Configuration for the agent span. Only `input` is required. This creates a parent span that can contain child spans.
+   * @param options.input - The input content for the agent.
+   * @param options.redactedInput - (Optional) Redacted version of the input.
+   * @param options.output - (Optional) The output result from the agent.
+   * @param options.redactedOutput - (Optional) Redacted version of the output.
+   * @param options.name - (Optional) Name for the span (e.g., 'Planning Agent', 'Router Agent').
+   * @param options.durationNs - (Optional) Duration of the span in nanoseconds.
+   * @param options.createdAt - (Optional) The timestamp when the span was created.
+   * @param options.metadata - (Optional) Additional metadata as key-value pairs.
+   * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.agentType - (Optional) The type of agent. One of: 'default', 'planner', 'react', 'reflection', 'router', 'classifier', 'supervisor', 'judge'. Defaults to 'default'.
+   * @param options.stepNumber - (Optional) The step number in a multi-step process.
+   * @returns The created agent span.
+   */
   addAgentSpan({
     input,
     redactedInput,
