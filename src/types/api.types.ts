@@ -3272,6 +3272,11 @@ export interface components {
       id: string;
       /** Version */
       version: number;
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
       generated_scorer?: components['schemas']['BaseGeneratedScorerDB'] | null;
       registered_scorer?:
         | components['schemas']['BaseRegisteredScorerDB']
@@ -3305,6 +3310,11 @@ export interface components {
       id: string;
       /** Version */
       version: number;
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
       generated_scorer?:
         | components['schemas']['GeneratedScorerResponse']
         | null;
@@ -3336,6 +3346,8 @@ export interface components {
        */
       updated_at: string;
       chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** Allowed Model */
+      allowed_model?: boolean | null;
     };
     /** BleuScorer */
     BleuScorer: {
@@ -6586,6 +6598,15 @@ export interface components {
        */
       metrics?: components['schemas']['BucketedMetric'][];
     };
+    /** ExperimentPhaseStatus */
+    ExperimentPhaseStatus: {
+      /**
+       * Progress Percent
+       * @description Progress percentage from 0.0 to 1.0
+       * @default 0
+       */
+      progress_percent?: number;
+    };
     /** ExperimentPlayground */
     ExperimentPlayground: {
       /** Playground Id */
@@ -6667,6 +6688,11 @@ export interface components {
       tags?: {
         [key: string]: components['schemas']['RunTagDB'][];
       };
+      status?: components['schemas']['ExperimentStatus'];
+    };
+    /** ExperimentStatus */
+    ExperimentStatus: {
+      log_generation?: components['schemas']['ExperimentPhaseStatus'];
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -10928,6 +10954,11 @@ export interface components {
         | components['schemas']['ExtendedRetrieverSpanRecord']
         | components['schemas']['ExtendedSessionRecord']
       )[];
+      /**
+       * Total Count
+       * @description Total number of records matching the query (before pagination)
+       */
+      total_count?: number | null;
     };
     /** LogRecordsSortClause */
     LogRecordsSortClause: {
@@ -11814,11 +11845,6 @@ export interface components {
        * @default false
        */
       provides_log_probs?: boolean;
-      /**
-       * Reasoning Supported
-       * @default false
-       */
-      reasoning_supported?: boolean;
       /**
        * Formatting Tokens
        * @default 0
@@ -12922,10 +12948,6 @@ export interface components {
       response_format?: {
         [key: string]: string;
       } | null;
-      /** Input */
-      input?: string | null;
-      /** Instructions */
-      instructions?: string | null;
       /** Known Models */
       known_models?: components['schemas']['Model'][];
     };
@@ -13735,10 +13757,6 @@ export interface components {
       reasoning_effort?: string | null;
       /** Verbosity */
       verbosity?: string | null;
-      /** Input */
-      input?: string | null;
-      /** Instructions */
-      instructions?: string | null;
       /** Deployment Name */
       deployment_name?: string | null;
     };
@@ -20757,6 +20775,7 @@ export interface operations {
   list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
     parameters: {
       query?: {
+        run_id?: string | null;
         starting_token?: number;
         limit?: number;
       };
