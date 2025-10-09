@@ -38,7 +38,7 @@ jobs:
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-  
+
   publish-docs:
     needs: publish
     uses: ./.github/workflows/publish-docs.yaml
