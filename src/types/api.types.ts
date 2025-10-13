@@ -3272,6 +3272,11 @@ export interface components {
       id: string;
       /** Version */
       version: number;
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
       generated_scorer?: components['schemas']['BaseGeneratedScorerDB'] | null;
       registered_scorer?:
         | components['schemas']['BaseRegisteredScorerDB']
@@ -3305,6 +3310,11 @@ export interface components {
       id: string;
       /** Version */
       version: number;
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
       generated_scorer?:
         | components['schemas']['GeneratedScorerResponse']
         | null;
@@ -3336,6 +3346,8 @@ export interface components {
        */
       updated_at: string;
       chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** Allowed Model */
+      allowed_model?: boolean | null;
     };
     /** BleuScorer */
     BleuScorer: {
@@ -6128,7 +6140,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -6194,6 +6206,19 @@ export interface components {
        * @constant
        */
       sort_type?: 'column';
+    };
+    /** DatasetNotInProjectFilter */
+    DatasetNotInProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'not_in_project';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
     };
     /** DatasetPrependRow */
     DatasetPrependRow: {
@@ -6586,6 +6611,15 @@ export interface components {
        */
       metrics?: components['schemas']['BucketedMetric'][];
     };
+    /** ExperimentPhaseStatus */
+    ExperimentPhaseStatus: {
+      /**
+       * Progress Percent
+       * @description Progress percentage from 0.0 to 1.0
+       * @default 0
+       */
+      progress_percent?: number;
+    };
     /** ExperimentPlayground */
     ExperimentPlayground: {
       /** Playground Id */
@@ -6667,6 +6701,11 @@ export interface components {
       tags?: {
         [key: string]: components['schemas']['RunTagDB'][];
       };
+      status?: components['schemas']['ExperimentStatus'];
+    };
+    /** ExperimentStatus */
+    ExperimentStatus: {
+      log_generation?: components['schemas']['ExperimentPhaseStatus'];
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -9526,7 +9565,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -10109,6 +10148,7 @@ export interface components {
         | components['schemas']['DatasetDraftFilter']
         | components['schemas']['DatasetUsedInProjectFilter']
         | components['schemas']['DatasetIDFilter']
+        | components['schemas']['DatasetNotInProjectFilter']
       )[];
       /**
        * Sort
@@ -10252,6 +10292,7 @@ export interface components {
         | components['schemas']['PromptTemplateNameFilter']
         | components['schemas']['PromptTemplateCreatedByFilter']
         | components['schemas']['PromptTemplateUsedInProjectFilter']
+        | components['schemas']['PromptTemplateNotInProjectFilter']
       )[];
       /**
        * Sort
@@ -10755,7 +10796,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
       /**
@@ -10928,6 +10969,11 @@ export interface components {
         | components['schemas']['ExtendedRetrieverSpanRecord']
         | components['schemas']['ExtendedSessionRecord']
       )[];
+      /**
+       * Total Count
+       * @description Total number of records matching the query (before pagination)
+       */
+      total_count?: number | null;
     };
     /** LogRecordsSortClause */
     LogRecordsSortClause: {
@@ -11815,11 +11861,6 @@ export interface components {
        */
       provides_log_probs?: boolean;
       /**
-       * Reasoning Supported
-       * @default false
-       */
-      reasoning_supported?: boolean;
-      /**
        * Formatting Tokens
        * @default 0
        */
@@ -12312,7 +12353,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -12414,7 +12455,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -12922,10 +12963,6 @@ export interface components {
       response_format?: {
         [key: string]: string;
       } | null;
-      /** Input */
-      input?: string | null;
-      /** Instructions */
-      instructions?: string | null;
       /** Known Models */
       known_models?: components['schemas']['Model'][];
     };
@@ -12960,7 +12997,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -13002,6 +13039,19 @@ export interface components {
        * @constant
        */
       sort_type?: 'column';
+    };
+    /** PromptTemplateNotInProjectFilter */
+    PromptTemplateNotInProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'not_in_project';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
     };
     /** PromptTemplateUpdatedAtSort */
     PromptTemplateUpdatedAtSort: {
@@ -13735,10 +13785,6 @@ export interface components {
       reasoning_effort?: string | null;
       /** Verbosity */
       verbosity?: string | null;
-      /** Input */
-      input?: string | null;
-      /** Instructions */
-      instructions?: string | null;
       /** Deployment Name */
       deployment_name?: string | null;
     };
@@ -13923,7 +13969,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -14069,6 +14115,10 @@ export interface components {
       default_version?: components['schemas']['BaseScorerVersionDB'] | null;
       /** User Prompt */
       user_prompt?: string | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /**
        * Label
        * @default
@@ -16044,6 +16094,8 @@ export interface components {
       | 'agentic_session_success'
       | 'agentic_workflow_success'
       | 'agentic_workflow_success'
+      | 'agent_efficiency'
+      | 'agent_flow'
       | 'bleu'
       | 'chunk_attribution_utilization_luna'
       | 'chunk_attribution_utilization'
@@ -16052,23 +16104,28 @@ export interface components {
       | 'context_adherence'
       | 'context_adherence_luna'
       | 'context_relevance'
+      | 'conversation_quality'
       | 'correctness'
       | 'ground_truth_adherence'
       | 'input_pii'
+      | 'input_pii_gpt'
       | 'input_sexist'
       | 'input_sexist'
       | 'input_sexist_luna'
       | 'input_sexist_luna'
       | 'input_tone'
+      | 'input_tone_gpt'
       | 'input_toxicity'
       | 'input_toxicity_luna'
       | 'instruction_adherence'
       | 'output_pii'
+      | 'output_pii_gpt'
       | 'output_sexist'
       | 'output_sexist'
       | 'output_sexist_luna'
       | 'output_sexist_luna'
       | 'output_tone'
+      | 'output_tone_gpt'
       | 'output_toxicity'
       | 'output_toxicity_luna'
       | 'prompt_injection'
@@ -16079,7 +16136,8 @@ export interface components {
       | 'tool_error_rate_luna'
       | 'tool_selection_quality'
       | 'tool_selection_quality_luna'
-      | 'uncertainty';
+      | 'uncertainty'
+      | 'user_intent_change';
     /**
      * ScorerName
      * @enum {string}
@@ -20757,6 +20815,7 @@ export interface operations {
   list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
     parameters: {
       query?: {
+        run_id?: string | null;
         starting_token?: number;
         limit?: number;
       };
