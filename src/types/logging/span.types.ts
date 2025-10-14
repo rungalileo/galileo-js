@@ -88,6 +88,16 @@ export enum AgentType {
   judge = 'judge'
 }
 
+/**
+ * Type guard to validate if a value is a valid AgentType
+ */
+export function isValidAgentType(value: unknown): value is AgentType {
+  return (
+    typeof value === 'string' &&
+    Object.values(AgentType).includes(value as AgentType)
+  );
+}
+
 export interface AgentSpanOptions extends StepWithChildSpansOptions {
   agentType?: AgentType;
 }

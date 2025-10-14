@@ -1,4 +1,3 @@
-import { AgentType } from '..';
 import { Document } from '../document.types';
 import { isMessage, Message } from '../message.types';
 import { MetricValueType } from '../metrics.types';
@@ -276,14 +275,4 @@ function isRecordStringString(obj: any): obj is Record<string, string> {
     }
   }
   return true;
-}
-
-/**
- * Type guard to validate if a value is a valid AgentType
- */
-export function isValidAgentType(value: unknown): value is AgentType {
-  return (
-    typeof value === 'string' &&
-    Object.values(AgentType).includes(value as AgentType)
-  );
 }

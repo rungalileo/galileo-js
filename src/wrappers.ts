@@ -8,9 +8,9 @@ import {
 import {
   isLlmSpanAllowedInputType,
   isLlmSpanAllowedOutputType,
-  isRetrieverSpanAllowedOutputType,
-  isValidAgentType
+  isRetrieverSpanAllowedOutputType
 } from './types/logging/step.types';
+import { isValidAgentType } from './types/logging/span.types';
 import { DatasetRecord } from './types';
 import { calculateDurationNs } from './utils/utils';
 
