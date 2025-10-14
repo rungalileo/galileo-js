@@ -34,10 +34,10 @@
     "form-data": "^4.0.1",
     "jsonwebtoken": "^9.0.2",
     "openapi-fetch": "^0.13.3",
-    "openapi-typescript-helpers": "^0.0.15"
+    "openapi-typescript-helpers": "^0.0.15",
+    "@langchain/core": "^0.3.13"
   },
   "optionalDependencies": {
-    "@langchain/core": "^0.3.13",
     "@langchain/openai": "^0.3.11",
     "openai": "^4.85.2",
     "tiktoken": "^1.0.13"
