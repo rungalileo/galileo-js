@@ -293,3 +293,13 @@ export class ToolSpan extends BaseStep {
 
 // Type for all span types
 export type Span = WorkflowSpan | LlmSpan | RetrieverSpan | ToolSpan;
+
+/**
+ * Type guard to validate if a value is a valid AgentType
+ */
+export function isValidAgentType(value: unknown): value is AgentType {
+  return (
+    typeof value === 'string' &&
+    Object.values(AgentType).includes(value as AgentType)
+  );
+}
