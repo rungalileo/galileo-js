@@ -217,7 +217,7 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   for (const row of dataset) {
     const loggedProcessFn = log(
       {
-        name: experiment.name,
+        name: experiment.name ?? 'Unnamed Experiment',
         datasetRecord: row
       },
       processFn
@@ -229,7 +229,7 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   await flush();
 
   console.log(
-    `${outputs.length} rows processed for experiment ${experiment.name}.`
+    `${outputs.length} rows processed for ${experiment.name? 'experiment ' + experiment.name : 'unnamed experiment'}.`
   );
 
   return outputs;
@@ -325,6 +325,13 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
   let experiment: Experiment | undefined = undefined;
 
+  // Validate project name is available
+  if (!project.name) {
+    throw new Error(
+      `Experiment ${name} could not be created, project name is required but not available.`
+    );
+  }
+
   // Check if experiment with the same name already exists
   let experimentName = name;
   experiment = await getExperiment({ name, projectName: project.name });
@@ -418,13 +425,13 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName: project.name });
   const linkToResults = getLinkToExperimentResults(experiment.id, project.id);
-
+  
   // Process using either a runner function or a prompt template
   if ('function' in params) {
     const processFn = params.function;
 
     console.log(
-      `Processing runner function experiment ${experiment.name} for project ${project.name}...`
+      `Processing runner function ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'} for project ${project.name}...`
     );
 
     const results = await runExperimentWithFunction(
@@ -437,11 +444,11 @@ export const runExperiment = async <T extends Record<string, unknown>>(
 
     if (scorerConfigs.length > 0) {
       console.log(
-        `Metrics are still being calculated for runner function experiment ${experiment.name}. Results will be available at ${linkToResults}`
+        `Metrics are still being calculated for runner function ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'}. Results will be available at ${linkToResults}`
       );
     } else {
       console.log(
-        `Runner function experiment ${experiment.name} is complete. Results are available at ${linkToResults}`
+        `Runner function ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'} is complete. Results are available at ${linkToResults}`
       );
     }
 
@@ -487,7 +494,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
       } as PromptRunSettings);
 
     console.log(
-      `Starting prompt experiment ${experiment.name} for project ${project.name}...`
+      `Starting prompt experiment ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'} for project ${project.name}...`
     );
 
     const response = await apiClient.createPromptRunJob(
@@ -500,7 +507,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
     );
 
     console.log(
-      `Prompt experiment ${experiment.name} has started and is currently processing. Results will be available at ${linkToResults}`
+      `Prompt experiment ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'} has started and is currently processing. Results will be available at ${linkToResults}`
     );
 
     return { experiment, link: linkToResults, message: response.message };

@@ -9,7 +9,7 @@ import {
   ChainPollTemplate,
   OutputType
 } from '../types/scorer.types';
-import { ProjectTypes } from '../types/project.types';
+import { ProjectTypes, ProjectCreateResponse } from '../types/project.types';
 import { BaseClient } from './base-client';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
@@ -230,7 +230,7 @@ export class GalileoApiClient extends BaseClient {
     return this.projectService!.getProjectIdByName(name);
   }
 
-  public async createProject(name: string) {
+  public async createProject(name: string): Promise<ProjectCreateResponse> {
     this.ensureService(this.projectService);
     return this.projectService!.createProject(name);
   }

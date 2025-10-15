@@ -1,4 +1,4 @@
-import { Project } from '../types/project.types';
+import { Project, ProjectCreateResponse } from '../types/project.types';
 import { GalileoApiClient } from '../api-client';
 
 /*
@@ -13,7 +13,9 @@ export const getProjects = async (): Promise<Project[]> => {
 /*
  * Creates a new project.
  */
-export const createProject = async (name: string): Promise<Project> => {
+export const createProject = async (
+  name: string
+): Promise<ProjectCreateResponse> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init();
   return await apiClient.createProject(name);

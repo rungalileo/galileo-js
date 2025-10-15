@@ -6,7 +6,17 @@ export const TEST_HOST = 'http://localhost:8088';
 export const mockProject: Project = {
   id: 'proj-123',
   name: 'test-project',
-  type: ProjectTypes.genAI
+  type: ProjectTypes.genAI,
+  created_by: 'user-123',
+  created_by_user: {
+    id: 'user-123',
+    email: 'test@example.com',
+    first_name: 'Test',
+    last_name: 'User'
+  },
+  runs: [],
+  created_at: '2021-09-10T00:00:00Z',
+  updated_at: '2021-09-10T00:00:00Z'
 };
 
 export const mockLogStream: LogStream = {
