@@ -61,12 +61,7 @@ export type ModelType = components['schemas']['ModelType'];
 
 export type ChainPollTemplate = components['schemas']['ChainPollTemplate'];
 
-export interface Scorer {
-  id: string;
-  name: string;
-  scorer_type: ScorerTypes;
-  defaults?: ScorerDefaults;
-}
+export type Scorer = components['schemas']['ScorerResponse'];
 
 export enum OutputType {
   BOOLEAN = 'boolean',

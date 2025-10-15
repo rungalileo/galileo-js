@@ -1,5 +1,9 @@
 import { BaseClient, RequestMethod } from '../base-client';
-import { Project, ProjectTypes } from '../../types/project.types';
+import {
+  Project,
+  ProjectCreateResponse,
+  ProjectTypes
+} from '../../types/project.types';
 import { Routes } from '../../types/routes.types';
 
 export class ProjectService extends BaseClient {
@@ -55,8 +59,10 @@ export class ProjectService extends BaseClient {
     return (await this.getProjectByName(name)).id;
   }
 
-  public async createProject(project_name: string): Promise<Project> {
-    return await this.makeRequest<Project>(
+  public async createProject(
+    project_name: string
+  ): Promise<ProjectCreateResponse> {
+    return await this.makeRequest<ProjectCreateResponse>(
       RequestMethod.POST,
       Routes.projects,
       {

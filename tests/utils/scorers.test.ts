@@ -43,7 +43,8 @@ describe('scorers utility', () => {
 
   const mockScorerVersion: ScorerVersion = {
     id: 'scorer-version-123',
-    version: 2
+    version: 2,
+    scorer_id: 'scorer-123'
   };
 
   beforeEach(() => {
@@ -88,7 +89,8 @@ describe('scorers utility', () => {
     const mockScorer: Scorer = {
       id: 'scorer-uuid',
       name: 'test',
-      scorer_type: ScorerTypes.llm
+      scorer_type: ScorerTypes.llm,
+      tags: []
     };
 
     beforeEach(() => {
@@ -141,7 +143,7 @@ describe('scorers utility', () => {
   });
 
   describe('createLlmScorerVersion', () => {
-    const mockVersion: ScorerVersion = { id: 'ver-uuid', version: 1 };
+    const mockVersion: ScorerVersion = { id: 'ver-uuid', version: 1, scorer_id: 'scorer-uuid' };
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -261,8 +263,8 @@ describe('scorers utility', () => {
 
   describe('getScorers', () => {
     const mockScorers: Scorer[] = [
-      { id: '1', name: 'foo', scorer_type: ScorerTypes.llm },
-      { id: '2', name: 'bar', scorer_type: ScorerTypes.llm }
+      { id: '1', name: 'foo', scorer_type: ScorerTypes.llm, tags: [] },
+      { id: '2', name: 'bar', scorer_type: ScorerTypes.llm, tags: [] }
     ];
 
     beforeEach(() => {

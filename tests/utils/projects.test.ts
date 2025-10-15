@@ -54,7 +54,17 @@ const projectName = 'test-project';
 const mockProject: Project = {
   id: projectId,
   name: projectName,
-  type: ProjectTypes.genAI
+  type: ProjectTypes.genAI,
+  created_by: 'user-123',
+  created_by_user: {
+    id: 'user-123',
+    email: 'test@example.com',
+    first_name: 'Test',
+    last_name: 'User'
+  },
+  runs: [],
+  created_at: '2021-09-10T00:00:00Z',
+  updated_at: '2021-09-10T00:00:00Z'
 };
 
 describe('projects utils', () => {

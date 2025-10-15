@@ -52,24 +52,37 @@ describe('metrics utils', () => {
   const EXAMPLE_SCORER: Scorer = {
     id: 'scorer-123',
     name: 'correctness',
-    scorer_type: ScorerTypes.preset
+    scorer_type: ScorerTypes.preset,
+    tags: []
   };
 
   const EXAMPLE_CUSTOM_SCORER: Scorer = {
     id: 'custom-scorer-456',
     name: 'custom_metric',
-    scorer_type: ScorerTypes.llm
+    scorer_type: ScorerTypes.llm,
+    tags: []
   };
 
   const EXAMPLE_CUSTOM_SCORER_VERSION: ScorerVersion = {
     id: 'custom-scorer-version-456',
-    version: 2
+    version: 2,
+    scorer_id: 'custom-scorer-456'
   };
 
   const EXAMPLE_PROJECT: Project = {
     id: 'project-123',
     name: 'test-project',
-    type: ProjectTypes.genAI
+    type: ProjectTypes.genAI,
+    created_by: 'user-123',
+    created_by_user: {
+      id: 'user-123',
+      email: 'test@example.com',
+      first_name: 'Test',
+      last_name: 'User'
+    },
+    runs: [],
+    created_at: '2021-09-10T00:00:00Z',
+    updated_at: '2021-09-10T00:00:00Z'
   };
 
   const EXAMPLE_LOG_STREAM: LogStream = {
@@ -250,7 +263,8 @@ describe('metrics utils', () => {
       const mockScorer: Scorer = {
         id: 'scorer-123',
         name: 'Test Scorer',
-        scorer_type: ScorerTypes.llm
+        scorer_type: ScorerTypes.llm,
+        tags: []
       };
       mockGetScorers.mockResolvedValueOnce([mockScorer]);
 
