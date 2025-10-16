@@ -7,7 +7,6 @@ import {
   ScorerVersion,
   ModelType,
   ChainPollTemplate,
-  OutputType
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
