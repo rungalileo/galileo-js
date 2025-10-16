@@ -38,6 +38,8 @@ export const createCustomLlmMetric = async ({
   tags = [],
   outputType = OutputType.BOOLEAN
 }: CreateCustomLlmMetricParams): Promise<ScorerVersion> => {
+  const scoreableNodeTypes = [nodeLevel];
+
   const scorer = await createScorer(
     name,
     ScorerTypes.llm,
@@ -48,18 +50,18 @@ export const createCustomLlmMetric = async ({
       num_judges: numJudges
     },
     undefined,
+    undefined,
+    scoreableNodeTypes,
+    outputType,
     undefined
   );
 
-  const scoreableNodeTypes = [nodeLevel];
   return await createLlmScorerVersion({
     scorerId: scorer.id,
     userPrompt,
-    scoreableNodeTypes,
     cotEnabled,
     modelName,
-    numJudges,
-    outputType
+    numJudges
   });
 };
 
