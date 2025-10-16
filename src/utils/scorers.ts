@@ -7,6 +7,7 @@ import {
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
+import { StepType } from '../types/logging/step.types';
 
 export const getScorers = async (options?: {
   type?: ScorerTypes;
@@ -92,7 +93,10 @@ export const createScorer = async (
   tags?: string[],
   defaults?: ScorerDefaults,
   modelType?: ModelType,
-  defaultVersionId?: string
+  defaultVersionId?: string,
+  scoreableNodeTypes?: StepType[],
+  outputType?: string,
+  inputType?: string,
 ): Promise<Scorer> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -104,7 +108,10 @@ export const createScorer = async (
     tags,
     defaults,
     modelType,
-    defaultVersionId
+    defaultVersionId,
+    scoreableNodeTypes,
+    outputType,
+    inputType
   );
 };
 
@@ -119,11 +126,9 @@ export const createLlmScorerVersion = async ({
   instructions,
   chainPollTemplate,
   userPrompt,
-  scoreableNodeTypes,
   cotEnabled,
   modelName,
   numJudges,
-  outputType
 }: CreateLlmScorerVersionParams): Promise<ScorerVersion> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -133,11 +138,9 @@ export const createLlmScorerVersion = async ({
     instructions,
     chainPollTemplate,
     userPrompt,
-    scoreableNodeTypes,
     cotEnabled,
     modelName,
     numJudges,
-    outputType
   );
 };
 

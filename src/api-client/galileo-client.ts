@@ -494,7 +494,10 @@ export class GalileoApiClient extends BaseClient {
     tags?: string[],
     defaults?: ScorerDefaults,
     modelType?: ModelType,
-    defaultVersionId?: string
+    defaultVersionId?: string,
+    scoreableNodeTypes?: StepType[],
+    outputType?: string,
+    inputType?: string,
   ): Promise<Scorer> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createScorer(
@@ -504,7 +507,10 @@ export class GalileoApiClient extends BaseClient {
       tags,
       defaults,
       modelType,
-      defaultVersionId
+      defaultVersionId,
+      scoreableNodeTypes,
+      outputType,
+      inputType
     );
   }
 
@@ -513,11 +519,9 @@ export class GalileoApiClient extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
-    scoreableNodeTypes?: StepType[],
     cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number,
-    outputType?: OutputType
   ): Promise<ScorerVersion> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createLLMScorerVersion(
@@ -525,11 +529,9 @@ export class GalileoApiClient extends BaseClient {
       instructions,
       chainPollTemplate,
       userPrompt,
-      scoreableNodeTypes,
       cotEnabled,
       modelName,
       numJudges,
-      outputType
     );
   }
 

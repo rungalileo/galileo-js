@@ -105,7 +105,10 @@ export class ScorerService extends BaseClient {
     tags?: string[],
     defaults?: ScorerDefaults,
     modelType?: ModelType,
-    defaultVersionId?: string
+    defaultVersionId?: string,
+    scoreableNodeTypes?: StepType[],
+    outputType?: string,
+    inputType?: string,
   ): Promise<Scorer> => {
     const scorerPayload = {
       name: name,
@@ -114,7 +117,10 @@ export class ScorerService extends BaseClient {
       tags: tags || [],
       defaults: defaults,
       model_type: modelType,
-      default_version_id: defaultVersionId
+      default_version_id: defaultVersionId,
+      scoreable_node_types: scoreableNodeTypes,
+      output_type: outputType,
+      input_type: inputType
     };
 
     return await this.makeRequest<Scorer>(
@@ -143,11 +149,9 @@ export class ScorerService extends BaseClient {
     instructions?: string,
     chainPollTemplate?: ChainPollTemplate,
     userPrompt?: string,
-    scoreableNodeTypes?: StepType[],
     cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number,
-    outputType?: OutputType
   ): Promise<ScorerVersion> => {
     const scorerVersionPayload: {
       model_name?: string;
@@ -157,7 +161,6 @@ export class ScorerService extends BaseClient {
       user_prompt?: string;
       scoreable_node_types?: StepType[];
       cot_enabled?: boolean;
-      output_type?: OutputType;
     } = {};
 
     if (modelName !== undefined && modelName !== null) {
@@ -175,14 +178,8 @@ export class ScorerService extends BaseClient {
     if (userPrompt !== undefined && userPrompt !== null) {
       scorerVersionPayload.user_prompt = userPrompt;
     }
-    if (scoreableNodeTypes !== undefined && scoreableNodeTypes !== null) {
-      scorerVersionPayload.scoreable_node_types = scoreableNodeTypes;
-    }
     if (cotEnabled !== undefined && cotEnabled !== null) {
       scorerVersionPayload.cot_enabled = cotEnabled;
-    }
-    if (outputType !== undefined && outputType !== null) {
-      scorerVersionPayload.output_type = outputType;
     }
 
     const path = Routes.llmScorerVersion.replace('{scorer_id}', scorerId);
