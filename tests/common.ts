@@ -22,8 +22,8 @@ export const mockProject: Project = {
 export const mockLogStream: LogStream = {
   id: 'ls-123',
   name: 'default',
-  created_at: new Date('2021-09-10T00:00:00Z'),
-  updated_at: new Date('2021-09-10T00:00:00Z'),
+  created_at: '2021-09-10T00:00:00Z',
+  updated_at: '2021-09-10T00:00:00Z',
   project_id: mockProject.id,
   created_by: null
 };

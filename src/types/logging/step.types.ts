@@ -1,3 +1,4 @@
+import type { components } from '../api.types';
 import { Document } from '../document.types';
 import { isMessage, Message } from '../message.types';
 import { MetricValueType } from '../metrics.types';
@@ -36,15 +37,19 @@ export type RetrieverSpanAllowedOutputType =
   | Record<string, string>[]
   | Document[];
 
-export enum StepType {
-  session = 'session',
-  trace = 'trace',
-  workflow = 'workflow',
-  llm = 'llm',
-  retriever = 'retriever',
-  tool = 'tool',
-  agent = 'agent'
-}
+// Use API type as source of truth
+export type StepType = components['schemas']['StepType'];
+
+// Convert enum to const object with compile-time validation
+export const StepType = {
+  session: 'session',
+  trace: 'trace',
+  workflow: 'workflow',
+  llm: 'llm',
+  retriever: 'retriever',
+  tool: 'tool',
+  agent: 'agent'
+} as const satisfies Record<StepType, StepType>;
 
 export interface MetricsOptions {
   durationNs?: number;
