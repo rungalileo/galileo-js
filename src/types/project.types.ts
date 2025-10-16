@@ -1,14 +1,17 @@
 import { components } from './api.types';
 
-// Keep existing enum for backward compatibility
-export enum ProjectTypes {
-  evaluate = 'prompt_evaluation',
-  observe = 'llm_monitor',
-  genAI = 'gen_ai'
-}
+// Use API type as source of truth
+export type ProjectTypes = components['schemas']['ProjectType'];
 
-// Add full API type for new usage
-export type ProjectType = components['schemas']['ProjectType'];
+// Keep existing enum as const object with compile-time validation
+// Add missing values from API to ensure satisfies validation passes
+export const ProjectTypes = {
+  evaluate: 'prompt_evaluation',
+  observe: 'llm_monitor',
+  genAI: 'gen_ai',
+  training: 'training_inference', // New from API
+  protect: 'protect' // New from API
+} as const satisfies Record<string, ProjectTypes>;
 
 // Use API type for Project interface
 export type Project = components['schemas']['ProjectDB'];

@@ -140,7 +140,11 @@ describe('scorers utility', () => {
   });
 
   describe('createLlmScorerVersion', () => {
-    const mockVersion: ScorerVersion = { id: 'ver-uuid', version: 1, scorer_id: 'scorer-uuid' };
+    const mockVersion: ScorerVersion = {
+      id: 'ver-uuid',
+      version: 1,
+      scorer_id: 'scorer-uuid'
+    };
 
     beforeEach(() => {
       jest.clearAllMocks();

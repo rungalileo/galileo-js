@@ -89,8 +89,8 @@ describe('metrics utils', () => {
     id: 'log-stream-123',
     name: 'test-log-stream',
     project_id: 'project-123',
-    created_at: new Date('2024-01-01T00:00:00Z'),
-    updated_at: new Date('2024-01-01T00:00:00Z'),
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
     created_by: null
   };
 

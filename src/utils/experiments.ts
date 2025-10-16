@@ -229,7 +229,7 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   await flush();
 
   console.log(
-    `${outputs.length} rows processed for ${experiment.name? 'experiment ' + experiment.name : 'unnamed experiment'}.`
+    `${outputs.length} rows processed for ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'}.`
   );
 
   return outputs;
@@ -425,7 +425,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectName: project.name });
   const linkToResults = getLinkToExperimentResults(experiment.id, project.id);
-  
+
   // Process using either a runner function or a prompt template
   if ('function' in params) {
     const processFn = params.function;
