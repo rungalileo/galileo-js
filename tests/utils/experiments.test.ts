@@ -68,10 +68,11 @@ const experimentCompletedMessage = 'Experiment completed.';
 const mockExperiment: Experiment = {
   id: experimentId,
   name: experimentName,
-  created_at: new Date('2023-01-01T00:00:00Z'),
-  updated_at: new Date('2023-01-01T00:00:00Z'),
+  created_at: '2023-01-01T00:00:00Z',
+  updated_at: '2023-01-01T00:00:00Z',
   project_id: 'proj-123',
-  created_by: 'user-123'
+  created_by: 'user-123',
+  task_type: 16
 };
 
 const mockExperiments: Experiment[] = [mockExperiment];
@@ -80,7 +81,17 @@ const mockExperiments: Experiment[] = [mockExperiment];
 const mockProject: Project = {
   id: projectId,
   name: projectName,
-  type: ProjectTypes.genAI
+  type: ProjectTypes.genAI,
+  created_by: 'user-123',
+  created_by_user: {
+    id: 'user-123',
+    email: 'test@example.com',
+    first_name: 'Test',
+    last_name: 'User'
+  },
+  runs: [],
+  created_at: '2021-09-10T00:00:00Z',
+  updated_at: '2021-09-10T00:00:00Z'
 };
 
 const mockDataset: Dataset = {
@@ -154,7 +165,8 @@ const mockPromptTemplate: PromptTemplate = {
 const mockScorer: Scorer = {
   id: 'scorer-123',
   name: 'correctness',
-  scorer_type: ScorerTypes.preset
+  scorer_type: ScorerTypes.preset,
+  tags: []
 };
 
 describe('experiments utility', () => {
