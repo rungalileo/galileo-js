@@ -4,7 +4,7 @@ name: Publish Docs
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ['Publish']
+    workflows: ['Package Release']
     types:
       - completed
 
