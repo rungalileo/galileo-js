@@ -3,7 +3,9 @@ import {
   ModelType,
   Scorer,
   ScorerConfig,
-  ScorerVersion
+  ScorerVersion,
+  OutputType,
+  InputType
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
@@ -95,8 +97,8 @@ export const createScorer = async (
   modelType?: ModelType,
   defaultVersionId?: string,
   scoreableNodeTypes?: StepType[],
-  outputType?: string,
-  inputType?: string
+  outputType?: OutputType,
+  inputType?: InputType
 ): Promise<Scorer> => {
   const client = new GalileoApiClient();
   await client.init();

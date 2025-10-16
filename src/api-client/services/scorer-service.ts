@@ -3,12 +3,11 @@ import { Routes } from '../../types/routes.types';
 import {
   ChainPollTemplate,
   ModelType,
-  OutputType,
   Scorer,
   ScorerDefaults,
   ScorerVersion
 } from '../../types/scorer.types';
-import { ScorerTypes } from '../../types/scorer.types';
+import { OutputType, InputType, ScorerTypes } from '../../types/scorer.types';
 import { StepType } from '../../types/logging/step.types';
 
 export class ScorerService extends BaseClient {
@@ -107,8 +106,8 @@ export class ScorerService extends BaseClient {
     modelType?: ModelType,
     defaultVersionId?: string,
     scoreableNodeTypes?: StepType[],
-    outputType?: string,
-    inputType?: string
+    outputType?: OutputType,
+    inputType?: InputType
   ): Promise<Scorer> => {
     const scorerPayload = {
       name: name,

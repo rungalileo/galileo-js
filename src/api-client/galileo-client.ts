@@ -7,6 +7,8 @@ import {
   ScorerVersion,
   ModelType,
   ChainPollTemplate,
+  OutputType,
+  InputType
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
@@ -495,8 +497,8 @@ export class GalileoApiClient extends BaseClient {
     modelType?: ModelType,
     defaultVersionId?: string,
     scoreableNodeTypes?: StepType[],
-    outputType?: string,
-    inputType?: string
+    outputType?: OutputType,
+    inputType?: InputType
   ): Promise<Scorer> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createScorer(

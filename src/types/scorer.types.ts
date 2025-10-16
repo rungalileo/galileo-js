@@ -77,6 +77,19 @@ export enum OutputType {
   PERCENTAGE = 'percentage'
 }
 
+export enum InputType {
+  basic = 'basic',
+  llm_spans = 'llm_spans',
+  retriever_spans = 'retriever_spans',
+  sessions_normalized = 'sessions_normalized',
+  sessions_trace_io_only = 'sessions_trace_io_only',
+  tool_spans = 'tool_spans',
+  trace_input_only = 'trace_input_only',
+  trace_io_only = 'trace_io_only',
+  trace_normalized = 'trace_normalized',
+  trace_output_only = 'trace_output_only'
+}
+
 import { StepType } from './logging/step.types';
 
 export interface CreateLlmScorerVersionParams {
