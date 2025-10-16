@@ -497,7 +497,7 @@ export class GalileoApiClient extends BaseClient {
     defaultVersionId?: string,
     scoreableNodeTypes?: StepType[],
     outputType?: string,
-    inputType?: string,
+    inputType?: string
   ): Promise<Scorer> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createScorer(
@@ -521,7 +521,7 @@ export class GalileoApiClient extends BaseClient {
     userPrompt?: string,
     cotEnabled?: boolean,
     modelName?: string,
-    numJudges?: number,
+    numJudges?: number
   ): Promise<ScorerVersion> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createLLMScorerVersion(
@@ -531,7 +531,7 @@ export class GalileoApiClient extends BaseClient {
       userPrompt,
       cotEnabled,
       modelName,
-      numJudges,
+      numJudges
     );
   }
 

@@ -108,7 +108,7 @@ export class ScorerService extends BaseClient {
     defaultVersionId?: string,
     scoreableNodeTypes?: StepType[],
     outputType?: string,
-    inputType?: string,
+    inputType?: string
   ): Promise<Scorer> => {
     const scorerPayload = {
       name: name,
@@ -151,7 +151,7 @@ export class ScorerService extends BaseClient {
     userPrompt?: string,
     cotEnabled?: boolean,
     modelName?: string,
-    numJudges?: number,
+    numJudges?: number
   ): Promise<ScorerVersion> => {
     const scorerVersionPayload: {
       model_name?: string;

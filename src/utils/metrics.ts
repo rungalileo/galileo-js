@@ -53,7 +53,7 @@ export const createCustomLlmMetric = async ({
     undefined,
     scoreableNodeTypes,
     outputType,
-    undefined,
+    undefined
   );
 
   return await createLlmScorerVersion({
@@ -61,7 +61,7 @@ export const createCustomLlmMetric = async ({
     userPrompt,
     cotEnabled,
     modelName,
-    numJudges,
+    numJudges
   });
 };
 

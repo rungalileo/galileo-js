@@ -96,7 +96,7 @@ export const createScorer = async (
   defaultVersionId?: string,
   scoreableNodeTypes?: StepType[],
   outputType?: string,
-  inputType?: string,
+  inputType?: string
 ): Promise<Scorer> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -128,7 +128,7 @@ export const createLlmScorerVersion = async ({
   userPrompt,
   cotEnabled,
   modelName,
-  numJudges,
+  numJudges
 }: CreateLlmScorerVersionParams): Promise<ScorerVersion> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -140,7 +140,7 @@ export const createLlmScorerVersion = async ({
     userPrompt,
     cotEnabled,
     modelName,
-    numJudges,
+    numJudges
   );
 };
 
