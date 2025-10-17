@@ -1,33 +1,27 @@
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
 import { updateScorerSettings } from '../../src/utils/runs';
 import { ScorerConfig, ScorerTypes } from '../../src/types/scorer.types';
-import { GalileoApiClient } from '../../src/api-client';
 import { RunScorerSettingsResponse } from '../../src/types';
 
-jest.mock('../../src/api-client');
-
-const server = setupServer(
-  http.patch(
-    'https://api.dev.rungalileo.io/api/v2/projects/:projectId/runs/:runId/scorer-settings',
-    () => {
-      return HttpResponse.json({ result: 'success' });
-    }
-  )
-);
-
+// Create mock implementation functions
+const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockUpdateScorerSettings = jest.fn();
 
-GalileoApiClient.prototype.updateRunScorerSettings = mockUpdateScorerSettings;
-
-beforeAll(() => server.listen());
-afterEach(() => {
-  server.resetHandlers();
-  mockUpdateScorerSettings.mockClear();
+jest.mock('../../src/api-client', () => {
+  return {
+    GalileoApiClient: jest.fn().mockImplementation(() => {
+      return {
+        init: mockInit,
+        updateRunScorerSettings: mockUpdateScorerSettings
+      };
+    })
+  };
 });
-afterAll(() => server.close());
 
 describe('updateScorerSettings', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should return null when the api call fails', async () => {
     mockUpdateScorerSettings.mockRejectedValue(new Error('API Error'));
     const response = await updateScorerSettings('projectId', 'runId', []);

@@ -1,8 +1,4 @@
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
-import { getJobProgress, getScorerJobsStatus } from '../../src/utils/jobs';
 import { Job, JobStatus } from '../../src/types';
-import { TEST_HOST } from '../common';
 
 const projectId = 'test-project-id';
 const runId = 'test-run-id';
@@ -21,76 +17,40 @@ const mockJob: Job = {
   retries: 0
 };
 
-const getJobHandler = jest.fn();
-const getJobsForProjectRunHandler = jest.fn();
-const getProjectByNameHandler = jest.fn();
+// Create mock implementation functions
+const mockInit = jest.fn().mockResolvedValue(undefined);
+const mockGetJob = jest.fn();
+const mockGetJobsForProjectRun = jest.fn();
 
-import { commonHandlers } from '../common';
+jest.mock('../../src/api-client', () => {
+  return {
+    GalileoApiClient: jest.fn().mockImplementation(() => {
+      return {
+        init: mockInit,
+        getJob: mockGetJob,
+        getJobsForProjectRun: mockGetJobsForProjectRun
+      };
+    })
+  };
+});
 
-export const handlers = [
-  ...commonHandlers,
-  http.get(`${TEST_HOST}/jobs/:jobId`, getJobHandler),
-  http.get(
-    `${TEST_HOST}/projects/${projectId}/runs/${runId}/jobs`,
-    getJobsForProjectRunHandler
-  ),
-  http.get(`${TEST_HOST}/projects`, getProjectByNameHandler),
-  http.get(`${TEST_HOST}/projects/${projectId}/log_streams`, () => {
-    return HttpResponse.json([]);
-  }),
-  http.post(`${TEST_HOST}/projects/${projectId}/log_streams`, () => {
-    return HttpResponse.json({ id: 'test-log-stream-id', name: 'default' });
-  })
-];
-
-const server = setupServer(...handlers);
+// Import the functions after mocking
+import { getJobProgress, getScorerJobsStatus } from '../../src/utils/jobs';
 
 describe('Job Utils', () => {
-  beforeAll(() => {
-    process.env.GALILEO_CONSOLE_URL = TEST_HOST;
-    server.listen();
-    process.env.GALILEO_API_KEY = 'test-token';
-  });
-
   beforeEach(() => {
-    getProjectByNameHandler.mockImplementation(() => {
-      return HttpResponse.json([
-        {
-          id: projectId,
-          name: 'test-project'
-        }
-      ]);
-    });
-  });
-
-  afterEach(() => {
-    server.resetHandlers();
-    getJobHandler.mockClear();
-    getJobsForProjectRunHandler.mockClear();
-    getProjectByNameHandler.mockClear();
-  });
-
-  afterAll(() => {
-    server.close();
+    jest.clearAllMocks();
+    // Set up default mock implementations
+    mockGetJob.mockResolvedValue(mockJob);
+    mockGetJobsForProjectRun.mockResolvedValue([]);
   });
 
   describe('getJobProgress', () => {
-    beforeEach(() => {
-      // This is called internally by getJobProgress after the primary job completes
-      getJobsForProjectRunHandler.mockImplementation(() => {
-        return HttpResponse.json([]);
-      });
-    });
-
     it('should return the job when it is completed on the first try', async () => {
-      getJobHandler.mockImplementation(() => {
-        return HttpResponse.json(mockJob);
-      });
-
       const resultJobId = await getJobProgress(jobId, 'test-project', runId);
 
       expect(resultJobId).toEqual(jobId);
-      expect(getJobHandler).toHaveBeenCalledTimes(1);
+      expect(mockGetJob).toHaveBeenCalledTimes(1);
     });
 
     it('should throw an error if the job fails', async () => {
@@ -99,36 +59,28 @@ describe('Job Utils', () => {
         status: JobStatus.failed,
         error_message: 'Test error'
       };
-      getJobHandler.mockImplementation(() => {
-        return HttpResponse.json(failedJob);
-      });
+      mockGetJob.mockResolvedValue(failedJob);
 
       await expect(
         getJobProgress(jobId, 'test-project', runId)
       ).rejects.toThrow('Job failed with error message Test error.');
 
-      expect(getJobHandler).toHaveBeenCalledTimes(1);
+      expect(mockGetJob).toHaveBeenCalledTimes(1);
     });
 
     it('should poll until the job is completed', async () => {
       const pendingJob = { ...mockJob, status: JobStatus.pending };
       const processingJob = { ...mockJob, status: JobStatus.processing };
 
-      getJobHandler
-        .mockImplementationOnce(() => {
-          return HttpResponse.json(pendingJob);
-        })
-        .mockImplementationOnce(() => {
-          return HttpResponse.json(processingJob);
-        })
-        .mockImplementationOnce(() => {
-          return HttpResponse.json(mockJob);
-        });
+      mockGetJob
+        .mockResolvedValueOnce(pendingJob)
+        .mockResolvedValueOnce(processingJob)
+        .mockResolvedValueOnce(mockJob);
 
       const resultJobId = await getJobProgress(jobId, 'test-project', runId);
 
       expect(resultJobId).toEqual(jobId);
-      expect(getJobHandler).toHaveBeenCalledTimes(3);
+      expect(mockGetJob).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -188,13 +140,11 @@ describe('Job Utils', () => {
         }
       ];
 
-      getJobsForProjectRunHandler.mockImplementation(() => {
-        return HttpResponse.json(mockJobs);
-      });
+      mockGetJobsForProjectRun.mockResolvedValue(mockJobs);
 
       await getScorerJobsStatus('test-project', runId);
 
-      expect(getJobsForProjectRunHandler).toHaveBeenCalledTimes(1);
+      expect(mockGetJobsForProjectRun).toHaveBeenCalledTimes(1);
 
       // Verify the console output
       expect(consoleSpy).toHaveBeenCalledWith('completeness_plus: Done ✅');

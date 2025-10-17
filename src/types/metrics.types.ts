@@ -1,3 +1,6 @@
+import { OutputType, ScorerTypes } from './scorer.types';
+import { StepType } from './logging/step.types';
+
 export type SingleMetricValue = number | string | boolean;
 export type MetricValueType =
   | SingleMetricValue
@@ -89,4 +92,53 @@ export enum GalileoScorers {
 export interface Metric {
   name: string;
   version?: number;
+}
+
+export interface CreateCustomLlmMetricParams {
+  name: string;
+  userPrompt: string;
+  nodeLevel?: StepType;
+  cotEnabled?: boolean;
+  modelName?: string;
+  numJudges?: number;
+  description?: string;
+  tags?: string[];
+  outputType?: OutputType;
+}
+
+export interface DeleteMetricParams {
+  scorerName: string;
+  scorerType: ScorerTypes;
+}
+
+/**
+ * Configuration for a local metric that is computed client-side.
+ *
+ * This interface defines metrics that are evaluated on the client rather than server-side.
+ * Local metrics are useful for custom scoring logic that needs to run in the client environment.
+ */
+export interface LocalMetricConfig {
+  /** The name of the metric */
+  name: string;
+  /**
+   * The scoring function that computes the metric value.
+   * Takes a trace or span and returns a metric value.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  scorerFn: (traceOrSpan: any) => MetricValueType;
+  /**
+   * Optional aggregator function to combine scores from child spans.
+   * Takes an array of metric values and returns an aggregated value.
+   */
+  aggregatorFn?: (scores: MetricValueType[]) => MetricValueType;
+  /**
+   * The step types that can be scored by this metric.
+   * Defaults to ['llm'] if not specified.
+   */
+  scorableTypes?: string[];
+  /**
+   * The step types that can have aggregated scores.
+   * Defaults to ['trace'] if not specified.
+   */
+  aggregatableTypes?: string[];
 }

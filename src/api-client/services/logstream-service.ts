@@ -1,6 +1,7 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { LogStream } from '../../types/log-stream.types';
 import { Routes } from '../../types/routes.types';
+import { ScorerConfig } from '../../types/scorer.types';
 
 export class LogStreamService extends BaseClient {
   private projectId: string;
@@ -60,6 +61,21 @@ export class LogStreamService extends BaseClient {
         name: logStreamName
       },
       { project_id: this.projectId }
+    );
+  }
+
+  public async createScorerSettings(
+    logStreamId: string,
+    scorers: ScorerConfig[]
+  ): Promise<void> {
+    return await this.makeRequest<void>(
+      RequestMethod.POST,
+      Routes.runScorerSettings,
+      { run_id: logStreamId, scorers },
+      {
+        project_id: this.projectId,
+        experiment_id: logStreamId
+      }
     );
   }
 }

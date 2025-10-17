@@ -6,7 +6,9 @@ import {
   ScorerTypes,
   ScorerVersion,
   ModelType,
-  ChainPollTemplate
+  ChainPollTemplate,
+  OutputType,
+  InputType
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
@@ -17,7 +19,13 @@ import {
   PromptTemplateService,
   GlobalPromptTemplateService
 } from './services/prompt-template-service';
-import { DatasetService, DatasetAppendRow } from './services/dataset-service';
+import {
+  DatasetService,
+  DatasetAppendRow,
+  SyntheticDatasetExtensionRequest,
+  SyntheticDatasetExtensionResponse,
+  JobProgress
+} from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
@@ -26,6 +34,7 @@ import { RunService } from './services/run-service';
 import { ExportService } from './services/export-service';
 import {
   CreateJobResponse,
+  ExperimentDatasetRequest,
   PromptRunSettings
 } from '../types/experiment.types';
 import { LogRecordsExportRequest } from '../types/export.types';
@@ -40,6 +49,7 @@ import {
   LogRecordsQueryResponse
 } from '../types/search.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
+import { StepType } from '../types/logging/step.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -278,6 +288,14 @@ export class GalileoApiClient extends BaseClient {
     return this.logStreamService!.createLogStream(name);
   }
 
+  public async createLogStreamScorerSettings(
+    logStreamId: string,
+    scorers: ScorerConfig[]
+  ): Promise<void> {
+    this.ensureService(this.logStreamService);
+    return this.logStreamService!.createScorerSettings(logStreamId, scorers);
+  }
+
   // Dataset methods - delegate to DatasetService
   public async getDatasets() {
     this.ensureService(this.datasetService);
@@ -325,6 +343,18 @@ export class GalileoApiClient extends BaseClient {
       etag,
       rows
     );
+  }
+
+  public async extendDataset(
+    params: SyntheticDatasetExtensionRequest
+  ): Promise<SyntheticDatasetExtensionResponse> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.extendDataset(params);
+  }
+
+  public async getExtendDatasetStatus(datasetId: string): Promise<JobProgress> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.getExtendDatasetStatus(datasetId);
   }
 
   // Trace methods - delegate to TraceService
@@ -472,14 +502,20 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentService!.getExperiment(id);
   }
 
-  public async createExperiment(name: string) {
+  public async createExperiment(
+    name: string,
+    dataset?: ExperimentDatasetRequest | null
+  ) {
     this.ensureService(this.experimentService);
-    return this.experimentService!.createExperiment(name);
+    return this.experimentService!.createExperiment(name, dataset);
   }
 
-  public async getScorers(type?: ScorerTypes): Promise<Scorer[]> {
+  public async getScorers(options?: {
+    type?: ScorerTypes;
+    names?: string[];
+  }): Promise<Scorer[]> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorers(type);
+    return this.scorerService!.getScorers(options);
   }
 
   public async getScorerVersion(
@@ -542,7 +578,10 @@ export class GalileoApiClient extends BaseClient {
     tags?: string[],
     defaults?: ScorerDefaults,
     modelType?: ModelType,
-    defaultVersionId?: string
+    defaultVersionId?: string,
+    scoreableNodeTypes?: StepType[],
+    outputType?: OutputType,
+    inputType?: InputType
   ): Promise<Scorer> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createScorer(
@@ -552,14 +591,19 @@ export class GalileoApiClient extends BaseClient {
       tags,
       defaults,
       modelType,
-      defaultVersionId
+      defaultVersionId,
+      scoreableNodeTypes,
+      outputType,
+      inputType
     );
   }
 
   public async createLlmScorerVersion(
     scorerId: string,
-    instructions: string,
-    chainPollTemplate: ChainPollTemplate,
+    instructions?: string,
+    chainPollTemplate?: ChainPollTemplate,
+    userPrompt?: string,
+    cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
   ): Promise<ScorerVersion> {
@@ -568,6 +612,8 @@ export class GalileoApiClient extends BaseClient {
       scorerId,
       instructions,
       chainPollTemplate,
+      userPrompt,
+      cotEnabled,
       modelName,
       numJudges
     );

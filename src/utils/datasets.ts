@@ -1,4 +1,8 @@
-import { DatasetRow, GalileoApiClient } from '../api-client';
+import {
+  GalileoApiClient,
+  DatasetRow,
+  SyntheticDatasetExtensionRequest
+} from '../api-client';
 import {
   Dataset,
   DatasetRecord,
@@ -7,6 +11,7 @@ import {
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { RunExperimentParams } from './experiments';
 
 export const getDatasets = async (): Promise<Dataset[]> => {
   const apiClient = new GalileoApiClient();
@@ -402,4 +407,85 @@ export const deleteDataset = async ({
   }
 
   await apiClient.deleteDataset(id!);
+};
+
+export const getDatasetMetadata = async <T extends Record<string, unknown>>(
+  params: RunExperimentParams<T>,
+  projectName: string
+): Promise<Dataset | undefined> => {
+  if ('dataset' in params && params.dataset) {
+    if (!(params.dataset instanceof Array)) {
+      return params.dataset as Dataset;
+    }
+  } else if ('datasetId' in params && params.datasetId) {
+    const apiClient = new GalileoApiClient();
+    await apiClient.init({ projectName });
+    return await apiClient.getDataset(params.datasetId);
+  } else if ('datasetName' in params && params.datasetName) {
+    const apiClient = new GalileoApiClient();
+    await apiClient.init({ projectName });
+    return await apiClient.getDatasetByName(params.datasetName);
+  }
+};
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Extends a dataset with synthetically generated data based on the provided parameters.
+ *
+ * This function initiates a dataset extension job, waits for it to complete by polling its status,
+ * and then returns the content of the extended dataset.
+ *
+ * @param {object} params - The parameters for the synthetic dataset extension request.
+ * @param {object} params.prompt_settings - Settings for the prompt generation.
+ * @param {string} params.prompt_settings.model_alias - The model to use for generation (e.g., 'GPT-4o mini').
+ * @param {string} params.prompt - A description of the assistant's role.
+ * @param {string} params.instructions - Instructions for the assistant.
+ * @param {string[]} params.examples - Examples of user prompts.
+ * @param {string[]} params.data_types - The types of data to generate. Possible values are: 'General Query', 'Prompt Injection', 'Off-Topic Query', 'Toxic Content in Query', 'Multiple Questions in Query', 'Sexist Content in Query'.
+ * @param {number} params.count - The number of synthetic examples to generate.
+ * @returns {Promise<DatasetRow[]>} A promise that resolves with the rows of the extended dataset.
+ *
+ * @example
+ * ```javascript
+ * const extended_dataset = await extendDataset({
+ *   prompt_settings: {
+ *     model_alias: 'GPT-4o mini'
+ *   },
+ *   prompt:
+ *     'Financial planning assistant that helps clients design an investment strategy.',
+ *   instructions:
+ *     'You are a financial planning assistant that helps clients design an investment strategy.',
+ *   examples: ['I want to invest $1000 per month.'],
+ *   data_types: ['Prompt Injection'],
+ *   count: 3
+ * });
+ * console.log('Extended dataset:', extended_dataset);
+ * ```
+ */
+export const extendDataset = async (
+  params: SyntheticDatasetExtensionRequest
+): Promise<DatasetRow[]> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectScoped: false });
+
+  const { dataset_id } = await apiClient.extendDataset(params);
+
+  let job;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    // Wait for job to finish
+    job = await apiClient.getExtendDatasetStatus(dataset_id);
+    if (job.steps_completed === job.steps_total) {
+      break;
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      `(${job.steps_completed}/${job.steps_total}) ${job.progress_message}`
+    );
+    await sleep(1000);
+  }
+
+  return apiClient.getDatasetContent(dataset_id);
 };

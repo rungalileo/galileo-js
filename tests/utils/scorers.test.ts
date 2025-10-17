@@ -2,13 +2,16 @@ import {
   createScorer,
   createLlmScorerVersion,
   deleteScorer,
-  getScorerVersion
+  getScorerVersion,
+  getScorers
 } from '../../src/utils/scorers';
 import {
   Scorer,
   ScorerVersion,
-  ScorerTypes
+  ScorerTypes,
+  OutputType
 } from '../../src/types/scorer.types';
+import { StepType } from '../../src/types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -16,6 +19,7 @@ const mockCreateScorer = jest.fn();
 const mockCreateLlmScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
+const mockGetScorers = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -26,7 +30,8 @@ jest.mock('../../src/api-client', () => {
         createLlmScorerVersion: (...args: unknown[]) =>
           mockCreateLlmScorerVersion(...args),
         deleteScorer: mockDeleteScorer,
-        getScorerVersion: mockGetScorerVersion
+        getScorerVersion: mockGetScorerVersion,
+        getScorers: mockGetScorers
       };
     })
   };
@@ -114,7 +119,10 @@ describe('scorers utility', () => {
         ['tag1'],
         { model_name: 'gpt-4' },
         'llm',
-        'ver-uuid'
+        'ver-uuid',
+        undefined, // scoreableNodeTypes
+        undefined, // outputType
+        undefined // inputType
       );
     });
 
@@ -142,35 +150,42 @@ describe('scorers utility', () => {
     });
 
     it('should initialize the API client', async () => {
-      await createLlmScorerVersion('scorer-uuid', 'instructions', {
-        template: 'foo'
+      await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        instructions: 'instructions',
+        chainPollTemplate: { template: 'foo' }
       });
       expect(mockInit).toHaveBeenCalled();
     });
 
     it('should call createLlmScorerVersion with correct parameters', async () => {
-      await createLlmScorerVersion(
-        'scorer-uuid',
-        'instructions',
-        { template: 'foo' },
-        'gpt-4',
-        3
-      );
+      await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        instructions: 'instructions',
+        chainPollTemplate: { template: 'foo' },
+        scoreableNodeTypes: [StepType.trace],
+        cotEnabled: true,
+        modelName: 'gpt-4',
+        numJudges: 3,
+        outputType: OutputType.CATEGORICAL
+      });
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
         'instructions',
         { template: 'foo' },
+        undefined, // userPrompt
+        true, // cotEnabled
         'gpt-4',
         3
       );
     });
 
     it('should return the created scorer version', async () => {
-      const result = await createLlmScorerVersion(
-        'scorer-uuid',
-        'instructions',
-        { template: 'foo' }
-      );
+      const result = await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        instructions: 'instructions',
+        chainPollTemplate: { template: 'foo' }
+      });
       expect(result).toEqual(mockVersion);
     });
 
@@ -178,10 +193,41 @@ describe('scorers utility', () => {
       const apiError = new Error('API error');
       mockCreateLlmScorerVersion.mockRejectedValueOnce(apiError);
       await expect(
-        createLlmScorerVersion('scorer-uuid', 'instructions', {
-          template: 'foo'
+        createLlmScorerVersion({
+          scorerId: 'scorer-uuid',
+          instructions: 'instructions',
+          chainPollTemplate: { template: 'foo' }
         })
       ).rejects.toThrow(apiError);
+    });
+
+    it('should call createLlmScorerVersion with userPrompt instead of instructions/chainPollTemplate', async () => {
+      await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        userPrompt: 'custom user prompt',
+        scoreableNodeTypes: [StepType.session],
+        cotEnabled: false,
+        modelName: 'gpt-4',
+        numJudges: 3,
+        outputType: OutputType.CATEGORICAL
+      });
+      expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
+        'scorer-uuid',
+        undefined, // instructions
+        undefined, // chainPollTemplate
+        'custom user prompt', // userPrompt
+        false,
+        'gpt-4',
+        3
+      );
+    });
+
+    it('should return the created scorer version when using userPrompt', async () => {
+      const result = await createLlmScorerVersion({
+        scorerId: 'scorer-uuid',
+        userPrompt: 'custom user prompt'
+      });
+      expect(result).toEqual(mockVersion);
     });
   });
 
@@ -210,6 +256,50 @@ describe('scorers utility', () => {
       const apiError = new Error('API error');
       mockDeleteScorer.mockRejectedValueOnce(apiError);
       await expect(deleteScorer('scorer-uuid')).rejects.toThrow(apiError);
+    });
+  });
+
+  describe('getScorers', () => {
+    const mockScorers: Scorer[] = [
+      { id: '1', name: 'foo', scorer_type: ScorerTypes.llm },
+      { id: '2', name: 'bar', scorer_type: ScorerTypes.llm }
+    ];
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockInit.mockResolvedValue(undefined);
+      mockGetScorers.mockResolvedValue(mockScorers);
+    });
+
+    it('should initialize the API client', async () => {
+      await getScorers();
+      expect(mockInit).toHaveBeenCalled();
+    });
+
+    it('should call getScorers with no filters', async () => {
+      await getScorers();
+      expect(mockGetScorers).toHaveBeenCalled();
+    });
+
+    it('should call getScorers with type filter', async () => {
+      await getScorers({ type: ScorerTypes.llm });
+      expect(mockGetScorers).toHaveBeenCalledWith({ type: ScorerTypes.llm });
+    });
+
+    it('should call getScorers with names filter', async () => {
+      await getScorers({ names: ['foo', 'bar'] });
+      expect(mockGetScorers).toHaveBeenCalledWith({ names: ['foo', 'bar'] });
+    });
+
+    it('should return the scorers from the API', async () => {
+      const result = await getScorers();
+      expect(result).toEqual(mockScorers);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      const apiError = new Error('API error');
+      mockGetScorers.mockRejectedValueOnce(apiError);
+      await expect(getScorers()).rejects.toThrow(apiError);
     });
   });
 });

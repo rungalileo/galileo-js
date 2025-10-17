@@ -37,6 +37,7 @@ export type RetrieverSpanAllowedOutputType =
   | Document[];
 
 export enum StepType {
+  session = 'session',
   trace = 'trace',
   workflow = 'workflow',
   llm = 'llm',
@@ -87,7 +88,9 @@ export class Metrics {
 
 export interface BaseStepOptions {
   input?: StepAllowedInputType;
+  redactedInput?: StepAllowedInputType;
   output?: StepAllowedOutputType;
+  redactedOutput?: StepAllowedOutputType;
   name?: string;
   createdAt?: Date;
   metadata?: Record<string, string>;
@@ -104,7 +107,9 @@ export interface BaseStepOptions {
 export class BaseStep {
   type: StepType;
   input?: StepAllowedInputType;
+  redactedInput?: StepAllowedInputType;
   output?: StepAllowedOutputType;
+  redactedOutput?: StepAllowedOutputType;
   name: string = '';
   createdAt: Date = new Date();
   userMetadata: Record<string, string> = {};
@@ -120,7 +125,9 @@ export class BaseStep {
   constructor(type: StepType, data: BaseStepOptions) {
     this.type = type;
     this.input = data.input;
+    this.redactedInput = data.redactedInput;
     this.output = data.output;
+    this.redactedOutput = data.redactedOutput;
     this.name = data.name || type;
     this.createdAt = data.createdAt || new Date();
     this.userMetadata = data.metadata || {};
@@ -135,7 +142,9 @@ export class BaseStep {
 
     // Validate serializable
     this.validateInputOutputSerializable(this.input);
+    this.validateInputOutputSerializable(this.redactedInput);
     this.validateInputOutputSerializable(this.output);
+    this.validateInputOutputSerializable(this.redactedOutput);
   }
 
   validateInputOutputSerializable<
@@ -156,7 +165,9 @@ export class BaseStep {
     return {
       type: this.type,
       input: this.input,
+      redactedInput: this.redactedInput,
       output: this.output,
+      redactedOutput: this.redactedOutput,
       name: this.name,
       created_at: this.createdAt.toISOString(),
       user_metadata: this.userMetadata,

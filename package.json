@@ -1,6 +1,6 @@
 {
   "name": "galileo",
-  "version": "1.23.0",
+  "version": "1.27.1",
   "description": "JS client for Galileo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,16 +32,16 @@
   "dependencies": {
     "@types/cli-progress": "^3.11.6",
     "@types/csv-parse": "^1.2.5",
-    "axios": "^1.8.2",
+    "axios": "^1.12.2",
     "cli-progress": "^3.12.0",
     "csv-parse": "^6.1.0",
     "form-data": "^4.0.1",
     "jsonwebtoken": "^9.0.2",
     "openapi-fetch": "^0.13.3",
-    "openapi-typescript-helpers": "^0.0.15"
+    "openapi-typescript-helpers": "^0.0.15",
+    "@langchain/core": "^0.3.13"
   },
   "optionalDependencies": {
-    "@langchain/core": "^0.3.13",
     "@langchain/openai": "^0.3.11",
     "openai": "^4.85.2",
     "tiktoken": "^1.0.13"

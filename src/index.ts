@@ -8,7 +8,9 @@ import {
   GalileoScorers,
   RootType,
   LLMExportFormat,
-  LogRecordsTextFilter
+  LogRecordsTextFilter,
+  Metric,
+  LocalMetricConfig
 } from './types';
 import {
   addRowsToDataset,
@@ -18,11 +20,17 @@ import {
   deserializeInputFromString,
   getDatasets,
   getDatasetContent,
-  getDataset
+  getDataset,
+  getDatasetMetadata,
+  extendDataset
 } from './utils/datasets';
 import { getMetrics, getTraces, getSpans, getSessions } from './utils/search';
 import { exportRecords } from './utils/export';
-import { createCustomLlmMetric, deleteMetric } from './utils/metrics';
+import {
+  createCustomLlmMetric,
+  deleteMetric,
+  createMetricConfigs
+} from './utils/metrics';
 import {
   getJobProgress,
   getScorerJobs,
@@ -41,7 +49,8 @@ import { getProjects, createProject, getProject } from './utils/projects';
 import {
   getLogStreams,
   createLogStream,
-  getLogStream
+  getLogStream,
+  enableMetrics
 } from './utils/log-streams';
 import {
   getExperiments,
@@ -68,6 +77,8 @@ export {
   GalileoLogger,
   GalileoCallback,
   GalileoScorers,
+  Metric,
+  LocalMetricConfig,
   RootType,
   LLMExportFormat,
   LogRecordsTextFilter,
@@ -82,6 +93,8 @@ export {
   addRowsToDataset,
   createDatasetRecord,
   deserializeInputFromString,
+  getDatasetMetadata,
+  extendDataset,
   // Prompt templates
   getPromptTemplate,
   getPromptTemplates,
@@ -103,6 +116,7 @@ export {
   getLogStreams,
   createLogStream,
   getLogStream,
+  enableMetrics,
   // Logging
   log,
   init,
@@ -111,6 +125,7 @@ export {
   // Metrics
   createCustomLlmMetric,
   deleteMetric,
+  createMetricConfigs,
   getMetrics,
   // Jobs
   getJobProgress,

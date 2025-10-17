@@ -121,6 +121,7 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
   lines_added: 0,
   lines_removed: 0,
   lines_edited: 0,
+  content_changed: false,
   model_changed: false,
   settings_changed: false,
   settings: {},
@@ -299,12 +300,27 @@ describe('experiments utility', () => {
       const result = await createExperiment('Test Experiment', projectName);
 
       // Verify the correct method was called with the right name
-      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment');
+      expect(mockCreateExperiment).toHaveBeenCalledWith(
+        'Test Experiment',
+        undefined
+      );
       expect(result).toEqual(mockExperiment);
     });
     it('should throw an error if name is empty', async () => {
       await expect(createExperiment('', projectName)).rejects.toThrow(
         'A valid `name` must be provided to create an experiment'
+      );
+    });
+
+    it('should pass the dataset to the api client', async () => {
+      const dataset = {
+        dataset_id: 'dataset-id',
+        version_index: 1
+      };
+      await createExperiment('Test Experiment', projectName, dataset);
+      expect(mockCreateExperiment).toHaveBeenCalledWith(
+        'Test Experiment',
+        dataset
       );
     });
   });
@@ -321,7 +337,10 @@ describe('experiments utility', () => {
         'message',
         promptRunJobCreatedSuccessMessage
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+        dataset_id: 'test-dataset-id',
+        version_index: 1
+      });
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
 
@@ -354,7 +373,10 @@ describe('experiments utility', () => {
         'message',
         promptRunJobCreatedSuccessMessage
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+        dataset_id: 'test-dataset-id',
+        version_index: 1
+      });
       expect(mockGetDatasetByName).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -370,7 +392,10 @@ describe('experiments utility', () => {
         'message',
         promptRunJobCreatedSuccessMessage
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+        dataset_id: 'test-dataset-id',
+        version_index: 1
+      });
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
   });
@@ -527,31 +552,26 @@ describe('experiments utility', () => {
     });
 
     it('should handle multiple metrics with mixed formats', async () => {
-      // Setup specific mock for this test only
-      mockGetScorerVersion.mockResolvedValueOnce({
-        id: 'scorer-version-123',
-        version: 3,
-        scorer_id: 'scorer-123'
-      });
-
-      // Setup additional scorer for this test
-      mockGetScorers.mockResolvedValueOnce([
-        mockScorer,
-        {
-          id: 'scorer-456',
-          name: 'toxicity',
+      mockGetScorers.mockImplementation((options?: { names?: string[] }) => {
+        const names = options?.names || [];
+        // When called without names, return all available scorers
+        const availableScorers = ['correctness', 'toxicity'];
+        const scorersToReturn = names.length > 0 ? names : availableScorers;
+        return scorersToReturn.map((name: string) => ({
+          id: `scorer-${name}`,
+          name,
           scorer_type: ScorerTypes.preset
-        }
-      ]);
+        }));
+      });
 
       const result = await runExperiment({
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
         metrics: [
-          'correctness', // String format
-          { name: 'toxicity' }, // Object without version
-          { name: 'correctness', version: 3 } // Object with version
+          'correctness',
+          { name: 'toxicity' },
+          { name: 'correctness', version: 3 }
         ],
         projectName
       });
@@ -563,19 +583,6 @@ describe('experiments utility', () => {
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorers).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-
-      // Check what's actually being passed
-      console.log(
-        'mockCreateRunScorerSettings calls:',
-        mockCreateRunScorerSettings.mock.calls
-      );
-
-      // Instead of checking the structure directly, just verify the function was called
-      // If we need to verify the content, we need to understand the actual param structure first
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-
-      // Check if the createPromptRunJob includes information about metrics
-      // This will give us clues about how metrics are actually processed
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
   });
