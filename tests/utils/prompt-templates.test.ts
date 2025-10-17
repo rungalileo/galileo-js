@@ -1,5 +1,3 @@
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
 import {
   createPrompt,
   deletePrompt,
@@ -10,7 +8,6 @@ import {
   PromptTemplate,
   PromptTemplateVersion
 } from '../../src/types/prompt-template.types';
-import { commonHandlers, TEST_HOST } from '../common';
 
 const EXAMPLE_PROMPT_TEMPLATE_VERSION: PromptTemplateVersion = {
   id: '24d9f582-cd1c-4fe1-a1ca-c69fa4b5c2ce',
@@ -93,57 +90,44 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
   }
 };
 
-const createGlobalPromptTemplateHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json(EXAMPLE_PROMPT_TEMPLATE);
+// Create mock implementation functions
+const mockInit = jest.fn().mockResolvedValue(undefined);
+const mockCreatePrompt = jest.fn();
+const mockGetPrompts = jest.fn();
+const mockGetPrompt = jest.fn();
+const mockDeletePrompt = jest.fn();
+
+jest.mock('../../src/api-client', () => {
+  return {
+    GalileoApiClient: jest.fn().mockImplementation(() => {
+      return {
+        init: mockInit,
+        createGlobalPromptTemplate: mockCreatePrompt,
+        listGlobalPromptTemplates: mockGetPrompts,
+        getGlobalPromptTemplate: mockGetPrompt,
+        getGlobalPromptTemplateVersion: mockGetPrompt,
+        deleteGlobalPromptTemplate: mockDeletePrompt
+      };
+    })
+  };
 });
 
-const listGlobalPromptTemplatesHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json({ templates: [EXAMPLE_PROMPT_TEMPLATE] });
-});
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Set up default mock implementations
+  mockCreatePrompt.mockResolvedValue(EXAMPLE_PROMPT_TEMPLATE);
+  mockGetPrompts.mockResolvedValue([EXAMPLE_PROMPT_TEMPLATE]);
+  mockGetPrompt.mockResolvedValue(EXAMPLE_PROMPT_TEMPLATE);
+  mockDeletePrompt.mockResolvedValue({ success: true });
 
-const getGlobalPromptTemplateHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json(EXAMPLE_PROMPT_TEMPLATE);
-});
-
-const getGlobalPromptTemplateVersionHandler = jest
-  .fn()
-  .mockImplementation(() => {
-    return HttpResponse.json(EXAMPLE_PROMPT_TEMPLATE_VERSION);
+  // Set up specific mock for getGlobalPromptTemplateVersion
+  mockGetPrompt.mockImplementation((id, version) => {
+    if (version) {
+      return Promise.resolve(EXAMPLE_PROMPT_TEMPLATE_VERSION);
+    }
+    return Promise.resolve(EXAMPLE_PROMPT_TEMPLATE);
   });
-
-const deleteGlobalPromptTemplateHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json({ success: true });
 });
-
-export const handlers = [
-  ...commonHandlers,
-  http.post(`${TEST_HOST}/templates`, createGlobalPromptTemplateHandler),
-  http.post(`${TEST_HOST}/templates/query`, listGlobalPromptTemplatesHandler),
-  http.get(
-    `${TEST_HOST}/templates/${EXAMPLE_PROMPT_TEMPLATE.id}`,
-    getGlobalPromptTemplateHandler
-  ),
-  http.get(
-    `${TEST_HOST}/templates/${EXAMPLE_PROMPT_TEMPLATE.id}/versions/${EXAMPLE_PROMPT_TEMPLATE_VERSION.version}`,
-    getGlobalPromptTemplateVersionHandler
-  ),
-  http.delete(
-    `${TEST_HOST}/templates/${EXAMPLE_PROMPT_TEMPLATE.id}`,
-    deleteGlobalPromptTemplateHandler
-  )
-];
-
-const server = setupServer(...handlers);
-
-beforeAll(() => {
-  process.env.GALILEO_CONSOLE_URL = TEST_HOST;
-  process.env.GALILEO_API_KEY = 'placeholder';
-  server.listen();
-});
-
-afterEach(() => server.resetHandlers());
-
-afterAll(() => server.close());
 
 test('test create prompt template', async () => {
   const dataset = await createPrompt({
@@ -151,7 +135,7 @@ test('test create prompt template', async () => {
     name: 'My Dataset'
   });
   expect(dataset).toEqual(EXAMPLE_PROMPT_TEMPLATE);
-  expect(createGlobalPromptTemplateHandler).toHaveBeenCalled();
+  expect(mockCreatePrompt).toHaveBeenCalled();
 });
 
 test('test get prompt templates', async () => {
@@ -159,7 +143,7 @@ test('test get prompt templates', async () => {
     name: 'My Dataset'
   });
   expect(templates).toEqual([EXAMPLE_PROMPT_TEMPLATE]);
-  expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
+  expect(mockGetPrompts).toHaveBeenCalled();
 });
 
 test('test get prompt template by id', async () => {
@@ -167,7 +151,7 @@ test('test get prompt template by id', async () => {
     id: EXAMPLE_PROMPT_TEMPLATE.id
   });
   expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
-  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
+  expect(mockGetPrompt).toHaveBeenCalled();
 });
 
 test('test get prompt template by name', async () => {
@@ -175,8 +159,8 @@ test('test get prompt template by name', async () => {
     name: 'My Dataset'
   });
   expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
-  expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
-  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
+  expect(mockGetPrompts).toHaveBeenCalled();
+  expect(mockGetPrompt).toHaveBeenCalled();
 });
 
 test('test delete prompt template by id', async () => {
@@ -184,7 +168,7 @@ test('test delete prompt template by id', async () => {
     id: EXAMPLE_PROMPT_TEMPLATE.id
   });
   expect(response).toEqual({ success: true });
-  expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
+  expect(mockDeletePrompt).toHaveBeenCalled();
 });
 
 test('test get prompt template by id and version', async () => {
@@ -193,7 +177,7 @@ test('test get prompt template by id and version', async () => {
     version: EXAMPLE_PROMPT_TEMPLATE_VERSION.version
   });
   expect(templateVersion).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
-  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
+  expect(mockGetPrompt).toHaveBeenCalled();
 });
 
 test('test delete prompt template by name', async () => {
@@ -201,6 +185,6 @@ test('test delete prompt template by name', async () => {
     name: 'My Dataset'
   });
   expect(response).toEqual({ success: true });
-  expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
-  expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
+  expect(mockGetPrompts).toHaveBeenCalled();
+  expect(mockDeletePrompt).toHaveBeenCalled();
 });
