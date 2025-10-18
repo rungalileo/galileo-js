@@ -917,6 +917,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/projects/{project_id}/traces/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Count Traces */
+    post: operations['count_traces_projects__project_id__traces_count_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/spans': {
     parameters: {
       query?: never;
@@ -945,6 +962,23 @@ export interface paths {
     put?: never;
     /** Query Spans */
     post: operations['query_spans_projects__project_id__spans_search_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/spans/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Count Spans */
+    post: operations['count_spans_projects__project_id__spans_count_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -996,6 +1030,23 @@ export interface paths {
     put?: never;
     /** Query Sessions */
     post: operations['query_sessions_projects__project_id__sessions_search_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/sessions/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Count Sessions */
+    post: operations['count_sessions_projects__project_id__sessions_count_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2742,6 +2793,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** AgenticWorkflowSuccessScorer */
     AgenticWorkflowSuccessScorer: {
@@ -2916,6 +2974,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** AggregatedTraceViewEdge */
     AggregatedTraceViewEdge: {
@@ -3044,6 +3109,17 @@ export interface components {
       lora_task_id: number;
       /** Prompt */
       prompt: string;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
       /** @description Executor pipeline. Defaults to finetuned scorer pipeline but can run custom galileo score pipelines. */
       executor?:
         | components['schemas']['galileo_core__schemas__shared__scorers__scorer_name__ScorerName']
@@ -3259,6 +3335,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /**
      * BaseScorerVersionDB
@@ -3272,6 +3359,11 @@ export interface components {
       id: string;
       /** Version */
       version: number;
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
       generated_scorer?: components['schemas']['BaseGeneratedScorerDB'] | null;
       registered_scorer?:
         | components['schemas']['BaseRegisteredScorerDB']
@@ -3305,6 +3397,11 @@ export interface components {
       id: string;
       /** Version */
       version: number;
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
       generated_scorer?:
         | components['schemas']['GeneratedScorerResponse']
         | null;
@@ -3336,6 +3433,8 @@ export interface components {
        */
       updated_at: string;
       chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
+      /** Allowed Model */
+      allowed_model?: boolean | null;
     };
     /** BleuScorer */
     BleuScorer: {
@@ -3559,6 +3658,13 @@ export interface components {
        * @description Few-shot examples for the metric.
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ChunkAttributionUtilizationScorer */
     ChunkAttributionUtilizationScorer: {
@@ -3653,6 +3759,13 @@ export interface components {
        * @description Few-shot examples for the metric.
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * CollaboratorRole
@@ -3895,6 +4008,13 @@ export interface components {
        * @description Few-shot examples for the metric.
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ContextAdherenceScorer */
     ContextAdherenceScorer: {
@@ -4566,6 +4686,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedAgenticWorkflowSuccessGPTScorer */
     CustomizedAgenticWorkflowSuccessGPTScorer: {
@@ -4663,6 +4794,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedChunkAttributionUtilizationGPTScorer */
     CustomizedChunkAttributionUtilizationGPTScorer: {
@@ -4750,6 +4892,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedCompletenessGPTScorer */
     CustomizedCompletenessGPTScorer: {
@@ -4836,6 +4989,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedFactualityGPTScorer */
     CustomizedFactualityGPTScorer: {
@@ -4932,6 +5096,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
       /**
        * Function Explanation Param Name
        * @default explanation
@@ -5025,6 +5200,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedGroundednessGPTScorer */
     CustomizedGroundednessGPTScorer: {
@@ -5118,6 +5304,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedInputSexistGPTScorer */
     CustomizedInputSexistGPTScorer: {
@@ -5211,6 +5408,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedInputToxicityGPTScorer */
     CustomizedInputToxicityGPTScorer: {
@@ -5304,6 +5512,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedInstructionAdherenceGPTScorer */
     CustomizedInstructionAdherenceGPTScorer: {
@@ -5397,6 +5616,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
       /**
        * Function Explanation Param Name
        * @default explanation
@@ -5495,6 +5725,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedSexistGPTScorer */
     CustomizedSexistGPTScorer: {
@@ -5588,6 +5829,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedToolErrorRateGPTScorer */
     CustomizedToolErrorRateGPTScorer: {
@@ -5685,6 +5937,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedToolSelectionQualityGPTScorer */
     CustomizedToolSelectionQualityGPTScorer: {
@@ -5778,6 +6041,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /** CustomizedToxicityGPTScorer */
     CustomizedToxicityGPTScorer: {
@@ -5871,6 +6145,17 @@ export interface components {
       prompt?: string | null;
       /** Lora Task Id */
       lora_task_id?: number | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
     };
     /**
      * DataType
@@ -6128,7 +6413,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -6194,6 +6479,19 @@ export interface components {
        * @constant
        */
       sort_type?: 'column';
+    };
+    /** DatasetNotInProjectFilter */
+    DatasetNotInProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'not_in_project';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
     };
     /** DatasetPrependRow */
     DatasetPrependRow: {
@@ -6586,6 +6884,15 @@ export interface components {
        */
       metrics?: components['schemas']['BucketedMetric'][];
     };
+    /** ExperimentPhaseStatus */
+    ExperimentPhaseStatus: {
+      /**
+       * Progress Percent
+       * @description Progress percentage from 0.0 to 1.0
+       * @default 0
+       */
+      progress_percent?: number;
+    };
     /** ExperimentPlayground */
     ExperimentPlayground: {
       /** Playground Id */
@@ -6667,6 +6974,11 @@ export interface components {
       tags?: {
         [key: string]: components['schemas']['RunTagDB'][];
       };
+      status?: components['schemas']['ExperimentStatus'];
+    };
+    /** ExperimentStatus */
+    ExperimentStatus: {
+      log_generation?: components['schemas']['ExperimentPhaseStatus'];
     };
     /** ExperimentUpdateRequest */
     ExperimentUpdateRequest: {
@@ -9012,6 +9324,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** FeedbackAggregate */
     FeedbackAggregate: {
@@ -9112,6 +9431,17 @@ export interface components {
       lora_task_id: number;
       /** Prompt */
       prompt: string;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
+      /** Class Name To Vocab Ix */
+      class_name_to_vocab_ix?:
+        | {
+            [key: string]: number[];
+          }
+        | {
+            [key: string]: number;
+          }
+        | null;
       /** @description Executor pipeline. Defaults to finetuned scorer pipeline but can run custom galileo score pipelines. */
       executor?:
         | components['schemas']['galileo_core__schemas__shared__scorers__scorer_name__ScorerName']
@@ -9321,6 +9651,13 @@ export interface components {
        * @description Few-shot examples for the metric.
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * GroundednessTemplate
@@ -9396,6 +9733,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * GroupAction
@@ -9526,7 +9870,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -9666,6 +10010,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** InputToneScorer */
     InputToneScorer: {
@@ -9791,6 +10142,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * InputTypeEnum
@@ -9929,6 +10287,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * IntegrationAction
@@ -10109,6 +10474,7 @@ export interface components {
         | components['schemas']['DatasetDraftFilter']
         | components['schemas']['DatasetUsedInProjectFilter']
         | components['schemas']['DatasetIDFilter']
+        | components['schemas']['DatasetNotInProjectFilter']
       )[];
       /**
        * Sort
@@ -10252,6 +10618,7 @@ export interface components {
         | components['schemas']['PromptTemplateNameFilter']
         | components['schemas']['PromptTemplateCreatedByFilter']
         | components['schemas']['PromptTemplateUsedInProjectFilter']
+        | components['schemas']['PromptTemplateNotInProjectFilter']
       )[];
       /**
        * Sort
@@ -10586,6 +10953,10 @@ export interface components {
        * @description Metrics testing id associated with the traces.
        */
       metrics_testing_id?: string | null;
+      /** Start Time */
+      start_time?: string | null;
+      /** End Time */
+      end_time?: string | null;
     };
     /** LogRecordsAvailableColumnsResponse */
     LogRecordsAvailableColumnsResponse: {
@@ -10755,7 +11126,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
       /**
@@ -10842,6 +11213,61 @@ export interface components {
        */
       type: 'number';
     };
+    /**
+     * LogRecordsQueryCountRequest
+     * @example {
+     *       "filters": [
+     *         {
+     *           "case_sensitive": true,
+     *           "name": "input",
+     *           "operator": "eq",
+     *           "type": "text",
+     *           "value": "example input"
+     *         }
+     *       ],
+     *       "log_stream_id": "74aec44e-ec21-4c9f-a3e2-b2ab2b81b4db"
+     *     }
+     */
+    LogRecordsQueryCountRequest: {
+      /**
+       * Log Stream Id
+       * @description Log stream id associated with the traces.
+       */
+      log_stream_id?: string | null;
+      /**
+       * Experiment Id
+       * @description Experiment id associated with the traces.
+       */
+      experiment_id?: string | null;
+      /**
+       * Metrics Testing Id
+       * @description Metrics testing id associated with the traces.
+       */
+      metrics_testing_id?: string | null;
+      /** Filters */
+      filters?: (
+        | components['schemas']['LogRecordsIDFilter']
+        | components['schemas']['LogRecordsDateFilter']
+        | components['schemas']['LogRecordsNumberFilter']
+        | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsTextFilter']
+      )[];
+      /** Filter Tree */
+      filter_tree?:
+        | components['schemas']['FilterLeaf']
+        | components['schemas']['AndNode']
+        | components['schemas']['OrNode']
+        | components['schemas']['NotNode']
+        | null;
+    };
+    /** LogRecordsQueryCountResponse */
+    LogRecordsQueryCountResponse: {
+      /**
+       * Total Count
+       * @description Total number of records matching the query
+       */
+      total_count: number;
+    };
     /** LogRecordsQueryRequest */
     LogRecordsQueryRequest: {
       /**
@@ -10854,6 +11280,8 @@ export interface components {
        * @default 100
        */
       limit?: number;
+      /** Previous Last Row Id */
+      previous_last_row_id?: string | null;
       /**
        * Log Stream Id
        * @description Log stream id associated with the traces.
@@ -10915,6 +11343,8 @@ export interface components {
       paginated?: boolean;
       /** Next Starting Token */
       next_starting_token?: number | null;
+      /** Last Row Id */
+      last_row_id?: string | null;
       /**
        * Records
        * @description records matching the query
@@ -11442,6 +11872,16 @@ export interface components {
       | 'typescript_client'
       | 'api_direct';
     /**
+     * LunaInputTypeEnum
+     * @enum {string}
+     */
+    LunaInputTypeEnum: 'span' | 'trace_object' | 'trace_input_output_only';
+    /**
+     * LunaOutputTypeEnum
+     * @enum {string}
+     */
+    LunaOutputTypeEnum: 'float' | 'string' | 'string_list';
+    /**
      * MapFilter
      * @description Filters for string items in a map / dictionary.
      */
@@ -11814,11 +12254,6 @@ export interface components {
        * @default false
        */
       provides_log_probs?: boolean;
-      /**
-       * Reasoning Supported
-       * @default false
-       */
-      reasoning_supported?: boolean;
       /**
        * Formatting Tokens
        * @default 0
@@ -12312,7 +12747,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -12414,7 +12849,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -12785,6 +13220,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /**
      * PromptOptimizationConfiguration
@@ -12922,10 +13364,6 @@ export interface components {
       response_format?: {
         [key: string]: string;
       } | null;
-      /** Input */
-      input?: string | null;
-      /** Instructions */
-      instructions?: string | null;
       /** Known Models */
       known_models?: components['schemas']['Model'][];
     };
@@ -12960,7 +13398,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -13002,6 +13440,19 @@ export interface components {
        * @constant
        */
       sort_type?: 'column';
+    };
+    /** PromptTemplateNotInProjectFilter */
+    PromptTemplateNotInProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'not_in_project';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
     };
     /** PromptTemplateUpdatedAtSort */
     PromptTemplateUpdatedAtSort: {
@@ -13191,6 +13642,8 @@ export interface components {
        * @default 100
        */
       limit?: number;
+      /** Previous Last Row Id */
+      previous_last_row_id?: string | null;
       /**
        * Log Stream Id
        * @description Log stream id associated with the traces.
@@ -13735,10 +14188,6 @@ export interface components {
       reasoning_effort?: string | null;
       /** Verbosity */
       verbosity?: string | null;
-      /** Input */
-      input?: string | null;
-      /** Instructions */
-      instructions?: string | null;
       /** Deployment Name */
       deployment_name?: string | null;
     };
@@ -13923,7 +14372,7 @@ export interface components {
        * @default eq
        * @enum {string}
        */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in';
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
     };
@@ -14069,6 +14518,10 @@ export interface components {
       default_version?: components['schemas']['BaseScorerVersionDB'] | null;
       /** User Prompt */
       user_prompt?: string | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
       /**
        * Label
        * @default
@@ -14529,6 +14982,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** StageDB */
     StageDB: {
@@ -15033,6 +15493,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ToolSelectionQualityScorer */
     ToolSelectionQualityScorer: {
@@ -15146,6 +15613,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** ToolSpan */
     ToolSpan: {
@@ -15342,6 +15816,13 @@ export interface components {
        *     ]
        */
       metric_few_shot_examples?: components['schemas']['FewShotExample'][];
+      /**
+       * Response Schema
+       * @description Response schema for the output
+       */
+      response_schema?: {
+        [key: string]: unknown;
+      } | null;
     };
     /** Trace */
     Trace: {
@@ -15706,6 +16187,8 @@ export interface components {
        * @default 100
        */
       limit?: number;
+      /** Previous Last Row Id */
+      previous_last_row_id?: string | null;
       /**
        * Log Stream Id
        * @description Log stream id associated with the traces.
@@ -16044,6 +16527,8 @@ export interface components {
       | 'agentic_session_success'
       | 'agentic_workflow_success'
       | 'agentic_workflow_success'
+      | 'agent_efficiency'
+      | 'agent_flow'
       | 'bleu'
       | 'chunk_attribution_utilization_luna'
       | 'chunk_attribution_utilization'
@@ -16052,23 +16537,28 @@ export interface components {
       | 'context_adherence'
       | 'context_adherence_luna'
       | 'context_relevance'
+      | 'conversation_quality'
       | 'correctness'
       | 'ground_truth_adherence'
       | 'input_pii'
+      | 'input_pii_gpt'
       | 'input_sexist'
       | 'input_sexist'
       | 'input_sexist_luna'
       | 'input_sexist_luna'
       | 'input_tone'
+      | 'input_tone_gpt'
       | 'input_toxicity'
       | 'input_toxicity_luna'
       | 'instruction_adherence'
       | 'output_pii'
+      | 'output_pii_gpt'
       | 'output_sexist'
       | 'output_sexist'
       | 'output_sexist_luna'
       | 'output_sexist_luna'
       | 'output_tone'
+      | 'output_tone_gpt'
       | 'output_toxicity'
       | 'output_toxicity_luna'
       | 'prompt_injection'
@@ -16079,7 +16569,8 @@ export interface components {
       | 'tool_error_rate_luna'
       | 'tool_selection_quality'
       | 'tool_selection_quality_luna'
-      | 'uncertainty';
+      | 'uncertainty'
+      | 'user_intent_change';
     /**
      * ScorerName
      * @enum {string}
@@ -18427,6 +18918,41 @@ export interface operations {
       };
     };
   };
+  count_traces_projects__project_id__traces_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LogRecordsQueryCountRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsQueryCountResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   log_spans_projects__project_id__spans_post: {
     parameters: {
       query?: never;
@@ -18484,6 +19010,41 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['LogRecordsQueryResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  count_spans_projects__project_id__spans_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LogRecordsQueryCountRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsQueryCountResponse'];
         };
       };
       /** @description Validation Error */
@@ -18589,6 +19150,41 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['LogRecordsQueryResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  count_sessions_projects__project_id__sessions_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['LogRecordsQueryCountRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsQueryCountResponse'];
         };
       };
       /** @description Validation Error */
@@ -20757,6 +21353,7 @@ export interface operations {
   list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
     parameters: {
       query?: {
+        run_id?: string | null;
         starting_token?: number;
         limit?: number;
       };
