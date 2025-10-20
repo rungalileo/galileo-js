@@ -119,7 +119,10 @@ describe('scorers utility', () => {
         ['tag1'],
         { model_name: 'gpt-4' },
         'llm',
-        'ver-uuid'
+        'ver-uuid',
+        undefined, // scoreableNodeTypes
+        undefined, // outputType
+        undefined // inputType
       );
     });
 
@@ -171,11 +174,9 @@ describe('scorers utility', () => {
         'instructions',
         { template: 'foo' },
         undefined, // userPrompt
-        [StepType.trace], // scoreableNodeTypes
         true, // cotEnabled
         'gpt-4',
-        3,
-        OutputType.CATEGORICAL
+        3
       );
     });
 
@@ -215,11 +216,9 @@ describe('scorers utility', () => {
         undefined, // instructions
         undefined, // chainPollTemplate
         'custom user prompt', // userPrompt
-        [StepType.session],
         false,
         'gpt-4',
-        3,
-        OutputType.CATEGORICAL
+        3
       );
     });
 

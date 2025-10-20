@@ -146,6 +146,9 @@ describe('metrics utils', () => {
         ['tag1', 'tag2'],
         { model_name: 'gpt-4', num_judges: 5 },
         undefined,
+        undefined,
+        ['trace'],
+        'categorical',
         undefined
       );
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
@@ -153,11 +156,9 @@ describe('metrics utils', () => {
         undefined,
         undefined,
         'Is this response good?',
-        [StepType.trace],
         false,
         'gpt-4',
-        5,
-        OutputType.CATEGORICAL
+        5
       );
     });
 
@@ -177,6 +178,9 @@ describe('metrics utils', () => {
           num_judges: 3
         },
         undefined,
+        undefined,
+        ['llm'],
+        OutputType.BOOLEAN,
         undefined
       );
     });
@@ -197,11 +201,9 @@ describe('metrics utils', () => {
         undefined,
         undefined,
         'Test prompt',
-        [StepType.trace],
         false,
         'gpt-4',
-        5,
-        OutputType.CATEGORICAL
+        5
       );
     });
 
