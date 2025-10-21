@@ -9,6 +9,7 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -40,4 +41,4 @@ jobs:
             @semantic-release/github
         env:
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
