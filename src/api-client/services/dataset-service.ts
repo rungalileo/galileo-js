@@ -1,6 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { components, paths } from '../../types/api.types';
+import type { components, paths } from '../../types/api.types';
 import { promises as fs } from 'fs';
 
 export type DatasetFormat = components['schemas']['DatasetFormat'];

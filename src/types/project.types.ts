@@ -1,4 +1,4 @@
-import { components } from './api.types';
+import type { components } from './api.types';
 
 // Use API type as source of truth
 export type ProjectTypes = components['schemas']['ProjectType'];
