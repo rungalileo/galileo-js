@@ -20,6 +20,10 @@ import {
   GlobalPromptTemplateService
 } from './services/prompt-template-service';
 import {
+  RenderTemplateRequest,
+  RenderTemplateResponse
+} from '../types/prompt-template.types';
+import {
   DatasetService,
   DatasetAppendRow,
   SyntheticDatasetExtensionRequest,
@@ -419,6 +423,19 @@ export class GalileoApiClient extends BaseClient {
   public async deleteGlobalPromptTemplate(id: string) {
     this.ensureService(this.globalPromptTemplateService);
     return this.globalPromptTemplateService!.deleteGlobalPromptTemplate(id);
+  }
+
+  public async renderPromptTemplate(
+    body: RenderTemplateRequest,
+    starting_token: number = 0,
+    limit: number = 100
+  ): Promise<RenderTemplateResponse> {
+    this.ensureService(this.globalPromptTemplateService);
+    return this.globalPromptTemplateService!.renderTemplate(
+      body,
+      starting_token,
+      limit
+    );
   }
 
   // Experiment methods - delegate to ExperimentService
