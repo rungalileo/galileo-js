@@ -69,6 +69,7 @@ export enum Routes {
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',
   codeScorerVersion = 'scorers/{scorer_id}/version/code',
   scorerId = 'scorers/{scorer_id}',
+  renderTemplate = 'render_template',
   collaboratorRoles = 'collaborator_roles',
   projectUploadFile = 'projects/{project_id}/upload_file'
 }
