@@ -1,5 +1,5 @@
 import { Models } from './models.types';
-import { components } from './api.types';
+import type { components } from './api.types';
 
 export interface ScorersConfiguration {
   adherence_nli?: boolean;
