@@ -3,7 +3,9 @@ import { Routes } from '../../types/routes.types';
 import {
   PromptTemplate,
   PromptTemplateVersion,
-  ListPromptTemplateResponse
+  ListPromptTemplateResponse,
+  RenderTemplateRequest,
+  RenderTemplateResponse
 } from '../../types/prompt-template.types';
 import { Message } from '../../types/message.types';
 
@@ -168,6 +170,19 @@ export class GlobalPromptTemplateService extends BaseClient {
       Routes.globalPromptTemplate,
       null,
       { template_id }
+    );
+  };
+
+  public renderTemplate = async (
+    body: RenderTemplateRequest,
+    starting_token: number = 0,
+    limit: number = 100
+  ): Promise<RenderTemplateResponse> => {
+    return await this.makeRequest<RenderTemplateResponse>(
+      RequestMethod.POST,
+      Routes.renderTemplate,
+      body,
+      { starting_token, limit }
     );
   };
 }
