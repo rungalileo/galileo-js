@@ -14,24 +14,27 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+      - name: Configure Git for SSH signing
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
 
-      - name: Install dependencies
-        run: npm install
+          # Save the private key from GitHub secret to a file
+          echo "${{ secrets.GALILEO_AUTOMATION_SSH_PRIVATE_KEY }}" > ~/.ssh/galileo_signing_key
+          chmod 600 ~/.ssh/galileo_signing_key
 
-      - name: Build Project
-        run: npm run build
+          # Configure Git to use the SSH key file
+          git config --global gpg.format ssh
+          git config --global user.signingKey ~/.ssh/galileo_signing_key
+          git config --global commit.gpgsign true
+          git config --global user.email ci@rungalileo.io
+          git config --global user.name "galileo-automation"
 
       - name: Semantic Release (bump version + publish + Github release)
         uses: cycjimmy/semantic-release-action@v4
         with:
+          ci: false
           extra_plugins: |
             @semantic-release/commit-analyzer
             @semantic-release/release-notes-generator
