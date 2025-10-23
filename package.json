@@ -30,7 +30,11 @@
   "license": "Apache-2.0",
   "homepage": "https://www.galileo.ai/",
   "dependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/csv-parse": "^1.2.5",
     "axios": "^1.12.2",
+    "cli-progress": "^3.12.0",
+    "csv-parse": "^6.1.0",
     "form-data": "^4.0.1",
     "jsonwebtoken": "^9.0.2",
     "openapi-fetch": "^0.13.3",

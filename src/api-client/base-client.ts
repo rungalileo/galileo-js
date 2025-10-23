@@ -130,7 +130,14 @@ export class BaseClient {
     endpoint: Routes,
     data?: string | Record<string, any> | null,
     params?: Record<string, unknown>,
-    extraHeaders?: Record<string, string>
+    extraHeaders?: Record<string, string>,
+    responseType?:
+      | 'arraybuffer'
+      | 'blob'
+      | 'document'
+      | 'json'
+      | 'text'
+      | 'stream'
   ): Promise<AxiosResponse<T>> {
     await this.refreshTokenIfNeeded(endpoint);
 
@@ -159,6 +166,10 @@ export class BaseClient {
         params && 'run_id' in params ? (params.run_id as string) : ''
       )
       .replace(
+        '{job_id}',
+        params && 'job_id' in params ? (params.job_id as string) : ''
+      )
+      .replace(
         '{dataset_id}',
         params && 'dataset_id' in params ? (params.dataset_id as string) : ''
       )
@@ -182,7 +193,8 @@ export class BaseClient {
       url: endpointPath,
       params,
       headers,
-      data
+      data,
+      responseType
     };
 
     const response = await axios.request<T>(config);
@@ -195,7 +207,14 @@ export class BaseClient {
     endpoint: Routes,
     data?: string | Record<string, any> | null,
     params?: Record<string, unknown>,
-    extraHeaders?: Record<string, string>
+    extraHeaders?: Record<string, string>,
+    responseType?:
+      | 'arraybuffer'
+      | 'blob'
+      | 'document'
+      | 'json'
+      | 'text'
+      | 'stream'
   ): Promise<T> {
     try {
       const response = await this.makeRequestRaw<T>(
@@ -203,7 +222,8 @@ export class BaseClient {
         endpoint,
         data,
         params,
-        extraHeaders
+        extraHeaders,
+        responseType
       );
       return response.data;
     } catch (error) {

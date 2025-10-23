@@ -6,20 +6,12 @@ import {
   createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
-  extendDataset,
   getDatasetContent,
-  getDatasets,
-  getDatasetMetadata
+  getDatasets
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
-import {
-  Dataset,
-  DatasetContent,
-  DatasetRow,
-  JobProgress
-} from '../../src/api-client';
+import { Dataset, DatasetContent, DatasetRow } from '../../src/api-client';
 import { DatasetType } from '../../src/utils/datasets';
-import { RunExperimentParams } from '../../src/utils/experiments';
 
 const EXAMPLE_DATASET: Dataset = {
   id: 'c7b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3d',
@@ -39,16 +31,6 @@ const EXAMPLE_DATASET_ROW: DatasetRow = {
   row_id: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
   values: ['John', 'Doe'],
   values_dict: { firstName: 'John', lastName: 'Doe' },
-  metadata: null
-};
-
-const EXTENDED_DATASET_ID = 'a8b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3a';
-
-const EXTENDED_DATASET_ROW: DatasetRow = {
-  index: 0,
-  row_id: 'be4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
-  values: ['Extended', 'Row'],
-  values_dict: { col1: 'Extended', col2: 'Row' },
   metadata: null
 };
 
@@ -81,51 +63,8 @@ const getDatasetByNameHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json({ datasets: [EXAMPLE_DATASET] });
 });
 
-const getDatasetHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json(EXAMPLE_DATASET);
-});
-
 const addRowsToDatasetHandler = jest.fn().mockImplementation(() => {
   return new HttpResponse(null, { status: 204 });
-});
-
-const extendDatasetHandler = jest.fn().mockImplementation(() => {
-  return HttpResponse.json({ dataset_id: EXTENDED_DATASET_ID });
-});
-
-const getExtendDatasetStatusHandler = jest
-  .fn()
-  .mockImplementationOnce(() => {
-    const response: JobProgress = {
-      steps_completed: 1,
-      steps_total: 3,
-      progress_message: 'Processing'
-    };
-    return HttpResponse.json(response);
-  })
-  .mockImplementationOnce(() => {
-    const response: JobProgress = {
-      steps_completed: 2,
-      steps_total: 3,
-      progress_message: 'Still processing'
-    };
-    return HttpResponse.json(response);
-  })
-  .mockImplementation(() => {
-    const response: JobProgress = {
-      steps_completed: 3,
-      steps_total: 3,
-      progress_message: 'Done'
-    };
-    return HttpResponse.json(response);
-  });
-
-const getExtendedDatasetContentHandler = jest.fn().mockImplementation(() => {
-  const response: DatasetContent = {
-    rows: [EXTENDED_DATASET_ROW]
-  };
-
-  return HttpResponse.json(response);
 });
 
 export const handlers = [
@@ -144,16 +83,6 @@ export const handlers = [
   http.patch(
     `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
     addRowsToDatasetHandler
-  ),
-  http.get(`${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}`, getDatasetHandler),
-  http.post(`${TEST_HOST}/datasets/extend`, extendDatasetHandler),
-  http.get(
-    `${TEST_HOST}/datasets/extend/${EXTENDED_DATASET_ID}`,
-    getExtendDatasetStatusHandler
-  ),
-  http.get(
-    `${TEST_HOST}/datasets/${EXTENDED_DATASET_ID}/content`,
-    getExtendedDatasetContentHandler
   )
 ];
 
@@ -163,20 +92,11 @@ beforeAll(() => {
   process.env.GALILEO_CONSOLE_URL = TEST_HOST;
   process.env.GALILEO_API_KEY = 'placeholder';
   server.listen();
-  jest.useFakeTimers();
-  jest.spyOn(console, 'log').mockImplementation(() => {});
 });
 
-afterEach(() => {
-  server.resetHandlers();
-  jest.clearAllTimers();
-});
+afterEach(() => server.resetHandlers());
 
-afterAll(() => {
-  server.close();
-  jest.useRealTimers();
-  jest.mocked(console.log).mockRestore();
-});
+afterAll(() => server.close());
 
 const createDatasetCases: DatasetType[] = [
   { col1: ['val1', 'val2'] }, // column with strings
@@ -355,59 +275,4 @@ describe('datasets utils', () => {
       expect(result).toEqual({ value: 'plain string' });
     });
   });
-
-  describe('getDatasetMetadata', () => {
-    const projectName = 'test-project';
-
-    it('should load a dataset by object', async () => {
-      const params = {
-        dataset: EXAMPLE_DATASET
-      } as RunExperimentParams<Record<string, unknown>>;
-      const result = await getDatasetMetadata(params, projectName);
-      expect(result).toEqual(EXAMPLE_DATASET);
-    });
-
-    it('should load a dataset by id', async () => {
-      const params = {
-        datasetId: EXAMPLE_DATASET.id
-      } as RunExperimentParams<Record<string, unknown>>;
-      await getDatasetMetadata(params, projectName);
-      expect(getDatasetHandler).toHaveBeenCalled();
-    });
-
-    it('should load a dataset by name', async () => {
-      const params = {
-        datasetName: EXAMPLE_DATASET.name
-      } as RunExperimentParams<Record<string, unknown>>;
-      await getDatasetMetadata(params, projectName);
-      expect(getDatasetByNameHandler).toHaveBeenCalled();
-    });
-  });
-});
-
-test('extend dataset', async () => {
-  const extendPromise = extendDataset({
-    prompt_settings: {
-      model_alias: 'GPT-4o mini',
-      response_format: { type: 'json_object' }
-    },
-    prompt:
-      'Financial planning assistant that helps clients design an investment strategy.',
-    instructions:
-      'You are a financial planning assistant that helps clients design an investment strategy.',
-    examples: ['I want to invest $1000 per month.'],
-    data_types: ['Prompt Injection'],
-    count: 3
-  });
-
-  // The loop runs twice before completing
-  await jest.advanceTimersByTimeAsync(1000);
-  await jest.advanceTimersByTimeAsync(1000);
-
-  const result = await extendPromise;
-
-  expect(result).toEqual([EXTENDED_DATASET_ROW]);
-  expect(extendDatasetHandler).toHaveBeenCalled();
-  expect(getExtendDatasetStatusHandler).toHaveBeenCalledTimes(3);
-  expect(getExtendedDatasetContentHandler).toHaveBeenCalled();
 });
