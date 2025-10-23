@@ -11,12 +11,17 @@ try {
 }
 
 interface BetaType {
-  chat: {
-    completions: {
-      stream: any;
+  chat?: {
+    // Optional: v6 removed beta.chat
+    completions?: {
+      stream?: any;
     };
   };
-  embeddings: any;
+  realtime?: any; // Realtime API (v4.50+, v5+, v6+)
+  assistants?: any; // Assistants API (v4.0+, v5+, v6+)
+  threads?: any; // Threads API (v4.0+, v5+, v6+)
+  vectorStores?: any; // Vector Stores API (v4.20+, v5+) - removed in v6
+  chatkit?: any; // Chatkit API (v6+ only)
 }
 
 interface ChatType {
