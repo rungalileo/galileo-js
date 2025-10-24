@@ -97,7 +97,7 @@ export enum GalileoScorers {
 
   Uncertainty = 'uncertainty',
 
-  UserIntentChange = 'user_intent_change',
+  UserIntentChange = 'user_intent_change'
 }
 /* eslint-enable @typescript-eslint/no-duplicate-enum-values */
 

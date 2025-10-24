@@ -56,7 +56,7 @@ describe('GalileoScorers', () => {
     ['ToolSelectionQuality', []],
     ['ToolSelectionQualityLuna', []],
     ['Uncertainty', []],
-    ['UserIntentChange', []],
+    ['UserIntentChange', []]
   ];
 
   test.each(testCases)(
