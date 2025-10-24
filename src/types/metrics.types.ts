@@ -19,6 +19,10 @@ export enum GalileoScorers {
   AgenticWorkflowSuccess = 'agentic_workflow_success',
   ActionAdvancement = 'agentic_workflow_success',
 
+  AgentEfficiency = 'agent_efficiency',
+
+  AgentFlow = 'agent_flow',
+
   Bleu = 'bleu',
 
   ChunkAttributionUtilization = 'chunk_attribution_utilization',
@@ -35,11 +39,14 @@ export enum GalileoScorers {
 
   ContextRelevance = 'context_relevance',
 
+  ConversationQuality = 'conversation_quality',
+
   Correctness = 'correctness',
 
   GroundTruthAdherence = 'ground_truth_adherence',
 
   InputPii = 'input_pii',
+  InputPiiGPT = 'input_pii_gpt',
 
   InputSexist = 'input_sexist',
   InputSexism = 'input_sexist',
@@ -48,6 +55,7 @@ export enum GalileoScorers {
   InputSexismLuna = 'input_sexist_luna',
 
   InputTone = 'input_tone',
+  InputToneGPT = 'input_tone_gpt',
 
   InputToxicity = 'input_toxicity',
 
@@ -56,6 +64,7 @@ export enum GalileoScorers {
   InstructionAdherence = 'instruction_adherence',
 
   OutputPii = 'output_pii',
+  OutputPiiGPT = 'output_pii_gpt',
 
   OutputSexist = 'output_sexist',
   OutputSexism = 'output_sexist',
@@ -64,6 +73,7 @@ export enum GalileoScorers {
   OutputSexismLuna = 'output_sexist_luna',
 
   OutputTone = 'output_tone',
+  OutputToneGPT = 'output_tone_gpt',
 
   OutputToxicity = 'output_toxicity',
 
@@ -85,7 +95,9 @@ export enum GalileoScorers {
 
   ToolSelectionQualityLuna = 'tool_selection_quality_luna',
 
-  Uncertainty = 'uncertainty'
+  Uncertainty = 'uncertainty',
+
+  UserIntentChange = 'user_intent_change',
 }
 /* eslint-enable @typescript-eslint/no-duplicate-enum-values */
 
