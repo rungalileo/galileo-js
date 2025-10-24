@@ -1,3 +1,4 @@
+import type { components } from '../api.types';
 import {
   BaseStep,
   BaseStepOptions,
@@ -77,16 +78,20 @@ export class WorkflowSpan extends StepWithChildSpans {
   }
 }
 
-export enum AgentType {
-  default = 'default',
-  planner = 'planner',
-  react = 'react',
-  reflection = 'reflection',
-  router = 'router',
-  classifier = 'classifier',
-  supervisor = 'supervisor',
-  judge = 'judge'
-}
+// Use API type as source of truth
+export type AgentType = components['schemas']['AgentType'];
+
+// Convert enum to const object with compile-time validation
+export const AgentType = {
+  default: 'default',
+  planner: 'planner',
+  react: 'react',
+  reflection: 'reflection',
+  router: 'router',
+  classifier: 'classifier',
+  supervisor: 'supervisor',
+  judge: 'judge'
+} as const satisfies Record<AgentType, AgentType>;
 
 export interface AgentSpanOptions extends StepWithChildSpansOptions {
   agentType?: AgentType;
