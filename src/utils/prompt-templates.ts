@@ -45,6 +45,16 @@ class GlobalPromptTemplatesClient {
   }
 }
 
+/**
+ * Retrieves a list of prompt templates by name.
+ *
+ * @param {Object} params - The parameters object
+ * @param {string} params.name - The name of the prompt template to search for
+ * @param {number} [params.limit=100] - Maximum number of templates to return (default: 100)
+ * @returns {Promise<PromptTemplate[]>} A promise that resolves to an array of prompt templates
+ * @throws {Error} When the API client fails to retrieve templates
+ *
+ */
 export const getPrompts = async ({
   name,
   limit = 100
@@ -56,6 +66,18 @@ export const getPrompts = async ({
   return await apiClient.listGlobalPromptTemplates(name, limit, 0);
 };
 
+/**
+ * Retrieves a specific prompt template by ID or name.
+ *
+ * @param {Object} params - The parameters object
+ * @param {string} [params.id] - The unique identifier of the prompt template
+ * @param {string} [params.name] - The name of the prompt template (alternative to id)
+ * @param {number} [params.version] - The specific version of the template to retrieve (optional)
+ * @returns {Promise<PromptTemplateVersion>} A promise that resolves to the prompt template version
+ * @throws {Error} When neither id nor name is provided
+ * @throws {Error} When the template is not found
+ *
+ */
 export const getPrompt = async ({
   id,
   name,
@@ -93,6 +115,16 @@ export const getPrompt = async ({
   }
 };
 
+/**
+ * Creates a new prompt template.
+ *
+ * @param {Object} params - The parameters object
+ * @param {Message[] | string} params.template - The template content as either an array of messages or a single string
+ * @param {string} params.name - The name for the new prompt template
+ * @returns {Promise<PromptTemplate>} A promise that resolves to the created prompt template
+ * @throws {Error} When the API client fails to create the template
+ *
+ */
 export const createPrompt = async ({
   template,
   name
@@ -112,6 +144,17 @@ export const createPrompt = async ({
   return await apiClient.createGlobalPromptTemplate(tmp, name);
 };
 
+/**
+ * Deletes a prompt template by ID or name.
+ *
+ * @param {Object} params - The parameters object
+ * @param {string} [params.id] - The unique identifier of the prompt template to delete
+ * @param {string} [params.name] - The name of the prompt template to delete (alternative to id)
+ * @returns {Promise<void>} A promise that resolves when the template is successfully deleted
+ * @throws {Error} When neither id nor name is provided
+ * @throws {Error} When the template is not found
+ *
+ */
 export const deletePrompt = async ({
   id,
   name
@@ -140,6 +183,16 @@ export const deletePrompt = async ({
 
 // DEPRECATED
 
+/**
+ * @deprecated This function is deprecated. Use {@link getPrompts} instead.
+ *
+ * Retrieves a list of all prompt templates.
+ *
+ * @param {string} projectName - The project name (kept for backwards compatibility, but ignored)
+ * @returns {Promise<PromptTemplate[]>} A promise that resolves to an array of prompt templates
+ * @throws {Error} When the API client fails to retrieve templates
+ *
+ */
 export const getPromptTemplates = async (
   projectName: string // Keep parameter for backwards compatibility, but ignored
 ): Promise<PromptTemplate[]> => {
@@ -153,6 +206,21 @@ export const getPromptTemplates = async (
   return templates;
 };
 
+/**
+ * @deprecated This function is deprecated. Use {@link getPrompt} instead.
+ *
+ * Retrieves a specific prompt template by ID or name.
+ *
+ * @param {Object} params - The parameters object
+ * @param {string} [params.id] - The unique identifier of the prompt template
+ * @param {string} [params.name] - The name of the prompt template (alternative to id)
+ * @param {string} params.projectName - The project name (kept for backwards compatibility, but ignored)
+ * @param {number} [params.version] - The specific version of the template to retrieve (optional)
+ * @returns {Promise<PromptTemplateVersion>} A promise that resolves to the prompt template version
+ * @throws {Error} When neither id nor name is provided
+ * @throws {Error} When the template is not found
+ *
+ */
 export const getPromptTemplate = async ({
   id,
   name,
@@ -188,6 +256,19 @@ export const getPromptTemplate = async ({
   }
 };
 
+/**
+ * @deprecated This function is deprecated. Use {@link createPrompt} instead.
+ *
+ * Creates a new prompt template.
+ *
+ * @param {Object} params - The parameters object
+ * @param {Message[] | string} params.template - The template content as either an array of messages or a single string
+ * @param {string} params.name - The name for the new prompt template
+ * @param {string} params.projectName - The project name (kept for backwards compatibility, but ignored)
+ * @returns {Promise<PromptTemplate>} A promise that resolves to the created prompt template
+ * @throws {Error} When the API client fails to create the template
+ *
+ */
 export const createPromptTemplate = async ({
   template,
   name,
@@ -215,6 +296,18 @@ export const createPromptTemplate = async ({
   return createdTemplate;
 };
 
+/**
+ * Renders a prompt template with the provided data.
+ *
+ * @param {Object} params - The parameters object
+ * @param {string} params.template - The template string to render
+ * @param {DatasetData | StringData | string[] | string} params.data - The data to use for rendering the template
+ * @param {number} [params.starting_token=0] - The starting token index for pagination (default: 0)
+ * @param {number} [params.limit=100] - Maximum number of results to return (default: 100)
+ * @returns {Promise<RenderTemplateResponse>} A promise that resolves to the rendered template response
+ * @throws {Error} When the API client fails to render the template
+ *
+ */
 export const renderPromptTemplate = async ({
   template,
   data,
