@@ -38,5 +38,6 @@ export enum Routes {
   jobs = 'jobs',
   scorer = 'scorers',
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',
-  scorerId = 'scorers/{scorer_id}'
+  scorerId = 'scorers/{scorer_id}',
+  renderTemplate = 'render_template'
 }

@@ -4,11 +4,15 @@ import {
   createPrompt,
   deletePrompt,
   getPrompt,
-  getPrompts
+  getPrompts,
+  renderPromptTemplate
 } from '../../src/utils/prompt-templates';
 import {
   PromptTemplate,
-  PromptTemplateVersion
+  PromptTemplateVersion,
+  RenderTemplateRequest,
+  RenderTemplateResponse,
+  RenderedTemplate
 } from '../../src/types/prompt-template.types';
 import { commonHandlers, TEST_HOST } from '../common';
 
@@ -93,6 +97,19 @@ const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
   }
 };
 
+const EXAMPLE_RENDERED_TEMPLATE: RenderedTemplate = {
+  result: 'Hello, John! How are you today?',
+  warning: undefined
+};
+
+const EXAMPLE_RENDER_TEMPLATE_RESPONSE: RenderTemplateResponse = {
+  rendered_templates: [EXAMPLE_RENDERED_TEMPLATE],
+  limit: 100,
+  next_starting_token: undefined,
+  paginated: false,
+  starting_token: 0
+};
+
 const createGlobalPromptTemplateHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(EXAMPLE_PROMPT_TEMPLATE);
 });
@@ -115,6 +132,16 @@ const deleteGlobalPromptTemplateHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json({ success: true });
 });
 
+let lastRequestBody: RenderTemplateRequest | null = null;
+
+const renderTemplateHandler = jest
+  .fn()
+  .mockImplementation(async ({ request }) => {
+    // Store the request body for inspection
+    lastRequestBody = await request.json();
+    return HttpResponse.json(EXAMPLE_RENDER_TEMPLATE_RESPONSE);
+  });
+
 export const handlers = [
   ...commonHandlers,
   http.post(`${TEST_HOST}/templates`, createGlobalPromptTemplateHandler),
@@ -130,7 +157,8 @@ export const handlers = [
   http.delete(
     `${TEST_HOST}/templates/${EXAMPLE_PROMPT_TEMPLATE.id}`,
     deleteGlobalPromptTemplateHandler
-  )
+  ),
+  http.post(`${TEST_HOST}/render_template`, renderTemplateHandler)
 ];
 
 const server = setupServer(...handlers);
@@ -203,4 +231,84 @@ test('test delete prompt template by name', async () => {
   expect(response).toEqual({ success: true });
   expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
   expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
+});
+
+test('test render prompt template with string array data', async () => {
+  renderTemplateHandler.mockClear();
+
+  const response = await renderPromptTemplate({
+    template: 'Hello, {input}! How are you today?',
+    data: ['John', 'Jane', 'Bob']
+  });
+
+  // Test response structure (mock behavior)
+  expect(response).toEqual(EXAMPLE_RENDER_TEMPLATE_RESPONSE);
+
+  // Test data transformation (our logic)
+  expect(lastRequestBody).toEqual({
+    template: 'Hello, {input}! How are you today?',
+    data: {
+      input_strings: ['John', 'Jane', 'Bob']
+    }
+  });
+});
+
+test('test render prompt template with dataset ID', async () => {
+  renderTemplateHandler.mockClear();
+
+  const response = await renderPromptTemplate({
+    template: 'Hello, {name}! How are you today?',
+    data: 'dataset-123'
+  });
+
+  // Test response structure (mock behavior)
+  expect(response).toEqual(EXAMPLE_RENDER_TEMPLATE_RESPONSE);
+
+  // Test data transformation (our logic)
+  expect(lastRequestBody).toEqual({
+    template: 'Hello, {name}! How are you today?',
+    data: {
+      dataset_id: 'dataset-123'
+    }
+  });
+});
+
+test('test render prompt template with StringData object', async () => {
+  renderTemplateHandler.mockClear();
+
+  const response = await renderPromptTemplate({
+    template: 'Hello, {input}! How are you today?',
+    data: { input_strings: ['John', 'Jane'] }
+  });
+
+  // Test response structure (mock behavior)
+  expect(response).toEqual(EXAMPLE_RENDER_TEMPLATE_RESPONSE);
+
+  // Test data transformation (our logic)
+  expect(lastRequestBody).toEqual({
+    template: 'Hello, {input}! How are you today?',
+    data: {
+      input_strings: ['John', 'Jane']
+    }
+  });
+});
+
+test('test render prompt template with DatasetData object', async () => {
+  renderTemplateHandler.mockClear();
+
+  const response = await renderPromptTemplate({
+    template: 'Hello, {name}! How are you today?',
+    data: { dataset_id: 'dataset-456' }
+  });
+
+  // Test response structure (mock behavior)
+  expect(response).toEqual(EXAMPLE_RENDER_TEMPLATE_RESPONSE);
+
+  // Test data transformation (our logic)
+  expect(lastRequestBody).toEqual({
+    template: 'Hello, {name}! How are you today?',
+    data: {
+      dataset_id: 'dataset-456'
+    }
+  });
 });
