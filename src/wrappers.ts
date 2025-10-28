@@ -99,6 +99,16 @@ export function log<T extends unknown[], R>(
           name
         });
         concludeCount = concludeCount + 1;
+      } else if (options.spanType === 'agent') {
+        logger?.addAgentSpan({
+          input: inputString,
+          agentType: isValidAgentType(argsDict['agentType'])
+            ? argsDict['agentType']
+            : undefined,
+          createdAt: createdAt,
+          name: name
+        });
+        concludeCount = concludeCount + 1;
       }
     } catch (error) {
       console.error(error);
@@ -138,15 +148,6 @@ export function log<T extends unknown[], R>(
         logger?.addToolSpan({
           input: inputString,
           output: resultToString,
-          createdAt: createdAt,
-          name: name
-        });
-      } else if (options.spanType === 'agent') {
-        logger?.addAgentSpan({
-          input: inputString,
-          agentType: isValidAgentType(argsDict['agentType'])
-            ? argsDict['agentType']
-            : undefined,
           createdAt: createdAt,
           name: name
         });
