@@ -18,10 +18,7 @@ export const convertToMessage = (
     if (obj && typeof obj === 'object' && 'role' in obj && 'content' in obj) {
       const role = obj.role;
       // Check if the role value is valid
-      if (
-        typeof role === 'string' &&
-        Object.values(MessageRole).includes(role as MessageRole)
-      ) {
+      if (role in MessageRole) {
         const message: Message = {
           content: String(obj.content),
           role: role as MessageRole

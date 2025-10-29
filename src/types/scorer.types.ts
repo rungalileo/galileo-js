@@ -1,5 +1,5 @@
 import { Models } from './models.types';
-import { components } from './api.types';
+import type { components } from './api.types';
 
 export interface ScorersConfiguration {
   adherence_nli?: boolean;
@@ -61,12 +61,7 @@ export type ModelType = components['schemas']['ModelType'];
 
 export type ChainPollTemplate = components['schemas']['ChainPollTemplate'];
 
-export interface Scorer {
-  id: string;
-  name: string;
-  scorer_type: ScorerTypes;
-  defaults?: ScorerDefaults;
-}
+export type Scorer = components['schemas']['ScorerResponse'];
 
 export enum OutputType {
   BOOLEAN = 'boolean',

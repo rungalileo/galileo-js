@@ -364,13 +364,15 @@ export const convertDatasetContentToRecords = async (
   dataset: Dataset,
   datasetContent: DatasetRow[]
 ): Promise<Record<string, string>[]> => {
-  if (!dataset.column_names) {
+  const columnNames = dataset.column_names;
+  if (!columnNames) {
     throw new Error('Column names not found in dataset');
   }
+
   return datasetContent.map((row) => {
     const record: Record<string, string> = {};
-    for (let i = 0; i < dataset.column_names!.length; i++) {
-      record[dataset.column_names![i]] = (row.values[i] || '') as string;
+    for (let i = 0; i < columnNames.length; i++) {
+      record[columnNames[i]] = (row.values[i] || '') as string;
     }
     return record;
   });
