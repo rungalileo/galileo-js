@@ -4,13 +4,15 @@ import { Trace } from '../../../src/types/logging/trace.types';
 import { Routes } from '../../../src/types/routes.types';
 
 // Create a mock type for the makeRequest method
-type MockMakeRequest = jest.MockedFunction<(
-  request_method: RequestMethod,
-  endpoint: Routes,
-  data?: string | Record<string, unknown> | null,
-  params?: Record<string, unknown>,
-  extraHeaders?: Record<string, string>
-) => Promise<unknown>>;
+type MockMakeRequest = jest.MockedFunction<
+  (
+    request_method: RequestMethod,
+    endpoint: Routes,
+    data?: string | Record<string, unknown> | null,
+    params?: Record<string, unknown>,
+    extraHeaders?: Record<string, string>
+  ) => Promise<unknown>
+>;
 
 describe('TraceService', () => {
   let traceService: TraceService;
@@ -41,7 +43,9 @@ describe('TraceService', () => {
         external_id: 'test-external-id'
       });
 
-      (traceService as unknown as { makeRequest: MockMakeRequest }).makeRequest = mockMakeRequest;
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
 
       const result = await traceService.createSession({
         name: 'test-session',
@@ -84,7 +88,9 @@ describe('TraceService', () => {
         limit: 100
       });
 
-      (traceService as unknown as { makeRequest: MockMakeRequest }).makeRequest = mockMakeRequest;
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
 
       const result = await traceService.searchSessions({
         filters: [
@@ -128,7 +134,9 @@ describe('TraceService', () => {
         limit: 100
       });
 
-      (traceService as unknown as { makeRequest: MockMakeRequest }).makeRequest = mockMakeRequest;
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
 
       const result = await traceService.searchSessions({
         filters: [
@@ -150,7 +158,9 @@ describe('TraceService', () => {
         limit: 100
       });
 
-      (traceService as unknown as { makeRequest: MockMakeRequest }).makeRequest = mockMakeRequest;
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
 
       await traceService.searchSessions({});
 
@@ -174,8 +184,12 @@ describe('TraceService', () => {
     });
 
     it('should ingest traces with session ID', async () => {
-      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue(undefined);
-      (traceService as unknown as { makeRequest: MockMakeRequest }).makeRequest = mockMakeRequest;
+      const mockMakeRequest: MockMakeRequest = jest
+        .fn()
+        .mockResolvedValue(undefined);
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
 
       const mockTraces = [
         new Trace({
@@ -206,8 +220,14 @@ describe('TraceService', () => {
         'test-log-stream-id'
       );
 
-      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue(undefined);
-      (traceServiceWithoutExperiment as unknown as { makeRequest: MockMakeRequest }).makeRequest = mockMakeRequest;
+      const mockMakeRequest: MockMakeRequest = jest
+        .fn()
+        .mockResolvedValue(undefined);
+      (
+        traceServiceWithoutExperiment as unknown as {
+          makeRequest: MockMakeRequest;
+        }
+      ).makeRequest = mockMakeRequest;
 
       const mockTraces = [new Trace({ input: 'test input' })];
       await traceServiceWithoutExperiment.ingestTraces(mockTraces);
