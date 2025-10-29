@@ -12,6 +12,7 @@ import {
 } from '../types/scorer.types';
 import { ProjectTypes } from '../types/project.types';
 import { BaseClient } from './base-client';
+import { SessionSearchResponse } from '../types/logging/session.types';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
@@ -346,6 +347,25 @@ export class GalileoApiClient extends BaseClient {
       name,
       previousSessionId,
       externalId
+    });
+  }
+
+  /**
+   * @internal - Used internally by startSession for external_id lookup
+   */
+  async _searchSessionsByExternalId(
+    externalId: string
+  ): Promise<SessionSearchResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchSessions({
+      filters: [
+        {
+          column_id: 'id',
+          operator: 'eq',
+          value: externalId
+        }
+      ],
+      limit: 1
     });
   }
 
