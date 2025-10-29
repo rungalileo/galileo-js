@@ -220,6 +220,22 @@ class GalileoLogger {
     currentParent.addChildSpan(span);
   }
 
+  /**
+   * Start a session in the active logger instance.
+   *
+   * If an `externalId` is provided, the method will first search for an existing session
+   * with that external ID. If found, it will reuse that session instead of creating a new one.
+   * This allows you to maintain persistent sessions across multiple runs or associate sessions
+   * with external identifiers (e.g., user IDs, conversation IDs).
+   *
+   * @param options - Configuration for the session
+   * @param options.name - The name of the session (optional)
+   * @param options.previousSessionId - The ID of a previous session to link to (optional)
+   * @param options.externalId - An external identifier for the session. If a session with this
+   *                              external ID already exists, it will be reused instead of creating
+   *                              a new session (optional)
+   * @returns The ID of the session (either newly created or existing)
+   */
   async startSession({
     name,
     previousSessionId,
@@ -235,25 +251,39 @@ class GalileoLogger {
       experimentId: this.experimentId
     });
 
-    const session = await this.client?.createSession({
+    // If externalId is provided, search for existing session
+    if (externalId && externalId.trim() !== '') {
+      try {
+        const searchResult =
+          await this.client._searchSessionsByExternalId(externalId);
+
+        if (searchResult.records && searchResult.records.length > 0) {
+          const existingSessionId = searchResult.records[0].id;
+          this.sessionId = existingSessionId;
+          return existingSessionId;
+        }
+      } catch (error) {
+        // Continue to create new session
+      }
+    }
+
+    // Create new session if no externalId or not found
+    const session = await this.client.createSession({
       name,
       previousSessionId,
       externalId
     });
 
     this.sessionId = session.id;
-    console.log('Session started.');
     return session.id;
   }
 
   setSessionId(sessionId: string): void {
     this.sessionId = sessionId;
-    console.log('Session ID set:', sessionId);
   }
 
   clearSession(): void {
     this.sessionId = undefined;
-    console.log('Session cleared.');
   }
 
   startTrace({

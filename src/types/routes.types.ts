@@ -24,6 +24,7 @@ export enum Routes {
   datasetExtendStatus = 'datasets/extend/{dataset_id}',
   traces = 'projects/{project_id}/traces',
   sessions = 'projects/{project_id}/sessions',
+  sessionsSearch = 'projects/{project_id}/sessions/search',
   scorers = 'scorers/list',
   scorerVersion = 'scorers/{scorer_id}/version',
   runScorerSettings = 'projects/{project_id}/runs/{experiment_id}/scorer-settings',

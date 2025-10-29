@@ -1,7 +1,12 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { Trace } from '../../types/logging/trace.types';
-import { SessionCreateResponse } from '../../types/logging/session.types';
+import {
+  SessionCreateResponse,
+  SessionSearchRequest,
+  SessionSearchResponse,
+  SessionSearchRequestBody
+} from '../../types/logging/session.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -76,6 +81,36 @@ export class TraceService extends BaseClient {
     // eslint-disable-next-line no-console
     console.log(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
+    );
+  }
+
+  public async searchSessions(
+    request: SessionSearchRequest
+  ): Promise<SessionSearchResponse> {
+    if (!this.logStreamId && !this.experimentId) {
+      throw new Error('Log stream or experiment not initialized');
+    }
+
+    const requestBody: SessionSearchRequestBody = {
+      limit: request.limit || 100,
+      starting_token: request.starting_token || 0,
+      log_stream_id: this.logStreamId || null,
+      experiment_id: this.experimentId || null
+    };
+
+    // Transform simplified filters to API format
+    if (request.filters && request.filters.length > 0) {
+      requestBody.filters = request.filters.map((filter) => ({
+        ...filter,
+        type: 'text' as const
+      }));
+    }
+
+    return await this.makeRequest<SessionSearchResponse>(
+      RequestMethod.POST,
+      Routes.sessionsSearch,
+      requestBody,
+      { project_id: this.projectId }
     );
   }
 }
