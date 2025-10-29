@@ -108,13 +108,13 @@ function fix_paths(line, page) {
   }
 
   // If the file location contains line numbers, remove them. These just add noise to PR reviews.
-  const lineNumberRegex = /(\[([^\]]+):(\d+)\]\(([^)]+)#L\d+\))/;
-    if (lineNumberRegex.test(line)) {
-      // Remove the line numbers from both the link text and URL
-      line = line.replace(lineNumberRegex, (match, fullMatch, filePath, lineNum, url) => {
-        return `[${filePath}](${url})`;
-      });
-    }
+  const lineNumberRegex = /\[([^\]]+):\d+\]\(([^)]+)#L\d+\)/;
+  if (lineNumberRegex.test(line)) {
+    // Remove the line numbers from both the link text and URL
+    line = line.replace(lineNumberRegex, (_, filePath, url) => {
+      return `[${filePath}](${url})`;
+    });
+  }
 
   // otherwise return the line unchanged
   return line;
