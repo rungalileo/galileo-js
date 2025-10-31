@@ -9,6 +9,7 @@ const mockLogger = {
   addLlmSpan: jest.fn(),
   addRetrieverSpan: jest.fn(),
   addToolSpan: jest.fn(),
+  addAgentSpan: jest.fn(),
   conclude: jest.fn(),
   currentParent: jest.fn().mockReturnValue(undefined),
   isLoggingDisabled: jest.fn().mockReturnValue(false)
@@ -204,6 +205,28 @@ describe('log wrapper', () => {
         })
       );
       expect(mockLogger.conclude).toHaveBeenCalledTimes(1);
+    });
+
+    test('should log an agent span correctly', async () => {
+      const agentFunc = async (task: string, context: string) => ({
+        action: `Execute task: ${task}`,
+        reasoning: `Based on context: ${context}`,
+        result: `Task completed successfully`
+      });
+      const wrappedFunc = log({ spanType: 'agent' }, agentFunc);
+      const task = 'analyze_data';
+      const context = 'user_request';
+
+      await wrappedFunc(task, context);
+
+      expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+      expect(mockLogger.addAgentSpan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: `{"task":"${task}","context":"${context}"}`,
+          name: 'agentFunc'
+        })
+      );
+      expect(mockLogger.conclude).toHaveBeenCalledTimes(2);
     });
   });
 

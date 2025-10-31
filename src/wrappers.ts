@@ -10,10 +10,11 @@ import {
   isLlmSpanAllowedOutputType,
   isRetrieverSpanAllowedOutputType
 } from './types/logging/step.types';
+import { isValidAgentType } from './types/logging/span.types';
 import { DatasetRecord } from './types';
 import { calculateDurationNs } from './utils/utils';
 
-export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow';
+export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow' | 'agent';
 
 export interface LogOptions {
   spanType?: SpanType;
@@ -96,6 +97,16 @@ export function log<T extends unknown[], R>(
           createdAt: createdAt,
           output: undefined,
           name
+        });
+        concludeCount = concludeCount + 1;
+      } else if (options.spanType === 'agent') {
+        logger?.addAgentSpan({
+          input: inputString,
+          agentType: isValidAgentType(argsDict['agentType'])
+            ? argsDict['agentType']
+            : undefined,
+          createdAt: createdAt,
+          name: name
         });
         concludeCount = concludeCount + 1;
       }
