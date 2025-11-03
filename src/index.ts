@@ -50,7 +50,16 @@ import {
   runExperiment
 } from './utils/experiments';
 import { GalileoLogger } from './utils/galileo-logger';
-import { init, flush, getLogger } from './singleton';
+import {
+  init,
+  flush,
+  flushAll,
+  getLogger,
+  get,
+  reset,
+  resetAll,
+  getAll
+} from './singleton';
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
 import { GalileoCallback } from './handlers/langchain';
@@ -108,6 +117,11 @@ export {
   init,
   flush,
   getLogger,
+  get,
+  reset,
+  resetAll,
+  flushAll,
+  getAll,
   // Metrics
   createCustomLlmMetric,
   createCustomCodeMetric,
