@@ -100,8 +100,6 @@ export class GalileoSingleton {
       local_Metrics = null
     } = options;
 
-    console.log('DEBVG GET TESTING');
-
     // Compute the key based on provided parameters or environment variables
     const key = GalileoSingleton._getKey(
       project,
