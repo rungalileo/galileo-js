@@ -244,7 +244,7 @@ export class GalileoSingleton {
 }
 
 /**
- * Get/Create new logger (like get()), but also provides .
+ * Get/Create new logger (like get()), but also provides session initialization.
  * If no options are provided, defaults to the following environment variables:
  * - GALILEO_PROJECT_NAME
  * - GALILEO_LOG_STREAM_NAME
@@ -273,7 +273,9 @@ export const init = async (
   const logger = singleton.get({
     projectName: options.projectName,
     logstream: options.logstream,
-    experimentId: options.experimentId
+    experimentId: options.experimentId,
+    mode: options.mode,
+    localMetrics: options.localMetrics
   });
 
   if (options.startNewSession) {
@@ -298,7 +300,7 @@ export const flushAll = async () => {
  *
  * Options provided determine which logger is flushed (no options means 'default' logger).
  * @param options - Configuration options to identify which logger to flush
- * @param options.[projectNameprojectName] - The project name
+ * @param options.[projectName] - The project name
  * @param options.[logstream] - The log stream name
  * @param options.[experimentId] - The experiment ID
  * @param options.[mode] - The logger mode
