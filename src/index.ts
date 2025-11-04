@@ -54,11 +54,11 @@ import {
   init,
   flush,
   flushAll,
+  getAllLoggers,
   getLogger,
   get,
   reset,
-  resetAll,
-  getAll
+  resetAll
 } from './singleton';
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
@@ -116,12 +116,12 @@ export {
   log,
   init,
   flush,
+  getAllLoggers,
   getLogger,
   get,
   reset,
   resetAll,
   flushAll,
-  getAll,
   // Metrics
   createCustomLlmMetric,
   createCustomCodeMetric,

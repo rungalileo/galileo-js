@@ -1,4 +1,12 @@
-import { GalileoSingleton, flushAll, resetAll } from '../src/singleton';
+import {
+  flushAll,
+  resetAll,
+  get,
+  reset,
+  flush,
+  getAllLoggers,
+  getLogger
+} from '../src/singleton';
 import { GalileoLogger } from '../src/utils/galileo-logger';
 import { LocalMetricConfig } from '../src/types/metrics.types';
 
@@ -23,39 +31,22 @@ jest.mock('../src/utils/galileo-logger', () => {
   };
 });
 
-describe('GalileoSingleton', () => {
-  beforeEach(() => {
-    // Reset the singleton instance before each test
-    // @ts-expect-error - accessing private static property for testing
-    GalileoSingleton.instance = undefined;
-  });
-
+describe('Singleton utility functions', () => {
   afterEach(async () => {
     // Clean up all loggers after each test
-    const singleton = GalileoSingleton.getInstance();
-    await singleton.resetAll();
-  });
-
-  describe('getInstance', () => {
-    it('should return the same singleton instance', () => {
-      const instance1 = GalileoSingleton.getInstance();
-      const instance2 = GalileoSingleton.getInstance();
-      expect(instance1).toBe(instance2);
-    });
+    await resetAll();
   });
 
   describe('get', () => {
     it('should create and return a logger with default key', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get();
+      const logger = get();
       expect(logger).toBeDefined();
       expect(GalileoLogger).toHaveBeenCalled();
     });
 
     it('should create logger with project and logstream', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get({
-        project: 'test-project',
+      const logger = get({
+        projectName: 'test-project',
         logstream: 'test-log-stream'
       });
       expect(logger).toBeDefined();
@@ -69,35 +60,32 @@ describe('GalileoSingleton', () => {
     });
 
     it('should return the same logger instance for the same key', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = singleton.get({
-        project: 'project1',
+      const logger2 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
       expect(logger1).toBe(logger2);
     });
 
     it('should create different loggers for different keys', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = singleton.get({
-        project: 'project2',
+      const logger2 = get({
+        projectName: 'project2',
         logstream: 'stream2'
       });
       expect(logger1).not.toBe(logger2);
     });
 
     it('should handle experimentId correctly', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get({
-        project: 'project1',
+      const logger = get({
+        projectName: 'project1',
         experimentId: 'experiment1'
       });
       expect(logger).toBeDefined();
@@ -111,14 +99,13 @@ describe('GalileoSingleton', () => {
     });
 
     it('should prioritize experimentId over logstream', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1',
         experimentId: 'experiment1'
       });
-      const logger2 = singleton.get({
-        project: 'project1',
+      const logger2 = get({
+        projectName: 'project1',
         experimentId: 'experiment1'
       });
       // They should be the same because experimentId takes precedence
@@ -126,35 +113,33 @@ describe('GalileoSingleton', () => {
     });
 
     it('should support different modes', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1',
         mode: 'batch'
       });
-      const logger2 = singleton.get({
-        project: 'project1',
+      const logger2 = get({
+        projectName: 'project1',
         logstream: 'stream1',
         mode: 'streaming'
       });
       expect(logger1).not.toBe(logger2);
     });
 
-    it('should support local_Metrics', () => {
-      const singleton = GalileoSingleton.getInstance();
+    it('should support localMetrics', () => {
       const localMetrics: LocalMetricConfig[] = [
         {
           name: 'test-metric',
           scorerFn: () => 0.5
         }
       ];
-      const logger = singleton.get({
-        project: 'project1',
+      const logger = get({
+        projectName: 'project1',
         logstream: 'stream1',
-        local_Metrics: localMetrics
+        localMetrics: localMetrics
       });
       expect(logger).toBeDefined();
-      // Verify the logger was created with local_Metrics
+      // Verify the logger was created with localMetrics
       expect(GalileoLogger).toHaveBeenCalledWith(
         expect.objectContaining({
           projectName: 'project1',
@@ -172,8 +157,7 @@ describe('GalileoSingleton', () => {
         GALILEO_LOG_STREAM: 'env-stream'
       };
 
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get();
+      const logger = get();
       expect(logger).toBeDefined();
       // The logger should be created with env vars as defaults
       expect(GalileoLogger).toHaveBeenCalled();
@@ -189,9 +173,8 @@ describe('GalileoSingleton', () => {
         GALILEO_PROJECT_NAME: 'project-from-name'
       };
 
-      const singleton = GalileoSingleton.getInstance();
       // Both env vars should be checked, but GALILEO_PROJECT takes precedence in our implementation
-      const logger = singleton.get();
+      const logger = get();
       expect(logger).toBeDefined();
 
       process.env = originalEnv;
@@ -200,37 +183,35 @@ describe('GalileoSingleton', () => {
 
   describe('reset', () => {
     it('should reset a specific logger', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get({
-        project: 'project1',
+      const logger = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
 
-      await singleton.reset({
-        project: 'project1',
-        log_stream: 'stream1'
+      await reset({
+        projectName: 'project1',
+        logstream: 'stream1'
       });
 
       expect(logger.terminate).toHaveBeenCalled();
 
       // Getting the same key should create a new logger
-      const newLogger = singleton.get({
-        project: 'project1',
+      const newLogger = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
       expect(newLogger).not.toBe(logger);
     });
 
-    it('should handle reset with experiment_id', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get({
-        project: 'project1',
+    it('should handle reset with experimentId', async () => {
+      const logger = get({
+        projectName: 'project1',
         experimentId: 'experiment1'
       });
 
-      await singleton.reset({
-        project: 'project1',
-        experiment_id: 'experiment1'
+      await reset({
+        projectName: 'project1',
+        experimentId: 'experiment1'
       });
 
       expect(logger.terminate).toHaveBeenCalled();
@@ -239,49 +220,45 @@ describe('GalileoSingleton', () => {
 
   describe('resetAll', () => {
     it('should reset all loggers', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = singleton.get({
-        project: 'project2',
+      const logger2 = get({
+        projectName: 'project2',
         logstream: 'stream2'
       });
 
-      await singleton.resetAll();
+      await resetAll();
 
       expect(logger1.terminate).toHaveBeenCalled();
       expect(logger2.terminate).toHaveBeenCalled();
 
-      const allLoggers = singleton.getAllLoggers();
+      const allLoggers = getAllLoggers();
       expect(allLoggers.size).toBe(0);
     });
   });
 
   describe('flush', () => {
     it('should flush a specific logger', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get({
-        project: 'project1',
+      const logger = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
 
-      await singleton.flush({
-        project: 'project1',
-        log_stream: 'stream1'
+      await flush({
+        projectName: 'project1',
+        logstream: 'stream1'
       });
 
       expect(logger.flush).toHaveBeenCalled();
     });
 
     it('should not throw if logger does not exist', async () => {
-      const singleton = GalileoSingleton.getInstance();
-
       await expect(
-        singleton.flush({
-          project: 'nonexistent',
-          log_stream: 'nonexistent'
+        flush({
+          projectName: 'nonexistent',
+          logstream: 'nonexistent'
         })
       ).resolves.not.toThrow();
     });
@@ -289,17 +266,16 @@ describe('GalileoSingleton', () => {
 
   describe('flushAll', () => {
     it('should flush all loggers', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = singleton.get({
-        project: 'project2',
+      const logger2 = get({
+        projectName: 'project2',
         logstream: 'stream2'
       });
 
-      await singleton.flushAll();
+      await flushAll();
 
       expect(logger1.flush).toHaveBeenCalled();
       expect(logger2.flush).toHaveBeenCalled();
@@ -308,77 +284,70 @@ describe('GalileoSingleton', () => {
 
   describe('getAllLoggers', () => {
     it('should return a copy of all loggers', () => {
-      const singleton = GalileoSingleton.getInstance();
-      singleton.get({ project: 'project1', logstream: 'stream1' });
-      singleton.get({ project: 'project2', logstream: 'stream2' });
+      get({ projectName: 'project1', logstream: 'stream1' });
+      get({ projectName: 'project2', logstream: 'stream2' });
 
-      const allLoggers = singleton.getAllLoggers();
+      const allLoggers = getAllLoggers();
       expect(allLoggers.size).toBe(2);
     });
 
     it('should return a copy that does not affect the original', () => {
-      const singleton = GalileoSingleton.getInstance();
-      singleton.get({ project: 'project1', logstream: 'stream1' });
+      get({ projectName: 'project1', logstream: 'stream1' });
 
-      const allLoggers = singleton.getAllLoggers();
+      const allLoggers = getAllLoggers();
       allLoggers.clear();
 
-      const allLoggers2 = singleton.getAllLoggers();
+      const allLoggers2 = getAllLoggers();
       expect(allLoggers2.size).toBe(1);
     });
   });
 
   describe('Legacy compatibility methods', () => {
-    describe('setClient', () => {
-      it('should set a client with default key', () => {
-        const singleton = GalileoSingleton.getInstance();
-        const mockLogger = {
-          flush: jest.fn(),
-          terminate: jest.fn()
-        } as unknown as GalileoLogger;
+    describe('getLogger', () => {
+      it('should return the default logger', () => {
+        const logger1 = getLogger();
+        const logger2 = getLogger();
+        // Should return the same default logger instance
+        expect(logger1).toBe(logger2);
+        expect(logger1).toBeDefined();
+      });
 
-        singleton.setClient(mockLogger);
-        // Verify it was stored by getting with default key
-        const retrievedLogger = singleton.get();
-        expect(retrievedLogger).toBe(mockLogger);
+      it('should return default logger even when other loggers exist', () => {
+        get({ projectName: 'project1', logstream: 'stream1' });
+        const defaultLogger = getLogger();
+        expect(defaultLogger).toBeDefined();
+        // Should be different from the explicitly created logger
+        const explicitLogger = get({
+          projectName: 'project1',
+          logstream: 'stream1'
+        });
+        expect(defaultLogger).not.toBe(explicitLogger);
       });
     });
   });
 
   describe('Key generation edge cases', () => {
-    it('should handle null values in parameters', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger = singleton.get({
-        project: null,
-        logstream: null,
-        experimentId: null
-      });
-      expect(logger).toBeDefined();
-    });
-
     it('should handle empty strings', () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: '',
+      const logger1 = get({
+        projectName: '',
         logstream: ''
       });
-      const logger2 = singleton.get({
-        project: '',
+      const logger2 = get({
+        projectName: '',
         logstream: ''
       });
       expect(logger1).toBe(logger2);
     });
   });
 
-  describe('Exported functions', () => {
+  describe('Exported functions integration', () => {
     it('should work with flushAll exported function', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = singleton.get({
-        project: 'project2',
+      const logger2 = get({
+        projectName: 'project2',
         logstream: 'stream2'
       });
 
@@ -389,13 +358,12 @@ describe('GalileoSingleton', () => {
     });
 
     it('should work with resetAll exported function', async () => {
-      const singleton = GalileoSingleton.getInstance();
-      const logger1 = singleton.get({
-        project: 'project1',
+      const logger1 = get({
+        projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = singleton.get({
-        project: 'project2',
+      const logger2 = get({
+        projectName: 'project2',
         logstream: 'stream2'
       });
 
