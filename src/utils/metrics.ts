@@ -7,6 +7,7 @@ import {
   ScorerVersion,
   StepType
 } from '../types';
+
 import {
   createScorer,
   createLlmScorerVersion,
@@ -70,7 +71,7 @@ export const createCustomLlmMetric = async ({
  * Creates a custom code-based metric.
  *
  * @param params - The parameters for creating the custom code metric.
- * @returns A promise that resolves with the created scorer.
+ * @returns A promise that resolves with the created scorer version.
  */
 export const createCustomCodeMetric = async ({
   name,
@@ -78,7 +79,7 @@ export const createCustomCodeMetric = async ({
   nodeLevel,
   description = '',
   tags = []
-}: CreateCustomCodeMetricParams): Promise<any> => {
+}: CreateCustomCodeMetricParams): Promise<ScorerVersion> => {
   const fs = await import('fs');
   const path = await import('path');
 
@@ -103,12 +104,7 @@ export const createCustomCodeMetric = async ({
 
   // Create a code scorer version with the code content
   const { createCodeScorerVersion } = await import('./scorers');
-  const scorerVersion = await createCodeScorerVersion(scorer.id, codeContent);
-
-  return {
-    scorer,
-    version: scorerVersion
-  };
+  return await createCodeScorerVersion(scorer.id, codeContent);
 };
 
 /**
