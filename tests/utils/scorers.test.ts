@@ -1,6 +1,7 @@
 import {
   createScorer,
   createLlmScorerVersion,
+  createCodeScorerVersion,
   deleteScorer,
   getScorerVersion,
   getScorers
@@ -17,6 +18,7 @@ import { StepType } from '../../src/types';
 const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockCreateScorer = jest.fn();
 const mockCreateLlmScorerVersion = jest.fn();
+const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
@@ -29,6 +31,8 @@ jest.mock('../../src/api-client', () => {
         createScorer: mockCreateScorer,
         createLlmScorerVersion: (...args: unknown[]) =>
           mockCreateLlmScorerVersion(...args),
+        createCodeScorerVersion: (...args: unknown[]) =>
+          mockCreateCodeScorerVersion(...args),
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion,
         getScorers: mockGetScorers
@@ -234,6 +238,58 @@ describe('scorers utility', () => {
         userPrompt: 'custom user prompt'
       });
       expect(result).toEqual(mockVersion);
+    });
+  });
+
+  describe('createCodeScorerVersion', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockInit.mockResolvedValue(undefined);
+      mockCreateCodeScorerVersion.mockResolvedValue(mockScorerVersion);
+    });
+
+    it('should initialize the API client', async () => {
+      await createCodeScorerVersion('scorer-uuid', 'def score(): return 1.0');
+      expect(mockInit).toHaveBeenCalled();
+    });
+
+    it('should call createCodeScorerVersion with correct parameters', async () => {
+      const codeContent = 'def score(input, output):\n    return 1.0';
+      await createCodeScorerVersion('scorer-uuid', codeContent);
+      expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
+        'scorer-uuid',
+        codeContent
+      );
+    });
+
+    it('should return the created scorer version', async () => {
+      const result = await createCodeScorerVersion(
+        'scorer-uuid',
+        'def score(): return 1.0'
+      );
+      expect(result).toEqual(mockScorerVersion);
+    });
+
+    it('should handle API errors gracefully', async () => {
+      const apiError = new Error('Code upload failed');
+      mockCreateCodeScorerVersion.mockRejectedValueOnce(apiError);
+      await expect(
+        createCodeScorerVersion('scorer-uuid', 'def score(): return 1.0')
+      ).rejects.toThrow(apiError);
+    });
+
+    it('should handle multiline code content', async () => {
+      const multilineCode = `def score(input, output):
+    # Calculate score based on input and output
+    if 'error' in output.lower():
+        return 0.0
+    return 1.0`;
+      
+      await createCodeScorerVersion('scorer-uuid', multilineCode);
+      expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
+        'scorer-uuid',
+        multilineCode
+      );
     });
   });
 

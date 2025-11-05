@@ -146,6 +146,8 @@ export const createLlmScorerVersion = async ({
   );
 };
 
+
+
 /**
  * Deletes a scorer by its unique identifier.
  *
@@ -157,4 +159,29 @@ export const deleteScorer = async (scorerId: string): Promise<void> => {
   await client.init();
 
   return await client.deleteScorer(scorerId);
+};
+
+/**
+ * Creates a code-based scorer version by uploading code content.
+ *
+ * @param scorerId - The ID of the scorer to create a version for.
+ * @param codeContent - The Python code content to upload as the scorer implementation.
+ * @returns A promise that resolves to the created scorer version.
+ *
+ * @example
+ * ```typescript
+ * const version = await createCodeScorerVersion(
+ *   'scorer-123',
+ *   'def score(input, output): return 1.0'
+ * );
+ * ```
+ */
+export const createCodeScorerVersion = async (
+  scorerId: string,
+  codeContent: string
+): Promise<ScorerVersion> => {
+  const client = new GalileoApiClient();
+  await client.init();
+
+  return await client.createCodeScorerVersion(scorerId, codeContent);
 };

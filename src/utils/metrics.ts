@@ -1,5 +1,6 @@
 import {
   CreateCustomLlmMetricParams,
+  CreateCustomCodeMetricParams,
   DeleteMetricParams,
   OutputType,
   ScorerTypes,
@@ -63,6 +64,51 @@ export const createCustomLlmMetric = async ({
     modelName,
     numJudges
   });
+};
+
+/**
+ * Creates a custom code-based metric.
+ *
+ * @param params - The parameters for creating the custom code metric.
+ * @returns A promise that resolves with the created scorer.
+ */
+export const createCustomCodeMetric = async ({
+  name,
+  codePath,
+  nodeLevel,
+  description = '',
+  tags = [],
+}: CreateCustomCodeMetricParams): Promise<any> => {
+  const fs = await import('fs');
+  const path = await import('path');
+  
+  // Read the code file
+  const absolutePath = path.resolve(codePath);
+  const codeContent = fs.readFileSync(absolutePath, 'utf-8');
+  
+  const scoreableNodeTypes = [nodeLevel];
+
+  // Create the scorer with type 'code'
+  const scorer = await createScorer(
+    name,
+    ScorerTypes.code,
+    description,
+    tags,
+    undefined, // No defaults for code scorers
+    undefined, // No model type
+    undefined, // No default version ID
+    scoreableNodeTypes,
+    undefined
+  );
+
+  // Create a code scorer version with the code content
+  const { createCodeScorerVersion } = await import('./scorers');
+  const scorerVersion = await createCodeScorerVersion(scorer.id, codeContent);
+
+  return {
+    scorer,
+    version: scorerVersion,
+  };
 };
 
 /**

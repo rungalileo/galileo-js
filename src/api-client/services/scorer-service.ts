@@ -201,4 +201,22 @@ export class ScorerService extends BaseClient {
     const path = Routes.scorerId.replace('{scorer_id}', id);
     await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
   };
+
+  public createCodeScorerVersion = async (
+    scorerId: string,
+    codeContent: string
+  ): Promise<ScorerVersion> => {
+    const path = Routes.codeScorerVersion.replace('{scorer_id}', scorerId);
+    
+    // Create FormData with the code content as a file
+    const formData = new FormData();
+    const blob = new Blob([codeContent], { type: 'text/x-python' });
+    formData.append('file', blob, 'scorer.py');
+
+    return await this.makeRequest<ScorerVersion>(
+      RequestMethod.POST,
+      path as Routes,
+      formData
+    );
+  };
 }
