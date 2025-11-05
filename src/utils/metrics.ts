@@ -77,15 +77,15 @@ export const createCustomCodeMetric = async ({
   codePath,
   nodeLevel,
   description = '',
-  tags = [],
+  tags = []
 }: CreateCustomCodeMetricParams): Promise<any> => {
   const fs = await import('fs');
   const path = await import('path');
-  
+
   // Read the code file
   const absolutePath = path.resolve(codePath);
   const codeContent = fs.readFileSync(absolutePath, 'utf-8');
-  
+
   const scoreableNodeTypes = [nodeLevel];
 
   // Create the scorer with type 'code'
@@ -107,7 +107,7 @@ export const createCustomCodeMetric = async ({
 
   return {
     scorer,
-    version: scorerVersion,
+    version: scorerVersion
   };
 };
 

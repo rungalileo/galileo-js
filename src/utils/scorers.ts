@@ -146,8 +146,6 @@ export const createLlmScorerVersion = async ({
   );
 };
 
-
-
 /**
  * Deletes a scorer by its unique identifier.
  *

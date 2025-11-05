@@ -284,7 +284,7 @@ describe('scorers utility', () => {
     if 'error' in output.lower():
         return 0.0
     return 1.0`;
-      
+
       await createCodeScorerVersion('scorer-uuid', multilineCode);
       expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',

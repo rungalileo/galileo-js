@@ -207,7 +207,7 @@ export class ScorerService extends BaseClient {
     codeContent: string
   ): Promise<ScorerVersion> => {
     const path = Routes.codeScorerVersion.replace('{scorer_id}', scorerId);
-    
+
     // Create FormData with the code content as a file
     const formData = new FormData();
     const blob = new Blob([codeContent], { type: 'text/x-python' });
