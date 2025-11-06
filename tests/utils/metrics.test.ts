@@ -1,4 +1,8 @@
-import { createCustomLlmMetric, createCustomCodeMetric, deleteMetric } from '../../src/utils/metrics';
+import {
+  createCustomLlmMetric,
+  createCustomCodeMetric,
+  deleteMetric
+} from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
   GalileoScorers,
@@ -420,14 +424,17 @@ describe('metrics utils', () => {
     beforeAll(() => {
       // Create temporary directory for test files
       tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'galileo-test-'));
-      
+
       // Create test files
       validCodeFile = path.join(tempDir, 'scorer.py');
-      fs.writeFileSync(validCodeFile, 'def score(input, output):\n    return 1.0\n');
-      
+      fs.writeFileSync(
+        validCodeFile,
+        'def score(input, output):\n    return 1.0\n'
+      );
+
       emptyFile = path.join(tempDir, 'empty.py');
       fs.writeFileSync(emptyFile, '');
-      
+
       whitespaceFile = path.join(tempDir, 'whitespace.py');
       fs.writeFileSync(whitespaceFile, '   \n\n  \t  ');
     });
