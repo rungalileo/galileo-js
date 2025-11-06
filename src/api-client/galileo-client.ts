@@ -561,6 +561,14 @@ export class GalileoApiClient extends BaseClient {
     return this.scorerService!.deleteScorer(scorerId);
   }
 
+  public async createCodeScorerVersion(
+    scorerId: string,
+    codeContent: string
+  ): Promise<ScorerVersion> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.createCodeScorerVersion(scorerId, codeContent);
+  }
+
   // Helper to ensure service is initialized
   private ensureService<T>(service: T | undefined): asserts service is T {
     if (!service) {

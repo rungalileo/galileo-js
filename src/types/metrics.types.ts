@@ -106,6 +106,14 @@ export interface CreateCustomLlmMetricParams {
   outputType?: OutputType;
 }
 
+export interface CreateCustomCodeMetricParams {
+  name: string;
+  codePath: string;
+  nodeLevel: StepType;
+  description?: string;
+  tags?: string[];
+}
+
 export interface DeleteMetricParams {
   scorerName: string;
   scorerType: ScorerTypes;

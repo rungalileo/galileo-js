@@ -23,6 +23,7 @@ import {
 } from './utils/datasets';
 import {
   createCustomLlmMetric,
+  createCustomCodeMetric,
   deleteMetric,
   createMetricConfigs
 } from './utils/metrics';
@@ -109,6 +110,7 @@ export {
   getLogger,
   // Metrics
   createCustomLlmMetric,
+  createCustomCodeMetric,
   deleteMetric,
   createMetricConfigs
 };

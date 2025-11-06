@@ -1,14 +1,17 @@
 import {
   CreateCustomLlmMetricParams,
+  CreateCustomCodeMetricParams,
   DeleteMetricParams,
   OutputType,
   ScorerTypes,
   ScorerVersion,
   StepType
 } from '../types';
+
 import {
   createScorer,
   createLlmScorerVersion,
+  createCodeScorerVersion,
   deleteScorer,
   getScorers,
   getScorerVersion
@@ -20,6 +23,8 @@ import {
 } from '../types/metrics.types';
 import { ScorerConfig } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
+import fs from 'fs/promises';
+import path from 'path';
 
 /**
  * Creates a custom LLM metric.
@@ -63,6 +68,68 @@ export const createCustomLlmMetric = async ({
     modelName,
     numJudges
   });
+};
+
+/**
+ * Creates a custom code-based metric.
+ *
+ * @param params - The parameters for creating the custom code metric.
+ * @returns A promise that resolves with the created scorer version.
+ */
+export const createCustomCodeMetric = async ({
+  name,
+  codePath,
+  nodeLevel,
+  description = '',
+  tags = []
+}: CreateCustomCodeMetricParams): Promise<ScorerVersion> => {
+  // Read the code file
+  const absolutePath = path.resolve(codePath);
+
+  // Check if the file exists and is accessible
+  try {
+    await fs.access(absolutePath);
+  } catch {
+    throw new Error(
+      `Code file not found at path: ${absolutePath}. Please provide a valid file path.`
+    );
+  }
+
+  // Check if the path is a file (not a directory)
+  const stats = await fs.stat(absolutePath);
+  if (!stats.isFile()) {
+    throw new Error(
+      `Path is not a file: ${absolutePath}. Please provide a path to a file, not a directory.`
+    );
+  }
+
+  // Read the file content asynchronously
+  const codeContent = await fs.readFile(absolutePath, 'utf-8');
+
+  // Check if the file is empty
+  if (!codeContent || codeContent.trim().length === 0) {
+    throw new Error(
+      `Code file is empty: ${absolutePath}. Please provide a file with valid code content.`
+    );
+  }
+
+  const scoreableNodeTypes = [nodeLevel];
+
+  // Create the scorer with type 'code'
+  const scorer = await createScorer(
+    name,
+    ScorerTypes.code,
+    description,
+    tags,
+    undefined, // No defaults for code scorers
+    undefined, // No model type
+    undefined, // No default version ID
+    scoreableNodeTypes,
+    undefined
+  );
+
+  // Create a code scorer version with the code content
+  return await createCodeScorerVersion(scorer.id, codeContent);
 };
 
 /**
