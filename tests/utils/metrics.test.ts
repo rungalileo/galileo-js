@@ -1,4 +1,4 @@
-import { createCustomLlmMetric, deleteMetric } from '../../src/utils/metrics';
+import { createCustomLlmMetric, createCustomCodeMetric, deleteMetric } from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
   GalileoScorers,
@@ -14,11 +14,15 @@ import {
 import { StepType } from '../../src/types';
 import { LogStream } from '../../src/types/log-stream.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockCreateScorer = jest.fn();
 const mockCreateLlmScorerVersion = jest.fn();
+const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
@@ -35,6 +39,7 @@ jest.mock('../../src/api-client', () => {
         init: mockInit,
         createScorer: mockCreateScorer,
         createLlmScorerVersion: mockCreateLlmScorerVersion,
+        createCodeScorerVersion: mockCreateCodeScorerVersion,
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion,
         getScorers: mockGetScorers,
@@ -390,6 +395,121 @@ describe('metrics utils', () => {
       expect(localMetrics).toHaveLength(1);
       expect(localMetrics[0].name).toBe('response_length');
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
+    });
+  });
+
+  describe('createCustomCodeMetric', () => {
+    const CODE_SCORER: Scorer = {
+      id: 'code-scorer-789',
+      name: 'my_code_metric',
+      scorer_type: ScorerTypes.code,
+      tags: ['custom']
+    };
+
+    const CODE_SCORER_VERSION: ScorerVersion = {
+      id: 'code-scorer-version-789',
+      version: 1,
+      scorer_id: 'code-scorer-789'
+    };
+
+    let tempDir: string;
+    let validCodeFile: string;
+    let emptyFile: string;
+    let whitespaceFile: string;
+
+    beforeAll(() => {
+      // Create temporary directory for test files
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'galileo-test-'));
+      
+      // Create test files
+      validCodeFile = path.join(tempDir, 'scorer.py');
+      fs.writeFileSync(validCodeFile, 'def score(input, output):\n    return 1.0\n');
+      
+      emptyFile = path.join(tempDir, 'empty.py');
+      fs.writeFileSync(emptyFile, '');
+      
+      whitespaceFile = path.join(tempDir, 'whitespace.py');
+      fs.writeFileSync(whitespaceFile, '   \n\n  \t  ');
+    });
+
+    afterAll(() => {
+      // Clean up test files
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    beforeEach(() => {
+      mockCreateScorer.mockResolvedValue(CODE_SCORER);
+      mockCreateCodeScorerVersion.mockResolvedValue(CODE_SCORER_VERSION);
+    });
+
+    it('should create a custom code metric successfully', async () => {
+      const result = await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        description: 'My custom code scorer',
+        tags: ['custom']
+      });
+
+      expect(result).toEqual(CODE_SCORER_VERSION);
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        'my_code_metric',
+        ScorerTypes.code,
+        'My custom code scorer',
+        ['custom'],
+        undefined,
+        undefined,
+        undefined,
+        [StepType.llm],
+        undefined,
+        undefined
+      );
+      expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
+        'code-scorer-789',
+        'def score(input, output):\n    return 1.0\n'
+      );
+    });
+
+    it('should throw error when file does not exist', async () => {
+      await expect(
+        createCustomCodeMetric({
+          name: 'my_code_metric',
+          codePath: path.join(tempDir, 'nonexistent.py'),
+          nodeLevel: StepType.llm
+        })
+      ).rejects.toThrow('Code file not found at path');
+    });
+
+    it('should throw error when path is a directory', async () => {
+      await expect(
+        createCustomCodeMetric({
+          name: 'my_code_metric',
+          codePath: tempDir,
+          nodeLevel: StepType.llm
+        })
+      ).rejects.toThrow('Path is not a file');
+    });
+
+    it('should throw error when file is empty', async () => {
+      await expect(
+        createCustomCodeMetric({
+          name: 'my_code_metric',
+          codePath: emptyFile,
+          nodeLevel: StepType.llm
+        })
+      ).rejects.toThrow('Code file is empty');
+    });
+
+    it('should throw error when file contains only whitespace', async () => {
+      await expect(
+        createCustomCodeMetric({
+          name: 'my_code_metric',
+          codePath: whitespaceFile,
+          nodeLevel: StepType.llm
+        })
+      ).rejects.toThrow('Code file is empty');
     });
   });
 });

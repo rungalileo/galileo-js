@@ -11,6 +11,7 @@ import {
 import {
   createScorer,
   createLlmScorerVersion,
+  createCodeScorerVersion,
   deleteScorer,
   getScorers,
   getScorerVersion
@@ -22,6 +23,8 @@ import {
 } from '../types/metrics.types';
 import { ScorerConfig } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
+import fs from 'fs/promises';
+import path from 'path';
 
 /**
  * Creates a custom LLM metric.
@@ -80,12 +83,35 @@ export const createCustomCodeMetric = async ({
   description = '',
   tags = []
 }: CreateCustomCodeMetricParams): Promise<ScorerVersion> => {
-  const fs = await import('fs');
-  const path = await import('path');
-
   // Read the code file
   const absolutePath = path.resolve(codePath);
-  const codeContent = fs.readFileSync(absolutePath, 'utf-8');
+
+  // Check if the file exists and is accessible
+  try {
+    await fs.access(absolutePath);
+  } catch {
+    throw new Error(
+      `Code file not found at path: ${absolutePath}. Please provide a valid file path.`
+    );
+  }
+
+  // Check if the path is a file (not a directory)
+  const stats = await fs.stat(absolutePath);
+  if (!stats.isFile()) {
+    throw new Error(
+      `Path is not a file: ${absolutePath}. Please provide a path to a file, not a directory.`
+    );
+  }
+
+  // Read the file content asynchronously
+  const codeContent = await fs.readFile(absolutePath, 'utf-8');
+
+  // Check if the file is empty
+  if (!codeContent || codeContent.trim().length === 0) {
+    throw new Error(
+      `Code file is empty: ${absolutePath}. Please provide a file with valid code content.`
+    );
+  }
 
   const scoreableNodeTypes = [nodeLevel];
 
@@ -103,7 +129,6 @@ export const createCustomCodeMetric = async ({
   );
 
   // Create a code scorer version with the code content
-  const { createCodeScorerVersion } = await import('./scorers');
   return await createCodeScorerVersion(scorer.id, codeContent);
 };
 
