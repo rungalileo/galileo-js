@@ -1,6 +1,7 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { ScorerConfig } from '../../types/scorer.types';
+import { JobName, TaskType, EXPERIMENT_TASK_TYPE } from '../../types/job.types';
 import {
   Experiment,
   PromptRunSettings,
@@ -49,7 +50,7 @@ export class ExperimentService extends BaseClient {
       Routes.experiments,
       {
         name,
-        task_type: 16,
+        task_type: EXPERIMENT_TASK_TYPE,
         dataset
       },
       {
@@ -80,20 +81,22 @@ export class ExperimentService extends BaseClient {
     promptTemplateVersionId: string,
     datasetId: string,
     scorers?: ScorerConfig[],
-    promptSettings?: PromptRunSettings
+    promptSettings?: PromptRunSettings,
+    name?: string,
+    taskType?: TaskType
   ): Promise<CreateJobResponse> => {
     return await this.makeRequest<CreateJobResponse>(
       RequestMethod.POST,
       Routes.jobs,
       {
-        job_name: 'playground_run',
+        job_name: name || JobName.playground_run,
         project_id: projectId,
         run_id: experimentId,
         prompt_template_version_id: promptTemplateVersionId,
         prompt_settings: promptSettings || {},
         dataset_id: datasetId,
         scorers: scorers,
-        task_type: 17
+        task_type: taskType || EXPERIMENT_TASK_TYPE
       }
     );
   };

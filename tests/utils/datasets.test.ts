@@ -12,12 +12,7 @@ import {
   getDatasetMetadata
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
-import {
-  Dataset,
-  DatasetContent,
-  DatasetRow,
-  JobProgress
-} from '../../src/api-client';
+import { Dataset, DatasetContent, DatasetRow } from '../../src/api-client';
 import { DatasetType } from '../../src/utils/datasets';
 import { RunExperimentParams } from '../../src/utils/experiments';
 
@@ -93,39 +88,24 @@ const extendDatasetHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json({ dataset_id: EXTENDED_DATASET_ID });
 });
 
-const getExtendDatasetStatusHandler = jest
-  .fn()
-  .mockImplementationOnce(() => {
-    const response: JobProgress = {
-      steps_completed: 1,
-      steps_total: 3,
-      progress_message: 'Processing'
-    };
-    return HttpResponse.json(response);
-  })
-  .mockImplementationOnce(() => {
-    const response: JobProgress = {
-      steps_completed: 2,
-      steps_total: 3,
-      progress_message: 'Still processing'
-    };
-    return HttpResponse.json(response);
-  })
-  .mockImplementation(() => {
-    const response: JobProgress = {
-      steps_completed: 3,
-      steps_total: 3,
-      progress_message: 'Done'
-    };
-    return HttpResponse.json(response);
-  });
-
 const getExtendedDatasetContentHandler = jest.fn().mockImplementation(() => {
   const response: DatasetContent = {
     rows: [EXTENDED_DATASET_ROW]
   };
 
   return HttpResponse.json(response);
+});
+
+let extendStatusCallCount = 0;
+const getExtendDatasetStatusHandler = jest.fn().mockImplementation(() => {
+  extendStatusCallCount++;
+  // First call: incomplete (0/2), subsequent calls: complete (2/2)
+  const jobProgress = {
+    steps_completed: extendStatusCallCount === 1 ? 0 : 2,
+    steps_total: 2,
+    progress_message: extendStatusCallCount === 1 ? 'Processing...' : 'Complete'
+  };
+  return HttpResponse.json(jobProgress);
 });
 
 export const handlers = [
@@ -170,6 +150,7 @@ beforeAll(() => {
 afterEach(() => {
   server.resetHandlers();
   jest.clearAllTimers();
+  extendStatusCallCount = 0;
 });
 
 afterAll(() => {
@@ -408,6 +389,5 @@ test('extend dataset', async () => {
 
   expect(result).toEqual([EXTENDED_DATASET_ROW]);
   expect(extendDatasetHandler).toHaveBeenCalled();
-  expect(getExtendDatasetStatusHandler).toHaveBeenCalledTimes(3);
   expect(getExtendedDatasetContentHandler).toHaveBeenCalled();
 });

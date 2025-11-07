@@ -27,6 +27,17 @@ import {
   deleteMetric,
   createMetricConfigs
 } from './utils/metrics';
+import { Jobs } from './utils/jobs';
+import {
+  getJobProgress,
+  logScorerJobsStatus,
+  getRunScorerJobs,
+  getScorerJobs,
+  getScorerJobsStatus,
+  PollJobOptions,
+  JobProgressLogger,
+  getJob
+} from './utils/job-progress';
 import {
   getPromptTemplate,
   getPromptTemplates,
@@ -124,5 +135,17 @@ export {
   createCustomLlmMetric,
   createCustomCodeMetric,
   deleteMetric,
-  createMetricConfigs
+  createMetricConfigs,
+  // Jobs (legacy)
+  getScorerJobs,
+  getScorerJobsStatus,
+  // Job Progress (new standardized API)
+  getJobProgress,
+  logScorerJobsStatus,
+  getRunScorerJobs,
+  PollJobOptions,
+  JobProgressLogger,
+  getJob,
+  // Jobs class
+  Jobs
 };
