@@ -265,7 +265,7 @@ class GalileoLogger {
         const searchRequestFilter: LogRecordsQueryRequest = {
           filters: [
             {
-              column_id: 'id',
+              column_id: 'external_id',
               operator: 'eq',
               value: externalId,
               type: 'id'

@@ -92,6 +92,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
+    this.validateRequestContext(request);
 
     return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
@@ -107,6 +108,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
+    this.validateRequestContext(request);
 
     return await this.makeRequest<MetricSearchResponse>(
       RequestMethod.POST,
@@ -122,6 +124,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
+    this.validateRequestContext(request);
 
     return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
@@ -137,6 +140,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
+    this.validateRequestContext(request);
 
     return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
@@ -144,5 +148,15 @@ export class TraceService extends BaseClient {
       request,
       { project_id: this.projectId }
     );
+  }
+
+  private validateRequestContext(request: LogRecordsQueryRequest) {
+    if (!request.experiment_id && !request.log_stream_id) {
+      if (this.experimentId) {
+        request.experiment_id = this.experimentId;
+      } else if (this.logStreamId) {
+        request.log_stream_id = this.logStreamId;
+      }
+    }
   }
 }

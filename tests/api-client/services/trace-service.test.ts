@@ -74,7 +74,7 @@ describe('TraceService', () => {
       expect(typeof traceService.searchSessions).toBe('function');
     });
 
-    it('should search sessions with filters', async () => {
+    it('should search sessions with filters and auto-inject experiment_id', async () => {
       const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
         records: [
           {
@@ -116,7 +116,8 @@ describe('TraceService', () => {
               type: 'text'
             }
           ],
-          limit: 1
+          limit: 1,
+          experiment_id: 'test-experiment-id'
         },
         { project_id: 'test-project-id' }
       );
@@ -147,10 +148,27 @@ describe('TraceService', () => {
         ]
       });
 
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/sessions/search',
+        {
+          filters: [
+            {
+              column_id: 'external_id',
+              operator: 'eq',
+              value: 'non-existent-id',
+              type: 'text'
+            }
+          ],
+          experiment_id: 'test-experiment-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+
       expect(result.records).toEqual([]);
     });
 
-    it('should use default parameters when not provided', async () => {
+    it('should auto-inject experiment_id when not provided in request', async () => {
       const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
         records: [],
         starting_token: 0,
@@ -166,7 +184,89 @@ describe('TraceService', () => {
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
         'projects/{project_id}/sessions/search',
-        {},
+        {
+          experiment_id: 'test-experiment-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+
+    it('should auto-inject log_stream_id when experiment_id is not available', async () => {
+      const traceServiceWithLogStream = new TraceService(
+        'https://api.galileo.ai',
+        'test-token',
+        'test-project-id',
+        'test-log-stream-id'
+      );
+
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceServiceWithLogStream as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceServiceWithLogStream.searchSessions({});
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/sessions/search',
+        {
+          log_stream_id: 'test-log-stream-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+
+    it('should not override explicit experiment_id in request', async () => {
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceService.searchSessions({
+        experiment_id: 'explicit-experiment-id'
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/sessions/search',
+        {
+          experiment_id: 'explicit-experiment-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+
+    it('should not override explicit log_stream_id in request', async () => {
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceService.searchSessions({
+        log_stream_id: 'explicit-log-stream-id'
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/sessions/search',
+        {
+          log_stream_id: 'explicit-log-stream-id'
+        },
         { project_id: 'test-project-id' }
       );
     });
@@ -233,6 +333,224 @@ describe('TraceService', () => {
           traces: mockTraces,
           log_stream_id: 'test-log-stream-id',
           session_id: undefined
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+  });
+
+  describe('searchTraces', () => {
+    it('should have searchTraces method', () => {
+      expect(typeof traceService.searchTraces).toBe('function');
+    });
+
+    it('should search traces with filters and auto-inject experiment_id', async () => {
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [
+          {
+            id: 'trace-123',
+            name: 'test-trace'
+          }
+        ],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      const result = await traceService.searchTraces({
+        filters: [
+          {
+            column_id: 'name',
+            operator: 'eq',
+            value: 'test-trace',
+            type: 'text'
+          }
+        ]
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/traces/search',
+        {
+          filters: [
+            {
+              column_id: 'name',
+              operator: 'eq',
+              value: 'test-trace',
+              type: 'text'
+            }
+          ],
+          experiment_id: 'test-experiment-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+
+      expect(result.records).toHaveLength(1);
+      expect(result.records?.[0].id).toBe('trace-123');
+    });
+
+    it('should auto-inject log_stream_id when experiment_id is not available', async () => {
+      const traceServiceWithLogStream = new TraceService(
+        'https://api.galileo.ai',
+        'test-token',
+        'test-project-id',
+        'test-log-stream-id'
+      );
+
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceServiceWithLogStream as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceServiceWithLogStream.searchTraces({});
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/traces/search',
+        {
+          log_stream_id: 'test-log-stream-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+
+    it('should not override explicit experiment_id in request', async () => {
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceService.searchTraces({
+        experiment_id: 'explicit-experiment-id'
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/traces/search',
+        {
+          experiment_id: 'explicit-experiment-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+  });
+
+  describe('searchSpans', () => {
+    it('should have searchSpans method', () => {
+      expect(typeof traceService.searchSpans).toBe('function');
+    });
+
+    it('should search spans with filters and auto-inject experiment_id', async () => {
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [
+          {
+            id: 'span-123',
+            name: 'test-span'
+          }
+        ],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      const result = await traceService.searchSpans({
+        filters: [
+          {
+            column_id: 'name',
+            operator: 'eq',
+            value: 'test-span',
+            type: 'text'
+          }
+        ]
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/spans/search',
+        {
+          filters: [
+            {
+              column_id: 'name',
+              operator: 'eq',
+              value: 'test-span',
+              type: 'text'
+            }
+          ],
+          experiment_id: 'test-experiment-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+
+      expect(result.records).toHaveLength(1);
+      expect(result.records?.[0].id).toBe('span-123');
+    });
+
+    it('should auto-inject log_stream_id when experiment_id is not available', async () => {
+      const traceServiceWithLogStream = new TraceService(
+        'https://api.galileo.ai',
+        'test-token',
+        'test-project-id',
+        'test-log-stream-id'
+      );
+
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceServiceWithLogStream as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceServiceWithLogStream.searchSpans({});
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/spans/search',
+        {
+          log_stream_id: 'test-log-stream-id'
+        },
+        { project_id: 'test-project-id' }
+      );
+    });
+
+    it('should not override explicit log_stream_id in request', async () => {
+      const mockMakeRequest: MockMakeRequest = jest.fn().mockResolvedValue({
+        records: [],
+        starting_token: 0,
+        limit: 100
+      });
+
+      (
+        traceService as unknown as { makeRequest: MockMakeRequest }
+      ).makeRequest = mockMakeRequest;
+
+      await traceService.searchSpans({
+        log_stream_id: 'explicit-log-stream-id'
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        RequestMethod.POST,
+        'projects/{project_id}/spans/search',
+        {
+          log_stream_id: 'explicit-log-stream-id'
         },
         { project_id: 'test-project-id' }
       );

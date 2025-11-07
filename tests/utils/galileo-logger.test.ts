@@ -1545,7 +1545,7 @@ describe('GalileoLogger', () => {
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
         filters: [
           {
-            column_id: 'id',
+            column_id: 'external_id',
             operator: 'eq',
             value: 'test-external-id',
             type: 'id'
@@ -1575,7 +1575,7 @@ describe('GalileoLogger', () => {
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
         filters: [
           {
-            column_id: 'id',
+            column_id: 'external_id',
             operator: 'eq',
             value: 'new-external-id',
             type: 'id'
@@ -1601,7 +1601,7 @@ describe('GalileoLogger', () => {
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
         filters: [
           {
-            column_id: 'id',
+            column_id: 'external_id',
             operator: 'eq',
             value: 'error-external-id',
             type: 'id'
