@@ -1,12 +1,14 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { Trace } from '../../types/logging/trace.types';
+import { SessionCreateResponse } from '../../types/logging/session.types';
+
 import {
-  SessionCreateResponse,
-  SessionSearchRequest,
-  SessionSearchResponse,
-  SessionSearchRequestBody
-} from '../../types/logging/session.types';
+  MetricSearchRequest,
+  MetricSearchResponse,
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../../types/search.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -85,31 +87,61 @@ export class TraceService extends BaseClient {
   }
 
   public async searchSessions(
-    request: SessionSearchRequest
-  ): Promise<SessionSearchResponse> {
-    if (!this.logStreamId && !this.experimentId) {
-      throw new Error('Log stream or experiment not initialized');
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
     }
 
-    const requestBody: SessionSearchRequestBody = {
-      limit: request.limit || 100,
-      starting_token: request.starting_token || 0,
-      log_stream_id: this.logStreamId || null,
-      experiment_id: this.experimentId || null
-    };
-
-    // Transform simplified filters to API format
-    if (request.filters && request.filters.length > 0) {
-      requestBody.filters = request.filters.map((filter) => ({
-        ...filter,
-        type: 'text' as const
-      }));
-    }
-
-    return await this.makeRequest<SessionSearchResponse>(
+    return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
       Routes.sessionsSearch,
-      requestBody,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchMetrics(
+    request: MetricSearchRequest
+  ): Promise<MetricSearchResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<MetricSearchResponse>(
+      RequestMethod.POST,
+      Routes.metricsSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchTraces(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.tracesSearch,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
+  public async searchSpans(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    return await this.makeRequest<LogRecordsQueryResponse>(
+      RequestMethod.POST,
+      Routes.spansSearch,
+      request,
       { project_id: this.projectId }
     );
   }

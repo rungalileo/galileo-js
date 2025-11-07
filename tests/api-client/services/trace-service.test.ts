@@ -97,7 +97,8 @@ describe('TraceService', () => {
           {
             column_id: 'external_id',
             operator: 'eq',
-            value: 'test-external-id'
+            value: 'test-external-id',
+            type: 'text'
           }
         ],
         limit: 1
@@ -107,8 +108,6 @@ describe('TraceService', () => {
         RequestMethod.POST,
         'projects/{project_id}/sessions/search',
         {
-          log_stream_id: 'test-log-stream-id',
-          experiment_id: 'test-experiment-id',
           filters: [
             {
               column_id: 'external_id',
@@ -117,8 +116,7 @@ describe('TraceService', () => {
               type: 'text'
             }
           ],
-          limit: 1,
-          starting_token: 0
+          limit: 1
         },
         { project_id: 'test-project-id' }
       );
@@ -143,7 +141,8 @@ describe('TraceService', () => {
           {
             column_id: 'external_id',
             operator: 'eq',
-            value: 'non-existent-id'
+            value: 'non-existent-id',
+            type: 'text'
           }
         ]
       });
@@ -167,12 +166,7 @@ describe('TraceService', () => {
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
         'projects/{project_id}/sessions/search',
-        {
-          log_stream_id: 'test-log-stream-id',
-          experiment_id: 'test-experiment-id',
-          limit: 100,
-          starting_token: 0
-        },
+        {},
         { project_id: 'test-project-id' }
       );
     });

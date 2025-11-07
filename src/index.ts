@@ -10,6 +10,11 @@ import {
   Metric
 } from './types/metrics.types';
 import {
+  LogRecordsQueryFilterTS,
+  LogRecordsSortClauseTS,
+  MetricFilterTS
+} from './types/search.types';
+import {
   addRowsToDataset,
   createDataset,
   createDatasetRecord,
@@ -73,6 +78,13 @@ import {
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
 import { GalileoCallback } from './handlers/langchain';
+import {
+  getMetrics,
+  getSessions,
+  getSpans,
+  getTraces,
+  RecordType
+} from './utils/search';
 export {
   // Legacy clients
   GalileoObserveApiClient,
@@ -85,8 +97,6 @@ export {
   GalileoLogger,
   GalileoCallback,
   GalileoScorers,
-  Metric,
-  LocalMetricConfig,
   // OpenAI
   wrapOpenAI,
   // Datasets
@@ -147,5 +157,19 @@ export {
   JobProgressLogger,
   getJob,
   // Jobs class
-  Jobs
+  Jobs,
+  // Search
+  RecordType,
+  getMetrics,
+  getTraces,
+  getSpans,
+  getSessions
+};
+
+export type {
+  LogRecordsQueryFilterTS,
+  LogRecordsSortClauseTS,
+  MetricFilterTS,
+  Metric,
+  LocalMetricConfig
 };

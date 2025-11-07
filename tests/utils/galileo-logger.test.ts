@@ -10,7 +10,10 @@ import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
 import { AgentSpan } from '../../src/types';
-import { SessionSearchResponse } from '../../src/types/logging/session.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../../src/types/search.types';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
 const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
@@ -41,8 +44,8 @@ type MockGalileoApiClient = {
       external_id: string;
     }>
   >;
-  _searchSessionsByExternalId: jest.MockedFunction<
-    (externalId: string) => Promise<SessionSearchResponse>
+  searchSessions: jest.MockedFunction<
+    (request: LogRecordsQueryRequest) => Promise<LogRecordsQueryResponse>
   >;
 };
 
@@ -59,7 +62,7 @@ jest.mock('../../src/api-client', () => ({
       previous_session_id: mockPreviousSessionId,
       external_id: 'test-external-id'
     }),
-    _searchSessionsByExternalId: jest.fn()
+    searchSessions: jest.fn()
   }))
 }));
 
@@ -1497,13 +1500,13 @@ describe('GalileoLogger', () => {
         previousSessionId: undefined,
         externalId: undefined
       });
-      expect(mockClient._searchSessionsByExternalId).not.toHaveBeenCalled();
+      expect(mockClient.searchSessions).not.toHaveBeenCalled();
       expect(sessionId).toBe(mockSessionId);
     });
 
     it('should reuse existing session when externalId matches', async () => {
       const existingSessionId = 'existing-session-id';
-      mockClient._searchSessionsByExternalId.mockResolvedValue({
+      mockClient.searchSessions.mockResolvedValue({
         records: [
           {
             id: existingSessionId,
@@ -1527,33 +1530,59 @@ describe('GalileoLogger', () => {
             has_children: false,
             metric_info: {}
           }
-        ]
+        ],
+        limit: 1,
+        starting_token: 0,
+        next_starting_token: null,
+        last_row_id: null,
+        paginated: false
       });
 
       const sessionId = await logger.startSession({
         externalId: 'test-external-id'
       });
 
-      expect(mockClient._searchSessionsByExternalId).toHaveBeenCalledWith(
-        'test-external-id'
-      );
+      expect(mockClient.searchSessions).toHaveBeenCalledWith({
+        filters: [
+          {
+            column_id: 'id',
+            operator: 'eq',
+            value: 'test-external-id',
+            type: 'id'
+          }
+        ],
+        limit: 1
+      });
       expect(mockClient.createSession).not.toHaveBeenCalled();
       expect(sessionId).toBe(existingSessionId);
       expect(logger.currentSessionId()).toBe(existingSessionId);
     });
 
     it('should create new session when externalId not found', async () => {
-      mockClient._searchSessionsByExternalId.mockResolvedValue({
-        records: []
+      mockClient.searchSessions.mockResolvedValue({
+        records: [],
+        limit: 1,
+        starting_token: 0,
+        next_starting_token: null,
+        last_row_id: null,
+        paginated: false
       });
 
       const sessionId = await logger.startSession({
         externalId: 'new-external-id'
       });
 
-      expect(mockClient._searchSessionsByExternalId).toHaveBeenCalledWith(
-        'new-external-id'
-      );
+      expect(mockClient.searchSessions).toHaveBeenCalledWith({
+        filters: [
+          {
+            column_id: 'id',
+            operator: 'eq',
+            value: 'new-external-id',
+            type: 'id'
+          }
+        ],
+        limit: 1
+      });
       expect(mockClient.createSession).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
@@ -1563,17 +1592,23 @@ describe('GalileoLogger', () => {
     });
 
     it('should create new session when search fails', async () => {
-      mockClient._searchSessionsByExternalId.mockRejectedValue(
-        new Error('Search failed')
-      );
+      mockClient.searchSessions.mockRejectedValue(new Error('Search failed'));
 
       const sessionId = await logger.startSession({
         externalId: 'error-external-id'
       });
 
-      expect(mockClient._searchSessionsByExternalId).toHaveBeenCalledWith(
-        'error-external-id'
-      );
+      expect(mockClient.searchSessions).toHaveBeenCalledWith({
+        filters: [
+          {
+            column_id: 'id',
+            operator: 'eq',
+            value: 'error-external-id',
+            type: 'id'
+          }
+        ],
+        limit: 1
+      });
       expect(mockClient.createSession).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
@@ -1587,7 +1622,7 @@ describe('GalileoLogger', () => {
         externalId: '   '
       });
 
-      expect(mockClient._searchSessionsByExternalId).not.toHaveBeenCalled();
+      expect(mockClient.searchSessions).not.toHaveBeenCalled();
       expect(mockClient.createSession).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
