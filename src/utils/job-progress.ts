@@ -258,7 +258,7 @@ export async function getJobProgress(
  */
 export async function getJob(jobId: string): Promise<Job> {
   const apiClient = new GalileoApiClient();
-  await apiClient.init();
+  await apiClient.init({ projectScoped: false });
   return apiClient.getJob(jobId);
 }
 
@@ -288,7 +288,7 @@ export const getScorerJobsStatus = async (
   runId: string
 ): Promise<void> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init({ runId });
+  await apiClient.init({ projectId, runId });
 
   const scorerJobs = await apiClient.getJobsForProjectRun(projectId, runId);
 
@@ -332,6 +332,6 @@ export const getScorerJobs = async (
   runId: string
 ): Promise<Job[]> => {
   const apiClient = new GalileoApiClient();
-  await apiClient.init({ runId });
+  await apiClient.init({ projectId, runId });
   return apiClient.getJobsForProjectRun(projectId, runId);
 };
