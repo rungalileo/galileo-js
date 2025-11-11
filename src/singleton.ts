@@ -67,7 +67,7 @@ export class GalileoSingleton {
    * Returns the default logger instance (uses environment variables or 'default' values).
    */
   public getClient(): GalileoLogger {
-    return this.get();
+    return this.getLogger();
   }
 
   /**
@@ -122,7 +122,7 @@ export class GalileoSingleton {
    * @param options.[localMetrics] - Local metrics to run on traces/spans (only used when initializing a new logger)
    * @returns An instance of GalileoLogger corresponding to the key
    */
-  public get(options: GetLoggerOptions = {}): GalileoLogger {
+  public getLogger(options: GetLoggerOptions = {}): GalileoLogger {
     // Compute the key based on provided parameters or environment variables
     const key = GalileoSingleton._getKey(
       options.projectName,
@@ -151,6 +151,16 @@ export class GalileoSingleton {
     // Cache the newly created logger
     this._galileoLoggers.set(key, logger);
     return logger;
+  }
+
+  /**
+   * Retrieve a copy of the map containing all active loggers.
+   *
+   * @returns A map of keys to GalileoLogger instances
+   */
+  public getAllLoggers(): Map<string, GalileoLogger> {
+    // Return a shallow copy to prevent external modifications
+    return new Map(this._galileoLoggers);
   }
 
   /**
@@ -221,16 +231,6 @@ export class GalileoSingleton {
     await Promise.all(flushPromises);
   }
 
-  /**
-   * Retrieve a copy of the map containing all active loggers.
-   *
-   * @returns A map of keys to GalileoLogger instances
-   */
-  public getAllLoggers(): Map<string, GalileoLogger> {
-    // Return a shallow copy to prevent external modifications
-    return new Map(this._galileoLoggers);
-  }
-
   // Legacy methods for backward compatibility
 
   /**
@@ -270,7 +270,7 @@ export const init = async (
   } = {}
 ) => {
   const singleton = GalileoSingleton.getInstance();
-  const logger = singleton.get({
+  const logger = singleton.getLogger({
     projectName: options.projectName,
     logstream: options.logstream,
     experimentId: options.experimentId,
@@ -288,28 +288,6 @@ export const init = async (
 };
 
 /**
- * Uploads all captured traces to the Galileo platform
- *
- */
-export const flushAll = async () => {
-  await GalileoSingleton.getInstance().flushAll();
-};
-
-/**
- * Flush (upload) traces from a specific logger to the Galileo platform.
- *
- * Options provided determine which logger is flushed (no options means 'default' logger).
- * @param options - Configuration options to identify which logger to flush
- * @param options.[projectName] - The project name
- * @param options.[logstream] - The log stream name
- * @param options.[experimentId] - The experiment ID
- * @param options.[mode] - The logger mode
- */
-export const flush = async (options: LoggerKeyOptions = {}) => {
-  await GalileoSingleton.getInstance().flush(options);
-};
-
-/**
  * Utility function to retrieve an existing GalileoLogger or create a new one if it does not exist.
  *
  * This method first computes the key from the parameters, checks if a logger
@@ -324,7 +302,7 @@ export const flush = async (options: LoggerKeyOptions = {}) => {
  * @returns An instance of GalileoLogger corresponding to the key
  */
 export const getLogger = (options: GetLoggerOptions = {}) => {
-  return GalileoSingleton.getInstance().get(options);
+  return GalileoSingleton.getInstance().getLogger(options);
 };
 
 /**
@@ -361,4 +339,26 @@ export const reset = async (options: LoggerKeyOptions = {}) => {
  */
 export const resetAll = async () => {
   await GalileoSingleton.getInstance().resetAll();
+};
+
+/**
+ * Flush (upload) traces from a specific logger to the Galileo platform.
+ *
+ * Options provided determine which logger is flushed (no options means 'default' logger).
+ * @param options - Configuration options to identify which logger to flush
+ * @param options.[projectName] - The project name
+ * @param options.[logstream] - The log stream name
+ * @param options.[experimentId] - The experiment ID
+ * @param options.[mode] - The logger mode
+ */
+export const flush = async (options: LoggerKeyOptions = {}) => {
+  await GalileoSingleton.getInstance().flush(options);
+};
+
+/**
+ * Uploads all captured traces to the Galileo platform
+ *
+ */
+export const flushAll = async () => {
+  await GalileoSingleton.getInstance().flushAll();
 };
