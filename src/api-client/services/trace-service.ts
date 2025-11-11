@@ -4,8 +4,8 @@ import { Trace } from '../../types/logging/trace.types';
 import { SessionCreateResponse } from '../../types/logging/session.types';
 
 import {
-  MetricSearchRequest,
-  MetricSearchResponse,
+  LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsResponse,
   LogRecordsQueryRequest,
   LogRecordsQueryResponse
 } from '../../types/search.types';
@@ -92,7 +92,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.validateRequestContext(request);
+    this.fillRequestContext(request);
 
     return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
@@ -103,14 +103,14 @@ export class TraceService extends BaseClient {
   }
 
   public async searchMetrics(
-    request: MetricSearchRequest
-  ): Promise<MetricSearchResponse> {
+    request: LogRecordsMetricsQueryRequest
+  ): Promise<LogRecordsMetricsResponse> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.validateRequestContext(request);
+    this.fillRequestContext(request);
 
-    return await this.makeRequest<MetricSearchResponse>(
+    return await this.makeRequest<LogRecordsMetricsResponse>(
       RequestMethod.POST,
       Routes.metricsSearch,
       request,
@@ -124,7 +124,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.validateRequestContext(request);
+    this.fillRequestContext(request);
 
     return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
@@ -140,7 +140,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.validateRequestContext(request);
+    this.fillRequestContext(request);
 
     return await this.makeRequest<LogRecordsQueryResponse>(
       RequestMethod.POST,
@@ -150,7 +150,21 @@ export class TraceService extends BaseClient {
     );
   }
 
-  private validateRequestContext(request: LogRecordsQueryRequest) {
+  /**
+   * Fills in missing experiment_id or log_stream_id from the service context
+   * by mutating the request object in place.
+   *
+   * This method modifies the input request object directly to add the context
+   * (experiment_id or log_stream_id) if it's missing. The mutation is intentional
+   * for performance and convenience, but callers should be aware that the request
+   * object will be modified and should not reuse it if they need the original state.
+   *
+   * @param request - The request object to modify (will be mutated in place).
+   *   Supports both LogRecordsQueryRequest and MetricSearchRequest types.
+   */
+  private fillRequestContext(
+    request: LogRecordsQueryRequest | LogRecordsMetricsQueryRequest
+  ): void {
     if (!request.experiment_id && !request.log_stream_id) {
       if (this.experimentId) {
         request.experiment_id = this.experimentId;

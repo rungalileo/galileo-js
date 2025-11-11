@@ -41,8 +41,8 @@ import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
 import { StepType } from '../types/logging/step.types';
 import {
-  MetricSearchRequest,
-  MetricSearchResponse,
+  LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsResponse,
   LogRecordsQueryRequest,
   LogRecordsQueryResponse
 } from '../types/search.types';
@@ -625,8 +625,8 @@ export class GalileoApiClient extends BaseClient {
   }
 
   public async searchMetrics(
-    request: MetricSearchRequest
-  ): Promise<MetricSearchResponse> {
+    request: LogRecordsMetricsQueryRequest
+  ): Promise<LogRecordsMetricsResponse> {
     this.ensureService(this.traceService);
     return this.traceService!.searchMetrics(request);
   }

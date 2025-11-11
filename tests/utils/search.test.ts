@@ -9,9 +9,8 @@ import {
 import {
   LogRecordsQueryFilterTS,
   LogRecordsSortClauseTS,
-  MetricFilterTS,
   LogRecordsQueryResponse,
-  MetricSearchResponse
+  LogRecordsMetricsResponse
 } from '../../src/types/search.types';
 
 // Create mock implementation functions
@@ -46,7 +45,7 @@ describe('Search', () => {
     paginated: false
   };
 
-  const mockMetricResponse: MetricSearchResponse = {
+  const mockMetricResponse: LogRecordsMetricsResponse = {
     group_by_columns: [],
     aggregate_metrics: {},
     bucketed_metrics: {}
@@ -448,7 +447,7 @@ describe('Search', () => {
     });
 
     it('should query metrics with all options', async () => {
-      const filters: MetricFilterTS[] = [
+      const filters: LogRecordsQueryFilterTS[] = [
         {
           columnId: 'status',
           operator: 'eq',
@@ -683,7 +682,7 @@ describe('Search', () => {
       });
 
       it('should pass all options to Search.queryMetrics', async () => {
-        const filters: MetricFilterTS[] = [
+        const filters: LogRecordsQueryFilterTS[] = [
           {
             columnId: 'metric_name',
             operator: 'eq',

@@ -11,8 +11,7 @@ import {
 } from './types/metrics.types';
 import {
   LogRecordsQueryFilterTS,
-  LogRecordsSortClauseTS,
-  MetricFilterTS
+  LogRecordsSortClauseTS
 } from './types/search.types';
 import {
   addRowsToDataset,
@@ -169,7 +168,6 @@ export {
 export type {
   LogRecordsQueryFilterTS,
   LogRecordsSortClauseTS,
-  MetricFilterTS,
   Metric,
   LocalMetricConfig
 };

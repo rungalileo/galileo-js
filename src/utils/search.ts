@@ -1,15 +1,13 @@
 import { GalileoApiClient } from '../api-client';
 import {
-  MetricSearchRequest,
-  MetricSearchResponse,
+  LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsResponse,
   LogRecordsQueryRequest,
   LogRecordsQueryResponse,
   LogRecordsQueryFilter,
   LogRecordsSortClause,
-  MetricFilter,
-  LogRecordsQueryFilterTS,
   LogRecordsSortClauseTS,
-  MetricFilterTS
+  LogRecordsQueryFilterTS
 } from '../types/search.types';
 
 /**
@@ -100,17 +98,6 @@ function convertSortClauseToOpenAPI(
 }
 
 /**
- * Converts metric filters from TypeScript-friendly format to OpenAPI format
- * Note: MetricFilterTS is an alias for LogRecordsQueryFilterTS, so this uses the same converter
- */
-function convertMetricFiltersToOpenAPI(
-  filters?: MetricFilterTS[]
-): MetricFilter[] | undefined {
-  // MetricFilterTS is just an alias for LogRecordsQueryFilterTS, so we can reuse the same converter
-  return convertFiltersToOpenAPI(filters);
-}
-
-/**
  * Search class for querying records and metrics.
  */
 export class Search {
@@ -186,13 +173,13 @@ export class Search {
     metricsTestingId?: string;
     interval?: number;
     groupBy?: string;
-    filters?: MetricFilterTS[];
-  }): Promise<MetricSearchResponse> {
+    filters?: LogRecordsQueryFilterTS[];
+  }): Promise<LogRecordsMetricsResponse> {
     const apiClient = new GalileoApiClient();
     await apiClient.init({ projectId: options.projectId, projectScoped: true });
 
-    const request: MetricSearchRequest = {
-      filters: convertMetricFiltersToOpenAPI(options.filters),
+    const request: LogRecordsMetricsQueryRequest = {
+      filters: convertFiltersToOpenAPI(options.filters),
       log_stream_id: options.logStreamId,
       experiment_id: options.experimentId,
       metrics_testing_id: options.metricsTestingId,
@@ -227,10 +214,10 @@ export const getMetrics = async (options: {
   logStreamId?: string;
   experimentId?: string;
   metricsTestingId?: string;
-  filters?: MetricFilterTS[];
+  filters?: LogRecordsQueryFilterTS[];
   interval?: number;
   groupBy?: string;
-}): Promise<MetricSearchResponse> => {
+}): Promise<LogRecordsMetricsResponse> => {
   const search = new Search();
   return await search.queryMetrics(options);
 };
