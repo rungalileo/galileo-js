@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
+import { Readable } from 'stream';
 import createClient, { Client } from 'openapi-fetch';
 import { decode } from 'jsonwebtoken';
 import type { paths } from '../types/api.types';
@@ -229,6 +230,75 @@ export class BaseClient {
       }
       return {} as T;
     }
+  }
+
+  public async makeStreamingRequest(
+    request_method: Method,
+    endpoint: Routes,
+    data?: string | Record<string, any> | null,
+    params?: Record<string, unknown>,
+    extraHeaders?: Record<string, string>
+  ): Promise<Readable> {
+    await this.refreshTokenIfNeeded(endpoint);
+
+    let headers: Record<string, any> = {
+      'X-Galileo-SDK': getSdkIdentifier()
+    };
+    if (this.token) {
+      headers = { ...this.getAuthHeader(this.token), ...headers };
+    }
+
+    headers = { ...headers, ...extraHeaders };
+
+    const endpointPath = `${this.apiUrl}/${endpoint
+      .replace(
+        '{project_id}',
+        params && 'project_id' in params ? (params.project_id as string) : ''
+      )
+      .replace(
+        '{log_stream_id}',
+        params && 'log_stream_id' in params
+          ? (params.log_stream_id as string)
+          : ''
+      )
+      .replace(
+        '{run_id}',
+        params && 'run_id' in params ? (params.run_id as string) : ''
+      )
+      .replace(
+        '{dataset_id}',
+        params && 'dataset_id' in params ? (params.dataset_id as string) : ''
+      )
+      .replace(
+        '{experiment_id}',
+        params && 'experiment_id' in params
+          ? (params.experiment_id as string)
+          : ''
+      )
+      .replace(
+        '{template_id}',
+        params && 'template_id' in params ? (params.template_id as string) : ''
+      )
+      .replace(
+        '{version}',
+        params && 'version' in params ? (params.version as string) : ''
+      )}`;
+
+    const response = await axios.request<Readable>({
+      method: request_method,
+      url: endpointPath,
+      params,
+      headers,
+      data,
+      responseType: 'stream'
+    });
+
+    if (response.status >= 300) {
+      const errorMessage = `Streaming request failed with status ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return response.data;
   }
 
   public convertToSnakeCase<T extends object, TTarget>(

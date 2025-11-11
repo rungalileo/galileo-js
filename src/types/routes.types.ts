@@ -22,6 +22,7 @@ export enum Routes {
   datasetContent = 'datasets/{dataset_id}/content',
   datasetExtend = 'datasets/extend',
   datasetExtendStatus = 'datasets/extend/{dataset_id}',
+  exportRecords = 'projects/{project_id}/export_records',
   traces = 'projects/{project_id}/traces',
   metricsSearch = 'projects/{project_id}/metrics/search',
   spansSearch = 'projects/{project_id}/spans/search',

@@ -14,3 +14,4 @@ export * from './models.types';
 export * from './scorer.types';
 export * from './job.types';
 export * from './metrics.types';
+export * from './export.types';
