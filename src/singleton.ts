@@ -63,7 +63,7 @@ export class GalileoSingleton {
   }
 
   /**
-   * @deprecated Use get() method instead. This method is kept for backwards compatibility.
+   * @deprecated Use getLogger() method instead. This method is kept for backwards compatibility.
    * Returns the default logger instance (uses environment variables or 'default' values).
    */
   public getClient(): GalileoLogger {
@@ -234,7 +234,7 @@ export class GalileoSingleton {
   // Legacy methods for backward compatibility
 
   /**
-   * @deprecated Use get() method instead. This maintains backward compatibility.
+   * @deprecated Use getLogger() method instead. This maintains backward compatibility.
    */
   public setClient(client: GalileoLogger): void {
     // Store with default key

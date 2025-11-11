@@ -1,7 +1,6 @@
 import {
   flushAll,
   resetAll,
-  get,
   reset,
   flush,
   getAllLoggers,
@@ -37,15 +36,15 @@ describe('Singleton utility functions', () => {
     await resetAll();
   });
 
-  describe('get', () => {
+  describe('getLogger', () => {
     it('should create and return a logger with default key', () => {
-      const logger = get();
+      const logger = getLogger();
       expect(logger).toBeDefined();
       expect(GalileoLogger).toHaveBeenCalled();
     });
 
     it('should create logger with project and logstream', () => {
-      const logger = get({
+      const logger = getLogger({
         projectName: 'test-project',
         logstream: 'test-log-stream'
       });
@@ -60,11 +59,11 @@ describe('Singleton utility functions', () => {
     });
 
     it('should return the same logger instance for the same key', () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
@@ -72,11 +71,11 @@ describe('Singleton utility functions', () => {
     });
 
     it('should create different loggers for different keys', () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project2',
         logstream: 'stream2'
       });
@@ -84,7 +83,7 @@ describe('Singleton utility functions', () => {
     });
 
     it('should handle experimentId correctly', () => {
-      const logger = get({
+      const logger = getLogger({
         projectName: 'project1',
         experimentId: 'experiment1'
       });
@@ -99,12 +98,12 @@ describe('Singleton utility functions', () => {
     });
 
     it('should prioritize experimentId over logstream', () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1',
         experimentId: 'experiment1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project1',
         experimentId: 'experiment1'
       });
@@ -113,12 +112,12 @@ describe('Singleton utility functions', () => {
     });
 
     it('should support different modes', () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1',
         mode: 'batch'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project1',
         logstream: 'stream1',
         mode: 'streaming'
@@ -133,7 +132,7 @@ describe('Singleton utility functions', () => {
           scorerFn: () => 0.5
         }
       ];
-      const logger = get({
+      const logger = getLogger({
         projectName: 'project1',
         logstream: 'stream1',
         localMetrics: localMetrics
@@ -157,7 +156,7 @@ describe('Singleton utility functions', () => {
         GALILEO_LOG_STREAM: 'env-stream'
       };
 
-      const logger = get();
+      const logger = getLogger();
       expect(logger).toBeDefined();
       // The logger should be created with env vars as defaults
       expect(GalileoLogger).toHaveBeenCalled();
@@ -174,7 +173,7 @@ describe('Singleton utility functions', () => {
       };
 
       // Both env vars should be checked, but GALILEO_PROJECT takes precedence in our implementation
-      const logger = get();
+      const logger = getLogger();
       expect(logger).toBeDefined();
 
       process.env = originalEnv;
@@ -183,7 +182,7 @@ describe('Singleton utility functions', () => {
 
   describe('reset', () => {
     it('should reset a specific logger', async () => {
-      const logger = get({
+      const logger = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
@@ -196,7 +195,7 @@ describe('Singleton utility functions', () => {
       expect(logger.terminate).toHaveBeenCalled();
 
       // Getting the same key should create a new logger
-      const newLogger = get({
+      const newLogger = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
@@ -204,7 +203,7 @@ describe('Singleton utility functions', () => {
     });
 
     it('should handle reset with experimentId', async () => {
-      const logger = get({
+      const logger = getLogger({
         projectName: 'project1',
         experimentId: 'experiment1'
       });
@@ -220,11 +219,11 @@ describe('Singleton utility functions', () => {
 
   describe('resetAll', () => {
     it('should reset all loggers', async () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project2',
         logstream: 'stream2'
       });
@@ -241,7 +240,7 @@ describe('Singleton utility functions', () => {
 
   describe('flush', () => {
     it('should flush a specific logger', async () => {
-      const logger = get({
+      const logger = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
@@ -266,11 +265,11 @@ describe('Singleton utility functions', () => {
 
   describe('flushAll', () => {
     it('should flush all loggers', async () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project2',
         logstream: 'stream2'
       });
@@ -284,15 +283,15 @@ describe('Singleton utility functions', () => {
 
   describe('getAllLoggers', () => {
     it('should return a copy of all loggers', () => {
-      get({ projectName: 'project1', logstream: 'stream1' });
-      get({ projectName: 'project2', logstream: 'stream2' });
+      getLogger({ projectName: 'project1', logstream: 'stream1' });
+      getLogger({ projectName: 'project2', logstream: 'stream2' });
 
       const allLoggers = getAllLoggers();
       expect(allLoggers.size).toBe(2);
     });
 
     it('should return a copy that does not affect the original', () => {
-      get({ projectName: 'project1', logstream: 'stream1' });
+      getLogger({ projectName: 'project1', logstream: 'stream1' });
 
       const allLoggers = getAllLoggers();
       allLoggers.clear();
@@ -313,11 +312,11 @@ describe('Singleton utility functions', () => {
       });
 
       it('should return default logger even when other loggers exist', () => {
-        get({ projectName: 'project1', logstream: 'stream1' });
+        getLogger({ projectName: 'project1', logstream: 'stream1' });
         const defaultLogger = getLogger();
         expect(defaultLogger).toBeDefined();
         // Should be different from the explicitly created logger
-        const explicitLogger = get({
+        const explicitLogger = getLogger({
           projectName: 'project1',
           logstream: 'stream1'
         });
@@ -328,11 +327,11 @@ describe('Singleton utility functions', () => {
 
   describe('Key generation edge cases', () => {
     it('should handle empty strings', () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: '',
         logstream: ''
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: '',
         logstream: ''
       });
@@ -342,11 +341,11 @@ describe('Singleton utility functions', () => {
 
   describe('Exported functions integration', () => {
     it('should work with flushAll exported function', async () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project2',
         logstream: 'stream2'
       });
@@ -358,11 +357,11 @@ describe('Singleton utility functions', () => {
     });
 
     it('should work with resetAll exported function', async () => {
-      const logger1 = get({
+      const logger1 = getLogger({
         projectName: 'project1',
         logstream: 'stream1'
       });
-      const logger2 = get({
+      const logger2 = getLogger({
         projectName: 'project2',
         logstream: 'stream2'
       });
