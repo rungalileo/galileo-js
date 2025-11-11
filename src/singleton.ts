@@ -244,7 +244,7 @@ export class GalileoSingleton {
 }
 
 /**
- * Get/Create new logger (like get()), but also provides session initialization.
+ * Get/Create new logger (like getLogger()), but also provides session initialization.
  * If no options are provided, defaults to the following environment variables:
  * - GALILEO_PROJECT_NAME
  * - GALILEO_LOG_STREAM_NAME
@@ -310,18 +310,6 @@ export const flush = async (options: LoggerKeyOptions = {}) => {
 };
 
 /**
- * @deprecated Use `get()` method instead for better control and multiple logger support.
- * Returns the default logger instance (uses environment variables or 'default' values).
- *
- * This legacy method only returns a single logger instance based on default environment
- * variables (GALILEO_PROJECT, GALILEO_LOG_STREAM) or 'default' values. For multiple
- * loggers or specific project/log_stream combinations, use the `get()` method instead.
- */
-export const getLogger = () => {
-  return GalileoSingleton.getInstance().get();
-};
-
-/**
  * Utility function to retrieve an existing GalileoLogger or create a new one if it does not exist.
  *
  * This method first computes the key from the parameters, checks if a logger
@@ -335,7 +323,7 @@ export const getLogger = () => {
  * @param options.[localMetrics] - Local metrics to run on traces/spans (only used when initializing a new logger)
  * @returns An instance of GalileoLogger corresponding to the key
  */
-export const get = (options: GetLoggerOptions = {}) => {
+export const getLogger = (options: GetLoggerOptions = {}) => {
   return GalileoSingleton.getInstance().get(options);
 };
 

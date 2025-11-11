@@ -56,7 +56,6 @@ import {
   flushAll,
   getAllLoggers,
   getLogger,
-  get,
   reset,
   resetAll
 } from './singleton';
@@ -118,7 +117,6 @@ export {
   flush,
   getAllLoggers,
   getLogger,
-  get,
   reset,
   resetAll,
   flushAll,
