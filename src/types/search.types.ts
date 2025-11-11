@@ -43,7 +43,7 @@ export interface LogRecordsTextFilterTS {
 export interface LogRecordsNumberFilterTS {
   columnId: string;
   operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
-  value: number | number[] | number[];
+  value: number | number[];
   type: 'number';
 }
 
