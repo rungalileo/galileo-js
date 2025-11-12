@@ -5,9 +5,13 @@ import { SessionCreateResponse } from '../../types/logging/session.types';
 
 import {
   LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsQueryRequestOpenAPI,
   LogRecordsMetricsResponse,
+  LogRecordsMetricsResponseOpenAPI,
   LogRecordsQueryRequest,
-  LogRecordsQueryResponse
+  LogRecordsQueryRequestOpenAPI,
+  LogRecordsQueryResponse,
+  LogRecordsQueryResponseOpenAPI
 } from '../../types/search.types';
 
 export class TraceService extends BaseClient {
@@ -87,67 +91,103 @@ export class TraceService extends BaseClient {
   }
 
   public async searchSessions(
-    request: LogRecordsQueryRequest
+    options: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.fillRequestContext(request);
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryRequest,
+      LogRecordsQueryRequestOpenAPI
+    >(options);
 
-    return await this.makeRequest<LogRecordsQueryResponse>(
+    const response = await this.makeRequest<LogRecordsQueryResponseOpenAPI>(
       RequestMethod.POST,
       Routes.sessionsSearch,
       request,
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryResponseOpenAPI,
+      LogRecordsQueryResponse
+    >(response);
   }
 
   public async searchMetrics(
-    request: LogRecordsMetricsQueryRequest
+    options: LogRecordsMetricsQueryRequest
   ): Promise<LogRecordsMetricsResponse> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.fillRequestContext(request);
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsMetricsQueryRequest,
+      LogRecordsMetricsQueryRequestOpenAPI
+    >(options);
 
-    return await this.makeRequest<LogRecordsMetricsResponse>(
+    const response = await this.makeRequest<LogRecordsMetricsResponseOpenAPI>(
       RequestMethod.POST,
       Routes.metricsSearch,
       request,
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<
+      LogRecordsMetricsResponseOpenAPI,
+      LogRecordsMetricsResponse
+    >(response);
   }
 
   public async searchTraces(
-    request: LogRecordsQueryRequest
+    options: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.fillRequestContext(request);
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryRequest,
+      LogRecordsQueryRequestOpenAPI
+    >(options);
 
-    return await this.makeRequest<LogRecordsQueryResponse>(
+    const response = await this.makeRequest<LogRecordsQueryResponseOpenAPI>(
       RequestMethod.POST,
       Routes.tracesSearch,
       request,
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryResponseOpenAPI,
+      LogRecordsQueryResponse
+    >(response);
   }
 
   public async searchSpans(
-    request: LogRecordsQueryRequest
+    options: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
-    this.fillRequestContext(request);
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryRequest,
+      LogRecordsQueryRequestOpenAPI
+    >(options);
 
-    return await this.makeRequest<LogRecordsQueryResponse>(
+    const response = await this.makeRequest<LogRecordsQueryResponseOpenAPI>(
       RequestMethod.POST,
       Routes.spansSearch,
       request,
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryResponseOpenAPI,
+      LogRecordsQueryResponse
+    >(response);
   }
 
   /**
@@ -159,17 +199,17 @@ export class TraceService extends BaseClient {
    * for performance and convenience, but callers should be aware that the request
    * object will be modified and should not reuse it if they need the original state.
    *
-   * @param request - The request object to modify (will be mutated in place).
-   *   Supports both LogRecordsQueryRequest and MetricSearchRequest types.
+   * @param options - The request object to modify (will be mutated in place).
+   *   Supports both LogRecordsQueryRequest and LogRecordsMetricsQueryRequest types.
    */
   private fillRequestContext(
-    request: LogRecordsQueryRequest | LogRecordsMetricsQueryRequest
+    options: LogRecordsQueryRequest | LogRecordsMetricsQueryRequest
   ): void {
-    if (!request.experiment_id && !request.log_stream_id) {
+    if (!options.experimentId && !options.logStreamId) {
       if (this.experimentId) {
-        request.experiment_id = this.experimentId;
+        options.experimentId = this.experimentId;
       } else if (this.logStreamId) {
-        request.log_stream_id = this.logStreamId;
+        options.logStreamId = this.logStreamId;
       }
     }
   }

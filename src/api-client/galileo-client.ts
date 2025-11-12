@@ -41,10 +41,10 @@ import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
 import { StepType } from '../types/logging/step.types';
 import {
-  LogRecordsMetricsQueryRequest,
-  LogRecordsMetricsResponse,
   LogRecordsQueryRequest,
-  LogRecordsQueryResponse
+  LogRecordsMetricsQueryRequest,
+  LogRecordsQueryResponse,
+  LogRecordsMetricsResponse
 } from '../types/search.types';
 
 export class GalileoApiClientParams {
@@ -604,31 +604,31 @@ export class GalileoApiClient extends BaseClient {
 
   // Search methods - delegate to TraceService
   public async searchTraces(
-    request: LogRecordsQueryRequest
+    options: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.searchTraces(request);
+    return this.traceService!.searchTraces(options);
   }
 
   public async searchSpans(
-    request: LogRecordsQueryRequest
+    options: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.searchSpans(request);
+    return this.traceService!.searchSpans(options);
   }
 
   public async searchSessions(
-    request: LogRecordsQueryRequest
+    options: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.searchSessions(request);
+    return this.traceService!.searchSessions(options);
   }
 
   public async searchMetrics(
-    request: LogRecordsMetricsQueryRequest
+    options: LogRecordsMetricsQueryRequest
   ): Promise<LogRecordsMetricsResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.searchMetrics(request);
+    return this.traceService!.searchMetrics(options);
   }
 
   public async getJob(jobId: string): Promise<Job> {

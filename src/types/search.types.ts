@@ -1,68 +1,31 @@
 import type { components } from './api.types';
+import type { ObjectToCamel } from 'ts-case-convert';
 
-export type LogRecordsMetricsQueryRequest =
+export type LogRecordsMetricsQueryRequestOpenAPI =
   components['schemas']['LogRecordsMetricsQueryRequest'];
-export type LogRecordsMetricsResponse =
+export type LogRecordsMetricsResponseOpenAPI =
   components['schemas']['LogRecordsMetricsResponse'];
-export type LogRecordsQueryRequest =
+export type LogRecordsQueryRequestOpenAPI =
   components['schemas']['LogRecordsQueryRequest'];
-export type LogRecordsQueryResponse =
+export type LogRecordsQueryResponseOpenAPI =
   components['schemas']['LogRecordsQueryResponse'];
-
-export type LogRecordsQueryFilter =
+export type LogRecordsQueryFilterOpenAPI =
   | components['schemas']['LogRecordsIDFilter']
   | components['schemas']['LogRecordsDateFilter']
   | components['schemas']['LogRecordsNumberFilter']
   | components['schemas']['LogRecordsBooleanFilter']
   | components['schemas']['LogRecordsTextFilter'];
-export type LogRecordsSortClause =
+export type LogRecordsSortClauseOpenAPI =
   components['schemas']['LogRecordsSortClause'];
 
-// TypeScript-friendly versions with camelCase properties (TS suffix)
-export interface LogRecordsIDFilterTS {
-  columnId: string;
-  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
-  value: string | string[];
-  type: 'id';
-}
-
-export interface LogRecordsTextFilterTS {
-  columnId: string;
-  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
-  value: string | string[];
-  caseSensitive?: boolean;
-  type: 'text';
-}
-
-export interface LogRecordsNumberFilterTS {
-  columnId: string;
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
-  value: number | number[];
-  type: 'number';
-}
-
-export interface LogRecordsDateFilterTS {
-  columnId: string;
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
-  value: string;
-  type: 'date';
-}
-
-export interface LogRecordsBooleanFilterTS {
-  columnId: string;
-  value: boolean;
-  type: 'boolean';
-}
-
-export type LogRecordsQueryFilterTS =
-  | LogRecordsIDFilterTS
-  | LogRecordsTextFilterTS
-  | LogRecordsNumberFilterTS
-  | LogRecordsDateFilterTS
-  | LogRecordsBooleanFilterTS;
-
-export interface LogRecordsSortClauseTS {
-  columnId: string;
-  ascending?: boolean;
-  sortType?: 'column';
-}
+// TypeScript-friendly versions with camelCase properties
+export type LogRecordsQueryFilter = ObjectToCamel<LogRecordsQueryFilterOpenAPI>;
+export type LogRecordsSortClause = ObjectToCamel<LogRecordsSortClauseOpenAPI>;
+export type LogRecordsQueryRequest =
+  ObjectToCamel<LogRecordsQueryRequestOpenAPI>;
+export type LogRecordsMetricsQueryRequest =
+  ObjectToCamel<LogRecordsMetricsQueryRequestOpenAPI>;
+export type LogRecordsQueryResponse =
+  ObjectToCamel<LogRecordsQueryResponseOpenAPI>;
+export type LogRecordsMetricsResponse =
+  ObjectToCamel<LogRecordsMetricsResponseOpenAPI>;

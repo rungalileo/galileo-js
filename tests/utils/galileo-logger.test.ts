@@ -12,7 +12,8 @@ import { randomUUID } from 'crypto';
 import { AgentSpan } from '../../src/types';
 import {
   LogRecordsQueryRequest,
-  LogRecordsQueryResponse
+  LogRecordsQueryResponse,
+  LogRecordsQueryFilter
 } from '../../src/types/search.types';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
@@ -1511,30 +1512,30 @@ describe('GalileoLogger', () => {
           {
             id: existingSessionId,
             type: 'session' as const,
-            project_id: mockProjectId,
-            run_id: 'test-run-id',
-            external_id: 'test-external-id',
+            projectId: mockProjectId,
+            runId: 'test-run-id',
+            externalId: 'test-external-id',
             name: 'test-session',
             input: 'test input',
             output: 'test output',
-            created_at: '2023-01-01T00:00:00Z',
-            updated_at: '2023-01-01T00:00:00Z',
-            user_metadata: {},
+            createdAt: '2023-01-01T00:00:00Z',
+            updatedAt: '2023-01-01T00:00:00Z',
+            userMetadata: {},
             tags: [],
-            status_code: 0,
+            statusCode: 0,
             metrics: {},
-            dataset_input: '',
-            dataset_output: '',
-            dataset_metadata: {},
-            session_id: existingSessionId,
-            has_children: false,
-            metric_info: {}
+            datasetInput: '',
+            datasetOutput: '',
+            datasetMetadata: {},
+            sessionId: existingSessionId,
+            hasChildren: false,
+            metricInfo: {}
           }
         ],
         limit: 1,
-        starting_token: 0,
-        next_starting_token: null,
-        last_row_id: null,
+        startingToken: 0,
+        nextStartingToken: null,
+        lastRowId: null,
         paginated: false
       });
 
@@ -1542,15 +1543,16 @@ describe('GalileoLogger', () => {
         externalId: 'test-external-id'
       });
 
+      const expectedFilters: LogRecordsQueryFilter[] = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'test-external-id',
+          type: 'id' as const
+        }
+      ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
-        filters: [
-          {
-            column_id: 'external_id',
-            operator: 'eq',
-            value: 'test-external-id',
-            type: 'id'
-          }
-        ],
+        filters: expectedFilters,
         limit: 1
       });
       expect(mockClient.createSession).not.toHaveBeenCalled();
@@ -1562,9 +1564,9 @@ describe('GalileoLogger', () => {
       mockClient.searchSessions.mockResolvedValue({
         records: [],
         limit: 1,
-        starting_token: 0,
-        next_starting_token: null,
-        last_row_id: null,
+        startingToken: 0,
+        nextStartingToken: null,
+        lastRowId: null,
         paginated: false
       });
 
@@ -1572,15 +1574,16 @@ describe('GalileoLogger', () => {
         externalId: 'new-external-id'
       });
 
+      const expectedFilters: LogRecordsQueryFilter[] = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'new-external-id',
+          type: 'id' as const
+        }
+      ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
-        filters: [
-          {
-            column_id: 'external_id',
-            operator: 'eq',
-            value: 'new-external-id',
-            type: 'id'
-          }
-        ],
+        filters: expectedFilters,
         limit: 1
       });
       expect(mockClient.createSession).toHaveBeenCalledWith({
@@ -1598,15 +1601,16 @@ describe('GalileoLogger', () => {
         externalId: 'error-external-id'
       });
 
+      const expectedFilters: LogRecordsQueryFilter[] = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'error-external-id',
+          type: 'id' as const
+        }
+      ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
-        filters: [
-          {
-            column_id: 'external_id',
-            operator: 'eq',
-            value: 'error-external-id',
-            type: 'id'
-          }
-        ],
+        filters: expectedFilters,
         limit: 1
       });
       expect(mockClient.createSession).toHaveBeenCalledWith({

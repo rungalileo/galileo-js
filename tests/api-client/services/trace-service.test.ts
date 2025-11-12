@@ -2,6 +2,10 @@ import { TraceService } from '../../../src/api-client/services/trace-service';
 import { RequestMethod } from '../../../src/api-client/base-client';
 import { Trace } from '../../../src/types/logging/trace.types';
 import { Routes } from '../../../src/types/routes.types';
+import {
+  LogRecordsQueryFilter,
+  LogRecordsQueryRequest
+} from '../../../src/types/search.types';
 
 // Create a mock type for the makeRequest method
 type MockMakeRequest = jest.MockedFunction<
@@ -92,17 +96,18 @@ describe('TraceService', () => {
         traceService as unknown as { makeRequest: MockMakeRequest }
       ).makeRequest = mockMakeRequest;
 
+      const filters = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'test-external-id',
+          type: 'text' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
       const result = await traceService.searchSessions({
-        filters: [
-          {
-            column_id: 'external_id',
-            operator: 'eq',
-            value: 'test-external-id',
-            type: 'text'
-          }
-        ],
+        filters,
         limit: 1
-      });
+      } as LogRecordsQueryRequest);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -137,16 +142,17 @@ describe('TraceService', () => {
         traceService as unknown as { makeRequest: MockMakeRequest }
       ).makeRequest = mockMakeRequest;
 
+      const filters = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'non-existent-id',
+          type: 'text' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
       const result = await traceService.searchSessions({
-        filters: [
-          {
-            column_id: 'external_id',
-            operator: 'eq',
-            value: 'non-existent-id',
-            type: 'text'
-          }
-        ]
-      });
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -233,7 +239,7 @@ describe('TraceService', () => {
       ).makeRequest = mockMakeRequest;
 
       await traceService.searchSessions({
-        experiment_id: 'explicit-experiment-id'
+        experimentId: 'explicit-experiment-id'
       });
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
@@ -258,7 +264,7 @@ describe('TraceService', () => {
       ).makeRequest = mockMakeRequest;
 
       await traceService.searchSessions({
-        log_stream_id: 'explicit-log-stream-id'
+        logStreamId: 'explicit-log-stream-id'
       });
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
@@ -360,16 +366,17 @@ describe('TraceService', () => {
         traceService as unknown as { makeRequest: MockMakeRequest }
       ).makeRequest = mockMakeRequest;
 
+      const filters = [
+        {
+          columnId: 'name',
+          operator: 'eq' as const,
+          value: 'test-trace',
+          type: 'text' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
       const result = await traceService.searchTraces({
-        filters: [
-          {
-            column_id: 'name',
-            operator: 'eq',
-            value: 'test-trace',
-            type: 'text'
-          }
-        ]
-      });
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -434,7 +441,7 @@ describe('TraceService', () => {
       ).makeRequest = mockMakeRequest;
 
       await traceService.searchTraces({
-        experiment_id: 'explicit-experiment-id'
+        experimentId: 'explicit-experiment-id'
       });
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
@@ -469,16 +476,17 @@ describe('TraceService', () => {
         traceService as unknown as { makeRequest: MockMakeRequest }
       ).makeRequest = mockMakeRequest;
 
+      const filters = [
+        {
+          columnId: 'name',
+          operator: 'eq' as const,
+          value: 'test-span',
+          type: 'text' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
       const result = await traceService.searchSpans({
-        filters: [
-          {
-            column_id: 'name',
-            operator: 'eq',
-            value: 'test-span',
-            type: 'text'
-          }
-        ]
-      });
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -543,7 +551,7 @@ describe('TraceService', () => {
       ).makeRequest = mockMakeRequest;
 
       await traceService.searchSpans({
-        log_stream_id: 'explicit-log-stream-id'
+        logStreamId: 'explicit-log-stream-id'
       });
 
       expect(mockMakeRequest).toHaveBeenCalledWith(

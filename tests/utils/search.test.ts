@@ -7,10 +7,12 @@ import {
   getMetrics
 } from '../../src/utils/search';
 import {
-  LogRecordsQueryFilterTS,
-  LogRecordsSortClauseTS,
+  LogRecordsQueryFilter,
+  LogRecordsQueryRequest,
   LogRecordsQueryResponse,
-  LogRecordsMetricsResponse
+  LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsResponse,
+  LogRecordsSortClause
 } from '../../src/types/search.types';
 
 // Create mock implementation functions
@@ -39,16 +41,16 @@ describe('Search', () => {
   const mockQueryResponse: LogRecordsQueryResponse = {
     records: [],
     limit: 100,
-    starting_token: 0,
-    next_starting_token: null,
-    last_row_id: null,
+    startingToken: 0,
+    nextStartingToken: null,
+    lastRowId: null,
     paginated: false
   };
 
   const mockMetricResponse: LogRecordsMetricsResponse = {
-    group_by_columns: [],
-    aggregate_metrics: {},
-    bucketed_metrics: {}
+    groupByColumns: [],
+    aggregateMetrics: {},
+    bucketedMetrics: {}
   };
 
   beforeEach(() => {
@@ -70,351 +72,244 @@ describe('Search', () => {
   describe('Search.query', () => {
     it('should query traces with minimal options', async () => {
       const search = new Search();
-      const result = await search.query(
-        {
-          projectId
-        },
-        RecordType.TRACE
-      );
+      const result = await search.query(projectId, RecordType.TRACE, {});
 
       expect(mockInit).toHaveBeenCalledWith({
         projectId,
         projectScoped: true
       });
-      expect(mockSearchTraces).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
-        filters: undefined,
-        sort: {
-          column_id: 'created_at',
-          ascending: false,
-          sort_type: 'column'
-        },
-        limit: 100,
-        starting_token: 0
-      });
+      expect(mockSearchTraces).toHaveBeenCalledWith({});
       expect(result).toEqual(mockQueryResponse);
     });
 
     it('should query spans with all options', async () => {
-      const filters: LogRecordsQueryFilterTS[] = [
+      const filters = [
         {
           columnId: 'status',
-          operator: 'eq',
+          operator: 'eq' as const,
           value: 'completed',
-          type: 'text'
+          type: 'text' as const
         }
-      ];
+      ] as unknown as LogRecordsQueryFilter[];
 
-      const sort: LogRecordsSortClauseTS = {
+      const sort: LogRecordsSortClause = {
         columnId: 'created_at',
         ascending: false,
         sortType: 'column'
       };
 
       const search = new Search();
-      const result = await search.query(
-        {
-          projectId,
-          limit: 50,
-          startingToken: 10,
-          filters,
-          sort,
-          experimentId: 'exp-123',
-          logStreamId: 'log-stream-123'
-        },
-        RecordType.SPAN
-      );
+      const result = await search.query(projectId, RecordType.SPAN, {
+        limit: 50,
+        startingToken: 10,
+        filters,
+        sort,
+        experimentId: 'exp-123',
+        logStreamId: 'log-stream-123'
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchSpans).toHaveBeenCalledWith({
-        experiment_id: 'exp-123',
-        log_stream_id: 'log-stream-123',
+        experimentId: 'exp-123',
+        logStreamId: 'log-stream-123',
         filters: [
           {
-            column_id: 'status',
+            columnId: 'status',
             operator: 'eq',
             value: 'completed',
-            case_sensitive: undefined,
             type: 'text'
           }
         ],
         sort: {
-          column_id: 'created_at',
+          columnId: 'created_at',
           ascending: false,
-          sort_type: 'column'
+          sortType: 'column'
         },
         limit: 50,
-        starting_token: 10
+        startingToken: 10
       });
       expect(result).toEqual(mockQueryResponse);
     });
 
     it('should query sessions with filters', async () => {
-      const filters: LogRecordsQueryFilterTS[] = [
+      const filters = [
         {
           columnId: 'external_id',
-          operator: 'eq',
+          operator: 'eq' as const,
           value: 'ext-123',
-          type: 'id'
+          type: 'id' as const
         }
-      ];
+      ] as unknown as LogRecordsQueryFilter[];
 
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          filters
-        },
-        RecordType.SESSION
-      );
+      await search.query(projectId, RecordType.SESSION, {
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchSessions).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
         filters: [
           {
-            column_id: 'external_id',
+            columnId: 'external_id',
             operator: 'eq',
             value: 'ext-123',
             type: 'id'
           }
-        ],
-        sort: {
-          column_id: 'created_at',
-          ascending: false,
-          sort_type: 'column'
-        },
-        limit: 100,
-        starting_token: 0
+        ]
       });
     });
 
     it('should handle all filter types correctly', async () => {
-      const filters: LogRecordsQueryFilterTS[] = [
+      const filters = [
         {
           columnId: 'id',
-          operator: 'eq',
+          operator: 'eq' as const,
           value: 'test-id',
-          type: 'id'
+          type: 'id' as const
         },
         {
           columnId: 'name',
-          operator: 'contains',
+          operator: 'contains' as const,
           value: 'test',
           caseSensitive: false,
-          type: 'text'
+          type: 'text' as const
         },
         {
           columnId: 'count',
-          operator: 'gt',
+          operator: 'gt' as const,
           value: 10,
-          type: 'number'
+          type: 'number' as const
         },
         {
           columnId: 'created_at',
-          operator: 'gte',
+          operator: 'gte' as const,
           value: '2024-01-01T00:00:00Z',
-          type: 'date'
+          type: 'date' as const
         },
         {
           columnId: 'active',
           value: true,
-          type: 'boolean'
+          type: 'boolean' as const
         }
-      ];
+      ] as unknown as LogRecordsQueryFilter[];
 
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          filters
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
         filters: [
           {
-            column_id: 'id',
+            columnId: 'id',
             operator: 'eq',
             value: 'test-id',
             type: 'id'
           },
           {
-            column_id: 'name',
+            columnId: 'name',
             operator: 'contains',
             value: 'test',
-            case_sensitive: false,
+            caseSensitive: false,
             type: 'text'
           },
           {
-            column_id: 'count',
+            columnId: 'count',
             operator: 'gt',
             value: 10,
             type: 'number'
           },
           {
-            column_id: 'created_at',
+            columnId: 'created_at',
             operator: 'gte',
             value: '2024-01-01T00:00:00Z',
             type: 'date'
           },
           {
-            column_id: 'active',
+            columnId: 'active',
             value: true,
             type: 'boolean'
           }
-        ],
-        sort: {
-          column_id: 'created_at',
-          ascending: false,
-          sort_type: 'column'
-        },
-        limit: 100,
-        starting_token: 0
+        ]
       });
     });
 
     it('should handle empty filters array', async () => {
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          filters: []
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {
+        filters: []
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
-        filters: undefined,
-        sort: {
-          column_id: 'created_at',
-          ascending: false,
-          sort_type: 'column'
-        },
-        limit: 100,
-        starting_token: 0
+        filters: []
       });
     });
 
     it('should handle undefined filters', async () => {
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          filters: undefined
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {
+        filters: undefined
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
-        filters: undefined,
-        sort: {
-          column_id: 'created_at',
-          ascending: false,
-          sort_type: 'column'
-        },
-        limit: 100,
-        starting_token: 0
+        filters: undefined
       });
     });
 
     it('should handle sort clause with all fields', async () => {
-      const sort: LogRecordsSortClauseTS = {
+      const sort: LogRecordsSortClause = {
         columnId: 'updated_at',
         ascending: true,
         sortType: 'column'
       };
 
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          sort
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {
+        sort
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
-        filters: undefined,
         sort: {
-          column_id: 'updated_at',
+          columnId: 'updated_at',
           ascending: true,
-          sort_type: 'column'
-        },
-        limit: 100,
-        starting_token: 0
+          sortType: 'column'
+        }
       });
     });
 
     it('should handle sort clause with minimal fields', async () => {
-      const sort: LogRecordsSortClauseTS = {
+      const sort: LogRecordsSortClause = {
         columnId: 'created_at'
       };
 
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          sort
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {
+        sort
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith({
-        experiment_id: undefined,
-        log_stream_id: undefined,
-        filters: undefined,
         sort: {
-          column_id: 'created_at',
-          ascending: undefined,
-          sort_type: undefined
-        },
-        limit: 100,
-        starting_token: 0
+          columnId: 'created_at'
+        }
       });
     });
 
     it('should use default limit and startingToken when not provided', async () => {
       const search = new Search();
-      await search.query(
-        {
-          projectId
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {});
 
-      expect(mockSearchTraces).toHaveBeenCalledWith(
-        expect.objectContaining({
-          limit: 100,
-          starting_token: 0
-        })
-      );
+      expect(mockSearchTraces).toHaveBeenCalledWith({});
     });
 
     it('should use custom limit and startingToken when provided', async () => {
       const search = new Search();
-      await search.query(
-        {
-          projectId,
-          limit: 25,
-          startingToken: 5
-        },
-        RecordType.TRACE
-      );
+      await search.query(projectId, RecordType.TRACE, {
+        limit: 25,
+        startingToken: 5
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith(
         expect.objectContaining({
           limit: 25,
-          starting_token: 5
+          startingToken: 5
         })
       );
     });
@@ -423,42 +318,34 @@ describe('Search', () => {
   describe('Search.queryMetrics', () => {
     it('should query metrics with minimal options', async () => {
       const search = new Search();
-      const result = await search.queryMetrics({
-        projectId,
+      const result = await search.queryMetrics(projectId, {
         startTime: '2024-01-01T00:00:00Z',
         endTime: '2024-01-02T00:00:00Z'
-      });
+      } as LogRecordsMetricsQueryRequest);
 
       expect(mockInit).toHaveBeenCalledWith({
         projectId,
         projectScoped: true
       });
       expect(mockSearchMetrics).toHaveBeenCalledWith({
-        filters: undefined,
-        log_stream_id: undefined,
-        experiment_id: undefined,
-        metrics_testing_id: undefined,
-        interval: undefined,
-        group_by: undefined,
-        start_time: '2024-01-01T00:00:00Z',
-        end_time: '2024-01-02T00:00:00Z'
+        startTime: '2024-01-01T00:00:00Z',
+        endTime: '2024-01-02T00:00:00Z'
       });
       expect(result).toEqual(mockMetricResponse);
     });
 
     it('should query metrics with all options', async () => {
-      const filters: LogRecordsQueryFilterTS[] = [
+      const filters = [
         {
           columnId: 'status',
-          operator: 'eq',
+          operator: 'eq' as const,
           value: 'success',
-          type: 'text'
+          type: 'text' as const
         }
-      ];
+      ] as unknown as LogRecordsQueryFilter[];
 
       const search = new Search();
-      const result = await search.queryMetrics({
-        projectId,
+      const result = await search.queryMetrics(projectId, {
         startTime: '2024-01-01T00:00:00Z',
         endTime: '2024-01-02T00:00:00Z',
         logStreamId: 'log-stream-123',
@@ -467,43 +354,41 @@ describe('Search', () => {
         interval: 10,
         groupBy: 'status',
         filters
-      });
+      } as LogRecordsMetricsQueryRequest);
 
       expect(mockSearchMetrics).toHaveBeenCalledWith({
         filters: [
           {
-            column_id: 'status',
+            columnId: 'status',
             operator: 'eq',
             value: 'success',
-            case_sensitive: undefined,
             type: 'text'
           }
         ],
-        log_stream_id: 'log-stream-123',
-        experiment_id: 'exp-123',
-        metrics_testing_id: 'test-123',
+        logStreamId: 'log-stream-123',
+        experimentId: 'exp-123',
+        metricsTestingId: 'test-123',
         interval: 10,
-        group_by: 'status',
-        start_time: '2024-01-01T00:00:00Z',
-        end_time: '2024-01-02T00:00:00Z'
+        groupBy: 'status',
+        startTime: '2024-01-01T00:00:00Z',
+        endTime: '2024-01-02T00:00:00Z'
       });
       expect(result).toEqual(mockMetricResponse);
     });
 
     it('should handle empty filters array for metrics', async () => {
       const search = new Search();
-      await search.queryMetrics({
-        projectId,
+      await search.queryMetrics(projectId, {
+        startTime: '2024-01-01T00:00:00Z',
+        endTime: '2024-01-02T00:00:00Z',
+        filters: []
+      } as LogRecordsMetricsQueryRequest);
+
+      expect(mockSearchMetrics).toHaveBeenCalledWith({
         startTime: '2024-01-01T00:00:00Z',
         endTime: '2024-01-02T00:00:00Z',
         filters: []
       });
-
-      expect(mockSearchMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filters: undefined
-        })
-      );
     });
   });
 
@@ -523,16 +408,16 @@ describe('Search', () => {
       });
 
       it('should pass all options to Search.query', async () => {
-        const filters: LogRecordsQueryFilterTS[] = [
+        const filters = [
           {
             columnId: 'name',
-            operator: 'contains',
+            operator: 'contains' as const,
             value: 'test',
-            type: 'text'
+            type: 'text' as const
           }
-        ];
+        ] as unknown as LogRecordsQueryFilter[];
 
-        const sort: LogRecordsSortClauseTS = {
+        const sort: LogRecordsSortClause = {
           columnId: 'created_at',
           ascending: false
         };
@@ -545,27 +430,26 @@ describe('Search', () => {
           sort,
           limit: 50,
           startingToken: 5
-        });
+        } as LogRecordsQueryRequest & { projectId: string });
 
         expect(mockSearchTraces).toHaveBeenCalledWith({
-          experiment_id: 'exp-123',
-          log_stream_id: 'log-123',
+          experimentId: 'exp-123',
+          logStreamId: 'log-123',
           filters: [
             {
-              column_id: 'name',
+              columnId: 'name',
               operator: 'contains',
               value: 'test',
-              case_sensitive: undefined,
               type: 'text'
             }
           ],
           sort: {
-            column_id: 'created_at',
-            ascending: false,
-            sort_type: undefined
+            columnId: 'created_at',
+            ascending: false
           },
           limit: 50,
-          starting_token: 5
+          startingToken: 5,
+          projectId: 'test-project-id'
         });
       });
     });
@@ -581,10 +465,25 @@ describe('Search', () => {
       });
 
       it('should pass all options to Search.query', async () => {
+        const filters = [
+          {
+            columnId: 'type',
+            operator: 'eq' as const,
+            value: 'llm',
+            type: 'text' as const
+          }
+        ] as unknown as LogRecordsQueryFilter[];
         await getSpans({
           projectId,
           logStreamId: 'log-123',
           experimentId: 'exp-123',
+          filters,
+          limit: 25
+        } as LogRecordsQueryRequest & { projectId: string });
+
+        expect(mockSearchSpans).toHaveBeenCalledWith({
+          experimentId: 'exp-123',
+          logStreamId: 'log-123',
           filters: [
             {
               columnId: 'type',
@@ -593,28 +492,8 @@ describe('Search', () => {
               type: 'text'
             }
           ],
-          limit: 25
-        });
-
-        expect(mockSearchSpans).toHaveBeenCalledWith({
-          experiment_id: 'exp-123',
-          log_stream_id: 'log-123',
-          filters: [
-            {
-              column_id: 'type',
-              operator: 'eq',
-              value: 'llm',
-              case_sensitive: undefined,
-              type: 'text'
-            }
-          ],
-          sort: {
-            column_id: 'created_at',
-            ascending: false,
-            sort_type: 'column'
-          },
           limit: 25,
-          starting_token: 0
+          projectId: 'test-project-id'
         });
       });
     });
@@ -630,8 +509,25 @@ describe('Search', () => {
       });
 
       it('should pass all options to Search.query', async () => {
+        const filters = [
+          {
+            columnId: 'external_id',
+            operator: 'eq' as const,
+            value: 'ext-123',
+            type: 'id' as const
+          }
+        ] as unknown as LogRecordsQueryFilter[];
         await getSessions({
           projectId,
+          experimentId: 'exp-123',
+          filters,
+          sort: {
+            columnId: 'created_at',
+            ascending: false
+          }
+        } as LogRecordsQueryRequest & { projectId: string });
+
+        expect(mockSearchSessions).toHaveBeenCalledWith({
           experimentId: 'exp-123',
           filters: [
             {
@@ -644,27 +540,8 @@ describe('Search', () => {
           sort: {
             columnId: 'created_at',
             ascending: false
-          }
-        });
-
-        expect(mockSearchSessions).toHaveBeenCalledWith({
-          experiment_id: 'exp-123',
-          log_stream_id: undefined,
-          filters: [
-            {
-              column_id: 'external_id',
-              operator: 'eq',
-              value: 'ext-123',
-              type: 'id'
-            }
-          ],
-          sort: {
-            column_id: 'created_at',
-            ascending: false,
-            sort_type: undefined
           },
-          limit: 100,
-          starting_token: 0
+          projectId: 'test-project-id'
         });
       });
     });
@@ -682,14 +559,14 @@ describe('Search', () => {
       });
 
       it('should pass all options to Search.queryMetrics', async () => {
-        const filters: LogRecordsQueryFilterTS[] = [
+        const filters = [
           {
             columnId: 'metric_name',
-            operator: 'eq',
+            operator: 'eq' as const,
             value: 'latency',
-            type: 'text'
+            type: 'text' as const
           }
-        ];
+        ] as unknown as LogRecordsQueryFilter[];
 
         await getMetrics({
           projectId,
@@ -701,25 +578,25 @@ describe('Search', () => {
           interval: 5,
           groupBy: 'status',
           filters
-        });
+        } as LogRecordsMetricsQueryRequest & { projectId: string });
 
         expect(mockSearchMetrics).toHaveBeenCalledWith({
           filters: [
             {
-              column_id: 'metric_name',
+              columnId: 'metric_name',
               operator: 'eq',
               value: 'latency',
-              case_sensitive: undefined,
               type: 'text'
             }
           ],
-          log_stream_id: 'log-123',
-          experiment_id: 'exp-123',
-          metrics_testing_id: 'test-123',
+          logStreamId: 'log-123',
+          experimentId: 'exp-123',
+          metricsTestingId: 'test-123',
           interval: 5,
-          group_by: 'status',
-          start_time: '2024-01-01T00:00:00Z',
-          end_time: '2024-01-02T00:00:00Z'
+          groupBy: 'status',
+          startTime: '2024-01-01T00:00:00Z',
+          endTime: '2024-01-02T00:00:00Z',
+          projectId: 'test-project-id'
         });
       });
     });
@@ -728,26 +605,23 @@ describe('Search', () => {
   describe('Filter type conversions', () => {
     it('should convert ID filter correctly', async () => {
       const search = new Search();
-      await search.query(
+      const filters = [
         {
-          projectId,
-          filters: [
-            {
-              columnId: 'id',
-              operator: 'eq',
-              value: 'test-id',
-              type: 'id'
-            }
-          ]
-        },
-        RecordType.TRACE
-      );
+          columnId: 'id',
+          operator: 'eq' as const,
+          value: 'test-id',
+          type: 'id' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
+      await search.query(projectId, RecordType.TRACE, {
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith(
         expect.objectContaining({
           filters: [
             {
-              column_id: 'id',
+              columnId: 'id',
               operator: 'eq',
               value: 'test-id',
               type: 'id'
@@ -759,9 +633,21 @@ describe('Search', () => {
 
     it('should convert text filter with caseSensitive', async () => {
       const search = new Search();
-      await search.query(
+      const filters = [
         {
-          projectId,
+          columnId: 'name',
+          operator: 'contains' as const,
+          value: 'test',
+          caseSensitive: true,
+          type: 'text' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
+      await search.query(projectId, RecordType.TRACE, {
+        filters
+      } as LogRecordsQueryRequest);
+
+      expect(mockSearchTraces).toHaveBeenCalledWith(
+        expect.objectContaining({
           filters: [
             {
               columnId: 'name',
@@ -771,47 +657,29 @@ describe('Search', () => {
               type: 'text'
             }
           ]
-        },
-        RecordType.TRACE
-      );
-
-      expect(mockSearchTraces).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filters: [
-            {
-              column_id: 'name',
-              operator: 'contains',
-              value: 'test',
-              case_sensitive: true,
-              type: 'text'
-            }
-          ]
         })
       );
     });
 
     it('should convert number filter with array value', async () => {
       const search = new Search();
-      await search.query(
+      const filters = [
         {
-          projectId,
-          filters: [
-            {
-              columnId: 'count',
-              operator: 'between',
-              value: [10, 20],
-              type: 'number'
-            }
-          ]
-        },
-        RecordType.TRACE
-      );
+          columnId: 'count',
+          operator: 'between' as const,
+          value: [10, 20],
+          type: 'number' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
+      await search.query(projectId, RecordType.TRACE, {
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith(
         expect.objectContaining({
           filters: [
             {
-              column_id: 'count',
+              columnId: 'count',
               operator: 'between',
               value: [10, 20],
               type: 'number'
@@ -823,26 +691,23 @@ describe('Search', () => {
 
     it('should convert date filter correctly', async () => {
       const search = new Search();
-      await search.query(
+      const filters = [
         {
-          projectId,
-          filters: [
-            {
-              columnId: 'created_at',
-              operator: 'gte',
-              value: '2024-01-01T00:00:00Z',
-              type: 'date'
-            }
-          ]
-        },
-        RecordType.TRACE
-      );
+          columnId: 'created_at',
+          operator: 'gte' as const,
+          value: '2024-01-01T00:00:00Z',
+          type: 'date' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
+      await search.query(projectId, RecordType.TRACE, {
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith(
         expect.objectContaining({
           filters: [
             {
-              column_id: 'created_at',
+              columnId: 'created_at',
               operator: 'gte',
               value: '2024-01-01T00:00:00Z',
               type: 'date'
@@ -854,25 +719,22 @@ describe('Search', () => {
 
     it('should convert boolean filter correctly', async () => {
       const search = new Search();
-      await search.query(
+      const filters = [
         {
-          projectId,
-          filters: [
-            {
-              columnId: 'active',
-              value: false,
-              type: 'boolean'
-            }
-          ]
-        },
-        RecordType.TRACE
-      );
+          columnId: 'active',
+          value: false,
+          type: 'boolean' as const
+        }
+      ] as unknown as LogRecordsQueryFilter[];
+      await search.query(projectId, RecordType.TRACE, {
+        filters
+      } as LogRecordsQueryRequest);
 
       expect(mockSearchTraces).toHaveBeenCalledWith(
         expect.objectContaining({
           filters: [
             {
-              column_id: 'active',
+              columnId: 'active',
               value: false,
               type: 'boolean'
             }
@@ -889,7 +751,7 @@ describe('Search', () => {
 
       const search = new Search();
       await expect(
-        search.query({ projectId }, RecordType.TRACE)
+        search.query(projectId, RecordType.TRACE, {})
       ).rejects.toThrow('API Error');
     });
 
@@ -899,11 +761,10 @@ describe('Search', () => {
 
       const search = new Search();
       await expect(
-        search.queryMetrics({
-          projectId,
+        search.queryMetrics(projectId, {
           startTime: '2024-01-01T00:00:00Z',
           endTime: '2024-01-02T00:00:00Z'
-        })
+        } as LogRecordsMetricsQueryRequest)
       ).rejects.toThrow('Metrics API Error');
     });
   });
