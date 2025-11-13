@@ -1,23 +1,23 @@
 import type { components } from '../api.types';
+import type { ObjectToCamel } from 'ts-case-convert';
 
-export type SessionCreateResponse =
+// OpenAPI types from api.types.ts (source of truth)
+export type SessionCreateRequestOpenAPI =
+  components['schemas']['SessionCreateRequest'];
+
+export type SessionCreateResponseOpenAPI =
   components['schemas']['SessionCreateResponse'];
 
-export type SessionSearchResponse =
+export type LogRecordsQueryResponseOpenAPI =
   components['schemas']['LogRecordsQueryResponse'];
 
-// Interface for session search request parameters (simplified client interface)
-export interface SessionSearchRequest {
-  filters?: Array<{
-    column_id: string;
-    operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
-    value: string | string[];
-    case_sensitive?: boolean;
-  }>;
-  limit?: number;
-  starting_token?: number;
-}
-
-// Proper type for session search request body based on LogRecordsQueryRequest schema
-export type SessionSearchRequestBody =
+export type LogRecordsQueryRequestOpenAPI =
   components['schemas']['LogRecordsQueryRequest'];
+
+// SDK-facing types (camelCase converted versions)
+export type LogRecordsQueryRequest =
+  ObjectToCamel<LogRecordsQueryRequestOpenAPI>;
+export type LogRecordsQueryResponse =
+  ObjectToCamel<LogRecordsQueryResponseOpenAPI>;
+export type SessionCreateRequest = ObjectToCamel<SessionCreateRequestOpenAPI>;
+export type SessionCreateResponse = ObjectToCamel<SessionCreateResponseOpenAPI>;

@@ -30,8 +30,8 @@ type MockGalileoApiClient = {
       sessionId?: string;
     }) => Promise<void>
   >;
-  ingestTraces: jest.MockedFunction<(traces: Trace[]) => Promise<void>>;
-  createSession: jest.MockedFunction<
+  ingestTracesLegacy: jest.MockedFunction<(traces: Trace[]) => Promise<void>>;
+  createSessionLegacy: jest.MockedFunction<
     (params: {
       name?: string;
       previousSessionId?: string;
@@ -54,8 +54,8 @@ type MockGalileoApiClient = {
 jest.mock('../../src/api-client', () => ({
   GalileoApiClient: jest.fn().mockImplementation(() => ({
     init: jest.fn(),
-    ingestTraces: jest.fn(),
-    createSession: jest.fn().mockReturnValue({
+    ingestTracesLegacy: jest.fn(),
+    createSessionLegacy: jest.fn().mockReturnValue({
       id: mockSessionId,
       name: 'test-session',
       project_id: mockProjectId,
@@ -523,7 +523,10 @@ describe('GalileoLogger', () => {
 
       // Mock the API client methods
       const mockInit = jest.spyOn(logger['client'], 'init');
-      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+      const mockIngestTraces = jest.spyOn(
+        logger['client'],
+        'ingestTracesLegacy'
+      );
 
       // Flush traces
       const flushedTraces = await logger.flush();
@@ -1057,7 +1060,10 @@ describe('GalileoLogger', () => {
 
     it('should include the session ID when flushing traces', async () => {
       const mockInit = jest.spyOn(logger['client'], 'init');
-      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+      const mockIngestTraces = jest.spyOn(
+        logger['client'],
+        'ingestTracesLegacy'
+      );
 
       expect(logger.currentSessionId()).toBeUndefined();
       await logger.startSession({
@@ -1082,7 +1088,10 @@ describe('GalileoLogger', () => {
 
     it('should allow setting the session ID manually', async () => {
       const mockInit = jest.spyOn(logger['client'], 'init');
-      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+      const mockIngestTraces = jest.spyOn(
+        logger['client'],
+        'ingestTracesLegacy'
+      );
       expect(logger.currentSessionId()).toBeUndefined();
 
       // Instead of starting a session, we set the session ID directly
@@ -1496,7 +1505,7 @@ describe('GalileoLogger', () => {
         name: 'test-session'
       });
 
-      expect(mockClient.createSession).toHaveBeenCalledWith({
+      expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: 'test-session',
         previousSessionId: undefined,
         externalId: undefined

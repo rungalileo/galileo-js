@@ -18,6 +18,18 @@ type ValidatedSnakeCase<T extends object, TTarget> =
   ObjectToSnake<T> extends TTarget ? TTarget : never;
 type ValidatedCamelCase<T extends object, TTarget> =
   ObjectToCamel<T> extends TTarget ? TTarget : never;
+import {
+  objectToCamel,
+  objectToSnake,
+  ObjectToSnake,
+  ObjectToCamel
+} from 'ts-case-convert';
+
+// Type guards for snake_case and camelCase conversion
+type ValidatedSnakeCase<T extends object, TTarget> =
+  ObjectToSnake<T> extends TTarget ? TTarget : never;
+type ValidatedCamelCase<T extends object, TTarget> =
+  ObjectToCamel<T> extends TTarget ? TTarget : never;
 
 export enum RequestMethod {
   GET = 'GET',
@@ -192,6 +204,18 @@ export class BaseClient {
       .replace(
         '{version}',
         params && 'version' in params ? (params.version as string) : ''
+      )
+      .replace(
+        '{trace_id}',
+        params && 'trace_id' in params ? (params.trace_id as string) : ''
+      )
+      .replace(
+        '{session_id}',
+        params && 'session_id' in params ? (params.session_id as string) : ''
+      )
+      .replace(
+        '{span_id}',
+        params && 'span_id' in params ? (params.span_id as string) : ''
       )}`;
 
     const config: AxiosRequestConfig = {
