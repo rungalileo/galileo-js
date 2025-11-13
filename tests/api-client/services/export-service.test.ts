@@ -1,6 +1,7 @@
 import { ExportService } from '../../../src/api-client/services/export-service';
 import { RequestMethod } from '../../../src/api-client/base-client';
 import { Routes } from '../../../src/types/routes.types';
+import { LogRecordsExportRequest } from '../../../src/types/export.types';
 import { Readable } from 'stream';
 
 // Create a mock type for the makeStreamingRequest method
@@ -49,17 +50,16 @@ describe('ExportService', () => {
         }
       ).makeStreamingRequest = mockMakeStreamingRequest;
 
-      const result = await exportService.records(
-        'trace',
-        [],
-        undefined,
-        'jsonl',
-        'log-stream-123'
-      );
+      const result = await exportService.records({
+        rootType: 'trace',
+        filters: [],
+        exportFormat: 'jsonl',
+        logStreamId: 'log-stream-123'
+      });
 
-      const records: Record<string, unknown>[] = [];
+      const records: (string | Record<string, unknown>)[] = [];
       for await (const record of result) {
-        records.push(record as Record<string, unknown>);
+        records.push(record);
       }
 
       expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
@@ -72,16 +72,16 @@ describe('ExportService', () => {
           filters: [],
           sort: expect.objectContaining({
             column_id: 'created_at',
-            ascending: false,
-            sort_type: 'column'
-          }),
-          redact: true
+            ascending: false
+          })
         }),
         { project_id: mockProjectId }
       );
 
-      expect(records).toHaveLength(1);
-      expect(records[0]).toEqual({ id: '1', input: 'test' });
+      expect(records.length).toBe(1);
+      // JSONL format should return strings
+      expect(records[0]).toBe('{"id": "1", "input": "test"}\n');
+      expect(typeof records[0]).toBe('string');
     });
 
     it('should use default values when parameters are not provided', async () => {
@@ -101,7 +101,9 @@ describe('ExportService', () => {
         }
       ).makeStreamingRequest = mockMakeStreamingRequest;
 
-      await exportService.records();
+      await exportService.records(
+        {} as Partial<LogRecordsExportRequest> as LogRecordsExportRequest
+      );
 
       expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -111,10 +113,8 @@ describe('ExportService', () => {
           export_format: 'jsonl',
           sort: expect.objectContaining({
             column_id: 'created_at',
-            ascending: false,
-            sort_type: 'column'
-          }),
-          redact: true
+            ascending: false
+          })
         }),
         { project_id: mockProjectId }
       );
@@ -138,20 +138,20 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [
+        await exportService.records({
+          rootType: 'trace',
+          filters: [
             {
               columnId: 'input',
               operator: 'contains',
               value: 'test',
-              caseSensitive: false
+              caseSensitive: false,
+              type: 'text'
             }
           ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -188,19 +188,19 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [
+        await exportService.records({
+          rootType: 'trace',
+          filters: [
             {
               columnId: 'score',
               operator: 'gte',
-              value: 0.5
+              value: 0.5,
+              type: 'number'
             }
           ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -238,19 +238,19 @@ describe('ExportService', () => {
 
         const dateValue = new Date('2024-01-01').toISOString();
 
-        await exportService.records(
-          'trace',
-          [
+        await exportService.records({
+          rootType: 'trace',
+          filters: [
             {
               columnId: 'created_at',
               operator: 'gt',
-              value: dateValue
+              value: dateValue,
+              type: 'date'
             }
           ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -286,18 +286,18 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [
+        await exportService.records({
+          rootType: 'trace',
+          filters: [
             {
               columnId: 'is_valid',
-              value: true
+              value: true,
+              type: 'boolean'
             }
           ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -315,7 +315,7 @@ describe('ExportService', () => {
         );
       });
 
-      it('should convert IDFilter correctly (with operator)', async () => {
+      it('should convert IDFilter correctly', async () => {
         const mockStream = new Readable({
           read() {
             this.push(null);
@@ -332,69 +332,20 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [
+        await exportService.records({
+          rootType: 'trace',
+          filters: [
             {
               columnId: 'trace_id',
               operator: 'eq',
-              value: 'some-trace-id'
+              value: 'some-trace-id',
+              type: 'id'
             }
           ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
-
-        expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
-          RequestMethod.POST,
-          Routes.exportRecords,
-          expect.objectContaining({
-            filters: [
-              expect.objectContaining({
-                column_id: 'trace_id',
-                operator: 'eq',
-                value: 'some-trace-id',
-                type: 'date' // IDFilter with 'eq' operator and string value gets treated as date filter
-              })
-            ]
-          }),
-          expect.any(Object)
-        );
-      });
-
-      it('should convert IDFilter correctly (without operator)', async () => {
-        const mockStream = new Readable({
-          read() {
-            this.push(null);
-          }
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
         });
 
-        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
-          .fn()
-          .mockResolvedValue(mockStream);
-
-        (
-          exportService as unknown as {
-            makeStreamingRequest: MockMakeStreamingRequest;
-          }
-        ).makeStreamingRequest = mockMakeStreamingRequest;
-
-        await exportService.records(
-          'trace',
-          [
-            {
-              columnId: 'trace_id',
-              operator: undefined,
-              value: 'some-trace-id'
-            }
-          ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
-
-        // When operator is explicitly undefined, it should be treated as ID filter
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
           Routes.exportRecords,
@@ -429,29 +380,31 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [
+        await exportService.records({
+          rootType: 'trace',
+          filters: [
             {
               columnId: 'input',
               operator: 'contains',
               value: 'test',
-              caseSensitive: false
+              caseSensitive: false,
+              type: 'text'
             },
             {
               columnId: 'score',
               operator: 'gte',
-              value: 0.5
+              value: 0.5,
+              type: 'number'
             },
             {
               columnId: 'is_valid',
-              value: true
+              value: true,
+              type: 'boolean'
             }
           ],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -469,7 +422,7 @@ describe('ExportService', () => {
     });
 
     describe('sort clause', () => {
-      it('should convert sort clause with sortType', async () => {
+      it('should convert sort clause correctly', async () => {
         const mockStream = new Readable({
           read() {
             this.push(null);
@@ -486,17 +439,15 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [],
-          {
+        await exportService.records({
+          rootType: 'trace',
+          sort: {
             columnId: 'created_at',
-            ascending: false,
-            sortType: 'column'
+            ascending: false
           },
-          'jsonl',
-          'log-stream-123'
-        );
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -504,8 +455,7 @@ describe('ExportService', () => {
           expect.objectContaining({
             sort: {
               column_id: 'created_at',
-              ascending: false,
-              sort_type: 'column'
+              ascending: false
             }
           }),
           expect.any(Object)
@@ -529,13 +479,11 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+        await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -543,8 +491,7 @@ describe('ExportService', () => {
           expect.objectContaining({
             sort: {
               column_id: 'created_at',
-              ascending: false,
-              sort_type: 'column'
+              ascending: false
             }
           }),
           expect.any(Object)
@@ -570,17 +517,12 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'trace',
-          [],
-          undefined,
-          'jsonl',
-          'log-stream-123',
-          undefined,
-          undefined,
-          true,
-          'metrics-testing-id-123'
-        );
+        await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123',
+          metricsTestingId: 'metrics-testing-id-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -594,7 +536,7 @@ describe('ExportService', () => {
     });
 
     describe('export formats', () => {
-      it('should handle JSONL format', async () => {
+      it('should handle JSONL format and return strings', async () => {
         const mockStream = new Readable({
           read() {
             this.push('{"id": "1", "input": "test1"}\n');
@@ -613,25 +555,66 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        const result = await exportService.records(
-          'trace',
-          [],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
-        const records: Record<string, unknown>[] = [];
+        const records: (string | Record<string, unknown>)[] = [];
         for await (const record of result) {
-          records.push(record as Record<string, unknown>);
+          records.push(record);
         }
 
-        expect(records).toHaveLength(2);
-        expect(records[0]).toEqual({ id: '1', input: 'test1' });
-        expect(records[1]).toEqual({ id: '2', input: 'test2' });
+        expect(records.length).toBe(2);
+        // JSONL format should return strings
+        expect(records[0]).toBe('{"id": "1", "input": "test1"}\n');
+        expect(records[1]).toBe('{"id": "2", "input": "test2"}\n');
+        expect(typeof records[0]).toBe('string');
+        expect(typeof records[1]).toBe('string');
       });
 
-      it('should handle CSV format', async () => {
+      it('should handle JSON format and return parsed objects', async () => {
+        const mockStream = new Readable({
+          read() {
+            this.push('{"id": "1", "input": "test1", "score": 0.95}\n');
+            this.push('{"id": "2", "input": "test2", "score": 0.87}\n');
+            this.push(null);
+          }
+        });
+
+        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
+          .fn()
+          .mockResolvedValue(mockStream);
+
+        (
+          exportService as unknown as {
+            makeStreamingRequest: MockMakeStreamingRequest;
+          }
+        ).makeStreamingRequest = mockMakeStreamingRequest;
+
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'json',
+          logStreamId: 'log-stream-123'
+        });
+
+        const records: (string | Record<string, unknown>)[] = [];
+        for await (const record of result) {
+          records.push(record);
+        }
+
+        expect(records.length).toBe(2);
+        // JSON format should return parsed objects
+        expect(typeof records[0]).toBe('object');
+        expect(typeof records[1]).toBe('object');
+        expect(records[0]).toEqual({ id: '1', input: 'test1', score: 0.95 });
+        expect(records[1]).toEqual({ id: '2', input: 'test2', score: 0.87 });
+        expect(records[0]).not.toBeInstanceOf(String);
+        expect(records[1]).not.toBeInstanceOf(String);
+      });
+
+      it('should handle CSV format and return strings', async () => {
         const mockStream = new Readable({
           read() {
             this.push('id,input,output\n');
@@ -651,22 +634,25 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        const result = await exportService.records(
-          'trace',
-          [],
-          undefined,
-          'csv',
-          'log-stream-123'
-        );
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'csv',
+          logStreamId: 'log-stream-123'
+        });
 
-        const records: Array<string>[] = [];
+        const records: (string | Record<string, unknown>)[] = [];
         for await (const record of result) {
-          records.push(record as Array<string>);
+          records.push(record);
         }
 
-        expect(records.length).toBeGreaterThan(0);
-        // CSV parser returns arrays of strings
-        expect(Array.isArray(records[0])).toBe(true);
+        expect(records.length).toBe(3);
+        // CSV format should return strings
+        expect(records[0]).toBe('id,input,output\n');
+        expect(records[1]).toBe('1,test1,out1\n');
+        expect(records[2]).toBe('2,test2,out2\n');
+        expect(typeof records[0]).toBe('string');
+        expect(typeof records[1]).toBe('string');
+        expect(typeof records[2]).toBe('string');
       });
     });
 
@@ -690,13 +676,11 @@ describe('ExportService', () => {
             }
           ).makeStreamingRequest = mockMakeStreamingRequest;
 
-          await exportService.records(
+          await exportService.records({
             rootType,
-            [],
-            undefined,
-            'jsonl',
-            'log-stream-123'
-          );
+            exportFormat: 'jsonl',
+            logStreamId: 'log-stream-123'
+          });
 
           expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
             RequestMethod.POST,
@@ -723,22 +707,20 @@ describe('ExportService', () => {
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
         await expect(
-          exportService.records(
-            'trace',
-            [],
-            undefined,
-            'jsonl',
-            'log-stream-123'
-          )
+          exportService.records({
+            rootType: 'trace',
+            exportFormat: 'jsonl',
+            logStreamId: 'log-stream-123'
+          })
         ).rejects.toThrow('Failed to initiate export request');
       });
 
-      it('should handle malformed JSON lines gracefully', async () => {
+      it('should handle JSONL stream chunks correctly and buffer until complete lines', async () => {
         const mockStream = new Readable({
           read() {
-            this.push('{"id": "1"}\n');
-            this.push('this is not json\n');
-            this.push('{"id": "2"}\n');
+            this.push('{"id": "1"');
+            this.push(', "input": "test"}\n');
+            this.push('{"id": "2", "input": "test2"}\n');
             this.push(null);
           }
         });
@@ -753,21 +735,227 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        const result = await exportService.records(
-          'trace',
-          [],
-          undefined,
-          'jsonl',
-          'log-stream-123'
-        );
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
 
-        const records: Record<string, unknown>[] = [];
+        const records: (string | Record<string, unknown>)[] = [];
         for await (const record of result) {
-          records.push(record as Record<string, unknown>);
+          records.push(record);
         }
 
-        // Should skip malformed lines and only return valid JSON
-        expect(records.length).toBeGreaterThan(0);
+        // Should receive complete lines as strings, not raw chunks
+        expect(records.length).toBe(2);
+        expect(records[0]).toBe('{"id": "1", "input": "test"}\n');
+        expect(records[1]).toBe('{"id": "2", "input": "test2"}\n');
+        expect(records.every((record) => typeof record === 'string')).toBe(
+          true
+        );
+        expect((records as string[]).every((line) => line.endsWith('\n'))).toBe(
+          true
+        );
+      });
+
+      it('should handle JSON stream chunks correctly and buffer until complete lines', async () => {
+        const mockStream = new Readable({
+          read() {
+            this.push('{"id": "1"');
+            this.push(', "input": "test", "score": 0.95}\n');
+            this.push('{"id": "2", "input": "test2", "score": 0.87}\n');
+            this.push(null);
+          }
+        });
+
+        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
+          .fn()
+          .mockResolvedValue(mockStream);
+
+        (
+          exportService as unknown as {
+            makeStreamingRequest: MockMakeStreamingRequest;
+          }
+        ).makeStreamingRequest = mockMakeStreamingRequest;
+
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'json',
+          logStreamId: 'log-stream-123'
+        });
+
+        const records: (string | Record<string, unknown>)[] = [];
+        for await (const record of result) {
+          records.push(record);
+        }
+
+        // Should receive parsed objects, not raw chunks or strings
+        expect(records.length).toBe(2);
+        expect(typeof records[0]).toBe('object');
+        expect(typeof records[1]).toBe('object');
+        expect(records[0]).toEqual({ id: '1', input: 'test', score: 0.95 });
+        expect(records[1]).toEqual({ id: '2', input: 'test2', score: 0.87 });
+        expect(
+          records.every(
+            (record) => typeof record === 'object' && !Array.isArray(record)
+          )
+        ).toBe(true);
+      });
+
+      it('should handle CSV line buffering correctly', async () => {
+        const mockStream = new Readable({
+          read() {
+            this.push('id,input,');
+            this.push('output\n');
+            this.push('1,test1,out1\n');
+            this.push('2,test2,out2\n');
+            this.push(null);
+          }
+        });
+
+        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
+          .fn()
+          .mockResolvedValue(mockStream);
+
+        (
+          exportService as unknown as {
+            makeStreamingRequest: MockMakeStreamingRequest;
+          }
+        ).makeStreamingRequest = mockMakeStreamingRequest;
+
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'csv',
+          logStreamId: 'log-stream-123'
+        });
+
+        const records: (string | Record<string, unknown>)[] = [];
+        for await (const record of result) {
+          records.push(record);
+        }
+
+        // Should receive complete lines as strings, not raw chunks
+        expect(records.length).toBe(3);
+        expect(records[0]).toBe('id,input,output\n');
+        expect(records[1]).toBe('1,test1,out1\n');
+        expect(records[2]).toBe('2,test2,out2\n');
+        expect(records.every((record) => typeof record === 'string')).toBe(
+          true
+        );
+        expect((records as string[]).every((line) => line.endsWith('\n'))).toBe(
+          true
+        );
+      });
+
+      it('should throw error when JSONL stream throws during processing', async () => {
+        const streamError = new Error('Stream processing failed');
+        let chunkCount = 0;
+        const mockStream = new Readable({
+          read() {
+            if (chunkCount === 0) {
+              this.push('{"id": "1"}\n');
+              chunkCount++;
+            } else {
+              // Throw error on second read to simulate stream error during processing
+              this.destroy(streamError);
+            }
+          }
+        });
+
+        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
+          .fn()
+          .mockResolvedValue(mockStream);
+
+        (
+          exportService as unknown as {
+            makeStreamingRequest: MockMakeStreamingRequest;
+          }
+        ).makeStreamingRequest = mockMakeStreamingRequest;
+
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'jsonl',
+          logStreamId: 'log-stream-123'
+        });
+
+        // The error should be thrown when iterating over the stream
+        await expect(async () => {
+          for await (const chunk of result) {
+            void chunk;
+          }
+        }).rejects.toThrow('Error processing JSONL stream');
+      });
+
+      it('should throw error when JSON stream throws during processing', async () => {
+        const streamError = new Error('Stream processing failed');
+        let chunkCount = 0;
+        const mockStream = new Readable({
+          read() {
+            if (chunkCount === 0) {
+              this.push('{"id": "1"}\n');
+              chunkCount++;
+            } else {
+              // Throw error on second read to simulate stream error during processing
+              this.destroy(streamError);
+            }
+          }
+        });
+
+        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
+          .fn()
+          .mockResolvedValue(mockStream);
+
+        (
+          exportService as unknown as {
+            makeStreamingRequest: MockMakeStreamingRequest;
+          }
+        ).makeStreamingRequest = mockMakeStreamingRequest;
+
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'json',
+          logStreamId: 'log-stream-123'
+        });
+
+        // The error should be thrown when iterating over the stream
+        await expect(async () => {
+          for await (const chunk of result) {
+            void chunk;
+          }
+        }).rejects.toThrow('Error processing JSONL stream');
+      });
+
+      it('should throw error when JSON stream contains invalid JSON', async () => {
+        const mockStream = new Readable({
+          read() {
+            this.push('{"id": "1"}\n');
+            this.push('{"invalid": json}\n'); // Invalid JSON
+            this.push(null);
+          }
+        });
+
+        const mockMakeStreamingRequest: MockMakeStreamingRequest = jest
+          .fn()
+          .mockResolvedValue(mockStream);
+
+        (
+          exportService as unknown as {
+            makeStreamingRequest: MockMakeStreamingRequest;
+          }
+        ).makeStreamingRequest = mockMakeStreamingRequest;
+
+        const result = await exportService.records({
+          rootType: 'trace',
+          exportFormat: 'json',
+          logStreamId: 'log-stream-123'
+        });
+
+        // The error should be thrown when parsing invalid JSON
+        await expect(async () => {
+          for await (const chunk of result) {
+            void chunk;
+          }
+        }).rejects.toThrow();
       });
     });
 
@@ -789,28 +977,27 @@ describe('ExportService', () => {
           }
         ).makeStreamingRequest = mockMakeStreamingRequest;
 
-        await exportService.records(
-          'session',
-          [
+        await exportService.records({
+          rootType: 'session',
+          filters: [
             {
               columnId: 'input',
               operator: 'contains',
               value: 'test',
-              caseSensitive: true
+              caseSensitive: true,
+              type: 'text'
             }
           ],
-          {
+          sort: {
             columnId: 'created_at',
-            ascending: true,
-            sortType: 'column'
+            ascending: true
           },
-          'csv',
-          undefined,
-          'experiment-123',
-          ['id', 'input', 'output'],
-          false,
-          'metrics-testing-id-123'
-        );
+          exportFormat: 'csv',
+          experimentId: 'experiment-123',
+          columnIds: ['id', 'input', 'output'],
+          redact: false,
+          metricsTestingId: 'metrics-testing-id-123'
+        });
 
         expect(mockMakeStreamingRequest).toHaveBeenCalledWith(
           RequestMethod.POST,
@@ -818,7 +1005,6 @@ describe('ExportService', () => {
           expect.objectContaining({
             root_type: 'session',
             export_format: 'csv',
-            log_stream_id: null,
             experiment_id: 'experiment-123',
             column_ids: ['id', 'input', 'output'],
             redact: false,
@@ -830,8 +1016,7 @@ describe('ExportService', () => {
             ]),
             sort: {
               column_id: 'created_at',
-              ascending: true,
-              sort_type: 'column'
+              ascending: true
             }
           }),
           { project_id: mockProjectId }

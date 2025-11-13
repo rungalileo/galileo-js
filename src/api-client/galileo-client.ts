@@ -41,7 +41,7 @@ import { Job, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
 import { StepType } from '../types/logging/step.types';
-import { TSRecordsParams, TSSortClause } from '../types/export.types';
+import { LogRecordsExportRequest } from '../types/export.types';
 import {
   LogRecordsQueryRequest,
   LogRecordsMetricsQueryRequest,
@@ -414,7 +414,7 @@ export class GalileoApiClient extends BaseClient {
    *
    * Setup (validation, log stream resolution) happens immediately when this function is called.
    * The HTTP request is made immediately when this function is called.
-   * Record streaming and parsing happen when the returned AsyncIterable is iterated.
+   * Record streaming and line buffering happen when the returned AsyncIterable is iterated.
    *
    * @param params - Export parameters
    * @param params.rootType - The type of records to export (default: 'trace')
@@ -426,25 +426,14 @@ export class GalileoApiClient extends BaseClient {
    * @param params.columnIds - Column IDs to include in the export
    * @param params.redact - Redact sensitive data from the response (default: true)
    * @param params.metricsTestingId - Metrics testing ID associated with the traces
-   * @returns A Promise that resolves to an AsyncIterable that yields records as they are streamed.
-   *   - For JSONL format: Each record is a `Record<string, unknown>` (dictionary/object)
-   *   - For CSV format: Each record is an `Array<string>` (array of string values)
+   * @returns A Promise that resolves to an AsyncIterable that yields records based on the export format.
+   *   - For JSONL format: Each record is a `string` containing a complete JSONL line (JSON object as string with trailing newline)
+   *   - For JSON format: Each record is a `Record<string, unknown>` (parsed JSON object)
+   *   - For CSV format: Each record is a `string` containing a complete CSV line (with trailing newline)
    */
   public async exportRecords(
-    params: TSRecordsParams
-  ): Promise<AsyncIterable<Record<string, unknown> | Array<string>>> {
-    const {
-      rootType = 'trace',
-      filters = [],
-      sort,
-      exportFormat = 'jsonl',
-      logStreamId,
-      experimentId,
-      columnIds,
-      redact = true,
-      metricsTestingId
-    } = params;
-
+    options: LogRecordsExportRequest
+  ): Promise<AsyncIterable<string | Record<string, unknown>>> {
     if (!this.projectId) {
       throw new Error(
         'Client must be initialized with a project before exporting records'
@@ -454,10 +443,7 @@ export class GalileoApiClient extends BaseClient {
     this.ensureService(this.exportService);
     this.ensureService(this.logStreamService);
 
-    // Default log stream resolution: if neither logStreamId nor experimentId provided,
-    // fetch the first log stream (sorted by created_at)
-    let finalLogStreamId = logStreamId;
-    if (!logStreamId && !experimentId) {
+    if (!options.logStreamId && !options.experimentId) {
       const logStreams = await this.getLogStreams();
       if (logStreams && logStreams.length > 0) {
         // Sort by created_at and get the first one
@@ -466,35 +452,22 @@ export class GalileoApiClient extends BaseClient {
             new Date(a.created_at || 0).getTime() -
             new Date(b.created_at || 0).getTime()
         );
-        finalLogStreamId = sortedLogStreams[0].id;
-      }
-    }
 
-    // XOR validation: exactly one of logStreamId or experimentId must be provided
-    if ((finalLogStreamId === undefined) === (experimentId === undefined)) {
+        if (sortedLogStreams.length > 0) {
+          options.logStreamId = sortedLogStreams[0].id;
+        } else {
+          throw new Error(
+            'No log stream or experiment ID provided, no existing logstreams found.'
+          );
+        }
+      }
+    } else if (options.logStreamId && options.experimentId) {
       throw new Error(
         'Exactly one of logStreamId or experimentId must be provided.'
       );
     }
 
-    const finalSort: TSSortClause =
-      sort ||
-      ({
-        columnId: 'created_at',
-        ascending: false
-      } as TSSortClause);
-
-    return await this.exportService!.records(
-      rootType,
-      filters,
-      finalSort,
-      exportFormat,
-      finalLogStreamId,
-      experimentId,
-      columnIds,
-      redact,
-      metricsTestingId
-    );
+    return await this.exportService!.records(options);
   }
 
   // GlobalPromptTemplate methods - delegate to GlobalPromptTemplateService

@@ -10,13 +10,8 @@ import {
   Metric
 } from './types/metrics.types';
 import {
-  TSBooleanFilter,
-  TSDateFilter,
-  TSIDFilter,
-  TSNumberFilter,
-  TSRecordsParams,
-  TSSortClause,
-  TSTextFilter
+  LogRecordsFilter,
+  LogRecordsExportRequest
 } from './types/export.types';
 import {
   LogRecordsQueryFilter,
@@ -182,11 +177,6 @@ export type {
   LogRecordsSortClause,
   Metric,
   LocalMetricConfig,
-  TSRecordsParams,
-  TSSortClause,
-  TSTextFilter,
-  TSNumberFilter,
-  TSDateFilter,
-  TSBooleanFilter,
-  TSIDFilter
+  LogRecordsFilter, 
+  LogRecordsExportRequest
 };

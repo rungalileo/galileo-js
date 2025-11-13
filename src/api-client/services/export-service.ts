@@ -1,26 +1,10 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import {
-  LLMExportFormat,
-  LogRecordsExportRequest,
-  LogRecordsTextFilter,
-  LogRecordsNumberFilter,
-  LogRecordsDateFilter,
-  LogRecordsBooleanFilter,
-  LogRecordsIDFilter,
-  RootType,
-  TSRootType,
-  TSFormat,
-  TSSortClause,
-  TSFilter,
-  TSTextFilter,
-  TSNumberFilter,
-  TSDateFilter,
-  TSBooleanFilter,
-  TSIDFilter
+  LogRecordsExportRequestOpenAPI,
+  LogRecordsExportRequest
 } from '../../types/export.types';
 import { Readable } from 'stream';
-import { parse } from 'csv-parse';
 
 export class ExportService extends BaseClient {
   private projectId: string;
@@ -33,245 +17,150 @@ export class ExportService extends BaseClient {
     this.initializeClient();
   }
 
-  private convertFilterToOpenApi(
-    filter: TSFilter
-  ):
-    | LogRecordsTextFilter
-    | LogRecordsNumberFilter
-    | LogRecordsDateFilter
-    | LogRecordsBooleanFilter
-    | LogRecordsIDFilter {
-    // 1. Boolean filter: value is boolean (no operator)
-    if (
-      'value' in filter &&
-      typeof filter.value === 'boolean' &&
-      !('operator' in filter)
-    ) {
-      const boolFilter = filter as TSBooleanFilter;
-      return {
-        column_id: boolFilter.columnId,
-        value: boolFilter.value,
-        type: 'boolean' as const
-      };
-    }
-
-    // 2. Number filter: value is number or number[]
-    if (
-      'value' in filter &&
-      (typeof filter.value === 'number' ||
-        (Array.isArray(filter.value) &&
-          filter.value.length > 0 &&
-          typeof filter.value[0] === 'number'))
-    ) {
-      const numFilter = filter as TSNumberFilter;
-      return {
-        column_id: numFilter.columnId,
-        operator: numFilter.operator,
-        value: numFilter.value,
-        type: 'number' as const
-      };
-    }
-
-    // 3. Date filter: operator is date-specific (eq, ne, gt, gte, lt, lte) and value is string
-    // Date filters don't support 'contains', 'one_of', or 'not_in'
-    // Only check for date if operator is clearly date-specific (not text operators)
-    if ('operator' in filter && typeof filter.value === 'string') {
-      const dateOperators: TSDateFilter['operator'][] = [
-        'eq',
-        'ne',
-        'gt',
-        'gte',
-        'lt',
-        'lte'
-      ];
-      const textOperators: TSTextFilter['operator'][] = [
-        'contains',
-        'one_of',
-        'not_in'
-      ];
-      // If operator is date-specific AND not a text operator, treat as date
-      if (
-        dateOperators.includes(filter.operator as TSDateFilter['operator']) &&
-        !textOperators.includes(filter.operator as TSTextFilter['operator'])
-      ) {
-        const dateFilter = filter as TSDateFilter;
-        return {
-          column_id: dateFilter.columnId,
-          operator: dateFilter.operator,
-          value: dateFilter.value, // ISO date-time string
-          type: 'date' as const
-        };
-      }
-    }
-
-    // 4. ID filter: operator is optional (if undefined, it's definitely ID)
-    // ID filters support: eq (default), ne, contains, not_in, one_of
-    if ('operator' in filter && filter.operator === undefined) {
-      const idFilter = filter as TSIDFilter;
-      return {
-        column_id: idFilter.columnId,
-        operator: 'eq',
-        value: idFilter.value,
-        type: 'id' as const
-      };
-    }
-
-    // 5. Text filter: default case for string values with text operators
-    // Text filters support: eq, ne, contains, one_of, not_in
-    const textFilter = filter as TSTextFilter;
-    return {
-      column_id: textFilter.columnId,
-      operator: textFilter.operator,
-      value: textFilter.value,
-      case_sensitive:
-        textFilter.caseSensitive !== undefined
-          ? textFilter.caseSensitive
-          : true,
-      type: 'text' as const
-    };
-  }
-
-  private convertToOpenApiRequest(params: {
-    rootType?: TSRootType;
-    filters?: TSFilter[];
-    sort?: TSSortClause;
-    exportFormat?: TSFormat;
-    logStreamId?: string;
-    experimentId?: string;
-    columnIds?: string[];
-    redact?: boolean;
-    metricsTestingId?: string;
-  }): LogRecordsExportRequest {
-    const request: LogRecordsExportRequest = {
-      root_type: (params.rootType || 'trace') as RootType,
-      export_format: (params.exportFormat || 'jsonl') as LLMExportFormat,
-      log_stream_id: params.logStreamId || null,
-      experiment_id: params.experimentId || null,
-      metrics_testing_id: params.metricsTestingId || null,
-      column_ids: params.columnIds || null,
-      redact: params.redact !== undefined ? params.redact : true,
-      sort: params.sort
-        ? {
-            column_id: params.sort.columnId,
-            ascending:
-              params.sort.ascending !== undefined
-                ? params.sort.ascending
-                : false,
-            sort_type: (params.sort.sortType || 'column') as 'column'
-          }
-        : {
-            column_id: 'created_at',
-            ascending: false,
-            sort_type: 'column' as const
-          },
-      filters: params.filters
-        ? (params.filters.map((filter) =>
-            this.convertFilterToOpenApi(filter)
-          ) as LogRecordsExportRequest['filters']) // Type assertion needed due to union type complexity
-        : undefined
-    };
-
-    return request;
-  }
-
   public async records(
-    rootType: TSRootType = 'trace',
-    filters?: TSFilter[],
-    sort?: TSSortClause,
-    exportFormat: TSFormat = 'jsonl',
-    logStreamId?: string,
-    experimentId?: string,
-    columnIds?: string[],
-    redact: boolean = true,
-    metricsTestingId?: string
-  ): Promise<AsyncIterable<Record<string, unknown> | Array<string>>> {
-    const request = this.convertToOpenApiRequest({
-      rootType,
-      filters,
-      sort,
-      exportFormat,
-      logStreamId,
-      experimentId,
-      columnIds,
-      redact,
-      metricsTestingId
-    });
+    options: LogRecordsExportRequest
+  ): Promise<AsyncIterable<string | Record<string, unknown>>> {
+    const enrichedOptions = this.fillOptionsWithDefaults(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsExportRequest,
+      LogRecordsExportRequestOpenAPI
+    >(enrichedOptions);
 
-    let stream: Readable;
     try {
-      stream = await this.makeStreamingRequest(
+      const stream: Readable = await this.makeStreamingRequest(
         RequestMethod.POST,
         Routes.exportRecords,
         request,
         { project_id: this.projectId }
       );
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Unknown error occurred during export request';
-      throw new Error(
-        `Failed to initiate export request: ${errorMessage}. ` +
-          `Project ID: ${this.projectId}, Root Type: ${rootType}, Format: ${exportFormat}`
-      );
-    }
 
-    if (exportFormat === 'csv') {
-      return this.parseCsvStream(stream);
-    } else {
-      return this.parseJsonlStream(stream);
+      if (
+        enrichedOptions.exportFormat === 'jsonl' ||
+        enrichedOptions.exportFormat === 'json'
+      ) {
+        return this.parseJsonStream(stream, enrichedOptions.exportFormat);
+      } else {
+        return this.parseCSVStream(stream);
+      }
+    } catch (error) {
+      throw new Error(
+        `Failed to initiate export request: ${error instanceof Error ? error.message : 'Unknown error'}. ` +
+          `Project ID: ${this.projectId}, Root Type: ${enrichedOptions.rootType}, Format: ${enrichedOptions.exportFormat}`
+      );
     }
   }
 
-  private async *parseJsonlStream(
+  private fillOptionsWithDefaults(
+    options: LogRecordsExportRequest
+  ): LogRecordsExportRequest {
+    return {
+      ...options,
+      rootType: options.rootType || 'trace',
+      exportFormat: options.exportFormat || 'jsonl',
+      sort: options.sort || {
+        columnId: 'created_at',
+        ascending: false
+      }
+    };
+  }
+
+  /**
+   * Parses a CSV stream with proper line buffering to ensure complete lines.
+   * Buffers chunks until complete lines (ending with \n) are available, then yields
+   * each line with a newline.
+   *
+   * @param stream - The readable stream containing CSV data
+   * @returns An async iterable that yields complete CSV lines
+   * @throws Error if stream processing fails
+   */
+  private async *parseCSVStream(
     stream: Readable
-  ): AsyncIterable<Record<string, unknown>> {
+  ): AsyncIterable<string | Record<string, unknown>> {
+    stream.setEncoding('utf-8');
     let buffer = '';
 
-    for await (const chunk of stream) {
-      buffer += chunk.toString('utf-8');
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+    try {
+      for await (const chunk of stream) {
+        if (chunk) {
+          buffer += chunk;
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          try {
-            yield JSON.parse(trimmed);
-          } catch (error) {
-            // Skip malformed JSON lines
-            // eslint-disable-next-line no-console
-            console.warn(
-              `Skipping malformed JSON line: ${trimmed.substring(0, 100)}`
-            );
+          // Split on newlines
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            // Preserve the line as-is (CSV may have meaningful empty lines)
+            yield line + '\n';
           }
         }
       }
-    }
 
-    // Process remaining buffer
-    if (buffer.trim()) {
-      try {
-        yield JSON.parse(buffer.trim());
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.warn(`Skipping malformed JSON line in final buffer`);
+      // Handle remaining buffer (last line without trailing newline)
+      if (buffer) {
+        yield buffer + '\n';
       }
+    } catch (error) {
+      throw new Error(
+        `Error processing CSV stream: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
-  private async *parseCsvStream(
-    stream: Readable
-  ): AsyncIterable<Array<string>> {
-    const parser = parse({
-      encoding: 'utf-8',
-      delimiter: ','
-    });
+  /**
+   * Parses a JSON/JSONL stream with proper line buffering to ensure complete lines.
+   * Buffers chunks until complete lines (ending with \n) are available, then yields
+   * records based on the export format.
+   *
+   * @param stream - The readable stream containing JSON/JSONL data
+   * @param exportFormat - The export format ('jsonl' or 'json')
+   * @returns An async iterable that yields:
+   *   - For JSONL format: Complete lines as strings (each ending with `\n`)
+   *   - For JSON format: Parsed JSON objects as `Record<string, unknown>`
+   * @throws Error if stream processing fails
+   */
+  private async *parseJsonStream(
+    stream: Readable,
+    exportFormat: 'jsonl' | 'json'
+  ): AsyncIterable<string | Record<string, unknown>> {
+    stream.setEncoding('utf-8');
+    let buffer = '';
 
-    stream.pipe(parser);
+    try {
+      for await (const chunk of stream) {
+        if (chunk) {
+          buffer += chunk;
 
-    for await (const record of parser) {
-      yield record;
+          // Split on newlines
+          const lines = buffer.split('\n');
+          // Keeping last element in buffer, in case it's incomplete
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine) {
+              if (exportFormat === 'jsonl') {
+                yield trimmedLine + '\n';
+              } else {
+                yield JSON.parse(trimmedLine);
+              }
+            }
+          }
+        }
+      }
+
+      // Handle remaining buffer (last line without trailing newline)
+      const trimmedBuffer = buffer.trim();
+      if (trimmedBuffer) {
+        if (exportFormat === 'jsonl') {
+          yield trimmedBuffer + '\n';
+        } else {
+          yield JSON.parse(trimmedBuffer);
+        }
+      }
+    } catch (error) {
+      throw new Error(
+        `Error processing JSONL stream: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 }
