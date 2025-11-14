@@ -11358,6 +11358,11 @@ export interface components {
         | components['schemas']['ExtendedRetrieverSpanRecord']
         | components['schemas']['ExtendedSessionRecord']
       )[];
+      /**
+       * Total Count
+       * @description Total number of records matching the query (before pagination)
+       */
+      total_count?: number | null;
     };
     /** LogRecordsSortClause */
     LogRecordsSortClause: {
