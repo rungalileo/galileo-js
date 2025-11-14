@@ -747,7 +747,10 @@ export interface paths {
     };
     /**
      * List Log Streams
+     * @deprecated
      * @description Retrieve all log streams for a project.
+     *
+     *     DEPRECATED in favor of `list_log_streams_paginated`.
      */
     get: operations['list_log_streams_projects__project_id__log_streams_get'];
     put?: never;
@@ -756,6 +759,26 @@ export interface paths {
      * @description Create a new log stream for a project.
      */
     post: operations['create_log_stream_projects__project_id__log_streams_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/log_streams/paginated': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Log Streams Paginated
+     * @description Retrieve all log streams for a project paginated.
+     */
+    get: operations['list_log_streams_paginated_projects__project_id__log_streams_paginated_get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1216,6 +1239,26 @@ export interface paths {
      * @description Create a new experiment for a project.
      */
     post: operations['create_experiment_projects__project_id__experiments_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/experiments/paginated': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Experiments Paginated
+     * @description Retrieve all experiments for a project with pagination.
+     */
+    get: operations['list_experiments_paginated_projects__project_id__experiments_paginated_get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3039,6 +3082,7 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
     };
@@ -3074,12 +3118,7 @@ export interface components {
     /** AndNode */
     AndNode: {
       /** And */
-      and: (
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-      )[];
+      and: components['schemas']['FilterExpression'][];
     };
     /**
      * ApiKeyAction
@@ -3331,6 +3370,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -3795,9 +3836,14 @@ export interface components {
        * Operator
        * @enum {string}
        */
-      operator: 'contains' | 'not_in';
+      operator: 'eq' | 'contains' | 'not_in';
       /** Value */
-      value: string;
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /**
      * ColumnCategory
@@ -4112,6 +4158,8 @@ export interface components {
       executor?:
         | components['schemas']['galileo_core__schemas__shared__scorers__scorer_name__ScorerName']
         | null;
+      luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
+      luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
     };
     /** CreateJobRequest */
     CreateJobRequest: {
@@ -4271,6 +4319,11 @@ export interface components {
        * @default true
        */
       upload_data_in_separate_task?: boolean;
+      /**
+       * Log Metric Computing Records
+       * @default false
+       */
+      log_metric_computing_records?: boolean;
     };
     /** CreateJobResponse */
     CreateJobResponse: {
@@ -4430,6 +4483,11 @@ export interface components {
        * @default true
        */
       upload_data_in_separate_task?: boolean;
+      /**
+       * Log Metric Computing Records
+       * @default false
+       */
+      log_metric_computing_records?: boolean;
       /** Message */
       message: string;
       /** Link */
@@ -4512,6 +4570,10 @@ export interface components {
       default_version_id?: string | null;
       /** User Prompt */
       user_prompt?: string | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
     };
     /** CreateScorerVersionRequest */
     CreateScorerVersionRequest: {
@@ -4682,6 +4744,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4790,6 +4854,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4888,6 +4954,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4985,6 +5053,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5092,6 +5162,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5196,6 +5268,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5300,6 +5374,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5404,6 +5480,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5508,6 +5586,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5612,6 +5692,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5721,6 +5803,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5825,6 +5909,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5933,6 +6019,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6037,6 +6125,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6141,6 +6231,8 @@ export interface components {
       cot_enabled?: boolean | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6873,6 +6965,7 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
     };
@@ -9383,10 +9476,17 @@ export interface components {
       /** Evaluating Response */
       evaluating_response: string;
     };
+    FilterExpression:
+      | components['schemas']['FilterLeaf']
+      | components['schemas']['AndNode']
+      | components['schemas']['OrNode']
+      | components['schemas']['NotNode'];
     /** FilterLeaf */
     FilterLeaf: {
       /** Filter */
       filter:
+        | components['schemas']['CollectionFilter']
+        | components['schemas']['StringFilter']
         | components['schemas']['IDFilter']
         | components['schemas']['CustomUUIDFilter']
         | components['schemas']['DateFilter']
@@ -9394,8 +9494,6 @@ export interface components {
         | components['schemas']['CustomNumberFilter']
         | components['schemas']['EnumFilter']
         | components['schemas']['MapFilter']
-        | components['schemas']['CollectionFilter']
-        | components['schemas']['StringFilter']
         | components['schemas']['CustomBooleanFilter']
         | components['schemas']['CustomFunctionFilter'];
     };
@@ -10165,7 +10263,9 @@ export interface components {
       | 'trace_input_only'
       | 'trace_io_only'
       | 'trace_normalized'
-      | 'trace_output_only';
+      | 'trace_output_only'
+      | 'agent_spans'
+      | 'workflow_spans';
     /**
      * InsightType
      * @enum {string}
@@ -10567,6 +10667,28 @@ export interface components {
       /** Versions */
       versions: components['schemas']['DatasetVersionDB'][];
     };
+    /** ListExperimentResponse */
+    ListExperimentResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Experiments */
+      experiments?: components['schemas']['ExperimentResponse'][];
+    };
     /** ListGroupCollaboratorsResponse */
     ListGroupCollaboratorsResponse: {
       /**
@@ -10588,6 +10710,28 @@ export interface components {
       next_starting_token?: number | null;
       /** Collaborators */
       collaborators: components['schemas']['GroupCollaborator'][];
+    };
+    /** ListLogStreamResponse */
+    ListLogStreamResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Log Streams */
+      log_streams: components['schemas']['LogStreamResponse'][];
     };
     /** ListPromptDatasetResponse */
     ListPromptDatasetResponse: {
@@ -10978,6 +11122,31 @@ export interface components {
        */
       type: 'boolean';
     };
+    /** LogRecordsCollectionFilter */
+    LogRecordsCollectionFilter: {
+      /**
+       * Column Id
+       * @description ID of the column to filter.
+       */
+      column_id: string;
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'contains' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'collection';
+    };
     /** LogRecordsDateFilter */
     LogRecordsDateFilter: {
       /**
@@ -11038,15 +11207,10 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
-      /** Filter Tree */
-      filter_tree?:
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-        | null;
+      filter_tree?: components['schemas']['FilterExpression'] | null;
     };
     /** LogRecordsDeleteResponse */
     LogRecordsDeleteResponse: {
@@ -11085,6 +11249,7 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
       /**
@@ -11158,6 +11323,7 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
       /**
@@ -11250,15 +11416,10 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
-      /** Filter Tree */
-      filter_tree?:
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-        | null;
+      filter_tree?: components['schemas']['FilterExpression'] | null;
     };
     /** LogRecordsQueryCountResponse */
     LogRecordsQueryCountResponse: {
@@ -11303,15 +11464,10 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
-      /** Filter Tree */
-      filter_tree?:
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-        | null;
+      filter_tree?: components['schemas']['FilterExpression'] | null;
       /** @default {
        *       "column_id": "created_at",
        *       "ascending": false,
@@ -12338,12 +12494,7 @@ export interface components {
       | 'session';
     /** NotNode */
     NotNode: {
-      /** Not */
-      not:
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode'];
+      not: components['schemas']['FilterExpression'];
     };
     /** OpenAIFunction */
     OpenAIFunction: {
@@ -12362,12 +12513,7 @@ export interface components {
     /** OrNode */
     OrNode: {
       /** Or */
-      or: (
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-      )[];
+      or: components['schemas']['FilterExpression'][];
     };
     /**
      * OrganizationAction
@@ -12716,7 +12862,7 @@ export interface components {
        */
       value: string;
     };
-    /** ProjectCreatedAtSort */
+    /** ProjectCreatedAtSortV1 */
     ProjectCreatedAtSort: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -12930,7 +13076,7 @@ export interface components {
        */
       case_sensitive?: boolean;
     };
-    /** ProjectNameSort */
+    /** ProjectNameSortV1 */
     ProjectNameSort: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -13084,7 +13230,7 @@ export interface components {
        */
       value: string;
     };
-    /** ProjectUpdatedAtSort */
+    /** ProjectUpdatedAtSortV1 */
     ProjectUpdatedAtSort: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -13665,15 +13811,10 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
-      /** Filter Tree */
-      filter_tree?:
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-        | null;
+      filter_tree?: components['schemas']['FilterExpression'] | null;
       /** @default {
        *       "column_id": "created_at",
        *       "ascending": false,
@@ -14522,6 +14663,8 @@ export interface components {
       scoreable_node_types?: string[] | null;
       output_type?: components['schemas']['OutputTypeEnum'] | null;
       input_type?: components['schemas']['InputTypeEnum'] | null;
+      /** Required Metrics */
+      required_metrics?: string[] | null;
       /**
        * Label
        * @default
@@ -14554,9 +14697,14 @@ export interface components {
        * Operator
        * @enum {string}
        */
-      operator: 'contains' | 'not_in';
+      operator: 'eq' | 'contains' | 'not_in';
       /** Value */
-      value: string;
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /**
      * ScorerType
@@ -14699,6 +14847,11 @@ export interface components {
        * @default false
        */
       context_adherence_luna?: boolean;
+      /**
+       * Context Relevance Luna
+       * @default false
+       */
+      context_relevance_luna?: boolean;
       /**
        * Completeness Nli
        * @default false
@@ -16041,6 +16194,10 @@ export interface components {
       default_version_id?: string | null;
       /** User Prompt */
       user_prompt?: string | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string[] | null;
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
+      input_type?: components['schemas']['InputTypeEnum'] | null;
     };
     /** UpsertDatasetContentRequest */
     UpsertDatasetContentRequest: {
@@ -16210,15 +16367,10 @@ export interface components {
         | components['schemas']['LogRecordsDateFilter']
         | components['schemas']['LogRecordsNumberFilter']
         | components['schemas']['LogRecordsBooleanFilter']
+        | components['schemas']['LogRecordsCollectionFilter']
         | components['schemas']['LogRecordsTextFilter']
       )[];
-      /** Filter Tree */
-      filter_tree?:
-        | components['schemas']['FilterLeaf']
-        | components['schemas']['AndNode']
-        | components['schemas']['OrNode']
-        | components['schemas']['NotNode']
-        | null;
+      filter_tree?: components['schemas']['FilterExpression'] | null;
       /** @default {
        *       "column_id": "created_at",
        *       "ascending": false,
@@ -16537,6 +16689,7 @@ export interface components {
       | 'context_adherence'
       | 'context_adherence_luna'
       | 'context_relevance'
+      | 'context_relevance_luna'
       | 'conversation_quality'
       | 'correctness'
       | 'ground_truth_adherence'
@@ -16579,6 +16732,7 @@ export interface components {
       | '_completeness_gpt'
       | '_context_adherence_luna'
       | '_context_relevance'
+      | '_context_relevance_luna'
       | '_chunk_attribution_utilization_gpt'
       | '_factuality'
       | '_groundedness'
@@ -18504,6 +18658,40 @@ export interface operations {
       };
     };
   };
+  list_log_streams_paginated_projects__project_id__log_streams_paginated_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListLogStreamResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_log_stream_projects__project_id__log_streams__log_stream_id__get: {
     parameters: {
       query?: never;
@@ -19528,6 +19716,40 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ExperimentResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_experiments_paginated_projects__project_id__experiments_paginated_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListExperimentResponse'];
         };
       };
       /** @description Validation Error */
