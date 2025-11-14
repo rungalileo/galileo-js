@@ -96,19 +96,44 @@ export class BaseClient {
     data: T | undefined,
     error: object | unknown
   ): T {
+    if (error) {
+      let statusCode: number | undefined;
+      let errorData: any = error;
+
+      if (typeof error === 'object' && error !== null) {
+        if ('status' in error && typeof error.status === 'number') {
+          statusCode = error.status;
+        }
+
+        if ('data' in error) {
+          errorData = error.data;
+        } else if ('response' in error && typeof error.response === 'object') {
+          const response = error.response as any;
+          if (response?.status) {
+            statusCode = response.status;
+          }
+          if (response?.data) {
+            errorData = response.data;
+          }
+        }
+      }
+
+      // Use parseApiErrorMessage for consistent error message formatting
+      const errorMessage = parseApiErrorMessage(errorData);
+
+      // Format error message similar to validateResponse
+      if (statusCode) {
+        const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`;
+        throw new Error(msg);
+      }
+
+      throw new Error(`Request failed: ${errorMessage}`);
+    }
+
     if (data) {
       return data;
     }
-
-    if (error) {
-      if (typeof error === 'object' && 'detail' in error) {
-        throw new Error(`Request failed: ${JSON.stringify(error.detail)}`);
-      }
-
-      throw new Error(`Request failed: ${JSON.stringify(error)}`);
-    }
-
-    throw new Error('Request failed');
+    throw new Error('Request failed: No data received from API');
   }
 
   protected getAuthHeader(token: string): { Authorization: string } {
@@ -237,10 +262,17 @@ export class BaseClient {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const response = error.response;
-        this.validateResponse(response!);
+        if (error.response) {
+          this.validateResponse(error.response);
+        }
+
+        // Throw if validateResponse doesn't identify status code
+        const errorMessage = error.message || GENERIC_ERROR_MESSAGE;
+        throw new Error(`Request failed: ${errorMessage}`);
       }
-      return {} as T;
+
+      // Re-throw non-axios errors
+      throw error;
     }
   }
 
