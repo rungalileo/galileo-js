@@ -149,10 +149,17 @@ export class BaseClient {
   }
 
   protected async refreshTokenIfNeeded(endpoint: Routes): Promise<void> {
-    if (![Routes.login, Routes.apiKeyLogin].includes(endpoint) && this.token) {
+    if (
+      ![
+        Routes.login,
+        Routes.apiKeyLogin,
+        Routes.socialLogin,
+        Routes.refreshToken
+      ].includes(endpoint) &&
+      this.token
+    ) {
       const payload = decode(this.token, { json: true });
       if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        // Will be implemented in auth service
         throw new Error(
           'Token expired - refreshToken not implemented in base class'
         );
