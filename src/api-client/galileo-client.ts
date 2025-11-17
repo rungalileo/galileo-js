@@ -12,11 +12,7 @@ import {
 } from '../types/scorer.types';
 import { ProjectTypes, ProjectCreateResponse } from '../types/project.types';
 import { BaseClient } from './base-client';
-import {
-  SessionCreateResponse,
-  LogRecordsQueryRequest,
-  LogRecordsQueryResponse
-} from '../types/logging/session.types';
+import { SessionCreateResponse } from '../types/logging/session.types';
 import {
   ExtendedTraceRecordWithChildren,
   ExtendedSpanRecord,
@@ -739,26 +735,6 @@ export class GalileoApiClient extends BaseClient {
     return this.traceService!.getAggregatedTraceView(options);
   }
 
-  /**
-   * @internal - Used internally by startSession for external_id lookup
-   */
-  async _searchSessionsByExternalId(
-    externalId: string
-  ): Promise<LogRecordsQueryResponse> {
-    this.ensureService(this.traceService);
-    return this.traceService!.searchSessions({
-      filters: [
-        {
-          columnId: 'external_id',
-          operator: 'eq',
-          value: externalId,
-          type: 'text' as const
-        }
-      ],
-      limit: 1
-    });
-  }
-
   // PromptTemplate methods - delegate to PromptTemplateService
   public async getPromptTemplates() {
     this.ensureService(this.promptTemplateService);
@@ -1071,13 +1047,6 @@ export class GalileoApiClient extends BaseClient {
   ): Promise<LogRecordsQueryResponse> {
     this.ensureService(this.traceService);
     return this.traceService!.searchSpans(options);
-  }
-
-  public async searchSessions(
-    options: LogRecordsQueryRequest
-  ): Promise<LogRecordsQueryResponse> {
-    this.ensureService(this.traceService);
-    return this.traceService!.searchSessions(options);
   }
 
   public async searchMetrics(

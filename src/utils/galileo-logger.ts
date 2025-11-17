@@ -276,6 +276,7 @@ class GalileoLogger {
         const searchResult =
           await this.client.searchSessions(searchRequestFilter);
 
+        console.log('########################### searchResult', searchResult);
         if (searchResult.records && searchResult.records.length > 0) {
           const existingSessionId = searchResult.records[0].id;
           this.sessionId = existingSessionId;

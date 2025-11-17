@@ -45,6 +45,20 @@ type MockGalileoApiClient = {
       external_id: string;
     }>
   >;
+  createSession: jest.MockedFunction<
+    (params: {
+      name?: string;
+      previousSessionId?: string;
+      externalId?: string;
+    }) => Promise<{
+      id: string;
+      name: string;
+      project_id: string;
+      project_name: string;
+      previous_session_id: string;
+      external_id: string;
+    }>
+  >;
   searchSessions: jest.MockedFunction<
     (request: LogRecordsQueryRequest) => Promise<LogRecordsQueryResponse>
   >;
@@ -56,6 +70,14 @@ jest.mock('../../src/api-client', () => ({
     init: jest.fn(),
     ingestTracesLegacy: jest.fn(),
     createSessionLegacy: jest.fn().mockReturnValue({
+      id: mockSessionId,
+      name: 'test-session',
+      project_id: mockProjectId,
+      project_name: 'test-project',
+      previous_session_id: mockPreviousSessionId,
+      external_id: 'test-external-id'
+    }),
+    createSession: jest.fn().mockReturnValue({
       id: mockSessionId,
       name: 'test-session',
       project_id: mockProjectId,
@@ -1580,14 +1602,14 @@ describe('GalileoLogger', () => {
       });
 
       const sessionId = await logger.startSession({
-        externalId: 'new-external-id'
+        externalId: 'nonexistant-external-id'
       });
 
       const expectedFilters: LogRecordsQueryFilter[] = [
         {
           columnId: 'external_id',
           operator: 'eq' as const,
-          value: 'new-external-id',
+          value: 'nonexistant-external-id',
           type: 'id' as const
         }
       ];
@@ -1595,10 +1617,10 @@ describe('GalileoLogger', () => {
         filters: expectedFilters,
         limit: 1
       });
-      expect(mockClient.createSession).toHaveBeenCalledWith({
+      expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
-        externalId: 'new-external-id'
+        externalId: 'nonexistant-external-id'
       });
       expect(sessionId).toBe(mockSessionId);
     });
@@ -1622,7 +1644,7 @@ describe('GalileoLogger', () => {
         filters: expectedFilters,
         limit: 1
       });
-      expect(mockClient.createSession).toHaveBeenCalledWith({
+      expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
         externalId: 'error-external-id'
@@ -1636,7 +1658,7 @@ describe('GalileoLogger', () => {
       });
 
       expect(mockClient.searchSessions).not.toHaveBeenCalled();
-      expect(mockClient.createSession).toHaveBeenCalledWith({
+      expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
         externalId: '   '

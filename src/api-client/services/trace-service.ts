@@ -48,7 +48,7 @@ import {
   SessionCreateRequest,
   SessionCreateRequestOpenAPI,
   SessionCreateResponse,
-  SessionCreateResponseOpenAPI,
+  SessionCreateResponseOpenAPI
 } from '../../types/logging/session.types';
 import {
   LogRecordsMetricsQueryRequest,
@@ -290,7 +290,7 @@ export class TraceService extends BaseClient {
       LogRecordsQueryResponse
     >(response);
   }
-  
+
   public async getSession(
     sessionId: string
   ): Promise<ExtendedSessionRecordWithChildren> {

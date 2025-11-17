@@ -18,18 +18,6 @@ type ValidatedSnakeCase<T extends object, TTarget> =
   ObjectToSnake<T> extends TTarget ? TTarget : never;
 type ValidatedCamelCase<T extends object, TTarget> =
   ObjectToCamel<T> extends TTarget ? TTarget : never;
-import {
-  objectToCamel,
-  objectToSnake,
-  ObjectToSnake,
-  ObjectToCamel
-} from 'ts-case-convert';
-
-// Type guards for snake_case and camelCase conversion
-type ValidatedSnakeCase<T extends object, TTarget> =
-  ObjectToSnake<T> extends TTarget ? TTarget : never;
-type ValidatedCamelCase<T extends object, TTarget> =
-  ObjectToCamel<T> extends TTarget ? TTarget : never;
 
 export enum RequestMethod {
   GET = 'GET',
