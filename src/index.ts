@@ -177,6 +177,6 @@ export type {
   LogRecordsSortClause,
   Metric,
   LocalMetricConfig,
-  LogRecordsFilter, 
+  LogRecordsFilter,
   LogRecordsExportRequest
 };
