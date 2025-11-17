@@ -225,6 +225,7 @@ export class AuthService extends BaseClient {
 
       this.attemptRefreshTokenUpdate(response);
       this.token = response.data.access_token || '';
+      this.initializeClient();
       return this.token;
     } catch (error) {
       this.refreshToken = undefined;
