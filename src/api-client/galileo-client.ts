@@ -29,6 +29,7 @@ import {
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
+import { ExportService } from './services/export-service';
 import { JobsService } from './services/job-service';
 import { JobProgressService } from './services/job-progress-service';
 import {
@@ -40,6 +41,7 @@ import { Job, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
 import { StepType } from '../types/logging/step.types';
+import { LogRecordsExportRequest } from '../types/export.types';
 import {
   LogRecordsQueryRequest,
   LogRecordsMetricsQueryRequest,
@@ -82,6 +84,7 @@ export class GalileoApiClient extends BaseClient {
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
   private scorerService?: ScorerService;
+  private exportService?: ExportService;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -223,6 +226,12 @@ export class GalileoApiClient extends BaseClient {
           this.projectId
         );
         this.scorerService = new ScorerService(this.apiUrl, this.token);
+
+        this.exportService = new ExportService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
       }
     }
   }
@@ -396,6 +405,69 @@ export class GalileoApiClient extends BaseClient {
       template,
       name
     });
+  }
+
+  /**
+   * Stream records from the export endpoint.
+   *
+   * Defaults to the first log stream available if `logStreamId` and `experimentId` are not provided.
+   *
+   * Setup (validation, log stream resolution) happens immediately when this function is called.
+   * The HTTP request is made immediately when this function is called.
+   * Record streaming and line buffering happen when the returned AsyncIterable is iterated.
+   *
+   * @param params - Export parameters
+   * @param params.rootType - The type of records to export (default: 'trace')
+   * @param params.filters - Filters to apply to the export
+   * @param params.sort - Sort clause to order the exported records (default: { columnId: 'created_at', ascending: false })
+   * @param params.exportFormat - The desired format for the exported data (default: 'jsonl')
+   * @param params.logStreamId - Filter records by a specific log stream ID
+   * @param params.experimentId - Filter records by a specific experiment ID
+   * @param params.columnIds - Column IDs to include in the export
+   * @param params.redact - Redact sensitive data from the response (default: true)
+   * @param params.metricsTestingId - Metrics testing ID associated with the traces
+   * @returns A Promise that resolves to an AsyncIterable that yields records based on the export format.
+   *   - For JSONL format: Each record is a `string` containing a complete JSONL line (JSON object as string with trailing newline)
+   *   - For JSON format: Each record is a `Record<string, unknown>` (parsed JSON object)
+   *   - For CSV format: Each record is a `string` containing a complete CSV line (with trailing newline)
+   */
+  public async exportRecords(
+    options: LogRecordsExportRequest
+  ): Promise<AsyncIterable<string | Record<string, unknown>>> {
+    if (!this.projectId) {
+      throw new Error(
+        'Client must be initialized with a project before exporting records'
+      );
+    }
+
+    this.ensureService(this.exportService);
+    this.ensureService(this.logStreamService);
+
+    if (!options.logStreamId && !options.experimentId) {
+      const logStreams = await this.getLogStreams();
+      if (logStreams && logStreams.length > 0) {
+        // Sort by created_at and get the first one
+        const sortedLogStreams = [...logStreams].sort(
+          (a, b) =>
+            new Date(a.created_at || 0).getTime() -
+            new Date(b.created_at || 0).getTime()
+        );
+
+        if (sortedLogStreams.length > 0) {
+          options.logStreamId = sortedLogStreams[0].id;
+        } else {
+          throw new Error(
+            'No log stream or experiment ID provided, no existing logstreams found.'
+          );
+        }
+      }
+    } else if (options.logStreamId && options.experimentId) {
+      throw new Error(
+        'Exactly one of logStreamId or experimentId must be provided.'
+      );
+    }
+
+    return await this.exportService!.records(options);
   }
 
   // GlobalPromptTemplate methods - delegate to GlobalPromptTemplateService

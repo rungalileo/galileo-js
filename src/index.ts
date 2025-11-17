@@ -10,6 +10,10 @@ import {
   Metric
 } from './types/metrics.types';
 import {
+  LogRecordsFilter,
+  LogRecordsExportRequest
+} from './types/export.types';
+import {
   LogRecordsQueryFilter,
   LogRecordsSortClause
 } from './types/search.types';
@@ -31,6 +35,7 @@ import {
   deleteMetric,
   createMetricConfigs
 } from './utils/metrics';
+import { exportRecords } from './utils/export';
 import { Jobs } from './utils/jobs';
 import {
   getJobProgress,
@@ -162,12 +167,16 @@ export {
   getMetrics,
   getTraces,
   getSpans,
-  getSessions
+  getSessions,
+  // Export
+  exportRecords
 };
 
 export type {
   LogRecordsQueryFilter,
   LogRecordsSortClause,
   Metric,
-  LocalMetricConfig
+  LocalMetricConfig,
+  LogRecordsFilter,
+  LogRecordsExportRequest
 };
