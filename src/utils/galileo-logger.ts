@@ -20,12 +20,15 @@ import {
   LlmSpanAllowedInputType
 } from '../types/logging/step.types';
 import { toStringValue } from './serialization';
+import { LocalMetricConfig } from '../types/metrics.types';
 
 class GalileoLoggerConfig {
   public projectName?: string;
   public logStreamName?: string;
   public experimentId?: string;
   public sessionId?: string;
+  public localMetrics?: LocalMetricConfig[];
+  public mode?: string;
 }
 
 /**
@@ -69,6 +72,8 @@ class GalileoLogger {
   private logStreamName?: string;
   private experimentId?: string;
   private sessionId?: string;
+  private localMetrics?: LocalMetricConfig[];
+  private mode?: string;
   private client = new GalileoApiClient();
   private parentStack: StepWithChildSpans[] = [];
   public traces: Trace[] = [];
@@ -79,6 +84,8 @@ class GalileoLogger {
     this.logStreamName = config.logStreamName;
     this.experimentId = config.experimentId;
     this.sessionId = config.sessionId;
+    this.localMetrics = config.localMetrics;
+    this.mode = config.mode;
     try {
       // Logging is disabled if GALILEO_DISABLE_LOGGING is defined, is not an empty string, and not set to '0' or 'false'
       const disableLoggingValue =
