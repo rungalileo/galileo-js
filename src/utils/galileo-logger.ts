@@ -276,6 +276,7 @@ class GalileoLogger {
         const searchResult =
           await this.client.searchSessions(searchRequestFilter);
 
+        console.log('########################### searchResult', searchResult);
         if (searchResult.records && searchResult.records.length > 0) {
           const existingSessionId = searchResult.records[0].id;
           this.sessionId = existingSessionId;
@@ -287,7 +288,7 @@ class GalileoLogger {
     }
 
     // Create new session if no externalId or not found
-    const session = await this.client.createSession({
+    const session = await this.client.createSessionLegacy({
       name,
       previousSessionId,
       externalId
@@ -928,7 +929,7 @@ class GalileoLogger {
       const loggedTraces = [...this.traces];
 
       //// @ts-expect-error - FIXME: Type this
-      await this.client.ingestTraces(loggedTraces);
+      await this.client.ingestTracesLegacy(loggedTraces);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);
       this.traces = []; // Clear after uploading

@@ -1,8 +1,55 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Trace } from '../../types/logging/trace.types';
-import { SessionCreateResponse } from '../../types/logging/session.types';
+import {
+  Trace,
+  ExtendedTraceRecordWithChildren,
+  LogTraceUpdateRequest,
+  LogTraceUpdateResponse,
+  LogRecordsDeleteRequest,
+  LogSpansIngestRequest,
+  LogSpansIngestResponse,
+  LogSpanUpdateRequest,
+  LogSpanUpdateResponse,
+  ExtendedSpanRecord,
+  LogRecordsQueryCountRequest,
+  LogRecordsQueryCountResponse,
+  LogRecordsAvailableColumnsRequest,
+  LogRecordsAvailableColumnsResponse,
+  RecomputeLogRecordsMetricsRequest,
+  ExtendedTraceRecordWithChildrenOpenAPI,
+  ExtendedSpanRecordOpenAPI,
+  LogSpansIngestRequestOpenAPI,
+  LogSpansIngestResponseOpenAPI,
+  LogRecordsDeleteResponse,
+  LogRecordsDeleteResponseOpenAPI,
+  LogRecordsDeleteRequestOpenAPI,
+  LogTraceUpdateRequestOpenAPI,
+  LogTraceUpdateResponseOpenAPI,
+  LogSpanUpdateRequestOpenAPI,
+  LogSpanUpdateResponseOpenAPI,
+  LogRecordsQueryCountRequestOpenAPI,
+  LogRecordsQueryCountResponseOpenAPI,
+  LogRecordsAvailableColumnsRequestOpenAPI,
+  LogRecordsAvailableColumnsResponseOpenAPI,
+  RecomputeLogRecordsMetricsRequestOpenAPI,
+  ExtendedSessionRecordWithChildren,
+  ExtendedSessionRecordWithChildrenOpenAPI,
+  AggregatedTraceViewRequest,
+  AggregatedTraceViewRequestOpenAPI,
+  AggregatedTraceViewResponse,
+  AggregatedTraceViewResponseOpenAPI,
+  LogTracesIngestRequest,
+  LogTracesIngestRequestOpenAPI,
+  LogTracesIngestResponse,
+  LogTracesIngestResponseOpenAPI
+} from '../../types/logging/trace.types';
 
+import {
+  SessionCreateRequest,
+  SessionCreateRequestOpenAPI,
+  SessionCreateResponse,
+  SessionCreateResponseOpenAPI
+} from '../../types/logging/session.types';
 import {
   LogRecordsMetricsQueryRequest,
   LogRecordsMetricsQueryRequestOpenAPI,
@@ -38,7 +85,8 @@ export class TraceService extends BaseClient {
     this.initializeClient();
   }
 
-  public async createSession({
+  // createSessionLegacy holds old contract to support GalileoLogger's startSession method until further refactoring
+  public async createSessionLegacy({
     name,
     previousSessionId,
     externalId
@@ -60,7 +108,34 @@ export class TraceService extends BaseClient {
     );
   }
 
-  public async ingestTraces(traces: Trace[]): Promise<void> {
+  public async createSession(
+    options: SessionCreateRequest
+  ): Promise<SessionCreateResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      typeof options,
+      SessionCreateRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<SessionCreateResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.sessions,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      SessionCreateResponseOpenAPI,
+      SessionCreateResponse
+    >(response);
+  }
+
+  // ingestTracesLegacy holds old contract to support GalileoLogger's flush method until further refactoring
+  public async ingestTracesLegacy(traces: Trace[]): Promise<void> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
@@ -88,6 +163,32 @@ export class TraceService extends BaseClient {
     console.log(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
     );
+  }
+
+  public async ingestTraces(
+    options: LogTracesIngestRequest
+  ): Promise<LogTracesIngestResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      typeof options,
+      LogTracesIngestRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogTracesIngestResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.traces,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogTracesIngestResponseOpenAPI,
+      LogTracesIngestResponse
+    >(response);
   }
 
   public async searchSessions(
@@ -190,6 +291,408 @@ export class TraceService extends BaseClient {
     >(response);
   }
 
+  public async getSession(
+    sessionId: string
+  ): Promise<ExtendedSessionRecordWithChildren> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    const response =
+      await this.makeRequest<ExtendedSessionRecordWithChildrenOpenAPI>(
+        RequestMethod.GET,
+        Routes.session,
+        undefined,
+        { project_id: this.projectId, session_id: sessionId }
+      );
+
+    return this.convertToCamelCase<
+      ExtendedSessionRecordWithChildrenOpenAPI,
+      ExtendedSessionRecordWithChildren
+    >(response);
+  }
+
+  public async getTrace(
+    traceId: string
+  ): Promise<ExtendedTraceRecordWithChildren> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    const response =
+      await this.makeRequest<ExtendedTraceRecordWithChildrenOpenAPI>(
+        RequestMethod.GET,
+        Routes.trace,
+        undefined,
+        { project_id: this.projectId, trace_id: traceId }
+      );
+
+    return this.convertToCamelCase<
+      ExtendedTraceRecordWithChildrenOpenAPI,
+      ExtendedTraceRecordWithChildren
+    >(response);
+  }
+
+  public async updateTrace(
+    options: LogTraceUpdateRequest
+  ): Promise<LogTraceUpdateResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogTraceUpdateRequest,
+      LogTraceUpdateRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogTraceUpdateResponseOpenAPI>(
+      RequestMethod.PATCH,
+      Routes.trace,
+      request,
+      { project_id: this.projectId, trace_id: options.traceId }
+    );
+
+    return this.convertToCamelCase<
+      LogTraceUpdateResponseOpenAPI,
+      LogTraceUpdateResponse
+    >(response);
+  }
+
+  public async deleteTraces(
+    options: LogRecordsDeleteRequest
+  ): Promise<LogRecordsDeleteResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsDeleteRequest,
+      LogRecordsDeleteRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogRecordsDeleteResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.tracesDelete,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogRecordsDeleteResponseOpenAPI,
+      LogRecordsDeleteResponse
+    >(response);
+  }
+
+  public async deleteSessions(
+    options: LogRecordsDeleteRequest
+  ): Promise<LogRecordsDeleteResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsDeleteRequest,
+      LogRecordsDeleteRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogRecordsDeleteResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.sessionsDelete,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogRecordsDeleteResponseOpenAPI,
+      LogRecordsDeleteResponse
+    >(response);
+  }
+
+  public async ingestSpans(
+    options: LogSpansIngestRequest
+  ): Promise<LogSpansIngestResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    this.fillOptionsContext(options);
+    const request = this.convertToSnakeCase<
+      LogSpansIngestRequest,
+      LogSpansIngestRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogSpansIngestResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.spans,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogSpansIngestResponseOpenAPI,
+      LogSpansIngestResponse
+    >(response);
+  }
+
+  public async getSpan(spanId: string): Promise<ExtendedSpanRecord> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    const response = await this.makeRequest<ExtendedSpanRecordOpenAPI>(
+      RequestMethod.GET,
+      Routes.span,
+      undefined,
+      { project_id: this.projectId, span_id: spanId }
+    );
+
+    return this.convertToCamelCase<
+      ExtendedSpanRecordOpenAPI,
+      ExtendedSpanRecord
+    >(response);
+  }
+
+  public async updateSpan(
+    options: LogSpanUpdateRequest
+  ): Promise<LogSpanUpdateResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogSpanUpdateRequest,
+      LogSpanUpdateRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogSpanUpdateResponseOpenAPI>(
+      RequestMethod.PATCH,
+      Routes.span,
+      request,
+      { project_id: this.projectId, span_id: options.spanId }
+    );
+
+    return this.convertToCamelCase<
+      LogSpanUpdateResponseOpenAPI,
+      LogSpanUpdateResponse
+    >(response);
+  }
+
+  public async deleteSpans(
+    options: LogRecordsDeleteRequest
+  ): Promise<LogRecordsDeleteResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsDeleteRequest,
+      LogRecordsDeleteRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogRecordsDeleteResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.spansDelete,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogRecordsDeleteResponseOpenAPI,
+      LogRecordsDeleteResponse
+    >(response);
+  }
+
+  public async countTraces(
+    options: LogRecordsQueryCountRequest
+  ): Promise<LogRecordsQueryCountResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryCountRequest,
+      LogRecordsQueryCountRequestOpenAPI
+    >(options);
+
+    const response =
+      await this.makeRequest<LogRecordsQueryCountResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.tracesCount,
+        request,
+        { project_id: this.projectId }
+      );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryCountResponseOpenAPI,
+      LogRecordsQueryCountResponse
+    >(response);
+  }
+
+  public async countSessions(
+    options: LogRecordsQueryCountRequest
+  ): Promise<LogRecordsQueryCountResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryCountRequest,
+      LogRecordsQueryCountRequestOpenAPI
+    >(options);
+
+    const response =
+      await this.makeRequest<LogRecordsQueryCountResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.sessionsCount,
+        request,
+        { project_id: this.projectId }
+      );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryCountResponseOpenAPI,
+      LogRecordsQueryCountResponse
+    >(response);
+  }
+
+  public async countSpans(
+    options: LogRecordsQueryCountRequest
+  ): Promise<LogRecordsQueryCountResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryCountRequest,
+      LogRecordsQueryCountRequestOpenAPI
+    >(options);
+
+    const response =
+      await this.makeRequest<LogRecordsQueryCountResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.spansCount,
+        request,
+        { project_id: this.projectId }
+      );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryCountResponseOpenAPI,
+      LogRecordsQueryCountResponse
+    >(response);
+  }
+
+  public async getTracesAvailableColumns(
+    options: LogRecordsAvailableColumnsRequest
+  ): Promise<LogRecordsAvailableColumnsResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsAvailableColumnsRequest,
+      LogRecordsAvailableColumnsRequestOpenAPI
+    >(options);
+
+    const response =
+      await this.makeRequest<LogRecordsAvailableColumnsResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.tracesAvailableColumns,
+        request,
+        { project_id: this.projectId }
+      );
+
+    return this.convertToCamelCase<
+      LogRecordsAvailableColumnsResponseOpenAPI,
+      LogRecordsAvailableColumnsResponse
+    >(response);
+  }
+
+  public async getSessionsAvailableColumns(
+    options: LogRecordsAvailableColumnsRequest
+  ): Promise<LogRecordsAvailableColumnsResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsAvailableColumnsRequest,
+      LogRecordsAvailableColumnsRequestOpenAPI
+    >(options);
+
+    const response =
+      await this.makeRequest<LogRecordsAvailableColumnsResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.sessionsAvailableColumns,
+        request,
+        { project_id: this.projectId }
+      );
+
+    return this.convertToCamelCase<
+      LogRecordsAvailableColumnsResponseOpenAPI,
+      LogRecordsAvailableColumnsResponse
+    >(response);
+  }
+
+  public async getSpansAvailableColumns(
+    options: LogRecordsAvailableColumnsRequest
+  ): Promise<LogRecordsAvailableColumnsResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<typeof options>(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsAvailableColumnsRequest,
+      LogRecordsAvailableColumnsRequestOpenAPI
+    >(options);
+
+    const response =
+      await this.makeRequest<LogRecordsAvailableColumnsResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.spansAvailableColumns,
+        request,
+        { project_id: this.projectId }
+      );
+
+    return this.convertToCamelCase<
+      LogRecordsAvailableColumnsResponseOpenAPI,
+      LogRecordsAvailableColumnsResponse
+    >(response);
+  }
+
+  public async recomputeMetrics(
+    options: RecomputeLogRecordsMetricsRequest
+  ): Promise<unknown> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<RecomputeLogRecordsMetricsRequest>(
+      options
+    );
+    const request = this.convertToSnakeCase<
+      RecomputeLogRecordsMetricsRequest,
+      RecomputeLogRecordsMetricsRequestOpenAPI
+    >(options);
+
+    return await this.makeRequest<unknown>(
+      RequestMethod.POST,
+      Routes.recomputeMetrics,
+      request,
+      { project_id: this.projectId }
+    );
+  }
+
   /**
    * Fills in missing experiment_id or log_stream_id from the service context
    * by mutating the request object in place.
@@ -212,5 +715,46 @@ export class TraceService extends BaseClient {
         options.logStreamId = this.logStreamId;
       }
     }
+  }
+
+  public async getAggregatedTraceView(
+    options: AggregatedTraceViewRequest
+  ): Promise<AggregatedTraceViewResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+
+    this.validateLogstreamAndExperiment<AggregatedTraceViewRequest>(options);
+    const request = this.convertToSnakeCase<
+      AggregatedTraceViewRequest,
+      AggregatedTraceViewRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<AggregatedTraceViewResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.tracesAggregated,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      AggregatedTraceViewResponseOpenAPI,
+      AggregatedTraceViewResponse
+    >(response);
+  }
+
+  private validateLogstreamAndExperiment<
+    T extends { logStreamId?: string | null; experimentId?: string | null }
+  >(options: T): void {
+    if (!options.logStreamId && !options.experimentId) {
+      if (this.logStreamId) options.logStreamId = this.logStreamId;
+      else if (this.experimentId) options.experimentId = this.experimentId;
+      else throw new Error('Log stream or experiment not initialized');
+    } else if (options.logStreamId && options.experimentId)
+      throw new Error('Either logstream or experiment must be provided');
+  }
+
+  private fillOptionsContext(options: LogSpansIngestRequest): void {
+    if (!options.reliable) options.reliable = false;
   }
 }

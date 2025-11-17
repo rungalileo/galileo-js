@@ -12,6 +12,29 @@ import {
 } from '../types/scorer.types';
 import { ProjectTypes, ProjectCreateResponse } from '../types/project.types';
 import { BaseClient } from './base-client';
+import { SessionCreateResponse } from '../types/logging/session.types';
+import {
+  ExtendedTraceRecordWithChildren,
+  ExtendedSpanRecord,
+  ExtendedSessionRecordWithChildren,
+  LogTraceUpdateRequest,
+  LogTraceUpdateResponse,
+  LogSpanUpdateRequest,
+  LogSpanUpdateResponse,
+  LogSpansIngestRequest,
+  LogSpansIngestResponse,
+  LogRecordsDeleteRequest,
+  LogRecordsDeleteResponse,
+  LogRecordsQueryCountRequest,
+  LogRecordsQueryCountResponse,
+  LogRecordsAvailableColumnsRequest,
+  LogRecordsAvailableColumnsResponse,
+  RecomputeLogRecordsMetricsRequest,
+  AggregatedTraceViewRequest,
+  AggregatedTraceViewResponse,
+  LogTracesIngestRequest,
+  LogTracesIngestResponse
+} from '../types/logging/trace.types';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
@@ -39,7 +62,6 @@ import {
 } from '../types/experiment.types';
 import { Job, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
-import { SessionCreateResponse } from '../types/logging/session.types';
 import { StepType } from '../types/logging/step.types';
 import { LogRecordsExportRequest } from '../types/export.types';
 import {
@@ -353,12 +375,19 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Trace methods - delegate to TraceService
-  public async ingestTraces(traces: any[]) {
+  public async ingestTracesLegacy(traces: any[]) {
     this.ensureService(this.traceService);
-    return this.traceService!.ingestTraces(traces);
+    return this.traceService!.ingestTracesLegacy(traces);
   }
 
-  public async createSession({
+  public async ingestTraces(
+    options: LogTracesIngestRequest
+  ): Promise<LogTracesIngestResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.ingestTraces(options);
+  }
+
+  public async createSessionLegacy({
     name,
     previousSessionId,
     externalId
@@ -368,11 +397,342 @@ export class GalileoApiClient extends BaseClient {
     externalId?: string;
   }): Promise<SessionCreateResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.createSession({
+    return this.traceService!.createSessionLegacy({
       name,
       previousSessionId,
       externalId
     });
+  }
+
+  /**
+   * Search for sessions matching the provided query criteria.
+   *
+   * @param request - Query request object
+   * @param request.startingToken - (Optional) Starting token for pagination (default: 0)
+   * @param request.limit - (Optional) Maximum number of records to return (default: 100)
+   * @param request.previousLastRowId - (Optional) Previous last row ID for pagination
+   * @param request.logStreamId - (Optional) Log stream ID to filter by
+   * @param request.experimentId - (Optional) Experiment ID to filter by
+   * @param request.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param request.filters - (Optional) Array of filter objects to apply
+   * @param request.filterTree - (Optional) Complex filter tree structure
+   * @param request.sort - (Optional) Sort clause for ordering results
+   * @returns Promise resolving to a query response containing matching session records
+   */
+  public async searchSessions(
+    request: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchSessions(request);
+  }
+
+  /**
+   * Retrieve a session by its ID, including all child traces and spans.
+   *
+   * @param sessionId - The unique identifier of the session to retrieve
+   * @returns Promise resolving to the session record with its children
+   */
+  public async getSession(
+    sessionId: string
+  ): Promise<ExtendedSessionRecordWithChildren> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getSession(sessionId);
+  }
+
+  /**
+   * Delete sessions matching the provided filter criteria.
+   *
+   * @param options - Delete request object
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify sessions to delete
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @returns Promise resolving to a response indicating the deletion operation result
+   */
+  public async deleteSessions(
+    options: LogRecordsDeleteRequest
+  ): Promise<LogRecordsDeleteResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.deleteSessions(options);
+  }
+
+  /**
+   * Retrieve a trace by its ID, including all child spans.
+   *
+   * @param traceId - The unique identifier of the trace to retrieve
+   * @returns Promise resolving to the trace record with its children
+   */
+  public async getTrace(
+    traceId: string
+  ): Promise<ExtendedTraceRecordWithChildren> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getTrace(traceId);
+  }
+
+  /**
+   * Update a trace with new data.
+   *
+   * @param options - Update request object
+   * @param options.traceId - The unique identifier of the trace to update
+   * @param options.logStreamId - (Optional) Log stream ID associated with the trace
+   * @param options.experimentId - (Optional) Experiment ID associated with the trace
+   * @param options.metricsTestingId - (Optional) Metrics testing ID associated with the trace
+   * @param options.loggingMethod - (Optional) Logging method to use (default: 'api_direct')
+   * @param options.clientVersion - (Optional) Client version identifier
+   * @param options.reliable - (Optional) Whether to use reliable logging (default: false)
+   * @param options.input - (Optional) New input value to overwrite existing input
+   * @param options.output - (Optional) New output value to overwrite existing output
+   * @param options.statusCode - (Optional) Status code to overwrite existing status code
+   * @param options.tags - (Optional) Tags to add to the trace
+   * @returns Promise resolving to the updated trace record
+   */
+  public async updateTrace(
+    options: LogTraceUpdateRequest
+  ): Promise<LogTraceUpdateResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.updateTrace(options);
+  }
+
+  /**
+   * Delete traces matching the provided filter criteria.
+   *
+   * @param options - Delete request object
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify traces to delete
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @returns Promise resolving to a response indicating the deletion operation result
+   */
+  public async deleteTraces(
+    options: LogRecordsDeleteRequest
+  ): Promise<LogRecordsDeleteResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.deleteTraces(options);
+  }
+
+  /**
+   * Ingest spans into a trace. Spans represent individual operations or steps within a trace.
+   *
+   * @param options - Ingest request object
+   * @param options.spans - Array of span objects to ingest (AgentSpan, WorkflowSpan, LlmSpan, RetrieverSpan, or ToolSpan)
+   * @param options.traceId - The unique identifier of the trace to attach spans to
+   * @param options.parentId - The unique identifier of the parent trace or span
+   * @param options.logStreamId - (Optional) Log stream ID associated with the spans
+   * @param options.experimentId - (Optional) Experiment ID associated with the spans
+   * @param options.metricsTestingId - (Optional) Metrics testing ID associated with the spans
+   * @param options.loggingMethod - (Optional) Logging method to use (default: 'api_direct')
+   * @param options.clientVersion - (Optional) Client version identifier
+   * @param options.reliable - (Optional) Whether to use reliable logging (default: false)
+   * @returns Promise resolving to a response indicating the ingestion result
+   */
+  public async ingestSpans(
+    options: LogSpansIngestRequest
+  ): Promise<LogSpansIngestResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.ingestSpans(options);
+  }
+
+  /**
+   * Retrieve a span by its ID.
+   *
+   * @param spanId - The unique identifier of the span to retrieve
+   * @returns Promise resolving to the span record
+   */
+  public async getSpan(spanId: string): Promise<ExtendedSpanRecord> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getSpan(spanId);
+  }
+
+  /**
+   * Update a span with new data.
+   *
+   * @param options - Update request object
+   * @param options.spanId - The unique identifier of the span to update
+   * @param options.logStreamId - (Optional) Log stream ID associated with the span
+   * @param options.experimentId - (Optional) Experiment ID associated with the span
+   * @param options.metricsTestingId - (Optional) Metrics testing ID associated with the span
+   * @param options.loggingMethod - (Optional) Logging method to use (default: 'api_direct')
+   * @param options.clientVersion - (Optional) Client version identifier
+   * @param options.reliable - (Optional) Whether to use reliable logging (default: false)
+   * @param options.input - (Optional) New input value to overwrite existing input (string or Message array)
+   * @param options.output - (Optional) New output value to overwrite existing output (string, Message, or Document array)
+   * @param options.tags - (Optional) Tags to add to the span
+   * @param options.statusCode - (Optional) Status code to overwrite existing status code
+   * @returns Promise resolving to the updated span record
+   */
+  public async updateSpan(
+    options: LogSpanUpdateRequest
+  ): Promise<LogSpanUpdateResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.updateSpan(options);
+  }
+
+  /**
+   * Delete spans matching the provided filter criteria.
+   *
+   * @param options - Delete request object
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify spans to delete
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @returns Promise resolving to a response indicating the deletion operation result
+   */
+  public async deleteSpans(
+    options: LogRecordsDeleteRequest
+  ): Promise<LogRecordsDeleteResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.deleteSpans(options);
+  }
+
+  /**
+   * Count the number of traces matching the provided query criteria.
+   *
+   * @param options - Count request object
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify traces to count
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @returns Promise resolving to a response containing the total count
+   */
+  public async countTraces(
+    options: LogRecordsQueryCountRequest
+  ): Promise<LogRecordsQueryCountResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.countTraces(options);
+  }
+
+  /**
+   * Count the number of sessions matching the provided query criteria.
+   *
+   * @param options - Count request object
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify sessions to count
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @returns Promise resolving to a response containing the total count
+   */
+  public async countSessions(
+    options: LogRecordsQueryCountRequest
+  ): Promise<LogRecordsQueryCountResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.countSessions(options);
+  }
+
+  /**
+   * Count the number of spans matching the provided query criteria.
+   *
+   * @param options - Count request object
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify spans to count
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @returns Promise resolving to a response containing the total count
+   */
+  public async countSpans(
+    options: LogRecordsQueryCountRequest
+  ): Promise<LogRecordsQueryCountResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.countSpans(options);
+  }
+
+  /**
+   * Get the list of available columns for traces that can be used in queries and filters.
+   *
+   * @param options - Request object
+   * @param options.logStreamId - (Optional) Log stream ID to get columns for
+   * @param options.experimentId - (Optional) Experiment ID to get columns for
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.startTime - (Optional) Start time for filtering columns
+   * @param options.endTime - (Optional) End time for filtering columns
+   * @returns Promise resolving to a response containing the available columns
+   */
+  public async getTracesAvailableColumns(
+    options: LogRecordsAvailableColumnsRequest
+  ): Promise<LogRecordsAvailableColumnsResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getTracesAvailableColumns(options);
+  }
+
+  /**
+   * Get the list of available columns for sessions that can be used in queries and filters.
+   *
+   * @param options - Request object
+   * @param options.logStreamId - (Optional) Log stream ID to get columns for
+   * @param options.experimentId - (Optional) Experiment ID to get columns for
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.startTime - (Optional) Start time for filtering columns
+   * @param options.endTime - (Optional) End time for filtering columns
+   * @returns Promise resolving to a response containing the available columns
+   */
+  public async getSessionsAvailableColumns(
+    options: LogRecordsAvailableColumnsRequest
+  ): Promise<LogRecordsAvailableColumnsResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getSessionsAvailableColumns(options);
+  }
+
+  /**
+   * Get the list of available columns for spans that can be used in queries and filters.
+   *
+   * @param options - Request object
+   * @param options.logStreamId - (Optional) Log stream ID to get columns for
+   * @param options.experimentId - (Optional) Experiment ID to get columns for
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.startTime - (Optional) Start time for filtering columns
+   * @param options.endTime - (Optional) End time for filtering columns
+   * @returns Promise resolving to a response containing the available columns
+   */
+  public async getSpansAvailableColumns(
+    options: LogRecordsAvailableColumnsRequest
+  ): Promise<LogRecordsAvailableColumnsResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getSpansAvailableColumns(options);
+  }
+
+  /**
+   * Recompute metrics for log records (traces, sessions, or spans) based on the provided filters and scorer IDs.
+   * This triggers a background job to recalculate metrics for matching records.
+   *
+   * @param options - Request object
+   * @param options.scorerIds - Array of scorer IDs for which metrics should be recomputed
+   * @param options.logStreamId - (Optional) Log stream ID to filter by
+   * @param options.experimentId - (Optional) Experiment ID to filter by
+   * @param options.metricsTestingId - (Optional) Metrics testing ID to filter by
+   * @param options.filters - (Optional) Array of filter objects to identify records for recomputation
+   * @param options.filterTree - (Optional) Complex filter tree structure
+   * @param options.sort - (Optional) Sort clause for ordering results
+   * @param options.limit - (Optional) Maximum number of records to process (default: 100)
+   * @param options.startingToken - (Optional) Starting token for pagination (default: 0)
+   * @param options.previousLastRowId - (Optional) Previous last row ID for pagination
+   * @param options.truncateFields - (Optional) Whether to truncate fields (default: false)
+   * @returns Promise resolving to the recomputation job result
+   */
+  public async recomputeMetrics(
+    options: RecomputeLogRecordsMetricsRequest
+  ): Promise<unknown> {
+    this.ensureService(this.traceService);
+    return this.traceService!.recomputeMetrics(options);
+  }
+
+  /**
+   * Get an aggregated view of traces, providing a graph representation of trace relationships and patterns.
+   *
+   * @param options - Request object
+   * @param options.logStreamId - Log stream ID associated with the traces
+   * @param options.filters - (Optional) Array of filter objects to apply (only trace-level filters are supported)
+   * @returns Promise resolving to an aggregated trace view with graph data
+   */
+  public async getAggregatedTraceView(
+    options: AggregatedTraceViewRequest
+  ): Promise<AggregatedTraceViewResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.getAggregatedTraceView(options);
   }
 
   // PromptTemplate methods - delegate to PromptTemplateService
@@ -687,13 +1047,6 @@ export class GalileoApiClient extends BaseClient {
   ): Promise<LogRecordsQueryResponse> {
     this.ensureService(this.traceService);
     return this.traceService!.searchSpans(options);
-  }
-
-  public async searchSessions(
-    options: LogRecordsQueryRequest
-  ): Promise<LogRecordsQueryResponse> {
-    this.ensureService(this.traceService);
-    return this.traceService!.searchSessions(options);
   }
 
   public async searchMetrics(

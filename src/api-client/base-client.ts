@@ -192,6 +192,18 @@ export class BaseClient {
       .replace(
         '{version}',
         params && 'version' in params ? (params.version as string) : ''
+      )
+      .replace(
+        '{trace_id}',
+        params && 'trace_id' in params ? (params.trace_id as string) : ''
+      )
+      .replace(
+        '{session_id}',
+        params && 'session_id' in params ? (params.session_id as string) : ''
+      )
+      .replace(
+        '{span_id}',
+        params && 'span_id' in params ? (params.span_id as string) : ''
       )}`;
 
     const config: AxiosRequestConfig = {
