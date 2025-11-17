@@ -10,7 +10,11 @@ import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
 import { AgentSpan } from '../../src/types';
-import { SessionSearchResponse } from '../../src/types/logging/session.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse,
+  LogRecordsQueryFilter
+} from '../../src/types/search.types';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
 const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
@@ -41,8 +45,8 @@ type MockGalileoApiClient = {
       external_id: string;
     }>
   >;
-  _searchSessionsByExternalId: jest.MockedFunction<
-    (externalId: string) => Promise<SessionSearchResponse>
+  searchSessions: jest.MockedFunction<
+    (request: LogRecordsQueryRequest) => Promise<LogRecordsQueryResponse>
   >;
 };
 
@@ -59,7 +63,7 @@ jest.mock('../../src/api-client', () => ({
       previous_session_id: mockPreviousSessionId,
       external_id: 'test-external-id'
     }),
-    _searchSessionsByExternalId: jest.fn()
+    searchSessions: jest.fn()
   }))
 }));
 
@@ -1497,63 +1501,91 @@ describe('GalileoLogger', () => {
         previousSessionId: undefined,
         externalId: undefined
       });
-      expect(mockClient._searchSessionsByExternalId).not.toHaveBeenCalled();
+      expect(mockClient.searchSessions).not.toHaveBeenCalled();
       expect(sessionId).toBe(mockSessionId);
     });
 
     it('should reuse existing session when externalId matches', async () => {
       const existingSessionId = 'existing-session-id';
-      mockClient._searchSessionsByExternalId.mockResolvedValue({
+      mockClient.searchSessions.mockResolvedValue({
         records: [
           {
             id: existingSessionId,
             type: 'session' as const,
-            project_id: mockProjectId,
-            run_id: 'test-run-id',
-            external_id: 'test-external-id',
+            projectId: mockProjectId,
+            runId: 'test-run-id',
+            externalId: 'test-external-id',
             name: 'test-session',
             input: 'test input',
             output: 'test output',
-            created_at: '2023-01-01T00:00:00Z',
-            updated_at: '2023-01-01T00:00:00Z',
-            user_metadata: {},
+            createdAt: '2023-01-01T00:00:00Z',
+            updatedAt: '2023-01-01T00:00:00Z',
+            userMetadata: {},
             tags: [],
-            status_code: 0,
+            statusCode: 0,
             metrics: {},
-            dataset_input: '',
-            dataset_output: '',
-            dataset_metadata: {},
-            session_id: existingSessionId,
-            has_children: false,
-            metric_info: {}
+            datasetInput: '',
+            datasetOutput: '',
+            datasetMetadata: {},
+            sessionId: existingSessionId,
+            hasChildren: false,
+            metricInfo: {}
           }
-        ]
+        ],
+        limit: 1,
+        startingToken: 0,
+        nextStartingToken: null,
+        lastRowId: null,
+        paginated: false
       });
 
       const sessionId = await logger.startSession({
         externalId: 'test-external-id'
       });
 
-      expect(mockClient._searchSessionsByExternalId).toHaveBeenCalledWith(
-        'test-external-id'
-      );
+      const expectedFilters: LogRecordsQueryFilter[] = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'test-external-id',
+          type: 'id' as const
+        }
+      ];
+      expect(mockClient.searchSessions).toHaveBeenCalledWith({
+        filters: expectedFilters,
+        limit: 1
+      });
       expect(mockClient.createSession).not.toHaveBeenCalled();
       expect(sessionId).toBe(existingSessionId);
       expect(logger.currentSessionId()).toBe(existingSessionId);
     });
 
     it('should create new session when externalId not found', async () => {
-      mockClient._searchSessionsByExternalId.mockResolvedValue({
-        records: []
+      mockClient.searchSessions.mockResolvedValue({
+        records: [],
+        limit: 1,
+        startingToken: 0,
+        nextStartingToken: null,
+        lastRowId: null,
+        paginated: false
       });
 
       const sessionId = await logger.startSession({
         externalId: 'new-external-id'
       });
 
-      expect(mockClient._searchSessionsByExternalId).toHaveBeenCalledWith(
-        'new-external-id'
-      );
+      const expectedFilters: LogRecordsQueryFilter[] = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'new-external-id',
+          type: 'id' as const
+        }
+      ];
+      expect(mockClient.searchSessions).toHaveBeenCalledWith({
+        filters: expectedFilters,
+        limit: 1
+      });
       expect(mockClient.createSession).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
@@ -1563,17 +1595,24 @@ describe('GalileoLogger', () => {
     });
 
     it('should create new session when search fails', async () => {
-      mockClient._searchSessionsByExternalId.mockRejectedValue(
-        new Error('Search failed')
-      );
+      mockClient.searchSessions.mockRejectedValue(new Error('Search failed'));
 
       const sessionId = await logger.startSession({
         externalId: 'error-external-id'
       });
 
-      expect(mockClient._searchSessionsByExternalId).toHaveBeenCalledWith(
-        'error-external-id'
-      );
+      const expectedFilters: LogRecordsQueryFilter[] = [
+        {
+          columnId: 'external_id',
+          operator: 'eq' as const,
+          value: 'error-external-id',
+          type: 'id' as const
+        }
+      ];
+      expect(mockClient.searchSessions).toHaveBeenCalledWith({
+        filters: expectedFilters,
+        limit: 1
+      });
       expect(mockClient.createSession).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
@@ -1587,7 +1626,7 @@ describe('GalileoLogger', () => {
         externalId: '   '
       });
 
-      expect(mockClient._searchSessionsByExternalId).not.toHaveBeenCalled();
+      expect(mockClient.searchSessions).not.toHaveBeenCalled();
       expect(mockClient.createSession).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,

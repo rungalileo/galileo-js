@@ -1,12 +1,18 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { Trace } from '../../types/logging/trace.types';
+import { SessionCreateResponse } from '../../types/logging/session.types';
+
 import {
-  SessionCreateResponse,
-  SessionSearchRequest,
-  SessionSearchResponse,
-  SessionSearchRequestBody
-} from '../../types/logging/session.types';
+  LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsQueryRequestOpenAPI,
+  LogRecordsMetricsResponse,
+  LogRecordsMetricsResponseOpenAPI,
+  LogRecordsQueryRequest,
+  LogRecordsQueryRequestOpenAPI,
+  LogRecordsQueryResponse,
+  LogRecordsQueryResponseOpenAPI
+} from '../../types/search.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -85,32 +91,126 @@ export class TraceService extends BaseClient {
   }
 
   public async searchSessions(
-    request: SessionSearchRequest
-  ): Promise<SessionSearchResponse> {
-    if (!this.logStreamId && !this.experimentId) {
-      throw new Error('Log stream or experiment not initialized');
+    options: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
     }
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryRequest,
+      LogRecordsQueryRequestOpenAPI
+    >(options);
 
-    const requestBody: SessionSearchRequestBody = {
-      limit: request.limit || 100,
-      starting_token: request.starting_token || 0,
-      log_stream_id: this.logStreamId || null,
-      experiment_id: this.experimentId || null
-    };
-
-    // Transform simplified filters to API format
-    if (request.filters && request.filters.length > 0) {
-      requestBody.filters = request.filters.map((filter) => ({
-        ...filter,
-        type: 'text' as const
-      }));
-    }
-
-    return await this.makeRequest<SessionSearchResponse>(
+    const response = await this.makeRequest<LogRecordsQueryResponseOpenAPI>(
       RequestMethod.POST,
       Routes.sessionsSearch,
-      requestBody,
+      request,
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryResponseOpenAPI,
+      LogRecordsQueryResponse
+    >(response);
+  }
+
+  public async searchMetrics(
+    options: LogRecordsMetricsQueryRequest
+  ): Promise<LogRecordsMetricsResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsMetricsQueryRequest,
+      LogRecordsMetricsQueryRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogRecordsMetricsResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.metricsSearch,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogRecordsMetricsResponseOpenAPI,
+      LogRecordsMetricsResponse
+    >(response);
+  }
+
+  public async searchTraces(
+    options: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryRequest,
+      LogRecordsQueryRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogRecordsQueryResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.tracesSearch,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryResponseOpenAPI,
+      LogRecordsQueryResponse
+    >(response);
+  }
+
+  public async searchSpans(
+    options: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    if (!this.projectId) {
+      throw new Error('Project not initialized');
+    }
+    this.fillRequestContext(options);
+    const request = this.convertToSnakeCase<
+      LogRecordsQueryRequest,
+      LogRecordsQueryRequestOpenAPI
+    >(options);
+
+    const response = await this.makeRequest<LogRecordsQueryResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.spansSearch,
+      request,
+      { project_id: this.projectId }
+    );
+
+    return this.convertToCamelCase<
+      LogRecordsQueryResponseOpenAPI,
+      LogRecordsQueryResponse
+    >(response);
+  }
+
+  /**
+   * Fills in missing experiment_id or log_stream_id from the service context
+   * by mutating the request object in place.
+   *
+   * This method modifies the input request object directly to add the context
+   * (experiment_id or log_stream_id) if it's missing. The mutation is intentional
+   * for performance and convenience, but callers should be aware that the request
+   * object will be modified and should not reuse it if they need the original state.
+   *
+   * @param options - The request object to modify (will be mutated in place).
+   *   Supports both LogRecordsQueryRequest and LogRecordsMetricsQueryRequest types.
+   */
+  private fillRequestContext(
+    options: LogRecordsQueryRequest | LogRecordsMetricsQueryRequest
+  ): void {
+    if (!options.experimentId && !options.logStreamId) {
+      if (this.experimentId) {
+        options.experimentId = this.experimentId;
+      } else if (this.logStreamId) {
+        options.logStreamId = this.logStreamId;
+      }
+    }
   }
 }

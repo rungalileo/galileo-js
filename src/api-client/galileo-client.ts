@@ -12,7 +12,6 @@ import {
 } from '../types/scorer.types';
 import { ProjectTypes, ProjectCreateResponse } from '../types/project.types';
 import { BaseClient } from './base-client';
-import { SessionSearchResponse } from '../types/logging/session.types';
 import { AuthService } from './services/auth-service';
 import { ProjectService } from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
@@ -41,6 +40,12 @@ import { Job, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
 import { SessionCreateResponse } from '../types/logging/session.types';
 import { StepType } from '../types/logging/step.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsMetricsQueryRequest,
+  LogRecordsQueryResponse,
+  LogRecordsMetricsResponse
+} from '../types/search.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
@@ -361,25 +366,6 @@ export class GalileoApiClient extends BaseClient {
     });
   }
 
-  /**
-   * @internal - Used internally by startSession for external_id lookup
-   */
-  async _searchSessionsByExternalId(
-    externalId: string
-  ): Promise<SessionSearchResponse> {
-    this.ensureService(this.traceService);
-    return this.traceService!.searchSessions({
-      filters: [
-        {
-          column_id: 'id',
-          operator: 'eq',
-          value: externalId
-        }
-      ],
-      limit: 1
-    });
-  }
-
   // PromptTemplate methods - delegate to PromptTemplateService
   public async getPromptTemplates() {
     this.ensureService(this.promptTemplateService);
@@ -614,6 +600,35 @@ export class GalileoApiClient extends BaseClient {
 
       throw new Error(`${name} service not initialized. Did you call init()?`);
     }
+  }
+
+  // Search methods - delegate to TraceService
+  public async searchTraces(
+    options: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchTraces(options);
+  }
+
+  public async searchSpans(
+    options: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchSpans(options);
+  }
+
+  public async searchSessions(
+    options: LogRecordsQueryRequest
+  ): Promise<LogRecordsQueryResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchSessions(options);
+  }
+
+  public async searchMetrics(
+    options: LogRecordsMetricsQueryRequest
+  ): Promise<LogRecordsMetricsResponse> {
+    this.ensureService(this.traceService);
+    return this.traceService!.searchMetrics(options);
   }
 
   public async getJob(jobId: string): Promise<Job> {

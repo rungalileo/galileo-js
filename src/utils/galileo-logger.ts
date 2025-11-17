@@ -20,6 +20,7 @@ import {
   LlmSpanAllowedInputType
 } from '../types/logging/step.types';
 import { toStringValue } from './serialization';
+import { LogRecordsQueryRequest } from '../types/search.types';
 import { LocalMetricConfig } from '../types/metrics.types';
 
 class GalileoLoggerConfig {
@@ -261,8 +262,19 @@ class GalileoLogger {
     // If externalId is provided, search for existing session
     if (externalId && externalId.trim() !== '') {
       try {
+        const searchRequestFilter: LogRecordsQueryRequest = {
+          filters: [
+            {
+              columnId: 'external_id',
+              operator: 'eq',
+              value: externalId,
+              type: 'id'
+            }
+          ],
+          limit: 1
+        };
         const searchResult =
-          await this.client._searchSessionsByExternalId(externalId);
+          await this.client.searchSessions(searchRequestFilter);
 
         if (searchResult.records && searchResult.records.length > 0) {
           const existingSessionId = searchResult.records[0].id;

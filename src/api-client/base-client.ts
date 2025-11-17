@@ -5,6 +5,18 @@ import { decode } from 'jsonwebtoken';
 import type { paths } from '../types/api.types';
 import { Routes } from '../types/routes.types';
 import { getSdkIdentifier } from '../utils/version';
+import {
+  objectToCamel,
+  objectToSnake,
+  ObjectToSnake,
+  ObjectToCamel
+} from 'ts-case-convert';
+
+// Type guards for snake_case and camelCase conversion
+type ValidatedSnakeCase<T extends object, TTarget> =
+  ObjectToSnake<T> extends TTarget ? TTarget : never;
+type ValidatedCamelCase<T extends object, TTarget> =
+  ObjectToCamel<T> extends TTarget ? TTarget : never;
 
 export enum RequestMethod {
   GET = 'GET',
@@ -217,5 +229,17 @@ export class BaseClient {
       }
       return {} as T;
     }
+  }
+
+  public convertToSnakeCase<T extends object, TTarget>(
+    obj: T
+  ): ValidatedSnakeCase<T, TTarget> {
+    return objectToSnake<T>(obj) as ValidatedSnakeCase<T, TTarget>;
+  }
+
+  public convertToCamelCase<T extends object, TTarget>(
+    obj: T
+  ): ValidatedCamelCase<T, TTarget> {
+    return objectToCamel<T>(obj) as ValidatedCamelCase<T, TTarget>;
   }
 }
