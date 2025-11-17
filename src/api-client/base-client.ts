@@ -159,6 +159,10 @@ export class BaseClient {
         params && 'run_id' in params ? (params.run_id as string) : ''
       )
       .replace(
+        '{job_id}',
+        params && 'job_id' in params ? (params.job_id as string) : ''
+      )
+      .replace(
         '{dataset_id}',
         params && 'dataset_id' in params ? (params.dataset_id as string) : ''
       )
