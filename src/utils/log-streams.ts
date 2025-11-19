@@ -67,7 +67,7 @@ export const getLogStream = async ({
  * @param options.logStreamName - Log stream name (overrides env var)
  * @param options.projectName - Project name (overrides env var)
  * @param options.metrics - Metrics to enable. Accepts:
- *   - GalileoScorers enum (e.g., GalileoScorers.Correctness)
+ *   - GalileoScorers const object values (e.g., GalileoScorers.correctness)
  *   - String names (e.g., 'toxicity')
  *   - Metric objects (e.g., { name: 'custom', version: 2 })
  *   - LocalMetricConfig objects with scorerFn for client-side scoring
@@ -82,7 +82,7 @@ export const getLogStream = async ({
  * const localMetrics = await enableMetrics({
  *   projectName: 'My Project',
  *   logStreamName: 'Production',
- *   metrics: [GalileoScorers.Correctness, 'toxicity']
+ *   metrics: [GalileoScorers.correctness, 'toxicity']
  * });
  * ```
  */

@@ -7,8 +7,8 @@ await enableMetrics({
   projectName: 'js-project',
   logStreamName: 'js-log-stream',
   metrics: [
-    GalileoScorers.Correctness,
-    GalileoScorers.Completeness,
+    GalileoScorers.correctness,
+    GalileoScorers.completeness,
     'context_relevance',
     'instruction_adherence'
   ]
@@ -33,7 +33,7 @@ const localMetrics = await enableMetrics({
   logStreamName: 'js-log-stream',
   metrics: [
     // Built-in metrics
-    GalileoScorers.Correctness,
+    GalileoScorers.correctness,
     'completeness',
     // Custom metric with specific version
     { name: 'my_custom_metric', version: 2 },

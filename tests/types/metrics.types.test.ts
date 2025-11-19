@@ -3,52 +3,52 @@ import { snakeCase } from 'lodash';
 
 describe('GalileoScorers', () => {
   /**
-   * A "primary scorer" is an enum member where its PascalCase key, when converted to
+   * A "primary scorer" is a const object member where its camelCase key, when converted to
    * snake_case, is identical to its string value.
    *
-   * An "additional scorer" is another enum member that maps to the same string value
+   * An "additional scorer" is another const object member that maps to the same string value
    * as a primary scorer (i.e., an alias).
    */
   const testCases: [
     keyof typeof GalileoScorers,
     (keyof typeof GalileoScorers)[]
   ][] = [
-    ['ActionCompletionLuna', []],
-    ['ActionAdvancementLuna', []],
-    ['AgenticSessionSuccess', ['ActionCompletion']],
-    ['AgenticWorkflowSuccess', ['ActionAdvancement']],
-    ['Bleu', []],
-    ['ChunkAttributionUtilizationLuna', []],
-    ['ChunkAttributionUtilization', []],
-    ['CompletenessLuna', []],
-    ['Completeness', []],
-    ['ContextAdherence', []],
-    ['ContextAdherenceLuna', []],
-    ['ContextRelevance', []],
-    ['Correctness', []],
-    ['GroundTruthAdherence', []],
-    ['InputPii', []],
-    ['InputSexist', ['InputSexism']],
-    ['InputSexistLuna', ['InputSexismLuna']],
-    ['InputTone', []],
-    ['InputToxicity', []],
-    ['InputToxicityLuna', []],
-    ['InstructionAdherence', []],
-    ['OutputPii', []],
-    ['OutputSexist', ['OutputSexism']],
-    ['OutputSexistLuna', ['OutputSexismLuna']],
-    ['OutputTone', []],
-    ['OutputToxicity', []],
-    ['OutputToxicityLuna', []],
-    ['PromptInjection', []],
-    ['PromptInjectionLuna', []],
-    ['PromptPerplexity', []],
-    ['Rouge', []],
-    ['ToolErrorRate', []],
-    ['ToolErrorRateLuna', []],
-    ['ToolSelectionQuality', []],
-    ['ToolSelectionQualityLuna', []],
-    ['Uncertainty', []]
+    ['actionCompletionLuna', []],
+    ['actionAdvancementLuna', []],
+    ['agenticSessionSuccess', ['actionCompletion']],
+    ['agenticWorkflowSuccess', ['actionAdvancement']],
+    ['bleu', []],
+    ['chunkAttributionUtilizationLuna', []],
+    ['chunkAttributionUtilization', []],
+    ['completenessLuna', []],
+    ['completeness', []],
+    ['contextAdherence', []],
+    ['contextAdherenceLuna', []],
+    ['contextRelevance', []],
+    ['correctness', []],
+    ['groundTruthAdherence', []],
+    ['inputPii', []],
+    ['inputSexist', ['inputSexism']],
+    ['inputSexistLuna', ['inputSexismLuna']],
+    ['inputTone', []],
+    ['inputToxicity', []],
+    ['inputToxicityLuna', []],
+    ['instructionAdherence', []],
+    ['outputPii', []],
+    ['outputSexist', ['outputSexism']],
+    ['outputSexistLuna', ['outputSexismLuna']],
+    ['outputTone', []],
+    ['outputToxicity', []],
+    ['outputToxicityLuna', []],
+    ['promptInjection', []],
+    ['promptInjectionLuna', []],
+    ['promptPerplexity', []],
+    ['rouge', []],
+    ['toolErrorRate', []],
+    ['toolErrorRateLuna', []],
+    ['toolSelectionQuality', []],
+    ['toolSelectionQualityLuna', []],
+    ['uncertainty', []]
   ];
 
   test.each(testCases)(
