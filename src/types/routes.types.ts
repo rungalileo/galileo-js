@@ -11,6 +11,8 @@ export enum Routes {
   logStreams = 'projects/{project_id}/log_streams',
   logStream = 'projects/{project_id}/log_streams/{log_stream_id}',
   runs = 'projects/{project_id}/runs',
+  projectsPaginated = 'projects/paginated',
+  projectsCount = 'projects/count',
   observeMetrics = 'projects/{project_id}/observe/metrics',
   observeIngest = 'projects/{project_id}/observe/ingest',
   observeRows = 'projects/{project_id}/observe/rows',
@@ -30,6 +32,10 @@ export enum Routes {
   spans = 'projects/{project_id}/spans',
   span = 'projects/{project_id}/spans/{span_id}',
   spansDelete = 'projects/{project_id}/spans/delete',
+  projectUserCollaborators = 'projects/{project_id}/users',
+  projectUserCollaborator = 'projects/{project_id}/users/{user_id}',
+  projectGroupCollaborators = 'projects/{project_id}/groups',
+  projectGroupCollaborator = 'projects/{project_id}/groups/{group_id}',
   tracesCount = 'projects/{project_id}/traces/count',
   sessionsCount = 'projects/{project_id}/sessions/count',
   spansCount = 'projects/{project_id}/spans/count',
@@ -62,5 +68,7 @@ export enum Routes {
   scorer = 'scorers',
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',
   codeScorerVersion = 'scorers/{scorer_id}/version/code',
-  scorerId = 'scorers/{scorer_id}'
+  scorerId = 'scorers/{scorer_id}',
+  collaboratorRoles = 'collaborator_roles',
+  projectUploadFile = 'projects/{project_id}/upload_file'
 }

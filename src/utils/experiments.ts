@@ -315,7 +315,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   try {
     project = await getProjectWithEnvFallbacks({
       name: projectName,
-      id: projectId
+      projectId
     });
   } catch (error) {
     throw new Error(
