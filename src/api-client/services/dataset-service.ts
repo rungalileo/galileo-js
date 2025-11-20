@@ -43,6 +43,7 @@ export class DatasetService extends BaseClient {
 
     let items: Item[] = [];
     let startingToken: number | null = 0;
+    let pageNumber = 1;
 
     do {
       const updatedParams: Record<string, unknown> = {
@@ -50,13 +51,21 @@ export class DatasetService extends BaseClient {
         query: { ...params.query, starting_token: startingToken }
       };
 
-      const { data, error } = await this.client.GET(path, {
-        params: updatedParams
-      });
+      try {
+        const { data, error } = await this.client.GET(path, {
+          params: updatedParams
+        });
 
-      const collection = this.processResponse(data as Response, error);
-      items = items.concat(extractItems(collection));
-      startingToken = collection.next_starting_token ?? null;
+        const collection = this.processResponse(data as Response, error);
+        items = items.concat(extractItems(collection));
+        startingToken = collection.next_starting_token ?? null;
+        pageNumber++;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        const contextInfo = `Failed to fetch paginated items from ${path} at page ${pageNumber}`;
+        throw new Error(`${contextInfo}. ${errorMessage}`);
+      }
     } while (startingToken !== null);
 
     return items;
@@ -128,27 +137,46 @@ export class DatasetService extends BaseClient {
       throw new Error('Client not initialized');
     }
 
-    const fileBuffer: Buffer = await fs.readFile(filePath);
-    const blob: Blob = new Blob([fileBuffer]);
+    let fileBuffer: Buffer;
+    try {
+      fileBuffer = await fs.readFile(filePath);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Failed to read file '${filePath}' for dataset '${name}': ${errorMessage}`
+      );
+    }
+
+    // Convert Buffer to Uint8Array for Blob compatibility
+    const blob: Blob = new Blob([new Uint8Array(fileBuffer)]);
     const formdata = new FormData();
     formdata.append('file', blob, name);
 
-    const { data, error } = await this.client.POST('/datasets', {
-      params: { query: { format } },
-      // @ts-expect-error openapi-typescript does not properly translate FormData for uploading files
-      body: formdata,
-      bodySerializer: (body) => {
-        // define a custom serializer to prevent openapi-fetch from serializing the FormData object as JSON
-        return body;
-      }
-    });
+    try {
+      const { data, error } = await this.client.POST('/datasets', {
+        params: { query: { format } },
+        // @ts-expect-error openapi-typescript does not properly translate FormData for uploading files
+        body: formdata,
+        bodySerializer: (body) => {
+          // define a custom serializer to prevent openapi-fetch from serializing the FormData object as JSON
+          return body;
+        }
+      });
 
-    const dataset = this.processResponse(data, error) as Dataset;
-    // eslint-disable-next-line no-console
-    console.log(
-      `✅  Dataset '${dataset.name}' with ${dataset.num_rows} rows uploaded.`
-    );
-    return dataset;
+      const dataset = this.processResponse(data, error) as Dataset;
+      // eslint-disable-next-line no-console
+      console.log(
+        `✅  Dataset '${dataset.name}' with ${dataset.num_rows} rows uploaded.`
+      );
+      return dataset;
+    } catch (error) {
+      // Enhance error with upload context
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const contextInfo = `Failed to create dataset '${name}'`;
+      throw new Error(`${contextInfo}. ${errorMessage}`);
+    }
   }
 
   public async getDatasetContent(datasetId: string): Promise<DatasetRow[]> {
