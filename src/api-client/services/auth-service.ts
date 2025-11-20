@@ -58,7 +58,7 @@ export class AuthService extends BaseClient {
         username,
         password
       };
-    } else if (ssoIdToken && ssoProvider) {
+    } else if (ssoIdToken?.trim() && ssoProvider) {
       if (!SSOProviders.includes(ssoProvider)) {
         throw new Error(
           `Invalid SSO provider. Currently supported providers: ${SSOProviders.join(', ')}`
@@ -74,7 +74,6 @@ export class AuthService extends BaseClient {
 
     if (this.originalCredentials) {
       await this.fetchNewToken();
-      this.initializeClient();
       return this.token;
     }
 
@@ -93,16 +92,19 @@ export class AuthService extends BaseClient {
   private async fetchNewToken() {
     if (this.originalCredentials?.type === 'api_key') {
       this.token = await this.apiKeyLogin(this.originalCredentials.apiKey);
+      this.initializeClient();
     } else if (this.originalCredentials?.type === 'username_password') {
       this.token = await this.usernameLogin(
         this.originalCredentials.username,
         this.originalCredentials.password
       );
+      this.initializeClient();
     } else if (this.originalCredentials?.type === 'sso') {
       this.token = await this.ssoLogin(
         this.originalCredentials.ssoIdToken,
         this.originalCredentials.ssoProvider
       );
+      this.initializeClient();
     } else throw new Error('No credentials found in environment variables');
   }
 
