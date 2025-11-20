@@ -7,16 +7,16 @@ export const mockProject: Project = {
   id: 'proj-123',
   name: 'test-project',
   type: ProjectTypes.genAI,
-  created_by: 'user-123',
-  created_by_user: {
+  createdBy: 'user-123',
+  createdByUser: {
     id: 'user-123',
     email: 'test@example.com',
-    first_name: 'Test',
-    last_name: 'User'
+    firstName: 'Test',
+    lastName: 'User'
   },
   runs: [],
-  created_at: '2021-09-10T00:00:00Z',
-  updated_at: '2021-09-10T00:00:00Z'
+  createdAt: '2021-09-10T00:00:00Z',
+  updatedAt: '2021-09-10T00:00:00Z'
 };
 
 export const mockLogStream: LogStream = {
