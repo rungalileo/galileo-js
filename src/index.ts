@@ -56,7 +56,20 @@ import {
   getPrompt,
   deletePrompt
 } from './utils/prompt-templates';
-import { getProjects, createProject, getProject } from './utils/projects';
+import {
+  Projects,
+  getProjects,
+  createProject,
+  getProject,
+  getProjectWithEnvFallbacks,
+  deleteProject,
+  listProjectUserCollaborators,
+  addProjectUserCollaborators,
+  updateProjectUserCollaborator,
+  removeProjectUserCollaborator,
+  shareProjectWithUser,
+  unshareProjectWithUser
+} from './utils/projects';
 import {
   getLogStreams,
   createLogStream,
@@ -128,9 +141,18 @@ export {
   getExperiment,
   runExperiment,
   // Projects
+  Projects,
   getProjects,
   createProject,
   getProject,
+  getProjectWithEnvFallbacks,
+  deleteProject,
+  listProjectUserCollaborators,
+  addProjectUserCollaborators,
+  updateProjectUserCollaborator,
+  removeProjectUserCollaborator,
+  shareProjectWithUser,
+  unshareProjectWithUser,
   // Log streams
   getLogStreams,
   createLogStream,
