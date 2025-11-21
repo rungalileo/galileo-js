@@ -3,6 +3,11 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-added-large-files
+        exclude: |
+          (?x)^(
+            src/types/openapi\.types\.ts|
+            src/types/new-api\.types\.ts
+          )$
       - id: check-ast
       - id: check-json
       - id: check-toml
