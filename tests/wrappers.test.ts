@@ -1,15 +1,45 @@
 import { log } from '../src/wrappers';
 import { Document } from '../src/types/document.types';
 
+// Mock api-client to provide the static getTimestampRecord method
+jest.mock('../src/api-client', () => ({
+  GalileoApiClient: Object.assign(
+    jest.fn().mockImplementation(() => ({})),
+    {
+      getTimestampRecord: jest.fn().mockReturnValue(new Date())
+    }
+  )
+}));
+
 // Mock GalileoLogger to avoid actual logging and allow for inspection of calls
 
 const mockLogger = {
   startTrace: jest.fn(),
-  addWorkflowSpan: jest.fn(),
-  addLlmSpan: jest.fn(),
-  addRetrieverSpan: jest.fn(),
-  addToolSpan: jest.fn(),
-  addAgentSpan: jest.fn(),
+  addWorkflowSpan: jest.fn((args) => {
+    if (args && args.createdAt === undefined) {
+      args.createdAt = new Date();
+    }
+  }),
+  addLlmSpan: jest.fn((args) => {
+    if (args && args.createdAt === undefined) {
+      args.createdAt = new Date();
+    }
+  }),
+  addRetrieverSpan: jest.fn((args) => {
+    if (args && args.createdAt === undefined) {
+      args.createdAt = new Date();
+    }
+  }),
+  addToolSpan: jest.fn((args) => {
+    if (args && args.createdAt === undefined) {
+      args.createdAt = new Date();
+    }
+  }),
+  addAgentSpan: jest.fn((args) => {
+    if (args && args.createdAt === undefined) {
+      args.createdAt = new Date();
+    }
+  }),
   conclude: jest.fn(),
   currentParent: jest.fn().mockReturnValue(undefined),
   isLoggingDisabled: jest.fn().mockReturnValue(false)

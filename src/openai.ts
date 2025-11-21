@@ -92,8 +92,7 @@ export function wrapOpenAI<T extends OpenAIType>(
                         logger!.startTrace({
                           input: JSON.stringify(requestData.messages),
                           output: undefined,
-                          name: 'openai-client-generation',
-                          createdAt: startTime
+                          name: 'openai-client-generation'
                         });
                       }
 
@@ -139,7 +138,6 @@ export function wrapOpenAI<T extends OpenAIType>(
                         input: JSON.parse(JSON.stringify(requestData.messages)),
                         output,
                         name: 'openai-client-generation',
-                        createdAt: startTime,
                         model: requestData.model || 'unknown',
                         numInputTokens: response?.usage?.prompt_tokens || 0,
                         numOutputTokens:
@@ -345,7 +343,6 @@ class StreamWrapper implements AsyncIterable<any> {
       input: JSON.parse(JSON.stringify(this.requestData.messages)),
       output: finalOutput,
       name: 'openai-client-generation',
-      createdAt: endTime,
       model: this.requestData.model || 'unknown',
       numInputTokens: inputTokensEstimate,
       numOutputTokens: outputTokensEstimate,
