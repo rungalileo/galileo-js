@@ -284,7 +284,7 @@ export class GalileoApiClient extends BaseClient {
     this.timestampRecord =
       timeDifference <= 0 &&
       Math.abs(timeDifference) < MILLISECONDS_TO_NEXT_TIMESTAMP
-        ? dateNow + 1
+        ? this.timestampRecord + 1
         : dateNow;
 
     const result = new Date(this.timestampRecord);
