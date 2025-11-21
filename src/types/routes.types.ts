@@ -2,6 +2,8 @@ export enum Routes {
   healthCheck = 'healthcheck',
   login = 'login',
   apiKeyLogin = 'login/api_key',
+  socialLogin = 'login/social',
+  refreshToken = 'refresh_token',
   experiment = 'projects/{project_id}/experiments/{experiment_id}',
   experiments = 'projects/{project_id}/experiments',
   getToken = 'get-token',
