@@ -48,7 +48,9 @@ export class AuthService extends BaseClient {
     const username = process.env.GALILEO_USERNAME;
     const password = process.env.GALILEO_PASSWORD;
     const ssoIdToken = process.env.GALILEO_SSO_ID_TOKEN;
-    const ssoProvider = process.env.GALILEO_SSO_PROVIDER as SSOProvider;
+    const ssoProvider = (
+      process.env.GALILEO_SSO_PROVIDER || ''
+    ).toLowerCase() as SSOProvider;
 
     if (apiKey) {
       this.originalCredentials = { type: 'api_key', apiKey };
@@ -282,7 +284,7 @@ export class AuthService extends BaseClient {
       try {
         const payload = decode(this.token, { json: true }) as {
           exp?: number;
-        } | null;
+        };
 
         if (payload?.exp) {
           const expirationTime = payload.exp;
@@ -292,10 +294,15 @@ export class AuthService extends BaseClient {
           if (expirationTime <= currentTime + fiveMinutes) {
             await this.refreshTokenWithFallback();
           }
+        } else {
+          // There's an expectation of these tokens having an expiration time
+          // if they don't, assume malformed and fetch new token using initial
+          // method
+          await this.refreshTokenWithFallback();
         }
       } catch (error) {
         try {
-          // Attempt refresh anyways if expiration time is not available
+          // Attempt refresh anyways if expiration validation fails
           await this.refreshTokenWithFallback();
         } catch (refreshError) {
           throw new Error(
