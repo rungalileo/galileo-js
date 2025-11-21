@@ -361,7 +361,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [GalileoScorers.Correctness],
+        metrics: [GalileoScorers.correctness],
         projectName
       });
       expect(result).toHaveProperty(

@@ -33,7 +33,9 @@ import {
   createCustomLlmMetric,
   createCustomCodeMetric,
   deleteMetric,
-  createMetricConfigs
+  createMetricConfigs,
+  populateLocalMetrics,
+  getMetrics
 } from './utils/metrics';
 import { exportRecords } from './utils/export';
 import { Jobs } from './utils/jobs';
@@ -82,13 +84,7 @@ import {
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
 import { GalileoCallback } from './handlers/langchain';
-import {
-  getMetrics,
-  getSessions,
-  getSpans,
-  getTraces,
-  RecordType
-} from './utils/search';
+import { getSessions, getSpans, getTraces, RecordType } from './utils/search';
 export {
   // Legacy clients
   GalileoObserveApiClient,
@@ -148,8 +144,10 @@ export {
   // Metrics
   createCustomLlmMetric,
   createCustomCodeMetric,
+  getMetrics,
   deleteMetric,
   createMetricConfigs,
+  populateLocalMetrics,
   // Jobs (legacy)
   getScorerJobs,
   getScorerJobsStatus,
@@ -164,7 +162,6 @@ export {
   Jobs,
   // Search
   RecordType,
-  getMetrics,
   getTraces,
   getSpans,
   getSessions,

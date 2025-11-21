@@ -3,24 +3,22 @@ import {
   RecordType,
   getTraces,
   getSpans,
-  getSessions,
-  getMetrics
+  getSessions
 } from '../../src/utils/search';
 import {
   LogRecordsQueryFilter,
-  LogRecordsQueryRequest,
-  LogRecordsQueryResponse,
-  LogRecordsMetricsQueryRequest,
-  LogRecordsMetricsResponse,
   LogRecordsSortClause
 } from '../../src/types/search.types';
+import {
+  LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../../src/types/shared.types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockSearchTraces = jest.fn();
 const mockSearchSpans = jest.fn();
 const mockSearchSessions = jest.fn();
-const mockSearchMetrics = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -29,8 +27,7 @@ jest.mock('../../src/api-client', () => {
         init: mockInit,
         searchTraces: mockSearchTraces,
         searchSpans: mockSearchSpans,
-        searchSessions: mockSearchSessions,
-        searchMetrics: mockSearchMetrics
+        searchSessions: mockSearchSessions
       };
     })
   };
@@ -47,18 +44,11 @@ describe('Search', () => {
     paginated: false
   };
 
-  const mockMetricResponse: LogRecordsMetricsResponse = {
-    groupByColumns: [],
-    aggregateMetrics: {},
-    bucketedMetrics: {}
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
     mockSearchTraces.mockResolvedValue(mockQueryResponse);
     mockSearchSpans.mockResolvedValue(mockQueryResponse);
     mockSearchSessions.mockResolvedValue(mockQueryResponse);
-    mockSearchMetrics.mockResolvedValue(mockMetricResponse);
   });
 
   describe('RecordType enum', () => {
@@ -315,83 +305,6 @@ describe('Search', () => {
     });
   });
 
-  describe('Search.queryMetrics', () => {
-    it('should query metrics with minimal options', async () => {
-      const search = new Search();
-      const result = await search.queryMetrics(projectId, {
-        startTime: '2024-01-01T00:00:00Z',
-        endTime: '2024-01-02T00:00:00Z'
-      } as LogRecordsMetricsQueryRequest);
-
-      expect(mockInit).toHaveBeenCalledWith({
-        projectId,
-        projectScoped: true
-      });
-      expect(mockSearchMetrics).toHaveBeenCalledWith({
-        startTime: '2024-01-01T00:00:00Z',
-        endTime: '2024-01-02T00:00:00Z'
-      });
-      expect(result).toEqual(mockMetricResponse);
-    });
-
-    it('should query metrics with all options', async () => {
-      const filters = [
-        {
-          columnId: 'status',
-          operator: 'eq' as const,
-          value: 'success',
-          type: 'text' as const
-        }
-      ] as unknown as LogRecordsQueryFilter[];
-
-      const search = new Search();
-      const result = await search.queryMetrics(projectId, {
-        startTime: '2024-01-01T00:00:00Z',
-        endTime: '2024-01-02T00:00:00Z',
-        logStreamId: 'log-stream-123',
-        experimentId: 'exp-123',
-        metricsTestingId: 'test-123',
-        interval: 10,
-        groupBy: 'status',
-        filters
-      } as LogRecordsMetricsQueryRequest);
-
-      expect(mockSearchMetrics).toHaveBeenCalledWith({
-        filters: [
-          {
-            columnId: 'status',
-            operator: 'eq',
-            value: 'success',
-            type: 'text'
-          }
-        ],
-        logStreamId: 'log-stream-123',
-        experimentId: 'exp-123',
-        metricsTestingId: 'test-123',
-        interval: 10,
-        groupBy: 'status',
-        startTime: '2024-01-01T00:00:00Z',
-        endTime: '2024-01-02T00:00:00Z'
-      });
-      expect(result).toEqual(mockMetricResponse);
-    });
-
-    it('should handle empty filters array for metrics', async () => {
-      const search = new Search();
-      await search.queryMetrics(projectId, {
-        startTime: '2024-01-01T00:00:00Z',
-        endTime: '2024-01-02T00:00:00Z',
-        filters: []
-      } as LogRecordsMetricsQueryRequest);
-
-      expect(mockSearchMetrics).toHaveBeenCalledWith({
-        startTime: '2024-01-01T00:00:00Z',
-        endTime: '2024-01-02T00:00:00Z',
-        filters: []
-      });
-    });
-  });
-
   describe('Helper functions', () => {
     describe('getTraces', () => {
       it('should call Search.query with TRACE record type', async () => {
@@ -541,61 +454,6 @@ describe('Search', () => {
             columnId: 'created_at',
             ascending: false
           },
-          projectId: 'test-project-id'
-        });
-      });
-    });
-
-    describe('getMetrics', () => {
-      it('should call Search.queryMetrics', async () => {
-        const result = await getMetrics({
-          projectId,
-          startTime: '2024-01-01T00:00:00Z',
-          endTime: '2024-01-02T00:00:00Z'
-        });
-
-        expect(mockSearchMetrics).toHaveBeenCalled();
-        expect(result).toEqual(mockMetricResponse);
-      });
-
-      it('should pass all options to Search.queryMetrics', async () => {
-        const filters = [
-          {
-            columnId: 'metric_name',
-            operator: 'eq' as const,
-            value: 'latency',
-            type: 'text' as const
-          }
-        ] as unknown as LogRecordsQueryFilter[];
-
-        await getMetrics({
-          projectId,
-          startTime: '2024-01-01T00:00:00Z',
-          endTime: '2024-01-02T00:00:00Z',
-          logStreamId: 'log-123',
-          experimentId: 'exp-123',
-          metricsTestingId: 'test-123',
-          interval: 5,
-          groupBy: 'status',
-          filters
-        } as LogRecordsMetricsQueryRequest & { projectId: string });
-
-        expect(mockSearchMetrics).toHaveBeenCalledWith({
-          filters: [
-            {
-              columnId: 'metric_name',
-              operator: 'eq',
-              value: 'latency',
-              type: 'text'
-            }
-          ],
-          logStreamId: 'log-123',
-          experimentId: 'exp-123',
-          metricsTestingId: 'test-123',
-          interval: 5,
-          groupBy: 'status',
-          startTime: '2024-01-01T00:00:00Z',
-          endTime: '2024-01-02T00:00:00Z',
           projectId: 'test-project-id'
         });
       });
@@ -753,19 +611,6 @@ describe('Search', () => {
       await expect(
         search.query(projectId, RecordType.TRACE, {})
       ).rejects.toThrow('API Error');
-    });
-
-    it('should propagate errors from metrics API client', async () => {
-      const error = new Error('Metrics API Error');
-      mockSearchMetrics.mockRejectedValue(error);
-
-      const search = new Search();
-      await expect(
-        search.queryMetrics(projectId, {
-          startTime: '2024-01-01T00:00:00Z',
-          endTime: '2024-01-02T00:00:00Z'
-        } as LogRecordsMetricsQueryRequest)
-      ).rejects.toThrow('Metrics API Error');
     });
   });
 });

@@ -2,10 +2,8 @@ import { TraceService } from '../../../src/api-client/services/trace-service';
 import { RequestMethod } from '../../../src/api-client/base-client';
 import { Trace } from '../../../src/types/logging/trace.types';
 import { Routes } from '../../../src/types/routes.types';
-import {
-  LogRecordsQueryFilter,
-  LogRecordsQueryRequest
-} from '../../../src/types/search.types';
+import { LogRecordsQueryFilter } from '../../../src/types/search.types';
+import { LogRecordsQueryRequest } from '../../../src/types/shared.types';
 
 // Create a mock type for the makeRequest method
 type MockMakeRequest = jest.MockedFunction<

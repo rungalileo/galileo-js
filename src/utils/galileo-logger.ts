@@ -20,7 +20,7 @@ import {
   LlmSpanAllowedInputType
 } from '../types/logging/step.types';
 import { toStringValue } from './serialization';
-import { LogRecordsQueryRequest } from '../types/search.types';
+import { LogRecordsQueryRequest } from '../types/shared.types';
 import { LocalMetricConfig } from '../types/metrics.types';
 
 class GalileoLoggerConfig {

@@ -66,10 +66,12 @@ import { StepType } from '../types/logging/step.types';
 import { LogRecordsExportRequest } from '../types/export.types';
 import {
   LogRecordsQueryRequest,
+  LogRecordsQueryResponse
+} from '../types/shared.types';
+import {
   LogRecordsMetricsQueryRequest,
-  LogRecordsQueryResponse,
   LogRecordsMetricsResponse
-} from '../types/search.types';
+} from '../types/metrics.types';
 
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;

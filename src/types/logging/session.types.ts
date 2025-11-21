@@ -8,16 +8,6 @@ export type SessionCreateRequestOpenAPI =
 export type SessionCreateResponseOpenAPI =
   components['schemas']['SessionCreateResponse'];
 
-export type LogRecordsQueryResponseOpenAPI =
-  components['schemas']['LogRecordsQueryResponse'];
-
-export type LogRecordsQueryRequestOpenAPI =
-  components['schemas']['LogRecordsQueryRequest'];
-
 // SDK-facing types (camelCase converted versions)
-export type LogRecordsQueryRequest =
-  ObjectToCamel<LogRecordsQueryRequestOpenAPI>;
-export type LogRecordsQueryResponse =
-  ObjectToCamel<LogRecordsQueryResponseOpenAPI>;
 export type SessionCreateRequest = ObjectToCamel<SessionCreateRequestOpenAPI>;
 export type SessionCreateResponse = ObjectToCamel<SessionCreateResponseOpenAPI>;

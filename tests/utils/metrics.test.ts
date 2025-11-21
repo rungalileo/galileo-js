@@ -1,13 +1,16 @@
 import {
   createCustomLlmMetric,
   createCustomCodeMetric,
-  deleteMetric
+  deleteMetric,
+  getMetrics
 } from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
   GalileoScorers,
   LocalMetricConfig,
-  Metric
+  Metric,
+  LogRecordsMetricsQueryRequest,
+  LogRecordsMetricsResponse
 } from '../../src/types/metrics.types';
 import {
   Scorer,
@@ -35,6 +38,7 @@ const mockGetProject = jest.fn();
 const mockGetProjectByName = jest.fn();
 const mockGetLogStream = jest.fn();
 const mockGetLogStreamByName = jest.fn();
+const mockSearchMetrics = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -51,7 +55,8 @@ jest.mock('../../src/api-client', () => {
         getProject: mockGetProject,
         getProjectByName: mockGetProjectByName,
         getLogStream: mockGetLogStream,
-        getLogStreamByName: mockGetLogStreamByName
+        getLogStreamByName: mockGetLogStreamByName,
+        searchMetrics: mockSearchMetrics
       };
     })
   };
@@ -103,6 +108,12 @@ describe('metrics utils', () => {
     created_by: null
   };
 
+  const MOCK_METRICS_RESPONSE: LogRecordsMetricsResponse = {
+    groupByColumns: [],
+    aggregateMetrics: {},
+    bucketedMetrics: {}
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockInit.mockResolvedValue(undefined);
@@ -129,6 +140,7 @@ describe('metrics utils', () => {
     mockGetProjectByName.mockResolvedValue(EXAMPLE_PROJECT);
     mockGetLogStream.mockResolvedValue(EXAMPLE_LOG_STREAM);
     mockGetLogStreamByName.mockResolvedValue(EXAMPLE_LOG_STREAM);
+    mockSearchMetrics.mockResolvedValue(MOCK_METRICS_RESPONSE);
   });
 
   afterEach(() => {
@@ -326,7 +338,13 @@ describe('metrics utils', () => {
     it('should return local metrics when configured', async () => {
       const localMetric: LocalMetricConfig = {
         name: 'response_length',
-        scorerFn: (traceOrSpan) => traceOrSpan.output?.length || 0,
+        scorerFn: (traceOrSpan) => {
+          const { output } = traceOrSpan;
+          if (typeof output === 'string' || Array.isArray(output)) {
+            return output.length;
+          }
+          return 0;
+        },
         scorableTypes: ['llm'],
         aggregatableTypes: ['trace']
       };
@@ -334,7 +352,7 @@ describe('metrics utils', () => {
       const localMetrics = await enableMetrics({
         projectName: 'test-project',
         logStreamName: 'test-log-stream',
-        metrics: [GalileoScorers.Correctness, localMetric]
+        metrics: [GalileoScorers.correctness, localMetric]
       });
 
       expect(localMetrics).toHaveLength(1);
@@ -358,7 +376,7 @@ describe('metrics utils', () => {
         enableMetrics({
           projectName: 'nonexistent-project',
           logStreamName: 'test-log-stream',
-          metrics: [GalileoScorers.Correctness]
+          metrics: [GalileoScorers.correctness]
         })
       ).rejects.toThrow("Project 'nonexistent-project' not found");
     });
@@ -370,7 +388,7 @@ describe('metrics utils', () => {
         enableMetrics({
           projectName: 'test-project',
           logStreamName: 'nonexistent-log-stream',
-          metrics: [GalileoScorers.Correctness]
+          metrics: [GalileoScorers.correctness]
         })
       ).rejects.toThrow(
         "Log stream 'nonexistent-log-stream' not found in project 'test-project'"
@@ -381,15 +399,21 @@ describe('metrics utils', () => {
       const metric: Metric = { name: 'custom_metric', version: 2 };
       const localMetric: LocalMetricConfig = {
         name: 'response_length',
-        scorerFn: (traceOrSpan) => traceOrSpan.output?.length || 0
+        scorerFn: (traceOrSpan) => {
+          const { output } = traceOrSpan;
+          if (typeof output === 'string' || Array.isArray(output)) {
+            return output.length;
+          }
+          return 0;
+        }
       };
 
       const localMetrics = await enableMetrics({
         projectName: 'test-project',
         logStreamName: 'test-log-stream',
         metrics: [
-          GalileoScorers.Correctness,
-          GalileoScorers.Completeness,
+          GalileoScorers.correctness,
+          GalileoScorers.completeness,
           'toxicity',
           metric,
           localMetric
@@ -517,6 +541,46 @@ describe('metrics utils', () => {
           nodeLevel: StepType.llm
         })
       ).rejects.toThrow('Code file is empty');
+    });
+  });
+
+  describe('getMetrics', () => {
+    const projectId = EXAMPLE_PROJECT.id;
+
+    it('should query metrics with minimal options', async () => {
+      const request = {
+        projectId,
+        startTime: '2024-01-01T00:00:00Z',
+        endTime: '2024-01-02T00:00:00Z'
+      } as LogRecordsMetricsQueryRequest & { projectId: string };
+
+      const result = await getMetrics(request);
+
+      expect(mockInit).toHaveBeenCalledWith({
+        projectId,
+        projectScoped: true
+      });
+      expect(mockSearchMetrics).toHaveBeenCalledWith(request);
+      expect(result).toEqual(MOCK_METRICS_RESPONSE);
+    });
+
+    it('should forward all options and propagate errors', async () => {
+      const error = new Error('metrics failure');
+      mockSearchMetrics.mockRejectedValueOnce(error);
+
+      const request = {
+        projectId,
+        startTime: '2024-01-01T00:00:00Z',
+        endTime: '2024-01-02T00:00:00Z',
+        logStreamId: EXAMPLE_LOG_STREAM.id,
+        experimentId: 'exp-123',
+        metricsTestingId: 'test-123',
+        interval: 10,
+        groupBy: 'status'
+      } as LogRecordsMetricsQueryRequest & { projectId: string };
+
+      await expect(getMetrics(request)).rejects.toThrow('metrics failure');
+      expect(mockSearchMetrics).toHaveBeenCalledWith(request);
     });
   });
 });
