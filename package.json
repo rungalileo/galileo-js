@@ -23,7 +23,8 @@
     "lint-fix": "eslint . --fix",
     "format": "prettier --config .prettierrc.js 'src/**/*.ts' --write",
     "format-examples": "prettier --config .prettierrc.js 'examples/**/*.js' --write",
-    "fetch-api-types": "npx openapi-typescript https://api.galileo.ai/client/openapi.json --default-non-nullable=false --output src/types/api.types.ts",
+    "fetch-api-types-old": "npx openapi-typescript https://api.galileo.ai/client/openapi.json --default-non-nullable=false --output src/types/api.types.ts",
+    "fetch-api-types": "npm run fetch-api-types-old && openapi-ts && node --input-type=module -e \"$(cat scripts/transform-types.mjs)\"",
     "docs": "typedoc"
   },
   "author": "Galileo Technologies Inc. <team@galileo.ai>",
@@ -45,6 +46,7 @@
     "tiktoken": "^1.0.13"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "^0.88.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/lodash": "^4.17.17",
