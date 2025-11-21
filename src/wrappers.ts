@@ -59,6 +59,10 @@ export function log<T extends unknown[], R>(
       createdAt = new Date();
     }
 
+    // Used to passthrough dates sent by caller. If not used, send undefined to let
+    // functions declare creation date using controlled static method.
+    const dateReference = argsDict.createdAt ? createdAt : undefined;
+
     let concludeCount = 0;
     const conclude = (result: R, durationNs?: number) => {
       if (!logger || concludeCount == 0) {
@@ -83,7 +87,7 @@ export function log<T extends unknown[], R>(
         logger.startTrace({
           input: inputString,
           name: name,
-          createdAt: createdAt,
+          createdAt: dateReference,
           datasetInput: options.datasetRecord?.input,
           datasetOutput: options.datasetRecord?.output,
           datasetMetadata: options.datasetRecord?.metadata
@@ -94,7 +98,7 @@ export function log<T extends unknown[], R>(
       if (!options.spanType || options.spanType === 'workflow') {
         logger.addWorkflowSpan({
           input: inputString,
-          createdAt: createdAt,
+          createdAt: dateReference,
           output: undefined,
           name
         });
@@ -105,7 +109,7 @@ export function log<T extends unknown[], R>(
           agentType: isValidAgentType(argsDict['agentType'])
             ? argsDict['agentType']
             : undefined,
-          createdAt: createdAt,
+          createdAt: dateReference,
           name: name
         });
         concludeCount = concludeCount + 1;
@@ -123,7 +127,7 @@ export function log<T extends unknown[], R>(
         logger?.addLlmSpan({
           input: isLlmSpanAllowedInputType(input) ? input : inputString,
           output: isLlmSpanAllowedOutputType(result) ? result : resultToString,
-          createdAt: createdAt,
+          createdAt: dateReference,
           model:
             'model' in argsDict ? toStringValue(argsDict['model']) : undefined
           // TODO: add a param mapper to apply span values
@@ -141,14 +145,14 @@ export function log<T extends unknown[], R>(
           output: isRetrieverSpanAllowedOutputType(result)
             ? result
             : resultToString,
-          createdAt: createdAt,
+          createdAt: dateReference,
           name: name
         });
       } else if (options.spanType === 'tool') {
         logger?.addToolSpan({
           input: inputString,
           output: resultToString,
-          createdAt: createdAt,
+          createdAt: dateReference,
           name: name
         });
       }

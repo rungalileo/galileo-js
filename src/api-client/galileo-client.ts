@@ -71,6 +71,8 @@ import {
   LogRecordsMetricsResponse
 } from '../types/search.types';
 
+const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
+
 export class GalileoApiClientParams {
   public projectType: ProjectTypes = ProjectTypes.genAI;
   public projectName?: string = process.env.GALILEO_PROJECT || 'default';
@@ -107,6 +109,8 @@ export class GalileoApiClient extends BaseClient {
   private experimentService?: ExperimentService;
   private scorerService?: ScorerService;
   private exportService?: ExportService;
+
+  static timestampRecord: number = 0;
 
   public async init(
     params: Partial<GalileoApiClientParams> = {}
@@ -256,6 +260,20 @@ export class GalileoApiClient extends BaseClient {
         );
       }
     }
+  }
+
+  static getTimestampRecord(): Date {
+    const dateNow = Date.now();
+    const timeDifference = dateNow - this.timestampRecord;
+
+    this.timestampRecord =
+      timeDifference <= 0 &&
+      Math.abs(timeDifference) < MILLISECONDS_TO_NEXT_TIMESTAMP
+        ? dateNow + 1
+        : dateNow;
+
+    const result = new Date(this.timestampRecord);
+    return result;
   }
 
   // Project methods - delegate to ProjectService
