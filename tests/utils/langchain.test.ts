@@ -18,17 +18,22 @@ const mockIngestTraces = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
-    GalileoApiClient: jest.fn().mockImplementation(() => {
-      return {
-        init: mockInit,
-        getProject: mockGetProject,
-        getProjects: mockGetProjects,
-        getProjectByName: mockGetProjectByName,
-        getLogStreams: mockGetLogStreams,
-        getLogStreamByName: mockGetLogStreamByName,
-        ingestTraces: mockIngestTraces
-      };
-    })
+    GalileoApiClient: Object.assign(
+      jest.fn().mockImplementation(() => {
+        return {
+          init: mockInit,
+          getProject: mockGetProject,
+          getProjects: mockGetProjects,
+          getProjectByName: mockGetProjectByName,
+          getLogStreams: mockGetLogStreams,
+          getLogStreamByName: mockGetLogStreamByName,
+          ingestTraces: mockIngestTraces
+        };
+      }),
+      {
+        getTimestampRecord: jest.fn().mockReturnValue(new Date())
+      }
+    )
   };
 });
 
