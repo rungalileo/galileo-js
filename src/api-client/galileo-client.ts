@@ -10,7 +10,17 @@ import {
   OutputType,
   InputType
 } from '../types/scorer.types';
-import { ProjectTypes, ProjectCreateResponse } from '../types/project.types';
+import {
+  CollaboratorUpdate,
+  ListUserCollaboratorsResponse,
+  ProjectCreate,
+  ProjectCreateOptions,
+  ProjectCreateResponse,
+  ProjectDeleteResponse,
+  ProjectTypes,
+  UserCollaborator,
+  UserCollaboratorCreate
+} from '../types/project.types';
 import { BaseClient } from './base-client';
 import { SessionCreateResponse } from '../types/logging/session.types';
 import {
@@ -181,8 +191,11 @@ export class GalileoApiClient extends BaseClient {
             const error = err as Error;
 
             if (error.message.includes('not found')) {
-              const project =
-                await this.projectService.createProject(projectName);
+              const project = await this.projectService.createProject({
+                name: projectName,
+                type: this.projectType,
+                createExampleTemplates: false
+              });
               this.projectId = project.id;
               // eslint-disable-next-line no-console
               console.log(`✨ ${projectName} created.`);
@@ -261,29 +274,167 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Project methods - delegate to ProjectService
-  public async getProjects() {
+  /**
+   * Lists projects available to the authenticated user.
+   * @param projectType - (Optional) Project type filter for the request.
+   * @returns A promise that resolves to the accessible projects.
+   */
+  public async getProjects(projectType?: ProjectTypes) {
     this.ensureService(this.projectService);
-    return this.projectService!.getProjects();
+
+    // If none provided, default project type for all_projects endpoint call is genAI
+    const defaultProjectType = ProjectTypes.genAI;
+    return this.projectService!.getProjects(projectType ?? defaultProjectType);
   }
 
+  /**
+   * Gets a project by ID.
+   * @param id - ID of the project to fetch.
+   * @returns A promise that resolves to the matching project.
+   */
   public async getProject(id: string) {
     this.ensureService(this.projectService);
     return this.projectService!.getProject(id);
   }
 
-  public async getProjectByName(name: string) {
+  /**
+   * Gets a project by name.
+   * @param name - Name of the project to fetch.
+   * @param options - (Optional) Additional lookup options.
+   * @param options.projectType - (Optional) Project type hint to disambiguate by name.
+   * @returns A promise that resolves to the matching project.
+   */
+  public async getProjectByName(
+    name: string,
+    options?: { projectType?: ProjectTypes | null }
+  ) {
     this.ensureService(this.projectService);
-    return this.projectService!.getProjectByName(name);
+    return this.projectService!.getProjectByName(name, options ?? {});
   }
 
-  public async getProjectIdByName(name: string) {
+  /**
+   * Gets a project ID by name.
+   * @param name - Name of the project to resolve.
+   * @param options - (Optional) Additional lookup options.
+   * @param options.projectType - (Optional) Project type hint to disambiguate by name.
+   * @returns A promise that resolves to the project ID.
+   */
+  public async getProjectIdByName(
+    name: string,
+    options?: { projectType?: ProjectTypes | null }
+  ) {
     this.ensureService(this.projectService);
-    return this.projectService!.getProjectIdByName(name);
+    return this.projectService!.getProjectIdByName(name, options);
   }
 
-  public async createProject(name: string): Promise<ProjectCreateResponse> {
+  /**
+   * Creates a new project.
+   * @param name - Name of the project to create.
+   * @param options - (Optional) Additional project creation parameters.
+   * @param options.type - (Optional) Project type to assign.
+   * @param options.createdBy - (Optional) Identifier of the creator.
+   * @param options.createExampleTemplates - (Optional) Whether example templates should be created.
+   * @returns A promise that resolves to the created project payload.
+   */
+  public async createProject(
+    name: string,
+    options?: ProjectCreateOptions
+  ): Promise<ProjectCreateResponse> {
     this.ensureService(this.projectService);
-    return this.projectService!.createProject(name);
+
+    const request: ProjectCreate = {
+      name,
+      type: options?.type,
+      createdBy: options?.createdBy,
+      createExampleTemplates: options?.createExampleTemplates
+    };
+    return this.projectService!.createProject(request);
+  }
+
+  /**
+   * Deletes a project by ID.
+   * @param projectId - ID of the project to delete.
+   * @returns A promise that resolves to the delete response payload.
+   */
+  public async deleteProject(
+    projectId: string
+  ): Promise<ProjectDeleteResponse> {
+    this.ensureService(this.projectService);
+    return this.projectService!.deleteProject(projectId);
+  }
+
+  /**
+   * Lists project collaborators with optional pagination controls.
+   * @param options - (Optional) Options for the list operation.
+   * @param options.projectId - (Optional) Explicit project ID override.
+   * @param options.startingToken - (Optional) Pagination token to start from.
+   * @param options.limit - (Optional) Maximum collaborators to return per page.
+   * @returns A promise that resolves to the collaborators list payload.
+   */
+  public async listUserProjectCollaborators(options?: {
+    projectId?: string;
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListUserCollaboratorsResponse> {
+    this.ensureService(this.projectService);
+    const projectId = this.resolveProjectId(options?.projectId);
+    return this.projectService!.listUserProjectCollaborators(projectId, {
+      startingToken: options?.startingToken,
+      limit: options?.limit
+    });
+  }
+
+  /**
+   * Creates user collaborators for a project.
+   * @param collaborators - Collaborator payloads to create.
+   * @param projectId - (Optional) Project ID override when not using a scoped client.
+   * @returns A promise that resolves to the created collaborators.
+   */
+  public async createUserProjectCollaborators(
+    collaborators: UserCollaboratorCreate[],
+    projectId?: string
+  ): Promise<UserCollaborator[]> {
+    this.ensureService(this.projectService);
+    const resolvedProjectId = this.resolveProjectId(projectId);
+    return this.projectService!.createUserProjectCollaborators(
+      resolvedProjectId,
+      collaborators
+    );
+  }
+
+  /**
+   * Updates a user collaborator.
+   * @param userId - ID of the collaborator to update.
+   * @param update - Update payload describing the collaborator changes.
+   * @param projectId - (Optional) Project ID override when not using a scoped client.
+   * @returns A promise that resolves to the updated collaborator.
+   */
+  public async updateUserProjectCollaborator(
+    userId: string,
+    update: CollaboratorUpdate,
+    projectId?: string
+  ): Promise<UserCollaborator> {
+    this.ensureService(this.projectService);
+    const resolvedProjectId = this.resolveProjectId(projectId);
+    return this.projectService!.updateUserProjectCollaborator(
+      resolvedProjectId,
+      userId,
+      update
+    );
+  }
+
+  /**
+   * Removes a user collaborator from a project.
+   * @param userId - ID of the collaborator to delete.
+   * @param projectId - ID of the project the collaborator belongs to.
+   * @returns A promise that resolves when the collaborator is removed.
+   */
+  public async deleteUserProjectCollaborator(
+    userId: string,
+    projectId: string
+  ): Promise<void> {
+    this.ensureService(this.projectService);
+    await this.projectService!.deleteUserProjectCollaborator(projectId, userId);
   }
 
   // Log Stream methods - delegate to LogStreamService
@@ -1021,6 +1172,17 @@ export class GalileoApiClient extends BaseClient {
   ): Promise<ScorerVersion> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createCodeScorerVersion(scorerId, codeContent);
+  }
+
+  private resolveProjectId(projectId?: string): string {
+    const resolvedProjectId = projectId ?? this.projectId;
+    if (!resolvedProjectId) {
+      throw new Error(
+        'Project ID is required for this operation. Provide projectId or initialize the client with one.'
+      );
+    }
+
+    return resolvedProjectId;
   }
 
   // Helper to ensure service is initialized

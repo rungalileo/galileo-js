@@ -229,6 +229,14 @@ export class BaseClient {
       .replace(
         '{span_id}',
         params && 'span_id' in params ? (params.span_id as string) : ''
+      )
+      .replace(
+        '{user_id}',
+        params && 'user_id' in params ? (params.user_id as string) : ''
+      )
+      .replace(
+        '{group_id}',
+        params && 'group_id' in params ? (params.group_id as string) : ''
       )}`;
 
     const config: AxiosRequestConfig = {
@@ -326,6 +334,14 @@ export class BaseClient {
       .replace(
         '{version}',
         params && 'version' in params ? (params.version as string) : ''
+      )
+      .replace(
+        '{user_id}',
+        params && 'user_id' in params ? (params.user_id as string) : ''
+      )
+      .replace(
+        '{group_id}',
+        params && 'group_id' in params ? (params.group_id as string) : ''
       )}`;
 
     const response = await axios.request<Readable>({
