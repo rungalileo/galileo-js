@@ -145,6 +145,13 @@ export class TraceService extends BaseClient {
       throw new Error('Log stream or experiment not initialized');
     }
 
+    console.log('####### THIS IS WHERE TRACES WILL GO');
+    console.log('#### ingestTraces projectId', this.projectId);
+    console.log('#### ingestTraces logStreamId', this.logStreamId);
+    console.log('#### ingestTraces experimentId', this.experimentId);
+    console.log('#### ingestTraces sessionId', this.sessionId);
+    console.log('#### ingestTraces first traces', traces[0]);
+
     await this.makeRequest<void>(
       RequestMethod.POST,
       Routes.traces,

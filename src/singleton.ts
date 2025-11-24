@@ -1,5 +1,25 @@
+import { AsyncLocalStorage } from 'async_hooks';
 import { GalileoLogger, GalileoLoggerConfig } from './utils/galileo-logger';
 import { LocalMetricConfig } from './types/metrics.types';
+
+/**
+ * Context information that is automatically propagated through async execution chains.
+ * This allows experiment context to be available to all logger calls within an experiment
+ * without explicitly passing it through every function call.
+ */
+export interface ExperimentContext {
+  /** The experiment ID currently being executed */
+  experimentId?: string;
+  /** The project name for the current experiment */
+  projectName?: string;
+}
+
+/**
+ * AsyncLocalStorage instance for propagating experiment context through async execution chains.
+ * This ensures that all logger calls within a runExperiment execution automatically
+ * use the correct experimentId, even when called without explicit parameters.
+ */
+export const experimentContext = new AsyncLocalStorage<ExperimentContext>();
 
 /**
  * Options for identifying a logger by its key (project, logstream/experimentId, mode).
@@ -74,8 +94,8 @@ export class GalileoSingleton {
    * Generate a key string based on project, logstream/experimentId, and mode parameters.
    *
    * If project or logstream are undefined, the method attempts to retrieve them
-   * from environment variables (GALILEO_PROJECT and GALILEO_LOG_STREAM). If still
-   * undefined, defaults to "default".
+   * from the async context, environment variables (GALILEO_PROJECT and GALILEO_LOG_STREAM),
+   * or defaults to "default".
    *
    * @param [projectName] - The project name
    * @param [logstream] - The log stream name (used when experimentId is not provided)
@@ -89,9 +109,13 @@ export class GalileoSingleton {
     experimentId?: string,
     mode?: string
   ): string {
-    // Apply environment variable fallbacks
+    // Get context from AsyncLocalStorage
+    const context = experimentContext.getStore();
+
+    // Apply fallbacks: explicit parameter -> context -> environment variable -> default
     const finalProjectName =
       projectName ??
+      context?.projectName ??
       process.env.GALILEO_PROJECT ??
       process.env.GALILEO_PROJECT_NAME ??
       'default';
@@ -101,8 +125,8 @@ export class GalileoSingleton {
       process.env.GALILEO_LOG_STREAM_NAME ??
       'default';
 
-    // Use experimentId if provided, otherwise use log_stream
-    const identifier = experimentId ?? finalLogStream;
+    // Use experimentId if provided, otherwise check context, otherwise use log_stream
+    const identifier = experimentId ?? context?.experimentId ?? finalLogStream;
 
     // Return a string key: "project:identifier:mode"
     return `${finalProjectName}:${identifier}:${mode || 'batch'}`;
@@ -123,7 +147,10 @@ export class GalileoSingleton {
    * @returns An instance of GalileoLogger corresponding to the key
    */
   public getLogger(options: GetLoggerOptions = {}): GalileoLogger {
-    // Compute the key based on provided parameters or environment variables
+    // Get context from AsyncLocalStorage for fallback values
+    const context = experimentContext.getStore();
+
+    // Compute the key based on provided parameters, context, or environment variables
     const key = GalileoSingleton._getKey(
       options.projectName,
       options.logstream,
@@ -131,17 +158,20 @@ export class GalileoSingleton {
       options.mode
     );
 
+    console.log('#### getLogger key', key);
+
     // First check if logger already exists
     if (this._galileoLoggers.has(key)) {
+      console.log('#### getLogger logger already exists');
       return this._galileoLoggers.get(key)!;
     }
 
     // Create new logger
-    // Prepare initialization arguments, only including non-null values
+    // Prepare initialization arguments, using context as fallback if not provided
     const config: GalileoLoggerConfig = {
-      projectName: options.projectName,
+      projectName: options.projectName ?? context?.projectName,
       logStreamName: options.logstream,
-      experimentId: options.experimentId,
+      experimentId: options.experimentId ?? context?.experimentId,
       localMetrics: options.localMetrics,
       mode: options.mode
     };
@@ -150,6 +180,12 @@ export class GalileoSingleton {
 
     // Cache the newly created logger
     this._galileoLoggers.set(key, logger);
+    console.log('#### getLogger logger created');
+    console.log('#### getLogger projectName', options.projectName);
+    console.log('#### getLogger logstream', options.logstream);
+    console.log('#### getLogger experimentId', options.experimentId);
+    console.log('#### getLogger mode', options.mode);
+    console.log('#### getLogger localMetrics', options.localMetrics);
     return logger;
   }
 
@@ -208,6 +244,7 @@ export class GalileoSingleton {
    * @param options.[mode] - The logger mode
    */
   public async flush(options: LoggerKeyOptions = {}): Promise<void> {
+    // _getKey() automatically uses context as fallback, so no need to pass it explicitly
     const key = GalileoSingleton._getKey(
       options.projectName,
       options.logstream,
@@ -215,9 +252,14 @@ export class GalileoSingleton {
       options.mode
     );
 
+    console.log('#### flush logger key', key);
+
     const logger = this._galileoLoggers.get(key);
     if (logger) {
+      console.log('#### flush logger found');
       await logger.flush();
+    } else {
+      console.log('#### flush logger not found');
     }
   }
 

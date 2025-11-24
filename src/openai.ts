@@ -83,6 +83,9 @@ export function wrapOpenAI<T extends OpenAIType>(
                       const [requestData] = args;
                       const startTime = new Date();
                       if (!logger) {
+                        console.log(
+                          '#### wrapOpenAI logger not found, getting new one'
+                        );
                         logger = GalileoSingleton.getInstance().getClient();
                       }
 
