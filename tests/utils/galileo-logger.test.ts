@@ -10,11 +10,11 @@ import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
 import { AgentSpan } from '../../src/types';
+import { LogRecordsQueryFilter } from '../../src/types/search.types';
 import {
   LogRecordsQueryRequest,
-  LogRecordsQueryResponse,
-  LogRecordsQueryFilter
-} from '../../src/types/search.types';
+  LogRecordsQueryResponse
+} from '../../src/types/shared.types';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
 const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';

@@ -1,10 +1,8 @@
 import { GalileoApiClient } from '../api-client';
 import {
-  LogRecordsMetricsQueryRequest,
-  LogRecordsMetricsResponse,
   LogRecordsQueryRequest,
   LogRecordsQueryResponse
-} from '../types/search.types';
+} from '../types/shared.types';
 
 /**
  * Record type enumeration for search operations.
@@ -16,7 +14,7 @@ export enum RecordType {
 }
 
 /**
- * Search class for querying records and metrics.
+ * Search class for querying records (spans, traces, sessions).
  */
 export class Search {
   /**
@@ -49,51 +47,7 @@ export class Search {
         return await apiClient.searchSessions(options);
     }
   }
-
-  /**
-   * Queries metrics in a project.
-   * @param projectId - The ID of the project to search in.
-   * @param options - The query options.
-   * @param options.startTime - The start time for the metrics query.
-   * @param options.endTime - The end time for the metrics query.
-   * @param options.logStreamId - (Optional) The log stream ID to filter by.
-   * @param options.experimentId - (Optional) The experiment ID to filter by.
-   * @param options.metricsTestingId - (Optional) The metrics testing ID to filter by.
-   * @param options.interval - (Optional) The time interval for aggregating metrics.
-   * @param options.groupBy - (Optional) The field to group metrics by.
-   * @param options.filters - (Optional) Filters to apply to the query.
-   * @returns A promise that resolves to the metrics search results.
-   */
-  public async queryMetrics(
-    projectId: string,
-    options: LogRecordsMetricsQueryRequest
-  ): Promise<LogRecordsMetricsResponse> {
-    const apiClient = new GalileoApiClient();
-    await apiClient.init({ projectId, projectScoped: true });
-    return await apiClient.searchMetrics(options);
-  }
 }
-
-/**
- * Searches for metrics in a project.
- * @param options - The search query parameters.
- * @param options.projectId - The ID of the project to search in.
- * @param options.startTime - The start time for the metrics query.
- * @param options.endTime - The end time for the metrics query.
- * @param options.logStreamId - (Optional) The log stream ID to filter by.
- * @param options.experimentId - (Optional) The experiment ID to filter by.
- * @param options.metricsTestingId - (Optional) The metrics testing ID to filter by.
- * @param options.filters - (Optional) Filters to apply to the query.
- * @param options.interval - (Optional) The time interval for aggregating metrics.
- * @param options.groupBy - (Optional) The field to group metrics by.
- * @returns A promise that resolves to the search results.
- */
-export const getMetrics = async (
-  options: LogRecordsMetricsQueryRequest & { projectId: string }
-): Promise<LogRecordsMetricsResponse> => {
-  const search = new Search();
-  return await search.queryMetrics(options.projectId, options);
-};
 
 /**
  * Searches for traces in a project.

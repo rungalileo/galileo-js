@@ -43,7 +43,6 @@ import {
   LogTracesIngestResponse,
   LogTracesIngestResponseOpenAPI
 } from '../../types/logging/trace.types';
-
 import {
   SessionCreateRequest,
   SessionCreateRequestOpenAPI,
@@ -54,12 +53,14 @@ import {
   LogRecordsMetricsQueryRequest,
   LogRecordsMetricsQueryRequestOpenAPI,
   LogRecordsMetricsResponse,
-  LogRecordsMetricsResponseOpenAPI,
+  LogRecordsMetricsResponseOpenAPI
+} from '../../types/metrics.types';
+import {
   LogRecordsQueryRequest,
   LogRecordsQueryRequestOpenAPI,
   LogRecordsQueryResponse,
   LogRecordsQueryResponseOpenAPI
-} from '../../types/search.types';
+} from '../../types/shared.types';
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -223,6 +224,8 @@ export class TraceService extends BaseClient {
       throw new Error('Project not initialized');
     }
     this.fillRequestContext(options);
+    if (!options.interval) options.interval = 5;
+
     const request = this.convertToSnakeCase<
       LogRecordsMetricsQueryRequest,
       LogRecordsMetricsQueryRequestOpenAPI
