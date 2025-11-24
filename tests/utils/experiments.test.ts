@@ -35,26 +35,31 @@ const mockGetScorerVersion = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
-    GalileoApiClient: jest.fn().mockImplementation(() => {
-      return {
-        init: mockInit,
-        getExperiment: mockGetExperiment,
-        getExperiments: mockGetExperiments,
-        createExperiment: mockCreateExperiment,
-        getProject: mockGetProject,
-        getProjects: mockGetProjects,
-        getProjectByName: mockGetProjectByName,
-        createRunScorerSettings: mockCreateRunScorerSettings,
-        getScorers: mockGetScorers,
-        getScorerVersion: mockGetScorerVersion,
-        createPromptRunJob: mockCreatePromptRunJob,
-        getDataset: mockGetDataset,
-        getDatasets: mockGetDatasets,
-        getDatasetByName: mockGetDatasetByName,
-        getDatasetContent: mockGetDatasetContent,
-        ingestTracesLegacy: mockIngestTracesLegacy
-      };
-    })
+    GalileoApiClient: Object.assign(
+      jest.fn().mockImplementation(() => {
+        return {
+          init: mockInit,
+          getExperiment: mockGetExperiment,
+          getExperiments: mockGetExperiments,
+          createExperiment: mockCreateExperiment,
+          getProject: mockGetProject,
+          getProjects: mockGetProjects,
+          getProjectByName: mockGetProjectByName,
+          createRunScorerSettings: mockCreateRunScorerSettings,
+          getScorers: mockGetScorers,
+          getScorerVersion: mockGetScorerVersion,
+          createPromptRunJob: mockCreatePromptRunJob,
+          getDataset: mockGetDataset,
+          getDatasets: mockGetDatasets,
+          getDatasetByName: mockGetDatasetByName,
+          getDatasetContent: mockGetDatasetContent,
+          ingestTracesLegacy: mockIngestTracesLegacy
+        };
+      }),
+      {
+        getTimestampRecord: jest.fn().mockReturnValue(new Date())
+      }
+    )
   };
 });
 

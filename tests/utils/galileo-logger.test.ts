@@ -66,27 +66,32 @@ type MockGalileoApiClient = {
 
 // Mock the GalileoApiClient
 jest.mock('../../src/api-client', () => ({
-  GalileoApiClient: jest.fn().mockImplementation(() => ({
-    init: jest.fn(),
-    ingestTracesLegacy: jest.fn(),
-    createSessionLegacy: jest.fn().mockReturnValue({
-      id: mockSessionId,
-      name: 'test-session',
-      project_id: mockProjectId,
-      project_name: 'test-project',
-      previous_session_id: mockPreviousSessionId,
-      external_id: 'test-external-id'
-    }),
-    createSession: jest.fn().mockReturnValue({
-      id: mockSessionId,
-      name: 'test-session',
-      project_id: mockProjectId,
-      project_name: 'test-project',
-      previous_session_id: mockPreviousSessionId,
-      external_id: 'test-external-id'
-    }),
-    searchSessions: jest.fn()
-  }))
+  GalileoApiClient: Object.assign(
+    jest.fn().mockImplementation(() => ({
+      init: jest.fn(),
+      ingestTracesLegacy: jest.fn(),
+      createSessionLegacy: jest.fn().mockReturnValue({
+        id: mockSessionId,
+        name: 'test-session',
+        project_id: mockProjectId,
+        project_name: 'test-project',
+        previous_session_id: mockPreviousSessionId,
+        external_id: 'test-external-id'
+      }),
+      createSession: jest.fn().mockReturnValue({
+        id: mockSessionId,
+        name: 'test-session',
+        project_id: mockProjectId,
+        project_name: 'test-project',
+        previous_session_id: mockPreviousSessionId,
+        external_id: 'test-external-id'
+      }),
+      searchSessions: jest.fn()
+    })),
+    {
+      getTimestampRecord: jest.fn().mockReturnValue(new Date())
+    }
+  )
 }));
 
 describe('GalileoLogger', () => {
