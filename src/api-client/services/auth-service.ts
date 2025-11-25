@@ -1,6 +1,7 @@
 import querystring from 'querystring';
 import { AxiosResponse } from 'axios';
-import { decode } from 'jsonwebtoken';
+import { decode, JwtPayload } from 'jsonwebtoken';
+import * as setCookieParser from 'set-cookie-parser';
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import {
@@ -10,11 +11,13 @@ import {
 } from '../../types/auth.types';
 
 export class AuthService extends BaseClient {
-  private refreshToken?: string;
+  private refreshToken: string | null = null;
   private originalCredentials?:
     | { type: 'api_key'; apiKey: string }
     | { type: 'username_password'; username: string; password: string }
     | { type: 'sso'; ssoIdToken: string; ssoProvider: SSOProvider };
+
+  private refreshPromise: Promise<void> | null = null;
 
   /**
    * Creates a new AuthService instance.
@@ -67,6 +70,8 @@ export class AuthService extends BaseClient {
         );
       }
 
+      this.validateSSOToken(ssoIdToken?.trim());
+
       this.originalCredentials = {
         type: 'sso',
         ssoIdToken: ssoIdToken.trim(),
@@ -82,6 +87,19 @@ export class AuthService extends BaseClient {
     throw new Error(
       '❗ GALILEO_API_KEY, (GALILEO_USERNAME and GALILEO_PASSWORD), or (GALILEO_SSO_ID_TOKEN and GALILEO_SSO_PROVIDER) must be set'
     );
+  }
+
+  private validateSSOToken(ssoIdToken: string): JwtPayload {
+    try {
+      const payload = decode(ssoIdToken.trim(), { json: true });
+      if (!payload) {
+        throw new Error(`SSO token invalid or malformed.`);
+      }
+
+      return payload;
+    } catch (error) {
+      throw new Error(`SSO token invalid or malformed.`);
+    }
   }
 
   /**
@@ -118,12 +136,8 @@ export class AuthService extends BaseClient {
   private attemptRefreshTokenUpdate(response: AxiosResponse): void {
     const setCookieHeader = response.headers['set-cookie'];
     if (setCookieHeader) {
-      const refreshTokenMatch = setCookieHeader
-        .join('; ')
-        .match(/refresh_token=([^;]+)/);
-      if (refreshTokenMatch) {
-        this.refreshToken = refreshTokenMatch[1];
-      }
+      const cookies = setCookieParser.parse(setCookieHeader, { map: true });
+      this.refreshToken = cookies['refresh_token']?.value || null;
     }
   }
 
@@ -200,7 +214,7 @@ export class AuthService extends BaseClient {
    *
    * @returns The stored refresh token, or undefined if no refresh token is available
    */
-  public getRefreshToken(): string | undefined {
+  public getRefreshToken(): string | undefined | null {
     return this.refreshToken;
   }
 
@@ -230,9 +244,10 @@ export class AuthService extends BaseClient {
       this.attemptRefreshTokenUpdate(response);
       this.token = response.data.access_token || '';
       this.initializeClient();
+
       return this.token;
     } catch (error) {
-      this.refreshToken = undefined;
+      this.refreshToken = null;
       throw error;
     }
   }
@@ -247,15 +262,25 @@ export class AuthService extends BaseClient {
    * @throws {Error} If both refresh and credential-based token fetch fail
    */
   private async refreshTokenWithFallback() {
-    if (this.refreshToken) {
-      try {
-        await this.refreshAccessToken();
-      } catch (error) {
-        await this.fetchNewToken();
-      }
-    } else {
-      await this.fetchNewToken();
+    if (this.refreshPromise) {
+      this.refreshPromise = (async () => {
+        try {
+          if (this.refreshToken) {
+            try {
+              await this.refreshAccessToken();
+            } catch (error) {
+              await this.fetchNewToken();
+            }
+          } else {
+            await this.fetchNewToken();
+          }
+        } finally {
+          this.refreshPromise = null;
+        }
+      })();
     }
+
+    await this.refreshPromise;
   }
 
   /**
@@ -280,36 +305,29 @@ export class AuthService extends BaseClient {
       return;
     }
 
-    if (this.token) {
-      try {
-        const payload = decode(this.token, { json: true }) as {
-          exp?: number;
-        };
+    if (this.isTokenInvalid(this.token)) {
+      await this.refreshTokenWithFallback();
+    }
+  }
 
-        if (payload?.exp) {
-          const expirationTime = payload.exp;
-          const currentTime = Math.floor(Date.now() / 1000);
-          const fiveMinutes = 300;
+  private isTokenInvalid(token: string): boolean {
+    try {
+      const payload = this.validateSSOToken(token);
 
-          if (expirationTime <= currentTime + fiveMinutes) {
-            await this.refreshTokenWithFallback();
-          }
-        } else {
-          // There's an expectation of these tokens having an expiration time
-          // if they don't, assume malformed and fetch new token using initial
-          // method
-          await this.refreshTokenWithFallback();
-        }
-      } catch (error) {
-        try {
-          // Attempt refresh anyways if expiration validation fails
-          await this.refreshTokenWithFallback();
-        } catch (refreshError) {
-          throw new Error(
-            `Token validation failed: ${error}. Refresh attempt failed: ${refreshError}`
-          );
-        }
+      if (payload?.exp) {
+        const expirationTime = payload.exp;
+        const currentTime = Math.floor(Date.now() / 1000);
+        const fiveMinutes = 300;
+
+        // Token is invalid if it has expired
+        return expirationTime <= currentTime + fiveMinutes;
+      } else {
+        // Tolen invalidated due to missing expiration time
+        return true;
       }
+    } catch (error) {
+      // Token invalidated due to decoding error
+      return true;
     }
   }
 }

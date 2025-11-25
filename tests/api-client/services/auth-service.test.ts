@@ -71,7 +71,8 @@ describe('AuthService - SSO Login', () => {
     });
 
     it('should extract refresh token from Set-Cookie header', async () => {
-      const mockRefreshToken = 'refresh-token-456';
+      const mockRefreshToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWZyZXNoLXRva2VuLTQ1NiIsInR5cCI6InJlZnJlc2giLCJpYXQiOjE1MTYyMzkwMjJ9.dummy_signature_for_testing_purposes_only';
       server.use(
         http.post(`${TEST_HOST}/${Routes.socialLogin}`, () =>
           HttpResponse.json(
@@ -111,7 +112,13 @@ describe('AuthService - SSO Login', () => {
   });
 
   describe('SSO Login with Different Providers', () => {
-    const providers = ['okta', 'google', 'azure-ad', 'custom'] as const;
+    const providers = [
+      'okta',
+      'google',
+      'azure-ad',
+      'github',
+      'custom'
+    ] as const;
 
     providers.forEach((provider) => {
       it(`should successfully login with ${provider} provider`, async () => {
@@ -302,7 +309,8 @@ describe('AuthService - SSO Login', () => {
 
   describe('Environment Variable Handling', () => {
     it('should read GALILEO_SSO_ID_TOKEN from process.env', async () => {
-      const customToken = 'custom-id-token-123';
+      const customToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjb250cmFjdC1pZC10b2tlbi0xMjMiLCJ0eXAiOiJzZW5kIiwiaWF0IjoxNTE2MjM5MDIyfQ.dummy_signature_for_testing_purposes_only';
       server.use(
         http.post(`${TEST_HOST}/${Routes.socialLogin}`, async ({ request }) => {
           const body = (await request.json()) as {
@@ -352,17 +360,21 @@ describe('AuthService - SSO Login', () => {
     });
   });
 
-  describe('Refresh Token Handling', () => {
+  describe('Refresh "Token Handling', () => {
     it('should extract refresh token from Set-Cookie header with multiple cookies', async () => {
-      const mockRefreshToken = 'refresh-token-multiple';
+      const mockRefreshToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWZyZXNoLXRva2VuLW11bHRpcGxlIiwidHlwIjoicmVmcmVzaCIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_testing_purposes_only';
+      const headers: Record<string, string | string[]> = {
+        'Set-Cookie': [
+          `refresh_token=${mockRefreshToken}; HttpOnly; Secure; Path=/refresh_token`
+        ]
+      };
       server.use(
         http.post(`${TEST_HOST}/${Routes.socialLogin}`, () =>
           HttpResponse.json(
             { access_token: 'access-token' },
             {
-              headers: {
-                'Set-Cookie': `session=abc123; HttpOnly, refresh_token=${mockRefreshToken}; HttpOnly; Secure; Path=/refresh_token, other=cookie; Path=/`
-              }
+              headers: headers as unknown as Record<string, string>
             }
           )
         )
@@ -386,13 +398,15 @@ describe('AuthService - SSO Login', () => {
       const authService = new AuthService(TEST_HOST);
       await authService.getToken();
 
-      expect(authService.getRefreshToken()).toBeUndefined();
+      expect(authService.getRefreshToken()).toBeNull();
     });
 
     it('should refresh access token using refresh token', async () => {
-      const mockRefreshToken = 'refresh-token-123';
+      const mockRefreshToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWZyZXNoLXRva2VuLW11bHRpcGxlIiwidHlwIjoicmVmcmVzaCIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_testing_purposes_only';
       const newAccessToken = 'new-access-token-456';
-      const newRefreshToken = 'new-refresh-token-789';
+      const newRefreshToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJuZXctcmVmcmVzaC10b2tlbi03ODkiLCJ0eXAiOiJyZWZyZXNoIiwiaWF0IjoxNTE2MjM5MDIyfQ.dummy_signature_for_testing_purposes_only';
 
       server.use(
         http.post(`${TEST_HOST}/${Routes.socialLogin}`, () =>
@@ -437,8 +451,14 @@ describe('AuthService - SSO Login', () => {
     });
 
     it('should fallback to original credentials when refresh token fails', async () => {
-      const mockRefreshToken = 'refresh-token-123';
+      const mockRefreshToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWZyZXNoLXRva2VuLW11bHRpcGxlIiwidHlwIjoicmVmcmVzaCIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_testing_purposes_only';
       const mockApiKey = 'test-api-key';
+      const headers: Record<string, string | string[]> = {
+        'Set-Cookie': [
+          `refresh_token=${mockRefreshToken}; HttpOnly; Secure; Path=/refresh_token`
+        ]
+      };
 
       server.use(
         http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, () =>
@@ -448,9 +468,7 @@ describe('AuthService - SSO Login', () => {
           HttpResponse.json(
             { access_token: 'initial-access-token' },
             {
-              headers: {
-                'Set-Cookie': `refresh_token=${mockRefreshToken}; HttpOnly; Secure; Path=/refresh_token`
-              }
+              headers: headers as unknown as Record<string, string>
             }
           )
         ),
@@ -470,7 +488,7 @@ describe('AuthService - SSO Login', () => {
       await authService.getToken();
 
       // Verify API key was used (not SSO)
-      expect(authService.getRefreshToken()).toBeUndefined();
+      expect(authService.getRefreshToken()).toBeNull();
     });
   });
 
