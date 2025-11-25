@@ -158,11 +158,8 @@ export class GalileoSingleton {
       options.mode
     );
 
-    console.log('#### getLogger key', key);
-
     // First check if logger already exists
     if (this._galileoLoggers.has(key)) {
-      console.log('#### getLogger logger already exists');
       return this._galileoLoggers.get(key)!;
     }
 
@@ -180,12 +177,6 @@ export class GalileoSingleton {
 
     // Cache the newly created logger
     this._galileoLoggers.set(key, logger);
-    console.log('#### getLogger logger created');
-    console.log('#### getLogger projectName', options.projectName);
-    console.log('#### getLogger logstream', options.logstream);
-    console.log('#### getLogger experimentId', options.experimentId);
-    console.log('#### getLogger mode', options.mode);
-    console.log('#### getLogger localMetrics', options.localMetrics);
     return logger;
   }
 
@@ -244,7 +235,6 @@ export class GalileoSingleton {
    * @param options.[mode] - The logger mode
    */
   public async flush(options: LoggerKeyOptions = {}): Promise<void> {
-    // _getKey() automatically uses context as fallback, so no need to pass it explicitly
     const key = GalileoSingleton._getKey(
       options.projectName,
       options.logstream,
@@ -252,14 +242,9 @@ export class GalileoSingleton {
       options.mode
     );
 
-    console.log('#### flush logger key', key);
-
     const logger = this._galileoLoggers.get(key);
     if (logger) {
-      console.log('#### flush logger found');
       await logger.flush();
-    } else {
-      console.log('#### flush logger not found');
     }
   }
 
