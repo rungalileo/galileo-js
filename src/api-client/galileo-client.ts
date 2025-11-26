@@ -1067,12 +1067,10 @@ export class GalileoApiClient extends BaseClient {
       });
     }
 
-    // Use this.projectId if available and no projectId provided in options
-    const finalProjectId = options.projectId ?? this.projectId;
-    if (finalProjectId) {
+    if (options.projectId) {
       filters.push({
         name: 'used_in_project',
-        value: finalProjectId
+        value: options.projectId
       });
     }
 
@@ -1162,6 +1160,10 @@ export class GalileoApiClient extends BaseClient {
   // GlobalPromptTemplate methods - delegate to GlobalPromptTemplateService
   /**
    * Creates a global prompt template, optionally resolving a project by ID or name.
+   *
+   * If both `projectId` and `projectName` are provided, an error will be thrown.
+   * Only one of these parameters should be specified.
+   *
    * @param template - Template messages stored in the template.
    * @param name - Name assigned to the template.
    * @param options - (Optional) Project scoping information.

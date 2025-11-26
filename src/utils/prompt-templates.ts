@@ -223,8 +223,7 @@ class PromptTemplate {
   async create(options: CreatePromptOptions): Promise<PromptTemplateType> {
     const apiClient = await this.getClient(options);
     const normalizedTemplate = this.normalizeTemplate(options.template);
-    const shouldEnsureUnique = options.ensureUniqueName ?? true;
-    const finalName = shouldEnsureUnique
+    const finalName = options.ensureUniqueName
       ? await this.generateUniqueName(options.name)
       : options.name;
 
