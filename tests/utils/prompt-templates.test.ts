@@ -166,17 +166,16 @@ test('test get prompt template by id', async () => {
   const template = await getPrompt({
     id: EXAMPLE_PROMPT_TEMPLATE.id
   });
-  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
-  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
+  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE);
+  expect(getGlobalPromptTemplateHandler).toHaveBeenCalled();
 });
 
 test('test get prompt template by name', async () => {
   const template = await getPrompt({
     name: 'My Dataset'
   });
-  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
+  expect(template).toEqual(EXAMPLE_PROMPT_TEMPLATE);
   expect(listGlobalPromptTemplatesHandler).toHaveBeenCalled();
-  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
 });
 
 test('test delete prompt template by id', async () => {
@@ -185,15 +184,6 @@ test('test delete prompt template by id', async () => {
   });
   expect(response).toEqual({ success: true });
   expect(deleteGlobalPromptTemplateHandler).toHaveBeenCalled();
-});
-
-test('test get prompt template by id and version', async () => {
-  const templateVersion = await getPrompt({
-    id: EXAMPLE_PROMPT_TEMPLATE.id,
-    version: EXAMPLE_PROMPT_TEMPLATE_VERSION.version
-  });
-  expect(templateVersion).toEqual(EXAMPLE_PROMPT_TEMPLATE_VERSION);
-  expect(getGlobalPromptTemplateVersionHandler).toHaveBeenCalled();
 });
 
 test('test delete prompt template by name', async () => {
