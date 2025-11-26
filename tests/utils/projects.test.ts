@@ -236,9 +236,10 @@ describe('projects utils', () => {
     it('looks up project by name when id absent', async () => {
       mockDeleteProject.mockResolvedValue({ id: projectId });
       await deleteProject({ name: projectName });
-      expect(mockGetProjectIdByName).toHaveBeenCalledWith(projectName, {
-        projectType: undefined
-      });
+      expect(mockGetProjectIdByName).toHaveBeenCalledWith(
+        projectName,
+        undefined
+      );
       expect(mockDeleteProject).toHaveBeenCalledWith(projectId);
     });
   });

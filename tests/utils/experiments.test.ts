@@ -134,16 +134,16 @@ const mockPromptTemplateVersion: PromptTemplateVersion = {
     { role: 'user', content: 'What is the capital of {{ country }}?' }
   ],
   version: 1,
-  lines_added: 0,
-  lines_removed: 0,
-  lines_edited: 0,
-  content_changed: false,
-  model_changed: false,
-  settings_changed: false,
+  linesAdded: 0,
+  linesRemoved: 0,
+  linesEdited: 0,
+  contentChanged: false,
+  modelChanged: false,
+  settingsChanged: false,
   settings: {},
-  created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z',
-  created_by_user: {
+  createdAt: '2023-01-01T00:00:00Z',
+  updatedAt: '2023-01-01T00:00:00Z',
+  createdByUser: {
     id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
     email: 'b@b.com'
   }
@@ -153,15 +153,15 @@ const mockPromptTemplate: PromptTemplate = {
   id: 'prompt-template-123',
   name: 'Test Prompt Template',
   template: 'What is the capital of {{ country }}?',
-  selected_version_id: 'prompt-template-version-123',
-  selected_version: mockPromptTemplateVersion,
-  all_versions: [mockPromptTemplateVersion],
-  all_available_versions: [1],
-  total_versions: 1,
-  max_version: 1,
-  created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z',
-  created_by_user: {
+  selectedVersionId: 'prompt-template-version-123',
+  selectedVersion: mockPromptTemplateVersion,
+  allVersions: [mockPromptTemplateVersion],
+  allAvailableVersions: [1],
+  totalVersions: 1,
+  maxVersion: 1,
+  createdAt: '2023-01-01T00:00:00Z',
+  updatedAt: '2023-01-01T00:00:00Z',
+  createdByUser: {
     id: '8b198c08-ea7f-42d2-9e8d-d2b8bcb008b0',
     email: 'b@b.com'
   }

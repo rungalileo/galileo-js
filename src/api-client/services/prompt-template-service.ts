@@ -3,11 +3,20 @@ import { Routes } from '../../types/routes.types';
 import {
   PromptTemplate,
   PromptTemplateVersion,
-  ListPromptTemplateResponse
+  ListPromptTemplateResponse,
+  ListPromptTemplateParams,
+  RenderTemplateRequest,
+  RenderTemplateResponse,
+  RenderTemplateRequestOpenAPI,
+  RenderTemplateResponseOpenAPI,
+  PromptTemplateVersionOpenAPI,
+  PromptTemplateOpenAPI,
+  ListPromptTemplateParamsOpenAPI,
+  ListPromptTemplateResponseOpenAPI,
+  CreatePromptTemplateWithVersionRequestBody,
+  CreatePromptTemplateWithVersionRequestBodyOpenAPI
 } from '../../types/prompt-template.types';
 import { Message } from '../../types/message.types';
-
-type ListTemplatesResponse = PromptTemplate[];
 
 export class PromptTemplateService extends BaseClient {
   private projectId: string;
@@ -20,20 +29,28 @@ export class PromptTemplateService extends BaseClient {
   }
 
   public getPromptTemplates = async (): Promise<PromptTemplate[]> => {
-    return await this.makeRequest<ListTemplatesResponse>(
+    const result = await this.makeRequest<PromptTemplateOpenAPI[]>(
       RequestMethod.GET,
       Routes.promptTemplates,
       null,
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<PromptTemplateOpenAPI[], PromptTemplate[]>(
+      result
+    );
   };
 
   public getPromptTemplate = async (id: string): Promise<PromptTemplate> => {
-    return await this.makeRequest<PromptTemplate>(
+    const result = await this.makeRequest<PromptTemplateOpenAPI>(
       RequestMethod.GET,
       Routes.promptTemplate,
       null,
       { project_id: this.projectId, template_id: id }
+    );
+
+    return this.convertToCamelCase<PromptTemplateOpenAPI, PromptTemplate>(
+      result
     );
   };
 
@@ -41,19 +58,24 @@ export class PromptTemplateService extends BaseClient {
     id: string,
     version: number
   ): Promise<PromptTemplateVersion> => {
-    return await this.makeRequest<PromptTemplateVersion>(
+    const result = await this.makeRequest<PromptTemplateVersionOpenAPI>(
       RequestMethod.GET,
       Routes.promptTemplateVersion,
       null,
       { project_id: this.projectId, template_id: id, version }
     );
+
+    return this.convertToCamelCase<
+      PromptTemplateVersionOpenAPI,
+      PromptTemplateVersion
+    >(result);
   };
 
   public getPromptTemplateVersionByName = async (
     name: string,
     version?: number
   ): Promise<PromptTemplateVersion> => {
-    return await this.makeRequest<PromptTemplateVersion>(
+    const result = await this.makeRequest<PromptTemplateVersionOpenAPI>(
       RequestMethod.GET,
       Routes.promptTemplateVersions,
       null,
@@ -63,6 +85,11 @@ export class PromptTemplateService extends BaseClient {
         version: version ?? null
       }
     );
+
+    return this.convertToCamelCase<
+      PromptTemplateVersionOpenAPI,
+      PromptTemplateVersion
+    >(result);
   };
 
   public createPromptTemplate = async ({
@@ -72,92 +99,95 @@ export class PromptTemplateService extends BaseClient {
     template: Message[];
     name: string;
   }): Promise<PromptTemplate> => {
-    return await this.makeRequest<PromptTemplate>(
+    const result = await this.makeRequest<PromptTemplateOpenAPI>(
       RequestMethod.POST,
       Routes.promptTemplates,
       { template, name },
       { project_id: this.projectId }
     );
+
+    return this.convertToCamelCase<PromptTemplateOpenAPI, PromptTemplate>(
+      result
+    );
   };
 }
 
 export class GlobalPromptTemplateService extends BaseClient {
-  constructor(apiUrl: string, token: string) {
+  private projectId?: string;
+  constructor(apiUrl: string, token: string, projectId?: string) {
     super();
     this.apiUrl = apiUrl;
     this.token = token;
+    this.projectId = projectId;
     this.initializeClient();
   }
 
-  public createGlobalPromptTemplate = async ({
-    template,
-    name
-  }: {
-    template: Message[];
-    name: string;
-  }): Promise<PromptTemplate> => {
-    return await this.makeRequest<PromptTemplate>(
+  public async createGlobalPromptTemplate(
+    options: CreatePromptTemplateWithVersionRequestBody,
+    projectId?: string
+  ): Promise<PromptTemplate> {
+    const finalProjectId =
+      projectId ?? (this.projectId ? this.projectId : null);
+
+    return await this.makeRequestWithConversion<
+      CreatePromptTemplateWithVersionRequestBody,
+      CreatePromptTemplateWithVersionRequestBodyOpenAPI,
+      PromptTemplateOpenAPI,
+      PromptTemplate
+    >(
       RequestMethod.POST,
       Routes.globalPromptTemplates,
-      { name, template }
+      options,
+      finalProjectId ? { project_id: finalProjectId } : undefined
     );
-  };
+  }
 
   public listGlobalPromptTemplates = async (
-    name_filter?: string,
-    limit?: number,
-    starting_token?: number
-  ): Promise<PromptTemplate[]> => {
-    const response = await this.makeRequest<ListPromptTemplateResponse>(
-      RequestMethod.POST,
-      Routes.globalPromptTemplateQuery,
-      {
-        filters: [
-          {
-            name: 'name',
-            value: name_filter,
-            operator: 'contains'
-          }
-        ],
-        sort: {
-          name: 'created_at',
-          ascending: false,
-          sort_type: 'column'
-        }
-      },
-      {
-        limit,
-        starting_token
-      }
-    );
-
-    if (response.templates) {
-      return response.templates;
-    }
-    return [];
+    options: ListPromptTemplateParams,
+    limit: number = 100,
+    startingToken: number = 0
+  ): Promise<ListPromptTemplateResponse> => {
+    return await this.makeRequestWithConversion<
+      ListPromptTemplateParams,
+      ListPromptTemplateParamsOpenAPI,
+      ListPromptTemplateResponseOpenAPI,
+      ListPromptTemplateResponse
+    >(RequestMethod.POST, Routes.globalPromptTemplateQuery, options, {
+      limit: limit,
+      starting_token: startingToken
+    });
   };
 
   public getGlobalPromptTemplate = async (
-    template_id: string
+    templateId: string
   ): Promise<PromptTemplate> => {
-    return await this.makeRequest<PromptTemplate>(
+    const result = await this.makeRequest<PromptTemplateOpenAPI>(
       RequestMethod.GET,
       Routes.globalPromptTemplate,
       null,
-      { template_id }
+      { template_id: templateId }
+    );
+
+    return this.convertToCamelCase<PromptTemplateOpenAPI, PromptTemplate>(
+      result
     );
   };
 
   public getGlobalPromptTemplateVersion = async (
-    template_id: string,
+    templateId: string,
     version: number
   ): Promise<PromptTemplateVersion> => {
-    return await this.makeRequest<PromptTemplateVersion>(
+    const result = await this.makeRequest<PromptTemplateVersionOpenAPI>(
       RequestMethod.GET,
       Routes.globalPromptTemplateVersion,
       null,
-      { template_id, version }
+      { template_id: templateId, version }
     );
+
+    return this.convertToCamelCase<
+      PromptTemplateVersionOpenAPI,
+      PromptTemplateVersion
+    >(result);
   };
 
   public deleteGlobalPromptTemplate = async (
@@ -169,5 +199,40 @@ export class GlobalPromptTemplateService extends BaseClient {
       null,
       { template_id }
     );
+  };
+
+  public updateGlobalPromptTemplate = async ({
+    templateId,
+    name
+  }: {
+    templateId: string;
+    name: string;
+  }): Promise<PromptTemplate> => {
+    const result = await this.makeRequest<PromptTemplateOpenAPI>(
+      RequestMethod.PATCH,
+      Routes.globalPromptTemplate,
+      { name },
+      { template_id: templateId }
+    );
+
+    return this.convertToCamelCase<PromptTemplateOpenAPI, PromptTemplate>(
+      result
+    );
+  };
+
+  public renderTemplate = async (
+    body: RenderTemplateRequest,
+    startingToken: number = 0,
+    limit: number = 100
+  ): Promise<RenderTemplateResponse> => {
+    return await this.makeRequestWithConversion<
+      typeof body,
+      RenderTemplateRequestOpenAPI,
+      RenderTemplateResponseOpenAPI,
+      RenderTemplateResponse
+    >(RequestMethod.POST, Routes.renderTemplate, body, {
+      starting_token: startingToken,
+      limit
+    });
   };
 }
