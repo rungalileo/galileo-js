@@ -164,10 +164,7 @@ export class Projects {
     await apiClient.init({ projectScoped: true });
 
     const resolvedProjectId =
-      projectId ??
-      (await apiClient.getProjectIdByName(name!, {
-        projectType: projectType ?? undefined
-      }));
+      projectId ?? (await apiClient.getProjectIdByName(name!, projectType));
 
     return await apiClient.deleteProject(resolvedProjectId);
   }

@@ -202,3 +202,40 @@ export class ProjectService extends BaseClient {
     );
   }
 }
+
+export class GlobalProjectService extends BaseClient {
+  constructor(apiUrl: string, token: string) {
+    super();
+    this.apiUrl = apiUrl;
+    this.token = token;
+    this.initializeClient();
+  }
+
+  public async getProjectIdByName(
+    name: string,
+    projectType?: ProjectTypes
+  ): Promise<string> {
+    return (await this.getProjectByName(name, projectType)).id;
+  }
+
+  public async getProjectByName(
+    name: string,
+    projectType?: ProjectTypes
+  ): Promise<Project> {
+    const response = await this.makeRequest<ProjectOpenAPI[]>(
+      RequestMethod.GET,
+      Routes.projects,
+      null,
+      {
+        project_name: name,
+        type: projectType ?? 'gen_ai'
+      }
+    );
+
+    if (response.length < 1) {
+      throw new Error(`Galileo project ${name} not found`);
+    }
+
+    return this.convertToCamelCase<ProjectOpenAPI, Project>(response[0]);
+  }
+}

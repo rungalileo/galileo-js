@@ -46,7 +46,10 @@ import {
   LogTracesIngestResponse
 } from '../types/logging/trace.types';
 import { AuthService } from './services/auth-service';
-import { ProjectService } from './services/project-service';
+import {
+  ProjectService,
+  GlobalProjectService
+} from './services/project-service';
 import { LogStreamService } from './services/logstream-service';
 import {
   PromptTemplateService,
@@ -74,7 +77,8 @@ import {
   RenderTemplateRequest,
   RenderTemplateResponse,
   ListPromptTemplateParams,
-  GlobalPromptTemplateListOptions
+  GlobalPromptTemplateListOptions,
+  ListPromptTemplateResponse
 } from '../types/prompt-template.types';
 import { Job, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
@@ -122,6 +126,7 @@ export class GalileoApiClient extends BaseClient {
   private logStreamService?: LogStreamService;
   private promptTemplateService?: PromptTemplateService;
   private globalPromptTemplateService?: GlobalPromptTemplateService;
+  private globalProjectService?: GlobalProjectService;
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
@@ -181,6 +186,12 @@ export class GalileoApiClient extends BaseClient {
         this.apiUrl,
         this.token,
         this.projectId
+      );
+
+      // Initialize global project service (not dependent on projectId)
+      this.globalProjectService = new GlobalProjectService(
+        this.apiUrl,
+        this.token
       );
 
       if (projectScoped) {
@@ -344,12 +355,9 @@ export class GalileoApiClient extends BaseClient {
    * @param options.projectType - (Optional) Project type hint to disambiguate by name.
    * @returns A promise that resolves to the project ID.
    */
-  public async getProjectIdByName(
-    name: string,
-    options?: { projectType?: ProjectTypes | null }
-  ) {
-    this.ensureService(this.projectService);
-    return this.projectService!.getProjectIdByName(name, options);
+  public async getProjectIdByName(name: string, projectType?: ProjectTypes) {
+    this.ensureService(this.globalProjectService);
+    return this.globalProjectService!.getProjectIdByName(name, projectType);
   }
 
   /**
@@ -913,89 +921,126 @@ export class GalileoApiClient extends BaseClient {
     return this.traceService!.getAggregatedTraceView(options);
   }
 
-  // PromptTemplate methods - delegate to GlobalPromptTemplateService
+  // PromptTemplate methods - delegate to PromptTemplateService (project-scoped)
   /**
    * Lists prompt templates scoped to the initialized project.
-   * @returns A promise that resolves to the matching prompt templates.
+   *
+   * These methods operate on project-scoped templates, which are templates
+   * that exist only within a specific project and are not shared across projects.
+   * The client must be initialized with a project (via `init({ projectName })`
+   * or `init({ projectId })`) before using these methods.
+   *
+   * **Note:** For global templates (which can be shared across projects but
+   * can also be filtered by project), use the `getGlobalPromptTemplate*` methods
+   * instead. The global methods (`listGlobalPromptTemplates`, `getGlobalPromptTemplate`,
+   * etc.) support optional `projectId` and `projectName` parameters to filter
+   * results.
+   *
+   * @returns A promise that resolves to an array of prompt templates
+   *   associated with the initialized project.
+   * @throws Error if the client is not initialized with a project or if
+   *   the prompt template service is not available.
    */
   public async getPromptTemplates() {
-    this.ensureService(this.globalPromptTemplateService);
-    const request = await this.buildGlobalPromptTemplateListOptions({
-      projectId: this.projectId
-    });
-    return this.globalPromptTemplateService!.listGlobalPromptTemplates(request);
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplates();
   }
 
   /**
-   * Retrieves a prompt template by ID.
-   * @param id - Template identifier to fetch.
-   * @returns A promise that resolves to the prompt template payload.
+   * Retrieves a prompt template by ID from the initialized project.
+   *
+   * This method retrieves project-scoped templates only. For global templates
+   * (which can also be filtered by project), use `getGlobalPromptTemplate(id)` instead.
+   *
+   * @param id - The unique identifier of the template to fetch. Must be
+   *   a template ID that exists within the initialized project.
+   * @returns A promise that resolves to the prompt template payload containing
+   *   template metadata, versions, and associated information.
+   * @throws Error if the template is not found in the project, if the client
+   *   is not initialized with a project, or if the service is unavailable.
    */
   public async getPromptTemplate(id: string) {
-    this.ensureService(this.globalPromptTemplateService);
-    return this.globalPromptTemplateService!.getGlobalPromptTemplate(id);
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplate(id);
   }
 
   /**
-   * Retrieves a specific prompt template version by ID.
-   * @param id - Template identifier to fetch.
-   * @param version - Version number to retrieve.
-   * @returns A promise that resolves to the template version payload.
+   * Retrieves a specific prompt template version by ID and version number.
+   *
+   * Templates can have multiple versions. This method fetches a specific
+   * version of a project-scoped template within the initialized project.
+   * For global templates (which can also be filtered by project), use
+   * `getGlobalPromptTemplateVersion(id, version)` instead.
+   *
+   * @param id - The unique identifier of the template.
+   * @param version - The version number to retrieve. Version numbers are
+   *   typically sequential integers starting from 1.
+   * @returns A promise that resolves to the prompt template version payload,
+   *   including the template content, settings, and version metadata.
+   * @throws Error if the template or version is not found in the project,
+   *   if the client is not initialized with a project, or if the service
+   *   is unavailable.
    */
   public async getPromptTemplateVersion(id: string, version: number) {
-    this.ensureService(this.globalPromptTemplateService);
-    return this.globalPromptTemplateService!.getGlobalPromptTemplateVersion(
-      id,
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplateVersion(id, version);
+  }
+
+  /**
+   * Resolves a prompt template by name and fetches the requested version.
+   *
+   * This method first searches for a project-scoped template by name within
+   * the initialized project, then retrieves the specified version. If no version
+   * is provided, it returns the currently selected version of the template.
+   *
+   * For global templates (which can be filtered by project using `projectId`
+   * or `projectName` in the options), use `listGlobalPromptTemplates()` with
+   * name filtering and project filtering, then `getGlobalPromptTemplateVersion()`.
+   *
+   * @param name - The name of the template to search for. The search is
+   *   performed within the scope of the initialized project.
+   * @param version - (Optional) The version number to fetch. If not provided,
+   *   defaults to the template's selected version (typically the latest).
+   * @returns A promise that resolves to the prompt template version payload.
+   * @throws Error if no template with the given name is found in the project,
+   *   if the specified version doesn't exist, if the client is not initialized
+   *   with a project, or if the service is unavailable.
+   */
+  public async getPromptTemplateVersionByName(name: string, version?: number) {
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.getPromptTemplateVersionByName(
+      name,
       version
     );
   }
 
   /**
-   * Resolves a prompt template by name and fetches the requested version.
-   * @param name - Template name to search for.
-   * @param version - (Optional) Version number to fetch, defaults to the selected version.
-   * @returns A promise that resolves to the resolved template version.
-   */
-  public async getPromptTemplateVersionByName(name: string, version?: number) {
-    this.ensureService(this.globalPromptTemplateService);
-    // Use global query endpoint to find by name, then get version
-    const request = await this.buildGlobalPromptTemplateListOptions({
-      nameFilter: name,
-      nameOperator: 'eq',
-      projectId: this.projectId
-    });
-    const limit = 1;
-
-    const response =
-      await this.globalPromptTemplateService!.listGlobalPromptTemplates(
-        request,
-        limit
-      );
-    const template = response.templates?.find((t) => t.name === name);
-    if (!template) {
-      throw new Error(`Prompt template with name '${name}' not found`);
-    }
-    return this.globalPromptTemplateService!.getGlobalPromptTemplateVersion(
-      template.id,
-      version ?? template.selectedVersion.version
-    );
-  }
-
-  /**
-   * Creates a prompt template scoped to the initialized project.
-   * @param template - Template messages to store.
-   * @param name - Name assigned to the template.
-   * @returns A promise that resolves to the created template payload.
+   * Creates a new prompt template scoped to the initialized project.
+   *
+   * Creates a project-scoped prompt template that is associated with the project
+   * the client was initialized with.
+   *
+   * For global templates (which can be shared across projects but can optionally
+   * be associated with a project), use `createGlobalPromptTemplate()` instead,
+   * which accepts optional `projectId` or `projectName` parameters.
+   *
+   * @param template - An array of Message objects representing the template
+   *   content. Each message should have a role (e.g., 'user', 'system',
+   *   'assistant') and content.
+   * @param name - A unique name to assign to the template within the project.
+   *   The name should be descriptive and follow your naming conventions.
+   * @returns A promise that resolves to the created prompt template payload,
+   *   including the assigned ID, version information, and metadata.
+   * @throws Error if a template with the same name already exists in the project,
+   *   if the client is not initialized with a project, if the service is
+   *   unavailable, or if the template data is invalid.
    */
   public async createPromptTemplate(template: Message[], name: string) {
-    this.ensureService(this.globalPromptTemplateService);
-    return this.globalPromptTemplateService!.createGlobalPromptTemplate(
-      {
-        template,
-        name
-      },
-      this.projectId ?? null
-    );
+    this.ensureService(this.promptTemplateService);
+    return this.promptTemplateService!.createPromptTemplate({
+      template,
+      name
+    });
   }
 
   /**
@@ -1146,7 +1191,24 @@ export class GalileoApiClient extends BaseClient {
   }
 
   /**
+   * Lists global prompt templates using name filter, limit, and pagination token.
+   *
+   * @overload
+   * @param nameFilter - Template name filter. Filters templates by name containing this string.
+   * @param limit - Maximum number of templates to fetch per page.
+   * @param startingToken - Pagination starting token (default: 0 for first page).
+   * @returns A promise that resolves to the list response payload containing templates and pagination info.
+   */
+  public async listGlobalPromptTemplates(
+    nameFilter: string,
+    limit: number,
+    startingToken: number
+  ): Promise<ListPromptTemplateResponse>;
+
+  /**
    * Lists global prompt templates using optional filters and pagination.
+   *
+   * @overload
    * @param options - (Optional) Options for the list call.
    * @param options.projectId - (Optional) Project ID used to filter results.
    * @param options.projectName - (Optional) Project name resolved to an ID.
@@ -1160,9 +1222,22 @@ export class GalileoApiClient extends BaseClient {
    * @returns A promise that resolves to the list response payload.
    */
   public async listGlobalPromptTemplates(
-    options: GlobalPromptTemplateListOptions = {}
-  ) {
+    options: GlobalPromptTemplateListOptions
+  ): Promise<ListPromptTemplateResponse>;
+
+  public async listGlobalPromptTemplates(
+    nameFilterOrOptions?: string | GlobalPromptTemplateListOptions,
+    limit?: number,
+    startingToken?: number
+  ): Promise<ListPromptTemplateResponse> {
     this.ensureService(this.globalPromptTemplateService);
+
+    // Normalize to options object
+    const options: GlobalPromptTemplateListOptions =
+      typeof nameFilterOrOptions === 'string'
+        ? { nameFilter: nameFilterOrOptions, limit, startingToken }
+        : (nameFilterOrOptions ?? {});
+
     const resolvedProjectId = await this.resolveProjectIdOrName(
       options.projectId,
       options.projectName
@@ -1428,9 +1503,7 @@ export class GalileoApiClient extends BaseClient {
     }
 
     if (projectName) {
-      return await this.getProjectIdByName(projectName, {
-        projectType: this.projectType
-      });
+      return await this.getProjectIdByName(projectName, this.projectType);
     }
 
     return undefined;

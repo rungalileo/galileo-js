@@ -143,7 +143,6 @@ class PromptTemplate {
    * Lists prompt templates with optional filters.
    * @param options - (Optional) Options for the list operation.
    * @param options.nameFilter - (Optional) Name filter applied to results.
-   * @param options.name - (Optional) Legacy alias for `nameFilter`.
    * @param options.matchExact - (Optional) Whether to use an equality match on names.
    * @param options.projectId - (Optional) Project ID to scope the query.
    * @param options.projectName - (Optional) Project name to scope the query.
