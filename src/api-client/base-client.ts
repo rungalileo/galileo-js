@@ -252,6 +252,32 @@ export class BaseClient {
     return response;
   }
 
+  public async makeRequestWithConversion<
+    SourceCamelType extends object,
+    SourceSnakeType extends object,
+    ResponseSnakeType extends object,
+    ResponseCamelType extends object
+  >(
+    request_method: Method,
+    endpoint: Routes,
+    data: SourceCamelType,
+    params?: Record<string, unknown>
+  ) {
+    const request = this.convertToSnakeCase<SourceCamelType, SourceSnakeType>(
+      data
+    );
+    const response = await this.makeRequest<ResponseSnakeType>(
+      request_method,
+      endpoint,
+      request,
+      params
+    );
+
+    return this.convertToCamelCase<ResponseSnakeType, ResponseCamelType>(
+      response
+    );
+  }
+
   public async makeRequest<T>(
     request_method: Method,
     endpoint: Routes,
