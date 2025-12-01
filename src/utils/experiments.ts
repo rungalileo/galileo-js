@@ -477,7 +477,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
         `Defaulting to the selected version for prompt template ${params.promptTemplate.name}`
       );
       promptTemplateVersionId = (params.promptTemplate as PromptTemplate)
-        .selected_version_id;
+        .selectedVersionId;
     }
     apiClient.experimentId = experiment.id;
 

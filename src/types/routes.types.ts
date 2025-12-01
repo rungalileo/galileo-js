@@ -66,6 +66,7 @@ export enum Routes {
   globalPromptTemplates = 'templates',
   globalPromptTemplate = 'templates/{template_id}',
   globalPromptTemplateVersion = 'templates/{template_id}/versions/{version}',
+  renderTemplate = 'render_template',
   jobs = 'jobs',
   scorer = 'scorers',
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',

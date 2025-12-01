@@ -57,7 +57,9 @@ import {
   createPrompt,
   getPrompts,
   getPrompt,
-  deletePrompt
+  deletePrompt,
+  updatePrompt,
+  renderPrompt
 } from './utils/prompt-templates';
 import {
   Projects,
@@ -132,6 +134,8 @@ export {
   getPrompt,
   createPrompt,
   deletePrompt,
+  updatePrompt,
+  renderPrompt,
   // Experiments
   getExperiments,
   createExperiment,

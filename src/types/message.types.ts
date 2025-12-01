@@ -1,5 +1,11 @@
 import type { components } from './api.types';
 
+//import type { GalileoCoreSchemasLoggingLlmMessage as MessageOpenAPI } from './openapi.types';
+//import type { GalileoCoreSchemasLoggingLlmMessage as Message } from './new-api.types';
+
+//export type { Message };
+//export type { MessageOpenAPI };
+
 // Use API types as source of truth
 export type Message =
   components['schemas']['galileo_core__schemas__logging__llm__Message'];
