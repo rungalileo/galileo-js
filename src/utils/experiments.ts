@@ -9,7 +9,7 @@ import {
 } from '../types/prompt-template.types';
 import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
-import { init, flush } from '../singleton';
+import { init, flush, experimentContext } from '../singleton';
 import { ScorerConfig } from '../types/scorer.types';
 import { Dataset, DatasetRecord } from '../types/dataset.types';
 import {
@@ -202,37 +202,46 @@ const runExperimentWithFunction = async <T extends Record<string, unknown>>(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   localMetrics: LocalMetricConfig[] = []
 ): Promise<string[]> => {
-  const outputs: string[] = [];
+  // Wrap the entire experiment execution in async context
+  // This ensures all logger calls within this execution automatically use the experimentId
+  return await experimentContext.run(
+    {
+      experimentId: experiment.id,
+      projectName: projectName
+    },
+    async () => {
+      const outputs: string[] = [];
 
-  // Initialize the singleton logger
-  // TODO: Local metrics support needs to be added to GalileoLogger/init
-  // For now, local metrics are validated and separated from server metrics,
-  // but not yet processed during logging. Full implementation pending.
-  init({
-    experimentId: experiment.id,
-    projectName: projectName
-  });
+      // Initialize the singleton logger
+      // TODO: Local metrics support needs to be added to GalileoLogger/init
+      // For now, local metrics are validated and separated from server metrics,
+      // but not yet processed during logging. Full implementation pending.
+      init({
+        experimentId: experiment.id,
+        projectName: projectName
+      });
 
-  // Process each row in the dataset
-  for (const row of dataset) {
-    const loggedProcessFn = log(
-      {
-        name: experiment.name ?? 'Unnamed Experiment',
-        datasetRecord: row
-      },
-      processFn
-    );
-    const output = await processRow(row, loggedProcessFn);
-    outputs.push(output);
-  }
-  // Flush the logger
-  await flush();
+      // Process each row in the dataset
+      for (const row of dataset) {
+        const loggedProcessFn = log(
+          {
+            name: experiment.name ?? 'Unnamed Experiment',
+            datasetRecord: row
+          },
+          processFn
+        );
+        const output = await processRow(row, loggedProcessFn);
+        outputs.push(output);
+      }
+      // Flush the logger
+      await flush({ projectName: projectName, experimentId: experiment.id });
+      console.log(
+        `${outputs.length} rows processed for ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'}.`
+      );
 
-  console.log(
-    `${outputs.length} rows processed for ${experiment.name ? 'experiment ' + experiment.name : 'unnamed experiment'}.`
+      return outputs;
+    }
   );
-
-  return outputs;
 };
 
 const getLinkToExperimentResults = (
