@@ -258,7 +258,8 @@ describe('scorers utility', () => {
       await createCodeScorerVersion('scorer-uuid', codeContent);
       expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
-        codeContent
+        codeContent,
+        undefined
       );
     });
 
@@ -288,7 +289,8 @@ describe('scorers utility', () => {
       await createCodeScorerVersion('scorer-uuid', multilineCode);
       expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
         'scorer-uuid',
-        multilineCode
+        multilineCode,
+        undefined
       );
     });
   });

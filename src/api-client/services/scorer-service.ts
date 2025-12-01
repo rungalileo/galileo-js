@@ -5,7 +5,12 @@ import {
   ModelType,
   Scorer,
   ScorerDefaults,
-  ScorerVersion
+  ScorerVersion,
+  ValidateCodeScorerResponse,
+  RegisteredScorerTaskResultResponse,
+  TaskStatus,
+  ResultType,
+  ValidateRegisteredScorerResult
 } from '../../types/scorer.types';
 import { OutputType, InputType, ScorerTypes } from '../../types/scorer.types';
 import { StepType } from '../../types/logging/step.types';
@@ -204,19 +209,166 @@ export class ScorerService extends BaseClient {
 
   public createCodeScorerVersion = async (
     scorerId: string,
-    codeContent: string
+    codeContent: string,
+    validationResult?: string
   ): Promise<ScorerVersion> => {
     const path = Routes.codeScorerVersion.replace('{scorer_id}', scorerId);
+    console.log(`[Galileo] Creating metric version: ${scorerId}`);
+    console.log(`[Galileo] Code content length: ${codeContent.length} bytes`);
 
     // Create FormData with the code content as a file
     const formData = new FormData();
     const blob = new Blob([codeContent], { type: 'text/x-python' });
     formData.append('file', blob, 'scorer.py');
 
-    return await this.makeRequest<ScorerVersion>(
+    // Add validation result if provided
+    if (validationResult) {
+      console.log(`[Galileo] Including validation result in request`);
+      formData.append('validation_result', validationResult);
+    }
+
+    const result = await this.makeRequest<ScorerVersion>(
       RequestMethod.POST,
       path as Routes,
       formData
+    );
+    console.log(`[Galileo] Metric version created: ${result.id}`);
+    return result;
+  };
+
+  /**
+   * Validates code scorer content by submitting it for validation.
+   *
+   * @param codeContent - The Python code content to validate.
+   * @param scoreableNodeTypes - The node types that this scorer can score.
+   * @returns A promise that resolves to the validation task ID.
+   */
+  public validateCodeScorer = async (
+    codeContent: string,
+    scoreableNodeTypes: StepType[]
+  ): Promise<ValidateCodeScorerResponse> => {
+    console.log(`[Galileo] Submitting code for validation...`);
+    console.log(
+      `[Galileo] Step type(s): ${JSON.stringify(scoreableNodeTypes)}`
+    );
+
+    const formData = new FormData();
+    const blob = new Blob([codeContent], { type: 'text/x-python' });
+    formData.append('file', blob, 'scorer.py');
+    formData.append('scoreable_node_types', JSON.stringify(scoreableNodeTypes));
+
+    const response = await this.makeRequest<ValidateCodeScorerResponse>(
+      RequestMethod.POST,
+      Routes.codeScorerValidate,
+      formData
+    );
+    console.log(`[Galileo] Validation task created: ${response.task_id}`);
+    return response;
+  };
+
+  /**
+   * Gets the result of a code scorer validation task.
+   *
+   * @param taskId - The ID of the validation task.
+   * @returns A promise that resolves to the validation result.
+   */
+  public getCodeScorerValidationResult = async (
+    taskId: string
+  ): Promise<RegisteredScorerTaskResultResponse> => {
+    const path = Routes.codeScorerValidateResult.replace('{task_id}', taskId);
+    return await this.makeRequest<RegisteredScorerTaskResultResponse>(
+      RequestMethod.GET,
+      path as Routes
+    );
+  };
+
+  /**
+   * Validates code scorer and waits for the result.
+   * Polls the validation endpoint at specified intervals until complete or timeout.
+   *
+   * @param codeContent - The Python code content to validate.
+   * @param scoreableNodeTypes - The node types that this scorer can score.
+   * @param timeoutMs - Maximum time to wait for validation (default: 60000ms).
+   * @param pollIntervalMs - Interval between polling attempts (default: 1000ms).
+   * @returns A promise that resolves to the validation result.
+   * @throws Error if validation fails or times out.
+   */
+  public validateCodeScorerAndWait = async (
+    codeContent: string,
+    scoreableNodeTypes: StepType[],
+    timeoutMs: number = 60000,
+    pollIntervalMs: number = 1000
+  ): Promise<ValidateRegisteredScorerResult> => {
+    // Submit validation request
+    const { task_id } = await this.validateCodeScorer(
+      codeContent,
+      scoreableNodeTypes
+    );
+
+    const startTime = Date.now();
+    let pollCount = 0;
+
+    // Poll for result
+    while (Date.now() - startTime < timeoutMs) {
+      pollCount++;
+      const response = await this.getCodeScorerValidationResult(task_id);
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(
+        `[Galileo] Poll #${pollCount}: status=${response.status} (${elapsed}s elapsed)`
+      );
+
+      if (response.status === TaskStatus.COMPLETE) {
+        console.log(`[Galileo] Validation completed successfully`);
+        // Parse result if it's a string
+        const result =
+          typeof response.result === 'string'
+            ? (JSON.parse(response.result) as ValidateRegisteredScorerResult)
+            : response.result;
+
+        if (!result) {
+          throw new Error('Validation completed but result is empty');
+        }
+
+        // Check if result is invalid
+        if (result.result.result_type === ResultType.INVALID) {
+          console.log(
+            `[Galileo] Validation result: INVALID - ${result.result.error_message}`
+          );
+          throw new Error(
+            `Code scorer validation failed: ${result.result.error_message}`
+          );
+        }
+
+        console.log(`[Galileo] Validation result: VALID`);
+        console.log(`[Galileo]   Score type: ${result.result.score_type}`);
+        console.log(
+          `[Galileo]   Step type(s): ${JSON.stringify(result.result.scoreable_node_types)}`
+        );
+        console.log(
+          `[Galileo]   Test scores: ${result.result.test_scores.length} results`
+        );
+
+        return result;
+      }
+
+      if (response.status === TaskStatus.FAILED) {
+        const errorMessage =
+          typeof response.result === 'string'
+            ? response.result
+            : 'Validation task failed';
+        console.log(`[Galileo] Validation task failed: ${errorMessage}`);
+        throw new Error(`Code metric validation failed: ${errorMessage}`);
+      }
+
+      // Wait before next poll
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+
+    console.log(
+      `[Galileo] Validation timed out after ${timeoutMs / 1000} seconds (${pollCount} polls)`
+    );
+    throw new Error(
+      `Code scorer validation timed out after ${timeoutMs / 1000} seconds`
     );
   };
 }

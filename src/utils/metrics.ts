@@ -13,6 +13,7 @@ import {
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
+  validateCodeScorer,
   deleteScorer,
   getScorers,
   getScorerVersion
@@ -96,8 +97,13 @@ export class Metrics {
     description = '',
     tags = []
   }: CreateCustomCodeMetricParams): Promise<ScorerVersion> {
+    console.log(`[Galileo] Creating custom code metric: ${name}`);
+    console.log(`[Galileo] Code path: ${codePath}`);
+    console.log(`[Galileo] Node level: ${nodeLevel}`);
+
     // Read the code file
     const absolutePath = path.resolve(codePath);
+    console.log(`[Galileo] Resolved absolute path: ${absolutePath}`);
 
     // Check if the file exists and is accessible
     try {
@@ -118,6 +124,7 @@ export class Metrics {
 
     // Read the file content asynchronously
     const codeContent = await fs.readFile(absolutePath, 'utf-8');
+    console.log(`[Galileo] Read code file: ${codeContent.length} bytes`);
 
     // Check if the file is empty
     if (!codeContent || codeContent.trim().length === 0) {
@@ -128,7 +135,15 @@ export class Metrics {
 
     const scoreableNodeTypes = [nodeLevel];
 
+    // Validate the code metric first
+    console.log(`[Galileo] Validating code metric...`);
+    const validationResult = await validateCodeScorer(
+      codeContent,
+      scoreableNodeTypes
+    );
+
     // Create the scorer with type 'code'
+    console.log(`[Galileo] Creating metric: ${name}`);
     const scorer = await createScorer(
       name,
       ScorerTypes.code,
@@ -140,9 +155,17 @@ export class Metrics {
       scoreableNodeTypes,
       undefined
     );
+    console.log(`[Galileo] Metric created: ${scorer.id}`);
 
-    // Create a code scorer version with the code content
-    return await createCodeScorerVersion(scorer.id, codeContent);
+    // Create a code scorer version with the code content and validation result
+    console.log(`[Galileo] Creating code metric version...`);
+    const scorerVersion = await createCodeScorerVersion(
+      scorer.id,
+      codeContent,
+      JSON.stringify(validationResult)
+    );
+    console.log(`[Galileo] Custom code metric created successfully: ${name}`);
+    return scorerVersion;
   }
 
   /**

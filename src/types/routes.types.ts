@@ -71,6 +71,8 @@ export enum Routes {
   scorer = 'scorers',
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',
   codeScorerVersion = 'scorers/{scorer_id}/version/code',
+  codeScorerValidate = 'scorers/code/validate',
+  codeScorerValidateResult = 'scorers/code/validate/{task_id}',
   scorerId = 'scorers/{scorer_id}',
   collaboratorRoles = 'collaborator_roles',
   projectUploadFile = 'projects/{project_id}/upload_file'
