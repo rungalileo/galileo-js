@@ -317,7 +317,6 @@ export const init = async (
     localMetrics: options.localMetrics
   });
 
-  console.log('############## logger', logger);
   if (options.startNewSession) {
     await logger.startSession({
       name: options.sessionName,
