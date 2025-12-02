@@ -320,10 +320,18 @@ export class ScorerService extends BaseClient {
       if (response.status === TaskStatus.COMPLETE) {
         console.log(`[Galileo] Validation completed successfully`);
         // Parse result if it's a string
-        const result =
-          typeof response.result === 'string'
-            ? (JSON.parse(response.result) as ValidateRegisteredScorerResult)
-            : response.result;
+        let result: ValidateRegisteredScorerResult;
+        if (typeof response.result === 'string') {
+          try {
+            result = JSON.parse(response.result) as ValidateRegisteredScorerResult;
+          } catch (err) {
+            throw new Error(
+              `Failed to parse validation result as JSON: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        } else {
+          result = response.result;
+        }
 
         if (!result) {
           throw new Error('Validation completed but result is empty');
