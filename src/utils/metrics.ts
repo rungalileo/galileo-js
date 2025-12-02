@@ -95,7 +95,9 @@ export class Metrics {
     codePath,
     nodeLevel,
     description = '',
-    tags = []
+    tags = [],
+    timeoutMs,
+    pollIntervalMs
   }: CreateCustomCodeMetricParams): Promise<ScorerVersion> {
     console.log(`Creating custom code metric: ${name}`);
 
@@ -136,7 +138,9 @@ export class Metrics {
     console.log(`Validating code metric...`);
     const validationResult = await validateCodeScorer(
       codeContent,
-      scoreableNodeTypes
+      scoreableNodeTypes,
+      timeoutMs,
+      pollIntervalMs
     );
 
     // Create the scorer with type 'code'
