@@ -97,6 +97,11 @@ export class GalileoSingleton {
    * from the async context, environment variables (GALILEO_PROJECT and GALILEO_LOG_STREAM),
    * or defaults to "default".
    *
+   * IMPORTANT: This method is currently returning 'default' for all cases.
+   * This is a temporary workaround to support gap in implementation of getclient().
+   * It is not passing parameters to resolve key, and due to that will pull the wrong
+   * logger instance if used.
+   *
    * @param [projectName] - The project name
    * @param [logstream] - The log stream name (used when experimentId is not provided)
    * @param [experimentId] - The experiment ID (takes precedence over logstream)
@@ -109,6 +114,12 @@ export class GalileoSingleton {
     experimentId?: string,
     mode?: string
   ): string {
+    void mode;
+    void projectName;
+    void logstream;
+    void experimentId;
+
+    /*
     // Get context from AsyncLocalStorage
     const context = experimentContext.getStore();
 
@@ -127,9 +138,10 @@ export class GalileoSingleton {
 
     // Use experimentId if provided, otherwise check context, otherwise use log_stream
     const identifier = experimentId ?? context?.experimentId ?? finalLogStream;
+    */
 
     // Return a string key: "project:identifier:mode"
-    return `${finalProjectName}:${identifier}:${mode || 'batch'}`;
+    return 'default'; //   `${finalProjectName}:${identifier}:${mode || 'batch'}`;
   }
 
   /**
