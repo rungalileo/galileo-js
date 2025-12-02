@@ -208,7 +208,6 @@ export const createCodeScorerVersion = async (
  *   'def score(input, output): return 1.0',
  *   [StepType.llm]
  * );
- * console.log(result.result.score_type);
  * ```
  */
 export const validateCodeScorer = async (

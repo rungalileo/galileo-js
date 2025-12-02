@@ -213,8 +213,8 @@ export class ScorerService extends BaseClient {
     validationResult?: string
   ): Promise<ScorerVersion> => {
     const path = Routes.codeScorerVersion.replace('{scorer_id}', scorerId);
-    console.log(`[Galileo] Creating metric version: ${scorerId}`);
-    console.log(`[Galileo] Code content length: ${codeContent.length} bytes`);
+    console.log(`Creating metric version: ${scorerId}`);
+    console.log(`Code content length: ${codeContent.length} bytes`);
 
     // Create FormData with the code content as a file
     const formData = new FormData();
@@ -223,7 +223,7 @@ export class ScorerService extends BaseClient {
 
     // Add validation result if provided
     if (validationResult) {
-      console.log(`[Galileo] Including validation result in request`);
+      console.log(`Including validation result in request`);
       formData.append('validation_result', validationResult);
     }
 
@@ -232,7 +232,7 @@ export class ScorerService extends BaseClient {
       path as Routes,
       formData
     );
-    console.log(`[Galileo] Metric version created: ${result.id}`);
+    console.log(`Metric version created: ${result.id}`);
     return result;
   };
 
@@ -247,10 +247,8 @@ export class ScorerService extends BaseClient {
     codeContent: string,
     scoreableNodeTypes: StepType[]
   ): Promise<ValidateCodeScorerResponse> => {
-    console.log(`[Galileo] Submitting code for validation...`);
-    console.log(
-      `[Galileo] Step type(s): ${JSON.stringify(scoreableNodeTypes)}`
-    );
+    console.log(`Submitting code for validation...`);
+    console.log(`Step type(s): ${JSON.stringify(scoreableNodeTypes)}`);
 
     const formData = new FormData();
     const blob = new Blob([codeContent], { type: 'text/x-python' });
@@ -262,7 +260,7 @@ export class ScorerService extends BaseClient {
       Routes.codeScorerValidate,
       formData
     );
-    console.log(`[Galileo] Validation task created: ${response.task_id}`);
+    console.log(`Validation task created: ${response.task_id}`);
     return response;
   };
 
@@ -312,15 +310,11 @@ export class ScorerService extends BaseClient {
     while (Date.now() - startTime < timeoutMs) {
       pollCount++;
       const response = await this.getCodeScorerValidationResult(task_id);
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(
-        `[Galileo] Poll #${pollCount}: status=${response.status} (${elapsed}s elapsed)`
-      );
 
       if (response.status === TaskStatus.COMPLETE) {
-        console.log(`[Galileo] Validation completed successfully`);
+        console.log(`Validation completed successfully`);
         // Parse result if it's a string
-        let result: ValidateRegisteredScorerResult;
+        let result: ValidateRegisteredScorerResult | null = null;
         if (typeof response.result === 'string') {
           try {
             result = JSON.parse(response.result) as ValidateRegisteredScorerResult;
@@ -333,27 +327,23 @@ export class ScorerService extends BaseClient {
           result = response.result;
         }
 
-        if (!result) {
+        if (result === null) {
           throw new Error('Validation completed but result is empty');
         }
 
         // Check if result is invalid
         if (result.result.result_type === ResultType.INVALID) {
           console.log(
-            `[Galileo] Validation result: INVALID - ${result.result.error_message}`
+            `Validation result: INVALID - ${result.result.error_message}`
           );
           throw new Error(
-            `Code scorer validation failed: ${result.result.error_message}`
+            `Code metric validation failed: ${result.result.error_message}`
           );
         }
 
-        console.log(`[Galileo] Validation result: VALID`);
-        console.log(`[Galileo]   Score type: ${result.result.score_type}`);
+        console.log(`  Score type: ${result.result.score_type}`);
         console.log(
-          `[Galileo]   Step type(s): ${JSON.stringify(result.result.scoreable_node_types)}`
-        );
-        console.log(
-          `[Galileo]   Test scores: ${result.result.test_scores.length} results`
+          `  Step type(s): ${JSON.stringify(result.result.scoreable_node_types)}`
         );
 
         return result;
@@ -364,7 +354,7 @@ export class ScorerService extends BaseClient {
           typeof response.result === 'string'
             ? response.result
             : 'Validation task failed';
-        console.log(`[Galileo] Validation task failed: ${errorMessage}`);
+        console.log(`Validation task failed: ${errorMessage}`);
         throw new Error(`Code metric validation failed: ${errorMessage}`);
       }
 
@@ -373,7 +363,7 @@ export class ScorerService extends BaseClient {
     }
 
     console.log(
-      `[Galileo] Validation timed out after ${timeoutMs / 1000} seconds (${pollCount} polls)`
+      `Validation timed out after ${timeoutMs / 1000} seconds (${pollCount} polls)`
     );
     throw new Error(
       `Code scorer validation timed out after ${timeoutMs / 1000} seconds`

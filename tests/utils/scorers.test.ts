@@ -4,13 +4,16 @@ import {
   createCodeScorerVersion,
   deleteScorer,
   getScorerVersion,
-  getScorers
+  getScorers,
+  validateCodeScorer
 } from '../../src/utils/scorers';
 import {
   Scorer,
   ScorerVersion,
   ScorerTypes,
-  OutputType
+  OutputType,
+  ValidateRegisteredScorerResult,
+  ResultType
 } from '../../src/types/scorer.types';
 import { StepType } from '../../src/types';
 
@@ -22,6 +25,7 @@ const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
+const mockValidateCodeScorerAndWait = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -35,7 +39,9 @@ jest.mock('../../src/api-client', () => {
           mockCreateCodeScorerVersion(...args),
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion,
-        getScorers: mockGetScorers
+        getScorers: mockGetScorers,
+        validateCodeScorerAndWait: (...args: unknown[]) =>
+          mockValidateCodeScorerAndWait(...args)
       };
     })
   };
@@ -364,6 +370,203 @@ describe('scorers utility', () => {
       const apiError = new Error('API error');
       mockGetScorers.mockRejectedValueOnce(apiError);
       await expect(getScorers()).rejects.toThrow(apiError);
+    });
+  });
+
+  describe('validateCodeScorer', () => {
+    const mockValidResult: ValidateRegisteredScorerResult = {
+      result: {
+        result_type: ResultType.VALID,
+        score_type: 'float',
+        scoreable_node_types: ['llm'],
+        include_llm_credentials: false,
+        chain_aggregation: null,
+        test_scores: [
+          { node_type: 'llm', score: 0.95 },
+          { node_type: 'llm', score: 1.0 }
+        ]
+      }
+    };
+
+    const mockInvalidResult: ValidateRegisteredScorerResult = {
+      result: {
+        result_type: ResultType.INVALID,
+        error_message: 'Invalid Python syntax on line 5'
+      }
+    };
+
+    const validCode = 'def score(input, output):\n    return 1.0';
+    const invalidCode = 'def score(input output):\n    return 1.0'; // Missing comma
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockInit.mockResolvedValue(undefined);
+      mockValidateCodeScorerAndWait.mockResolvedValue(mockValidResult);
+    });
+
+    it('should initialize the API client', async () => {
+      await validateCodeScorer(validCode, [StepType.llm]);
+      expect(mockInit).toHaveBeenCalled();
+    });
+
+    it('should call validateCodeScorerAndWait with correct parameters', async () => {
+      await validateCodeScorer(validCode, [StepType.llm]);
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        validCode,
+        [StepType.llm],
+        undefined,
+        undefined
+      );
+    });
+
+    it('should pass custom timeout and poll interval', async () => {
+      const customTimeout = 30000;
+      const customPollInterval = 500;
+      await validateCodeScorer(
+        validCode,
+        [StepType.llm],
+        customTimeout,
+        customPollInterval
+      );
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        validCode,
+        [StepType.llm],
+        customTimeout,
+        customPollInterval
+      );
+    });
+
+    it('should return valid result for valid code', async () => {
+      const result = await validateCodeScorer(validCode, [StepType.llm]);
+      expect(result).toEqual(mockValidResult);
+      expect(result.result.result_type).toBe(ResultType.VALID);
+    });
+
+    it('should return invalid result for invalid code', async () => {
+      mockValidateCodeScorerAndWait.mockResolvedValueOnce(mockInvalidResult);
+      const result = await validateCodeScorer(invalidCode, [StepType.llm]);
+      expect(result).toEqual(mockInvalidResult);
+      expect(result.result.result_type).toBe(ResultType.INVALID);
+      if (result.result.result_type === ResultType.INVALID) {
+        expect(result.result.error_message).toBe(
+          'Invalid Python syntax on line 5'
+        );
+      }
+    });
+
+    it('should handle multiple scoreable node types', async () => {
+      const multiNodeResult: ValidateRegisteredScorerResult = {
+        result: {
+          result_type: ResultType.VALID,
+          score_type: 'float',
+          scoreable_node_types: ['llm', 'tool', 'retriever'],
+          include_llm_credentials: false,
+          chain_aggregation: null,
+          test_scores: []
+        }
+      };
+      mockValidateCodeScorerAndWait.mockResolvedValueOnce(multiNodeResult);
+
+      await validateCodeScorer(validCode, [
+        StepType.llm,
+        StepType.tool,
+        StepType.retriever
+      ]);
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        validCode,
+        [StepType.llm, StepType.tool, StepType.retriever],
+        undefined,
+        undefined
+      );
+    });
+
+    it('should handle validation with test scores of different types', async () => {
+      const mixedScoreResult: ValidateRegisteredScorerResult = {
+        result: {
+          result_type: ResultType.VALID,
+          score_type: 'mixed',
+          scoreable_node_types: ['llm'],
+          include_llm_credentials: true,
+          chain_aggregation: 'mean',
+          test_scores: [
+            { node_type: 'llm', score: 0.5 },
+            { node_type: 'llm', score: 'pass' },
+            { node_type: 'llm', score: true },
+            { node_type: 'llm', score: null }
+          ]
+        }
+      };
+      mockValidateCodeScorerAndWait.mockResolvedValueOnce(mixedScoreResult);
+
+      const result = await validateCodeScorer(validCode, [StepType.llm]);
+      expect(result).toEqual(mixedScoreResult);
+      if (result.result.result_type === ResultType.VALID) {
+        expect(result.result.test_scores).toHaveLength(4);
+        expect(result.result.include_llm_credentials).toBe(true);
+        expect(result.result.chain_aggregation).toBe('mean');
+      }
+    });
+
+    it('should handle API errors gracefully', async () => {
+      const apiError = new Error('Validation service unavailable');
+      mockValidateCodeScorerAndWait.mockRejectedValueOnce(apiError);
+      await expect(
+        validateCodeScorer(validCode, [StepType.llm])
+      ).rejects.toThrow('Validation service unavailable');
+    });
+
+    it('should handle timeout errors', async () => {
+      const timeoutError = new Error(
+        'Code scorer validation timed out after 60 seconds'
+      );
+      mockValidateCodeScorerAndWait.mockRejectedValueOnce(timeoutError);
+      await expect(
+        validateCodeScorer(validCode, [StepType.llm])
+      ).rejects.toThrow('Code scorer validation timed out after 60 seconds');
+    });
+
+    it('should handle validation failure errors', async () => {
+      const validationError = new Error(
+        'Code scorer validation failed: Function "score" not found'
+      );
+      mockValidateCodeScorerAndWait.mockRejectedValueOnce(validationError);
+      await expect(
+        validateCodeScorer(validCode, [StepType.llm])
+      ).rejects.toThrow(
+        'Code scorer validation failed: Function "score" not found'
+      );
+    });
+
+    it('should handle multiline code content', async () => {
+      const multilineCode = `def score(input, output):
+    # Calculate score based on output quality
+    if not output:
+        return 0.0
+    if 'error' in output.lower():
+        return 0.0
+    return 1.0`;
+
+      await validateCodeScorer(multilineCode, [StepType.llm]);
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        multilineCode,
+        [StepType.llm],
+        undefined,
+        undefined
+      );
+    });
+
+    it('should handle code with special characters', async () => {
+      const codeWithSpecialChars = `def score(input, output):
+    """Score function with special chars: @#$%^&*"""
+    return len(output) / 100.0 if output else 0.0`;
+
+      await validateCodeScorer(codeWithSpecialChars, [StepType.tool]);
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        codeWithSpecialChars,
+        [StepType.tool],
+        undefined,
+        undefined
+      );
     });
   });
 });
