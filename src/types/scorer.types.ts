@@ -98,3 +98,50 @@ export interface CreateLlmScorerVersionParams {
   numJudges?: number;
   outputType?: OutputType;
 }
+
+// Code Scorer Validation Types
+export enum TaskStatus {
+  PENDING = 'pending',
+  COMPLETE = 'completed',
+  FAILED = 'failed'
+}
+
+export enum ResultType {
+  VALID = 'valid',
+  INVALID = 'invalid'
+}
+
+export interface TestScore {
+  node_type: string;
+  score?: number | string | boolean | null;
+}
+
+export interface ValidResult {
+  result_type: ResultType.VALID;
+  score_type: string;
+  scoreable_node_types: string[];
+  include_llm_credentials: boolean;
+  chain_aggregation?: string | null;
+  test_scores: TestScore[];
+}
+
+export interface InvalidResult {
+  result_type: ResultType.INVALID;
+  error_message: string;
+}
+
+export interface ValidateRegisteredScorerResult {
+  result: ValidResult | InvalidResult;
+}
+
+export interface ValidateCodeScorerResponse {
+  task_id: string;
+}
+
+export interface RegisteredScorerTaskResultResponse {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  status: TaskStatus;
+  result: ValidateRegisteredScorerResult | string | null;
+}

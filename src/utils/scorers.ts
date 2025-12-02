@@ -5,7 +5,8 @@ import {
   ScorerConfig,
   ScorerVersion,
   OutputType,
-  InputType
+  InputType,
+  ValidateRegisteredScorerResult
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { ScorerTypes, ScorerDefaults } from '../types/scorer.types';
@@ -164,6 +165,7 @@ export const deleteScorer = async (scorerId: string): Promise<void> => {
  *
  * @param scorerId - The ID of the scorer to create a version for.
  * @param codeContent - The Python code content to upload as the scorer implementation.
+ * @param validationResult - Optional validation result JSON string from validateCodeScorer.
  * @returns A promise that resolves to the created scorer version.
  *
  * @example
@@ -176,10 +178,51 @@ export const deleteScorer = async (scorerId: string): Promise<void> => {
  */
 export const createCodeScorerVersion = async (
   scorerId: string,
-  codeContent: string
+  codeContent: string,
+  validationResult?: string
 ): Promise<ScorerVersion> => {
   const client = new GalileoApiClient();
   await client.init();
 
-  return await client.createCodeScorerVersion(scorerId, codeContent);
+  return await client.createCodeScorerVersion(
+    scorerId,
+    codeContent,
+    validationResult
+  );
+};
+
+/**
+ * Validates code scorer content and waits for the result.
+ * This function submits the code for validation and polls until complete or timeout.
+ *
+ * @param codeContent - The Python code content to validate.
+ * @param scoreableNodeTypes - The node types that this scorer can score.
+ * @param timeoutMs - Maximum time to wait for validation (default: 60000ms).
+ * @param pollIntervalMs - Interval between polling attempts (default: 1000ms).
+ * @returns A promise that resolves to the validation result.
+ * @throws Error if validation fails or times out.
+ *
+ * @example
+ * ```typescript
+ * const result = await validateCodeScorer(
+ *   'def score(input, output): return 1.0',
+ *   [StepType.llm]
+ * );
+ * ```
+ */
+export const validateCodeScorer = async (
+  codeContent: string,
+  scoreableNodeTypes: StepType[],
+  timeoutMs?: number,
+  pollIntervalMs?: number
+): Promise<ValidateRegisteredScorerResult> => {
+  const client = new GalileoApiClient();
+  await client.init();
+
+  return await client.validateCodeScorerAndWait(
+    codeContent,
+    scoreableNodeTypes,
+    timeoutMs,
+    pollIntervalMs
+  );
 };

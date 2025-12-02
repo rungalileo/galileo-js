@@ -8,7 +8,8 @@ import {
   ModelType,
   ChainPollTemplate,
   OutputType,
-  InputType
+  InputType,
+  ValidateRegisteredScorerResult
 } from '../types/scorer.types';
 import {
   CollaboratorUpdate,
@@ -1471,10 +1472,30 @@ export class GalileoApiClient extends BaseClient {
 
   public async createCodeScorerVersion(
     scorerId: string,
-    codeContent: string
+    codeContent: string,
+    validationResult?: string
   ): Promise<ScorerVersion> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.createCodeScorerVersion(scorerId, codeContent);
+    return this.scorerService!.createCodeScorerVersion(
+      scorerId,
+      codeContent,
+      validationResult
+    );
+  }
+
+  public async validateCodeScorerAndWait(
+    codeContent: string,
+    scoreableNodeTypes: StepType[],
+    timeoutMs?: number,
+    pollIntervalMs?: number
+  ): Promise<ValidateRegisteredScorerResult> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.validateCodeScorerAndWait(
+      codeContent,
+      scoreableNodeTypes,
+      timeoutMs,
+      pollIntervalMs
+    );
   }
 
   private resolveProjectId(projectId?: string): string {

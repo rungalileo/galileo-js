@@ -13,6 +13,7 @@ import {
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
+  validateCodeScorer,
   deleteScorer,
   getScorers,
   getScorerVersion
@@ -96,6 +97,8 @@ export class Metrics {
     description = '',
     tags = []
   }: CreateCustomCodeMetricParams): Promise<ScorerVersion> {
+    console.log(`Creating custom code metric: ${name}`);
+
     // Read the code file
     const absolutePath = path.resolve(codePath);
 
@@ -118,6 +121,7 @@ export class Metrics {
 
     // Read the file content asynchronously
     const codeContent = await fs.readFile(absolutePath, 'utf-8');
+    console.log(`Read code file: ${codeContent.length} bytes`);
 
     // Check if the file is empty
     if (!codeContent || codeContent.trim().length === 0) {
@@ -128,7 +132,15 @@ export class Metrics {
 
     const scoreableNodeTypes = [nodeLevel];
 
+    // Validate the code metric first
+    console.log(`Validating code metric...`);
+    const validationResult = await validateCodeScorer(
+      codeContent,
+      scoreableNodeTypes
+    );
+
     // Create the scorer with type 'code'
+    console.log(`Creating metric: ${name}`);
     const scorer = await createScorer(
       name,
       ScorerTypes.code,
@@ -140,9 +152,17 @@ export class Metrics {
       scoreableNodeTypes,
       undefined
     );
+    console.log(`Metric created: ${scorer.id}`);
 
-    // Create a code scorer version with the code content
-    return await createCodeScorerVersion(scorer.id, codeContent);
+    // Create a code scorer version with the code content and validation result
+    console.log(`Creating code metric version...`);
+    const scorerVersion = await createCodeScorerVersion(
+      scorer.id,
+      codeContent,
+      JSON.stringify(validationResult)
+    );
+    console.log(`Custom code metric created successfully: ${name}`);
+    return scorerVersion;
   }
 
   /**

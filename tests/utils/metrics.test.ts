@@ -39,6 +39,7 @@ const mockGetProjectByName = jest.fn();
 const mockGetLogStream = jest.fn();
 const mockGetLogStreamByName = jest.fn();
 const mockSearchMetrics = jest.fn();
+const mockValidateCodeScorerAndWait = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -56,7 +57,8 @@ jest.mock('../../src/api-client', () => {
         getProjectByName: mockGetProjectByName,
         getLogStream: mockGetLogStream,
         getLogStreamByName: mockGetLogStreamByName,
-        searchMetrics: mockSearchMetrics
+        searchMetrics: mockSearchMetrics,
+        validateCodeScorerAndWait: mockValidateCodeScorerAndWait
       };
     })
   };
@@ -473,6 +475,16 @@ describe('metrics utils', () => {
     beforeEach(() => {
       mockCreateScorer.mockResolvedValue(CODE_SCORER);
       mockCreateCodeScorerVersion.mockResolvedValue(CODE_SCORER_VERSION);
+      mockValidateCodeScorerAndWait.mockResolvedValue({
+        result: {
+          result_type: 'valid',
+          score_type: 'float',
+          scoreable_node_types: ['llm'],
+          include_llm_credentials: false,
+          chain_aggregation: null,
+          test_scores: []
+        }
+      });
     });
 
     it('should create a custom code metric successfully', async () => {
@@ -499,7 +511,8 @@ describe('metrics utils', () => {
       );
       expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
         'code-scorer-789',
-        'def score(input, output):\n    return 1.0\n'
+        'def score(input, output):\n    return 1.0\n',
+        expect.any(String) // validation result JSON
       );
     });
 
