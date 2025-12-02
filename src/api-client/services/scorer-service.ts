@@ -317,7 +317,9 @@ export class ScorerService extends BaseClient {
         let result: ValidateRegisteredScorerResult | null = null;
         if (typeof response.result === 'string') {
           try {
-            result = JSON.parse(response.result) as ValidateRegisteredScorerResult;
+            result = JSON.parse(
+              response.result
+            ) as ValidateRegisteredScorerResult;
           } catch (err) {
             throw new Error(
               `Failed to parse validation result as JSON: ${err instanceof Error ? err.message : String(err)}`
