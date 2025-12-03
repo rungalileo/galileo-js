@@ -6657,9 +6657,13 @@ export type ExperimentResponse = {
   created_by?: string | null;
   created_by_user?: UserInfo | null;
   /**
-   * Num Samples
+   * Num Spans
    */
-  num_samples?: number | null;
+  num_spans?: number | null;
+  /**
+   * Num Traces
+   */
+  num_traces?: number | null;
   task_type: TaskType;
   dataset?: ExperimentDataset | null;
   /**
@@ -12697,6 +12701,15 @@ export type LogStreamResponse = {
    * Created By
    */
   created_by?: string | null;
+  created_by_user?: UserInfo | null;
+  /**
+   * Num Spans
+   */
+  num_spans?: number | null;
+  /**
+   * Num Traces
+   */
+  num_traces?: number | null;
   /**
    * Has User Created Sessions
    */
@@ -20936,7 +20949,12 @@ export type ListLogStreamsProjectsProjectIdLogStreamsGetData = {
      */
     project_id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Include Counts
+     */
+    include_counts?: boolean;
+  };
   url: '/projects/{project_id}/log_streams';
 };
 
@@ -21004,6 +21022,10 @@ export type ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetData =
       project_id: string;
     };
     query?: {
+      /**
+       * Include Counts
+       */
+      include_counts?: boolean;
       /**
        * Starting Token
        */
@@ -22002,7 +22024,12 @@ export type ListExperimentsProjectsProjectIdExperimentsGetData = {
      */
     project_id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Include Counts
+     */
+    include_counts?: boolean;
+  };
   url: '/projects/{project_id}/experiments';
 };
 
@@ -22070,6 +22097,10 @@ export type ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetData
       project_id: string;
     };
     query?: {
+      /**
+       * Include Counts
+       */
+      include_counts?: boolean;
       /**
        * Starting Token
        */
