@@ -24,11 +24,20 @@ import {
   createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
+  convertDatasetContentToRecords,
+  getRecordsForDataset,
+  getDatasetRecordsFromArray,
   getDatasets,
   getDatasetContent,
   getDataset,
   getDatasetMetadata,
-  extendDataset
+  extendDataset,
+  getDatasetVersionHistory,
+  getDatasetVersion,
+  listDatasetProjects,
+  convertDatasetRowToRecord,
+  Dataset,
+  Datasets
 } from './utils/datasets';
 import {
   createCustomLlmMetric,
@@ -127,6 +136,8 @@ export {
   // OpenAI
   wrapOpenAI,
   // Datasets
+  Dataset,
+  Datasets,
   getDatasets,
   createDataset,
   getDatasetContent,
@@ -135,8 +146,15 @@ export {
   addRowsToDataset,
   createDatasetRecord,
   deserializeInputFromString,
+  convertDatasetContentToRecords,
+  getRecordsForDataset,
+  getDatasetRecordsFromArray,
   getDatasetMetadata,
   extendDataset,
+  getDatasetVersionHistory,
+  getDatasetVersion,
+  listDatasetProjects,
+  convertDatasetRowToRecord,
   // Prompt templates
   getPromptTemplate,
   getPromptTemplates,

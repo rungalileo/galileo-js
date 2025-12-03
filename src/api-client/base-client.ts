@@ -248,6 +248,12 @@ export class BaseClient {
       .replace(
         '{group_id}',
         params && 'group_id' in params ? (params.group_id as string) : ''
+      )
+      .replace(
+        '{version_index}',
+        params && 'version_index' in params
+          ? (params.version_index as string)
+          : ''
       )}`;
 
     const config: AxiosRequestConfig = {

@@ -11,7 +11,7 @@ import { GalileoApiClient } from '../api-client';
 import { log } from '../wrappers';
 import { init, flush, experimentContext } from '../singleton';
 import { ScorerConfig } from '../types/scorer.types';
-import { Dataset, DatasetRecord } from '../types/dataset.types';
+import { DatasetDBType, DatasetRecord } from '../types/dataset.types';
 import {
   deserializeInputFromString,
   getDatasetRecordsFromArray,
@@ -27,7 +27,7 @@ import { createMetricConfigs } from './metrics';
 import { Project } from '../types';
 import { getProjectWithEnvFallbacks } from './projects';
 
-type DatasetType = Dataset | Record<string, unknown>[];
+type DatasetType = DatasetDBType | Record<string, unknown>[];
 type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 
 type BaseRunExperimentParams = {
@@ -360,7 +360,7 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   const datasetRequest: ExperimentDatasetRequest | undefined = datasetObj
     ? {
         dataset_id: datasetObj.id,
-        version_index: datasetObj.current_version_index
+        version_index: datasetObj.currentVersionIndex
       }
     : undefined;
 
@@ -404,8 +404,8 @@ export const runExperiment = async <T extends Record<string, unknown>>(
   if ('dataset' in params) {
     if (!(params.dataset instanceof Array)) {
       // If dataset is a Dataset object, convert it to an array of records
-      datasetId = (params.dataset as Dataset).id;
-      const columnNames = (params.dataset as Dataset).column_names;
+      datasetId = (params.dataset as DatasetDBType).id;
+      const columnNames = (params.dataset as DatasetDBType).columnNames;
       if (!columnNames) {
         throw new Error('Column names not found in dataset');
       }

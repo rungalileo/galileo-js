@@ -60,19 +60,24 @@ import {
   PromptTemplateService,
   GlobalPromptTemplateService
 } from './services/prompt-template-service';
-import {
-  DatasetService,
-  DatasetAppendRow,
-  SyntheticDatasetExtensionRequest,
-  SyntheticDatasetExtensionResponse,
-  JobProgress
-} from './services/dataset-service';
+import { DatasetService } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
 import { ScorerService } from './services/scorer-service';
 import { ExportService } from './services/export-service';
 import { JobsService } from './services/job-service';
 import { JobProgressService } from './services/job-progress-service';
+import {
+  DatasetAppendRow,
+  SyntheticDatasetExtensionRequest,
+  SyntheticDatasetExtensionResponse,
+  JobProgress,
+  ListDatasetProjectsResponse,
+  ListDatasetResponse,
+  ListDatasetParams,
+  DatasetFormat,
+  DatasetDBType
+} from '../types/dataset.types';
 import {
   CreateJobResponse,
   ExperimentDatasetRequest,
@@ -354,6 +359,21 @@ export class GalileoApiClient extends BaseClient {
   }
 
   /**
+   * Gets a project by name.
+   * @param name - Name of the project to fetch.
+   * @param options - (Optional) Additional lookup options.
+   * @param options.projectType - (Optional) Project type hint to disambiguate by name.
+   * @returns A promise that resolves to the matching project.
+   */
+  public async getGlobalProjectByName(
+    name: string,
+    projectType?: ProjectTypes
+  ) {
+    this.ensureService(this.globalProjectService);
+    return this.globalProjectService.getProjectByName(name, projectType);
+  }
+
+  /**
    * Gets a project ID by name.
    * @param name - Name of the project to resolve.
    * @param options - (Optional) Additional lookup options.
@@ -505,41 +525,128 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Dataset methods - delegate to DatasetService
+  /**
+   * Gets all datasets visible to the client.
+   * @returns A promise that resolves to the list of datasets.
+   */
   public async getDatasets() {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDatasets();
   }
 
-  public async getDataset(id: string) {
+  /**
+   * Gets a dataset by ID.
+   * @param id - The ID of the dataset to retrieve.
+   * @returns A promise that resolves to the dataset.
+   */
+  public async getDataset(id: string): Promise<DatasetDBType> {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDataset(id);
   }
 
+  /**
+   * Gets the ETag for a dataset used for optimistic concurrency control.
+   * @param id - The ID of the dataset.
+   * @returns A promise that resolves to the dataset ETag.
+   */
   public async getDatasetEtag(id: string) {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetEtag(id);
   }
 
-  public async getDatasetByName(name: string) {
+  /**
+   * Gets a dataset by name.
+   * @param name - The name of the dataset to retrieve.
+   * @returns A promise that resolves to the dataset.
+   */
+  public async getDatasetByName(name: string): Promise<DatasetDBType> {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetByName(name);
   }
 
-  public async createDataset(name: string, filePath: string, format: any) {
+  /**
+   * @overload
+   * Creates a new dataset with a name, file path, and format.
+   * @param name - The name of the dataset.
+   * @param filePath - The path to the dataset file.
+   * @param format - The format of the dataset file.
+   * @returns A promise that resolves to the created dataset.
+   */
+  public async createDataset(
+    name: string,
+    filePath: string,
+    format: DatasetFormat
+  ): Promise<any>;
+  /**
+   * @overload
+   * Creates a new dataset from an options object.
+   * @param params - The options used to create the dataset.
+   * @param params.name - The name of the dataset.
+   * @param params.filePath - The path to the dataset file.
+   * @param params.format - The format of the dataset file.
+   * @param params.projectId - (Optional) The ID of the project that will use the dataset.
+   * @returns A promise that resolves to the created dataset.
+   */
+  public async createDataset(params: {
+    name: string;
+    filePath: string;
+    format: DatasetFormat;
+    projectId?: string;
+  }): Promise<any>;
+  public async createDataset(
+    nameOrParams:
+      | string
+      | {
+          name: string;
+          filePath: string;
+          format: DatasetFormat;
+          projectId?: string;
+        },
+    maybeFilePath?: string,
+    maybeFormat?: any
+  ): Promise<DatasetDBType> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.createDataset(name, filePath, format);
+
+    // Normalize both call signatures into a single params object
+    const params =
+      typeof nameOrParams === 'string'
+        ? {
+            name: nameOrParams,
+            filePath: maybeFilePath as string,
+            format: maybeFormat
+          }
+        : nameOrParams;
+
+    return this.datasetService!.createDataset(params);
   }
 
+  /**
+   * Gets the content of a dataset.
+   * @param datasetId - The ID of the dataset.
+   * @returns A promise that resolves to the rows of the dataset.
+   */
   public async getDatasetContent(datasetId: string) {
     this.ensureService(this.datasetService);
     return this.datasetService!.getDatasetContent(datasetId);
   }
 
-  public async deleteDataset(id: string): Promise<void> {
+  /**
+   * Deletes a dataset by ID.
+   * @param datasetId - The ID of the dataset to delete.
+   * @returns A promise that resolves when the dataset has been deleted.
+   */
+  public async deleteDataset(datasetId: string): Promise<void> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.deleteDataset(id);
+    return this.datasetService!.deleteDataset(datasetId);
   }
 
+  /**
+   * Appends rows to the content of a dataset.
+   * @param datasetId - The ID of the dataset.
+   * @param etag - The ETag used for optimistic concurrency control.
+   * @param rows - The rows to append to the dataset content.
+   * @returns A promise that resolves when the rows have been appended.
+   */
   public async appendRowsToDatasetContent(
     datasetId: string,
     etag: string,
@@ -553,16 +660,86 @@ export class GalileoApiClient extends BaseClient {
     );
   }
 
+  /**
+   * Extends a dataset with synthetically generated data.
+   * @param params - Configuration for synthetic dataset generation.
+   * @returns A promise that resolves to the synthetic dataset extension response.
+   */
   public async extendDataset(
     params: SyntheticDatasetExtensionRequest
   ): Promise<SyntheticDatasetExtensionResponse> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.extendDataset(params);
+    return this.datasetService.extendDataset(params);
   }
 
+  /**
+   * Gets the status of a dataset extension job.
+   * @param datasetId - The ID of the dataset being extended.
+   * @returns A promise that resolves to the job progress.
+   */
   public async getExtendDatasetStatus(datasetId: string): Promise<JobProgress> {
     this.ensureService(this.datasetService);
     return this.datasetService!.getExtendDatasetStatus(datasetId);
+  }
+
+  /**
+   * Queries datasets with filters and pagination options.
+   * @param params - The list dataset parameters used to filter datasets.
+   * @param query - (Optional) Pagination options for the query.
+   * @param query.startingToken - (Optional) The starting token for pagination.
+   * @param query.limit - (Optional) The maximum number of datasets to return.
+   * @returns A promise that resolves to the list dataset response.
+   */
+  public async queryDatasets(
+    params: ListDatasetParams,
+    query?: {
+      startingToken?: number;
+      limit?: number;
+    }
+  ): Promise<ListDatasetResponse> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.queryDatasets(params, query);
+  }
+
+  /**
+   * Gets the version history for a dataset.
+   * @param datasetId - The ID of the dataset.
+   * @returns A promise that resolves to the version history.
+   */
+  public async getDatasetVersionHistory(datasetId: string) {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.getDatasetVersionHistory(datasetId);
+  }
+
+  /**
+   * Gets the content for a specific version of a dataset.
+   * @param datasetId - The ID of the dataset.
+   * @param versionIndex - The index of the version to retrieve.
+   * @returns A promise that resolves to the dataset content for the specified version.
+   */
+  public async getDatasetVersionContent(
+    datasetId: string,
+    versionIndex: number
+  ) {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.getDatasetVersionContent(
+      datasetId,
+      versionIndex
+    );
+  }
+
+  /**
+   * Lists all projects that use a dataset.
+   * @param datasetId - The ID of the dataset.
+   * @param limit - (Optional) The maximum number of projects to return.
+   * @returns A promise that resolves to the list of projects that use the dataset.
+   */
+  public async listDatasetProjects(
+    datasetId: string,
+    limit: number = 100
+  ): Promise<ListDatasetProjectsResponse> {
+    this.ensureService(this.datasetService);
+    return this.datasetService!.listDatasetProjects(datasetId, limit);
   }
 
   // Trace methods - delegate to TraceService
