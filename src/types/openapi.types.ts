@@ -1283,6 +1283,7 @@ export type BaseScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -1443,6 +1444,12 @@ export type BodyCreateCodeScorerVersionScorersScorerIdVersionCodePost = {
    * File
    */
   file: Blob | File;
+  /**
+   * Validation Result
+   *
+   * Pre-validated result as JSON string to skip validation
+   */
+  validation_result?: string | null;
 };
 
 /**
@@ -1554,23 +1561,21 @@ export type BodyUploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPost
   };
 
 /**
- * BooleanFilter
- *
- * Filters on a boolean field.
+ * Body_validate_code_scorer_scorers_code_validate_post
  */
-export type BooleanFilter = {
+export type BodyValidateCodeScorerScorersCodeValidatePost = {
   /**
-   * Name
+   * File
    */
-  name: string | null;
+  file: Blob | File;
   /**
-   * Operator
+   * Required Scorers
    */
-  operator: 'eq' | 'ne';
+  required_scorers?: string | Array<string> | null;
   /**
-   * Value
+   * Scoreable Node Types
    */
-  value: boolean;
+  scoreable_node_types?: string | Array<string> | null;
 };
 
 /**
@@ -1671,6 +1676,22 @@ export type BulkDeletePromptTemplatesResponse = {
    */
   message: string;
 };
+
+/**
+ * ChainAggregationStrategy
+ */
+export const ChainAggregationStrategy = {
+  SUM: 'sum',
+  AVERAGE: 'average',
+  FIRST: 'first',
+  LAST: 'last'
+} as const;
+
+/**
+ * ChainAggregationStrategy
+ */
+export type ChainAggregationStrategy =
+  (typeof ChainAggregationStrategy)[keyof typeof ChainAggregationStrategy];
 
 /**
  * ChainPollTemplate
@@ -1842,30 +1863,6 @@ export type CollaboratorRoleInfo = {
  */
 export type CollaboratorUpdate = {
   role: CollaboratorRole;
-};
-
-/**
- * CollectionFilter
- *
- * Filters for string items in a collection/list.
- */
-export type CollectionFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'contains' | 'not_in';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-  /**
-   * Case Sensitive
-   */
-  case_sensitive?: boolean;
 };
 
 /**
@@ -2497,6 +2494,10 @@ export type CreateJobRequest = {
    * Log Metric Computing Records
    */
   log_metric_computing_records?: boolean;
+  /**
+   * Stream Metrics
+   */
+  stream_metrics?: boolean;
 };
 
 /**
@@ -2764,6 +2765,10 @@ export type CreateJobResponse = {
    */
   log_metric_computing_records?: boolean;
   /**
+   * Stream Metrics
+   */
+  stream_metrics?: boolean;
+  /**
    * Message
    */
   message: string;
@@ -2978,30 +2983,6 @@ export type CustomAuthenticationType =
   (typeof CustomAuthenticationType)[keyof typeof CustomAuthenticationType];
 
 /**
- * CustomBooleanFilter
- */
-export type CustomBooleanFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Value
-   */
-  value: boolean;
-};
-
-/**
- * CustomFunctionFilter
- */
-export type CustomFunctionFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-};
-
-/**
  * CustomIntegration
  */
 export type CustomIntegration = {
@@ -3091,38 +3072,6 @@ export type CustomIntegrationCreate = {
    * Token
    */
   token: string;
-};
-
-/**
- * CustomNumberFilter
- */
-export type CustomNumberFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
-  /**
-   * Value
-   */
-  value: number | number | Array<number> | Array<number>;
-};
-
-/**
- * CustomUUIDFilter
- */
-export type CustomUuidFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Value
-   */
-  value: string;
 };
 
 /**
@@ -3227,6 +3176,7 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -3352,6 +3302,7 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -3477,6 +3428,7 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -3602,6 +3554,7 @@ export type CustomizedCompletenessGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -3727,6 +3680,7 @@ export type CustomizedFactualityGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -3856,6 +3810,7 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -3981,6 +3936,7 @@ export type CustomizedGroundednessGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4106,6 +4062,7 @@ export type CustomizedInputSexistGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4231,6 +4188,7 @@ export type CustomizedInputToxicityGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4356,6 +4314,7 @@ export type CustomizedInstructionAdherenceGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4485,6 +4444,7 @@ export type CustomizedPromptInjectionGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4610,6 +4570,7 @@ export type CustomizedSexistGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4735,6 +4696,7 @@ export type CustomizedToolErrorRateGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4860,6 +4822,7 @@ export type CustomizedToolSelectionQualityGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -4985,6 +4948,7 @@ export type CustomizedToxicityGptScorer = {
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
+  roll_up_strategy?: RollUpStrategy | null;
   /**
    * Prompt
    */
@@ -5799,7 +5763,7 @@ export type DatasetDraftFilter = {
   /**
    * Operator
    */
-  operator: 'eq' | 'ne';
+  operator?: 'eq' | 'ne';
   /**
    * Value
    */
@@ -5852,7 +5816,7 @@ export type DatasetIdFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -6228,26 +6192,6 @@ export type DatasetVersionIndexSort = {
 };
 
 /**
- * DateFilter
- *
- * Filters on a datetime field.
- */
-export type DateFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
-  /**
-   * Value
-   */
-  value: string;
-};
-
-/**
  * DeletePromptResponse
  */
 export type DeletePromptResponse = {
@@ -6415,26 +6359,6 @@ export type EditSpan = {
    * Label
    */
   label: string;
-};
-
-/**
- * EnumFilter
- *
- * Filters on a string field, with limited categories.
- */
-export type EnumFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'one_of' | 'not_in';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
 };
 
 /**
@@ -6657,9 +6581,13 @@ export type ExperimentResponse = {
   created_by?: string | null;
   created_by_user?: UserInfo | null;
   /**
-   * Num Samples
+   * Num Spans
    */
-  num_samples?: number | null;
+  num_spans?: number | null;
+  /**
+   * Num Traces
+   */
+  num_traces?: number | null;
   task_type: TaskType;
   dataset?: ExperimentDataset | null;
   /**
@@ -9650,21 +9578,7 @@ export type FilterExpression = FilterLeaf | AndNode | OrNode | NotNode;
  * FilterLeaf
  */
 export type FilterLeaf = {
-  /**
-   * Filter
-   */
-  filter:
-    | CollectionFilter
-    | StringFilter
-    | IdFilter
-    | CustomUuidFilter
-    | DateFilter
-    | BooleanFilter
-    | CustomNumberFilter
-    | EnumFilter
-    | MapFilter
-    | CustomBooleanFilter
-    | CustomFunctionFilter;
+  filter: RawFilter;
 };
 
 /**
@@ -10299,26 +10213,6 @@ export type HistogramStrategy =
   (typeof HistogramStrategy)[keyof typeof HistogramStrategy];
 
 /**
- * IDFilter
- *
- * Filters on a UUID field.
- */
-export type IdFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-};
-
-/**
  * InputMap
  */
 export type InputMap = {
@@ -10757,6 +10651,20 @@ export const IntegrationName = {
  */
 export type IntegrationName =
   (typeof IntegrationName)[keyof typeof IntegrationName];
+
+/**
+ * InvalidResult
+ */
+export type InvalidResult = {
+  /**
+   * Result Type
+   */
+  result_type?: 'invalid';
+  /**
+   * Error Message
+   */
+  error_message: string;
+};
 
 /**
  * InvokeResponse
@@ -12050,7 +11958,7 @@ export type LogRecordsIdFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
   /**
    * Type
    */
@@ -12697,6 +12605,15 @@ export type LogStreamResponse = {
    * Created By
    */
   created_by?: string | null;
+  created_by_user?: UserInfo | null;
+  /**
+   * Num Spans
+   */
+  num_spans?: number | null;
+  /**
+   * Num Traces
+   */
+  num_traces?: number | null;
   /**
    * Has User Created Sessions
    */
@@ -13013,30 +12930,6 @@ export type LunaOutputTypeEnum =
   (typeof LunaOutputTypeEnum)[keyof typeof LunaOutputTypeEnum];
 
 /**
- * MapFilter
- *
- * Filters for string items in a map / dictionary.
- */
-export type MapFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'one_of' | 'not_in' | 'eq' | 'ne';
-  /**
-   * Key
-   */
-  key: string;
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-};
-
-/**
  * Messages
  */
 export type Messages = Array<GalileoCoreSchemasSharedMessageMessage>;
@@ -13301,6 +13194,40 @@ export type MetricPending = {
    */
   status_type?: 'pending';
   scorer_type?: ScorerType | null;
+};
+
+/**
+ * MetricSettingsRequest
+ */
+export type MetricSettingsRequest = {
+  /**
+   * Scorers
+   *
+   * List of Galileo scorers to enable.
+   */
+  scorers?: Array<ScorerConfig> | null;
+  /**
+   * Segment Filters
+   *
+   * List of segment filters to apply to the run.
+   */
+  segment_filters?: Array<SegmentFilter> | null;
+};
+
+/**
+ * MetricSettingsResponse
+ */
+export type MetricSettingsResponse = {
+  /**
+   * Scorers
+   */
+  scorers: Array<ScorerConfig>;
+  /**
+   * Segment Filters
+   *
+   * List of segment filters to apply to the run.
+   */
+  segment_filters?: Array<SegmentFilter> | null;
 };
 
 /**
@@ -13770,6 +13697,27 @@ export type OpenAiToolChoice = {
   type?: string;
   function: OpenAiFunction;
 };
+
+/**
+ * Operator
+ */
+export const Operator = {
+  EQ: 'eq',
+  NE: 'ne',
+  CONTAINS: 'contains',
+  ONE_OF: 'one_of',
+  NOT_IN: 'not_in',
+  GT: 'gt',
+  GTE: 'gte',
+  LT: 'lt',
+  LTE: 'lte',
+  BETWEEN: 'between'
+} as const;
+
+/**
+ * Operator
+ */
+export type Operator = (typeof Operator)[keyof typeof Operator];
 
 /**
  * OrNode
@@ -14281,7 +14229,7 @@ export type ProjectCreatorFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -14396,7 +14344,7 @@ export type ProjectIdFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -15003,7 +14951,7 @@ export type PromptTemplateCreatedByFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -15248,6 +15196,32 @@ export type QueryDatasetParams = {
 };
 
 /**
+ * RawFilter
+ *
+ * Raw filter input. At least one of 'name' or 'column_id' is required.
+ * 'value' is required. 'operator' and 'case_sensitive' are optional.
+ */
+export type RawFilter = {
+  /**
+   * Name
+   */
+  name?: string | null;
+  /**
+   * Column Id
+   */
+  column_id?: string | null;
+  operator?: Operator | null;
+  /**
+   * Value
+   */
+  value: unknown;
+  /**
+   * Case Sensitive
+   */
+  case_sensitive?: boolean | null;
+};
+
+/**
  * RecomputeLogRecordsMetricsRequest
  *
  * Request to recompute metrics for a genai project run (log stream or experiment).
@@ -15415,6 +15389,29 @@ export const RegisteredScorerAction = {
  */
 export type RegisteredScorerAction =
   (typeof RegisteredScorerAction)[keyof typeof RegisteredScorerAction];
+
+/**
+ * RegisteredScorerTaskResultResponse
+ */
+export type RegisteredScorerTaskResultResponse = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
+  status: TaskResultStatus;
+  /**
+   * Result
+   */
+  result?: ValidateRegisteredScorerResult | string | null;
+};
 
 /**
  * RenderTemplateRequest
@@ -15619,6 +15616,27 @@ export type RetrieverSpan = {
       } & ToolSpan)
   >;
 };
+
+/**
+ * RollUpStrategy
+ *
+ * Strategies for rolling metrics up the Session/Trace/Span hierarchy.
+ */
+export const RollUpStrategy = {
+  AVG: 'avg',
+  SUM: 'sum',
+  FIRST: 'first',
+  LAST: 'last',
+  NONE: 'none'
+} as const;
+
+/**
+ * RollUpStrategy
+ *
+ * Strategies for rolling metrics up the Session/Trace/Span hierarchy.
+ */
+export type RollUpStrategy =
+  (typeof RollUpStrategy)[keyof typeof RollUpStrategy];
 
 /**
  * RollbackRequest
@@ -16043,12 +16061,6 @@ export type RunParamsMap = {
  */
 export type RunScorerSettingsPatchRequest = {
   /**
-   * Run Id
-   *
-   * ID of the run.
-   */
-  run_id: string;
-  /**
    * Scorers
    *
    * List of Galileo scorers to enable.
@@ -16060,18 +16072,18 @@ export type RunScorerSettingsPatchRequest = {
    * List of segment filters to apply to the run.
    */
   segment_filters?: Array<SegmentFilter> | null;
-};
-
-/**
- * RunScorerSettingsResponse
- */
-export type RunScorerSettingsResponse = {
   /**
    * Run Id
    *
    * ID of the run.
    */
   run_id: string;
+};
+
+/**
+ * RunScorerSettingsResponse
+ */
+export type RunScorerSettingsResponse = {
   /**
    * Scorers
    */
@@ -16082,6 +16094,12 @@ export type RunScorerSettingsResponse = {
    * List of segment filters to apply to the run.
    */
   segment_filters?: Array<SegmentFilter> | null;
+  /**
+   * Run Id
+   *
+   * ID of the run.
+   */
+  run_id: string;
 };
 
 /**
@@ -16275,7 +16293,7 @@ export type ScorerCreatorFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -17129,30 +17147,6 @@ export type StringData = {
 };
 
 /**
- * StringFilter
- *
- * Filters on a string field.
- */
-export type StringFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-  /**
-   * Case Sensitive
-   */
-  case_sensitive?: boolean;
-};
-
-/**
  * SubscriptionConfig
  */
 export type SubscriptionConfig = {
@@ -17239,6 +17233,10 @@ export type SyntheticDatasetExtensionRequest = {
    * Count
    */
   count?: number;
+  /**
+   * Project Id
+   */
+  project_id?: string | null;
 };
 
 /**
@@ -17414,6 +17412,21 @@ export type TaskResourceLimits = {
 };
 
 /**
+ * TaskResultStatus
+ */
+export const TaskResultStatus = {
+  PENDING: 'pending',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+} as const;
+
+/**
+ * TaskResultStatus
+ */
+export type TaskResultStatus =
+  (typeof TaskResultStatus)[keyof typeof TaskResultStatus];
+
+/**
  * TaskType
  *
  * Valid task types for modeling.
@@ -17459,6 +17472,17 @@ export type TemplateStubRequest = {
    * Templates
    */
   templates: Array<string>;
+};
+
+/**
+ * TestScore
+ */
+export type TestScore = {
+  node_type: NodeType;
+  /**
+   * Score
+   */
+  score?: number | number | string | boolean | null;
 };
 
 /**
@@ -18354,6 +18378,43 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 /**
+ * ValidResult
+ */
+export type ValidResult = {
+  /**
+   * Result Type
+   */
+  result_type?: 'valid';
+  /**
+   * Score Type
+   */
+  score_type: string;
+  /**
+   * Scoreable Node Types
+   */
+  scoreable_node_types: Array<NodeType>;
+  /**
+   * Include Llm Credentials
+   */
+  include_llm_credentials?: boolean;
+  chain_aggregation?: ChainAggregationStrategy | null;
+  /**
+   * Test Scores
+   */
+  test_scores: Array<TestScore>;
+};
+
+/**
+ * ValidateCodeScorerResponse
+ */
+export type ValidateCodeScorerResponse = {
+  /**
+   * Task Id
+   */
+  task_id: string;
+};
+
+/**
  * ValidateLLMScorerLogRecordRequest
  *
  * Request to validate a new LLM scorer based on a log record.
@@ -18447,6 +18508,16 @@ export type ValidateLlmScorerLogRecordResponse = {
    * Metrics Experiment Id
    */
   metrics_experiment_id: string;
+};
+
+/**
+ * ValidateRegisteredScorerResult
+ */
+export type ValidateRegisteredScorerResult = {
+  /**
+   * Result
+   */
+  result: ValidResult | InvalidResult;
 };
 
 /**
@@ -20936,7 +21007,12 @@ export type ListLogStreamsProjectsProjectIdLogStreamsGetData = {
      */
     project_id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Include Counts
+     */
+    include_counts?: boolean;
+  };
   url: '/projects/{project_id}/log_streams';
 };
 
@@ -21004,6 +21080,10 @@ export type ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetData =
       project_id: string;
     };
     query?: {
+      /**
+       * Include Counts
+       */
+      include_counts?: boolean;
       /**
        * Starting Token
        */
@@ -21148,6 +21228,84 @@ export type UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponses =
 
 export type UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponse =
   UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponses[keyof UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponses];
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Log Stream Id
+       */
+      log_stream_id: string;
+      /**
+       * Project Id
+       */
+      project_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/log_streams/{log_stream_id}/metric_settings';
+  };
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetError =
+  GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetErrors[keyof GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetErrors];
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponse =
+  GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponses[keyof GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponses];
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchData =
+  {
+    body: MetricSettingsRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+      /**
+       * Log Stream Id
+       */
+      log_stream_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/log_streams/{log_stream_id}/metric_settings';
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchError =
+  UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchErrors[keyof UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchErrors];
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponse =
+  UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses[keyof UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses];
 
 export type LogTracesProjectsProjectIdTracesPostData = {
   body: LogTracesIngestRequest;
@@ -22002,7 +22160,12 @@ export type ListExperimentsProjectsProjectIdExperimentsGetData = {
      */
     project_id: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Include Counts
+     */
+    include_counts?: boolean;
+  };
   url: '/projects/{project_id}/experiments';
 };
 
@@ -22070,6 +22233,10 @@ export type ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetData
       project_id: string;
     };
     query?: {
+      /**
+       * Include Counts
+       */
+      include_counts?: boolean;
       /**
        * Starting Token
        */
@@ -22326,6 +22493,84 @@ export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponse
 export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponse =
   GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses[keyof GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses];
 
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Experiment Id
+       */
+      experiment_id: string;
+      /**
+       * Project Id
+       */
+      project_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/experiments/{experiment_id}/metric_settings';
+  };
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetError =
+  GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetErrors[keyof GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetErrors];
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponse =
+  GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponses[keyof GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponses];
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchData =
+  {
+    body: MetricSettingsRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+      /**
+       * Experiment Id
+       */
+      experiment_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/experiments/{experiment_id}/metric_settings';
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchError =
+  UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchErrors[keyof UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchErrors];
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponse =
+  UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponses[keyof UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponses];
+
 export type CreateJobJobsPostData = {
   body: CreateJobRequest;
   path?: never;
@@ -22473,13 +22718,13 @@ export type GetSettingsProjectsProjectIdRunsRunIdScorerSettingsGetData = {
   body?: never;
   path: {
     /**
-     * Project Id
-     */
-    project_id: string;
-    /**
      * Run Id
      */
     run_id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
   };
   query?: never;
   url: '/projects/{project_id}/runs/{run_id}/scorer-settings';
@@ -23804,6 +24049,67 @@ export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses = {
 
 export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponse =
   CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses[keyof CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses];
+
+export type ValidateCodeScorerScorersCodeValidatePostData = {
+  body: BodyValidateCodeScorerScorersCodeValidatePost;
+  path?: never;
+  query?: never;
+  url: '/scorers/code/validate';
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostError =
+  ValidateCodeScorerScorersCodeValidatePostErrors[keyof ValidateCodeScorerScorersCodeValidatePostErrors];
+
+export type ValidateCodeScorerScorersCodeValidatePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ValidateCodeScorerResponse;
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostResponse =
+  ValidateCodeScorerScorersCodeValidatePostResponses[keyof ValidateCodeScorerScorersCodeValidatePostResponses];
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string;
+  };
+  query?: never;
+  url: '/scorers/code/validate/{task_id}';
+};
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetError =
+  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors];
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: RegisteredScorerTaskResultResponse;
+  };
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponse =
+  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses];
 
 export type GetScorerVersionCodeScorersScorerIdVersionCodeGetData = {
   body?: never;
