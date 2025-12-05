@@ -36,12 +36,13 @@ export class DatasetService extends BaseClient {
     this.initializeClient();
   }
 
-  public async getDatasets(): Promise<DatasetDBType[]> {
+  public async getDatasets(limit?: number): Promise<DatasetDBType[]> {
     const allDatasetsOpenAPI: DatasetOpenAPI[] = [];
     let pageNumber = 1;
 
     const params: Record<string, unknown> = {
-      starting_token: 0
+      starting_token: 0,
+      limit: limit ?? 100
     };
 
     do {

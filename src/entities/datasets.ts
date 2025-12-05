@@ -93,7 +93,7 @@ export class Dataset {
       this.id,
       etag,
       stringifiedRows.map((row) => ({
-        edit_type: 'append_row' as const,
+        editType: 'append_row' as const,
         values: row
       }))
     );
@@ -177,9 +177,9 @@ export class Datasets {
    * @returns A promise that resolves to the list of datasets.
    */
   async list(options?: {
-    limit?: number;
     projectId?: string;
     projectName?: string;
+    limit?: number;
   }): Promise<Dataset[]> {
     const client = await this.ensureClient();
 
@@ -188,14 +188,33 @@ export class Datasets {
       const projectId =
         options.projectId ??
         (await this.resolveProjectId(options.projectName!));
-      const response = await client.queryDatasets({
-        filters: [{ name: 'used_in_project', value: projectId }]
-      });
-      return response.datasets?.map((db) => new Dataset(db)) ?? [];
-    }
 
-    const datasets = await client.getDatasets();
-    return datasets.map((db) => new Dataset(db));
+      const allDatasets: DatasetDBType[] = [];
+      let startingToken: number | null | undefined = 0;
+
+      do {
+        const response = await client.queryDatasets(
+          {
+            filters: [{ name: 'used_in_project', value: projectId }]
+          },
+          {
+            startingToken: startingToken ?? undefined,
+            limit: options.limit ?? 100
+          }
+        );
+
+        if (response.datasets?.length) {
+          allDatasets.push(...response.datasets);
+        }
+
+        startingToken = response.nextStartingToken;
+      } while (startingToken);
+
+      return allDatasets.map((db) => new Dataset(db));
+    } else {
+      const datasets = await client.getDatasets(options?.limit);
+      return datasets.map((db) => new Dataset(db));
+    }
   }
 
   /**

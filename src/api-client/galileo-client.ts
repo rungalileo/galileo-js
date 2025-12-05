@@ -529,9 +529,9 @@ export class GalileoApiClient extends BaseClient {
    * Gets all datasets visible to the client.
    * @returns A promise that resolves to the list of datasets.
    */
-  public async getDatasets() {
+  public async getDatasets(limit?: number) {
     this.ensureService(this.datasetService);
-    return this.datasetService!.getDatasets();
+    return this.datasetService!.getDatasets(limit);
   }
 
   /**
