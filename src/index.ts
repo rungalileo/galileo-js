@@ -19,6 +19,14 @@ import {
   LogRecordsMetricsQueryRequest
 } from './types/search.types';
 import {
+  DatasetRow,
+  DatasetContent,
+  DatasetFormat,
+  ListDatasetResponse,
+  SyntheticDatasetExtensionRequest,
+  JobProgress
+} from './types/dataset.types';
+import {
   addRowsToDataset,
   createDataset,
   createDatasetRecord,
@@ -221,5 +229,11 @@ export type {
   LocalMetricConfig,
   LogRecordsFilter,
   LogRecordsExportRequest,
-  LogRecordsMetricsQueryRequest
+  LogRecordsMetricsQueryRequest,
+  DatasetRow,
+  DatasetContent,
+  DatasetFormat,
+  ListDatasetResponse,
+  SyntheticDatasetExtensionRequest,
+  JobProgress
 };
