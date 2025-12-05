@@ -1,18 +1,27 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import {
-  ChainPollTemplate,
-  ModelType,
-  Scorer,
-  ScorerDefaults,
-  ScorerVersion,
+  ScorerTypes,
   ValidateCodeScorerResponse,
   RegisteredScorerTaskResultResponse,
   TaskStatus,
   ResultType,
-  ValidateRegisteredScorerResult
+  ValidateRegisteredScorerResult,
+  CreateScorerRequest,
+  CreateScorerRequestOpenAPI,
+  ScorerResponseOpenAPI,
+  ListScorersRequestOpenAPI,
+  ScorerResponse,
+  ListScorersRequest,
+  ListScorersResponseOpenAPI,
+  ListScorersResponse,
+  BaseScorerVersionResponseOpenAPI,
+  BaseScorerVersionResponse,
+  CreateLlmScorerVersionRequest,
+  CreateLlmScorerVersionRequestOpenAPI,
+  DeleteScorerResponse,
+  DeleteScorerResponseOpenAPI
 } from '../../types/scorer.types';
-import { OutputType, InputType, ScorerTypes } from '../../types/scorer.types';
 import { StepType } from '../../types/logging/step.types';
 
 export class ScorerService extends BaseClient {
@@ -32,10 +41,13 @@ export class ScorerService extends BaseClient {
   public getScorers = async (options?: {
     type?: ScorerTypes;
     names?: string[];
-  }): Promise<Scorer[]> => {
-    const filters = [];
+  }): Promise<ListScorersResponse> => {
+    const payload: ListScorersRequest = {
+      filters: []
+    };
+
     if (options?.type) {
-      filters.push({
+      payload.filters!.push({
         name: 'scorer_type',
         value: options.type,
         operator: 'eq'
@@ -43,29 +55,103 @@ export class ScorerService extends BaseClient {
     }
 
     if (options?.names && options.names.length === 1) {
-      filters.push({
+      payload.filters!.push({
         name: 'name',
         value: options.names[0],
         operator: 'eq'
       });
     } else if (options?.names && options.names.length > 1) {
-      filters.push({
+      payload.filters!.push({
         name: 'name',
         value: options.names,
         operator: 'one_of'
       });
     }
 
-    const payload = filters.length > 0 ? { filters } : {};
-    console.log('Scorer request payload:', JSON.stringify(payload));
-
-    const response = await this.makeRequest<{ scorers: Scorer[] }>(
+    const request = this.convertToSnakeCase<
+      ListScorersRequest,
+      ListScorersRequestOpenAPI
+    >(payload);
+    const response = await this.makeRequest<ListScorersResponseOpenAPI>(
       RequestMethod.POST,
       Routes.scorers,
-      payload
+      request
     );
 
-    return response.scorers;
+    return this.convertToCamelCase<
+      ListScorersResponseOpenAPI,
+      ListScorersResponse
+    >(response);
+  };
+
+  /**
+   * Retrieves a page of scorers with pagination support.
+   */
+  public getScorersPage = async (options?: {
+    name?: string;
+    names?: string[];
+    types?: ScorerTypes[];
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> => {
+    const payload: ListScorersRequest = {
+      filters: []
+    };
+
+    if (options?.types && options.types.length === 1) {
+      payload.filters!.push({
+        name: 'scorer_type',
+        value: options.types[0],
+        operator: 'eq'
+      });
+    } else if (options?.types && options.types.length > 1) {
+      payload.filters!.push({
+        name: 'scorer_type',
+        value: options.types,
+        operator: 'one_of'
+      });
+    }
+
+    if (options?.name) {
+      payload.filters!.push({
+        name: 'name',
+        value: options.name,
+        operator: 'eq'
+      });
+    }
+
+    if (options?.names && options.names.length === 1) {
+      payload.filters!.push({
+        name: 'name',
+        value: options.names[0],
+        operator: 'eq'
+      });
+    } else if (options?.names && options.names.length > 1) {
+      payload.filters!.push({
+        name: 'name',
+        value: options.names,
+        operator: 'one_of'
+      });
+    }
+
+    const request = this.convertToSnakeCase<
+      ListScorersRequest,
+      ListScorersRequestOpenAPI
+    >(payload);
+    const response = await this.makeRequest<ListScorersResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.scorers,
+      request,
+      {
+        starting_token: options?.startingToken ?? 0,
+        limit: options?.limit ?? 100
+      }
+    );
+
+    return this.convertToCamelCase<
+      ListScorersResponseOpenAPI,
+      ListScorersResponse
+    >(response);
   };
 
   /**
@@ -73,64 +159,59 @@ export class ScorerService extends BaseClient {
    *
    * @param scorerId - The unique identifier of the scorer.
    * @param version - The version number of the scorer to retrieve.
-   * @returns A promise that resolves to the requested {@link ScorerVersion}.
+   * @returns A promise that resolves to the requested {@link BaseScorerVersionResponse}.
    */
   public getScorerVersion = async (
     scorerId: string,
     version: number
-  ): Promise<ScorerVersion> => {
-    const path = Routes.scorerVersion.replace('{scorer_id}', scorerId);
-    return await this.makeRequest<ScorerVersion>(
+  ): Promise<BaseScorerVersionResponse> => {
+    const response = await this.makeRequest<BaseScorerVersionResponseOpenAPI>(
       RequestMethod.GET,
-      path as Routes,
+      Routes.scorerVersion,
       undefined,
       {
+        scorer_id: scorerId,
         version: version
       }
     );
+
+    return this.convertToCamelCase<
+      BaseScorerVersionResponseOpenAPI,
+      BaseScorerVersionResponse
+    >(response);
   };
 
   /**
    * Creates a new scorer with the specified parameters.
-   *
-   * @param name - The name of the scorer.
-   * @param type - The type of the scorer.
-   * @param description - (Optional) A description for the scorer.
-   * @param tags - (Optional) Tags to associate with the scorer.
-   * @param defaults - (Optional) Default settings for the scorer.
-   * @param modelType - (Optional) The model type for the scorer.
-   * @param defaultVersionId - (Optional) The default version ID for the scorer.
-   * @returns A promise that resolves to the created {@link Scorer}.
+   * @param options - The scorer creation options.
+   * @param options.name - The name of the scorer.
+   * @param options.scorerType - The type of the scorer.
+   * @param options.description - (Optional) A description for the scorer.
+   * @param options.tags - (Optional) Tags to associate with the scorer.
+   * @param options.defaults - (Optional) Default settings for the scorer. Required for LLM scorers.
+   * @param options.modelType - (Optional) The model type for the scorer.
+   * @param options.defaultVersionId - (Optional) The default version ID for the scorer.
+   * @param options.scoreableNodeTypes - (Optional) The node types that can be scored.
+   * @param options.outputType - (Optional) The output type for the scorer.
+   * @param options.inputType - (Optional) The input type for the scorer.
+   * @returns A promise that resolves to the created scorer.
    */
   public createScorer = async (
-    name: string,
-    type: ScorerTypes,
-    description?: string,
-    tags?: string[],
-    defaults?: ScorerDefaults,
-    modelType?: ModelType,
-    defaultVersionId?: string,
-    scoreableNodeTypes?: StepType[],
-    outputType?: OutputType,
-    inputType?: InputType
-  ): Promise<Scorer> => {
-    const scorerPayload = {
-      name: name,
-      scorer_type: type,
-      description: description,
-      tags: tags || [],
-      defaults: defaults,
-      model_type: modelType,
-      default_version_id: defaultVersionId,
-      scoreable_node_types: scoreableNodeTypes,
-      output_type: outputType,
-      input_type: inputType
-    };
+    options: CreateScorerRequest
+  ): Promise<ScorerResponse> => {
+    const requestBody: CreateScorerRequestOpenAPI = this.convertToSnakeCase<
+      CreateScorerRequest,
+      CreateScorerRequestOpenAPI
+    >(options);
 
-    return await this.makeRequest<Scorer>(
+    const response = await this.makeRequest<ScorerResponseOpenAPI>(
       RequestMethod.POST,
       Routes.scorer,
-      scorerPayload
+      requestBody
+    );
+
+    return this.convertToCamelCase<ScorerResponseOpenAPI, ScorerResponse>(
+      response
     );
   };
 
@@ -150,50 +231,23 @@ export class ScorerService extends BaseClient {
    */
   public createLLMScorerVersion = async (
     scorerId: string,
-    instructions?: string,
-    chainPollTemplate?: ChainPollTemplate,
-    userPrompt?: string,
-    cotEnabled?: boolean,
-    modelName?: string,
-    numJudges?: number
-  ): Promise<ScorerVersion> => {
-    const scorerVersionPayload: {
-      model_name?: string;
-      num_judges?: number;
-      instructions?: string;
-      chain_poll_template?: ChainPollTemplate;
-      user_prompt?: string;
-      scoreable_node_types?: StepType[];
-      cot_enabled?: boolean;
-    } = {};
-
-    if (modelName !== undefined && modelName !== null) {
-      scorerVersionPayload.model_name = modelName;
-    }
-    if (numJudges !== undefined && numJudges !== null) {
-      scorerVersionPayload.num_judges = numJudges;
-    }
-    if (instructions !== undefined && instructions !== null) {
-      scorerVersionPayload.instructions = instructions;
-    }
-    if (chainPollTemplate !== undefined && chainPollTemplate !== null) {
-      scorerVersionPayload.chain_poll_template = chainPollTemplate;
-    }
-    if (userPrompt !== undefined && userPrompt !== null) {
-      scorerVersionPayload.user_prompt = userPrompt;
-    }
-    if (cotEnabled !== undefined && cotEnabled !== null) {
-      scorerVersionPayload.cot_enabled = cotEnabled;
-    }
-
-    const path = Routes.llmScorerVersion.replace('{scorer_id}', scorerId);
-
-    return await this.makeRequest<ScorerVersion>(
+    options: CreateLlmScorerVersionRequest
+  ): Promise<BaseScorerVersionResponse> => {
+    const request = this.convertToSnakeCase<
+      CreateLlmScorerVersionRequest,
+      CreateLlmScorerVersionRequestOpenAPI
+    >(options);
+    const response = await this.makeRequest<BaseScorerVersionResponseOpenAPI>(
       RequestMethod.POST,
-      path as Routes,
-      scorerVersionPayload,
-      undefined
+      Routes.llmScorerVersion,
+      request,
+      { scorer_id: scorerId }
     );
+
+    return this.convertToCamelCase<
+      BaseScorerVersionResponseOpenAPI,
+      BaseScorerVersionResponse
+    >(response);
   };
 
   /**
@@ -202,17 +256,25 @@ export class ScorerService extends BaseClient {
    * @param id - The unique identifier of the scorer to delete.
    * @returns A promise that resolves when the scorer is deleted.
    */
-  public deleteScorer = async (id: string): Promise<void> => {
-    const path = Routes.scorerId.replace('{scorer_id}', id);
-    await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
+  public deleteScorer = async (id: string): Promise<DeleteScorerResponse> => {
+    const response = await this.makeRequest<DeleteScorerResponseOpenAPI>(
+      RequestMethod.DELETE,
+      Routes.scorerId,
+      undefined,
+      { scorer_id: id }
+    );
+
+    return this.convertToCamelCase<
+      DeleteScorerResponseOpenAPI,
+      DeleteScorerResponse
+    >(response);
   };
 
   public createCodeScorerVersion = async (
     scorerId: string,
     codeContent: string,
     validationResult?: string
-  ): Promise<ScorerVersion> => {
-    const path = Routes.codeScorerVersion.replace('{scorer_id}', scorerId);
+  ): Promise<BaseScorerVersionResponse> => {
     console.log(`Creating metric version: ${scorerId}`);
     console.log(`Code content length: ${codeContent.length} bytes`);
 
@@ -227,13 +289,18 @@ export class ScorerService extends BaseClient {
       formData.append('validation_result', validationResult);
     }
 
-    const result = await this.makeRequest<ScorerVersion>(
+    const result = await this.makeRequest<BaseScorerVersionResponseOpenAPI>(
       RequestMethod.POST,
-      path as Routes,
-      formData
+      Routes.codeScorerVersion,
+      formData,
+      { scorer_id: scorerId }
     );
+
     console.log(`Metric version created: ${result.id}`);
-    return result;
+    return this.convertToCamelCase<
+      BaseScorerVersionResponseOpenAPI,
+      BaseScorerVersionResponse
+    >(result);
   };
 
   /**

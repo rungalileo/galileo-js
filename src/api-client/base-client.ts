@@ -242,6 +242,10 @@ export class BaseClient {
         params && 'user_id' in params ? (params.user_id as string) : ''
       )
       .replace(
+        '{scorer_id}',
+        params && 'scorer_id' in params ? (params.scorer_id as string) : ''
+      )
+      .replace(
         '{group_id}',
         params && 'group_id' in params ? (params.group_id as string) : ''
       )}`;

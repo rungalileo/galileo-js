@@ -32,7 +32,7 @@ describe('JobsService', () => {
   const mockScorers: ScorerConfig[] = [
     {
       id: 'scorer-1',
-      scorer_type: ScorerTypes.preset,
+      scorerType: ScorerTypes.preset,
       name: 'completeness'
     }
   ];

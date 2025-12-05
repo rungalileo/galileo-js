@@ -25,6 +25,7 @@ const mockGetProjects = jest.fn();
 const mockGetProjectByName = jest.fn();
 const mockCreateRunScorerSettings = jest.fn();
 const mockGetScorers = jest.fn();
+const mockGetScorersPage = jest.fn();
 const mockCreatePromptRunJob = jest.fn();
 const mockGetDataset = jest.fn();
 const mockGetDatasets = jest.fn();
@@ -47,6 +48,7 @@ jest.mock('../../src/api-client', () => {
           getProjectByName: mockGetProjectByName,
           createRunScorerSettings: mockCreateRunScorerSettings,
           getScorers: mockGetScorers,
+          getScorersPage: mockGetScorersPage,
           getScorerVersion: mockGetScorerVersion,
           createPromptRunJob: mockCreatePromptRunJob,
           getDataset: mockGetDataset,
@@ -197,6 +199,14 @@ describe('experiments utility', () => {
     mockGetProjectByName.mockResolvedValue(mockProject);
     mockCreateRunScorerSettings.mockResolvedValue(undefined);
     mockGetScorers.mockResolvedValue([mockScorer]);
+    mockGetScorersPage.mockResolvedValue({
+      scorers: [mockScorer],
+      nextStartingToken: null
+    });
+    mockGetScorerVersion.mockResolvedValue({
+      scorers: [mockScorer],
+      nextStartingToken: null
+    });
     mockGetScorerVersion.mockResolvedValue({
       // Add this implementation
       id: 'scorer-version-123',
@@ -374,7 +384,9 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorers).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -515,7 +527,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorers).toHaveBeenCalled();
+      expect(mockGetScorersPage).toHaveBeenCalled();
 
       // Verify the correct scorer was found by name
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
@@ -536,7 +548,9 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorers).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -562,24 +576,29 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorers).toHaveBeenCalled();
+      expect(mockGetScorersPage).toHaveBeenCalled();
       expect(mockGetScorerVersion).toHaveBeenCalledWith('scorer-123', 3);
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
 
     it('should handle multiple metrics with mixed formats', async () => {
-      mockGetScorers.mockImplementation((options?: { names?: string[] }) => {
-        const names = options?.names || [];
-        // When called without names, return all available scorers
-        const availableScorers = ['correctness', 'toxicity'];
-        const scorersToReturn = names.length > 0 ? names : availableScorers;
-        return scorersToReturn.map((name: string) => ({
-          id: `scorer-${name}`,
-          name,
-          scorer_type: ScorerTypes.preset
-        }));
-      });
+      mockGetScorersPage.mockImplementation(
+        (options?: { names?: string[] }) => {
+          const names = options?.names || [];
+          // When called without names, return all available scorers
+          const availableScorers = ['correctness', 'toxicity'];
+          const scorersToReturn = names.length > 0 ? names : availableScorers;
+          return {
+            scorers: scorersToReturn.map((name: string) => ({
+              id: `scorer-${name}`,
+              name,
+              scorer_type: ScorerTypes.preset
+            })),
+            nextStartingToken: null
+          };
+        }
+      );
 
       const result = await runExperiment({
         name: 'Test Experiment',
@@ -598,7 +617,9 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorers).toHaveBeenCalled();
+      expect(mockCreateExperiment).toHaveBeenCalled();
+      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
