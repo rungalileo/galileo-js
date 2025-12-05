@@ -1,15 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  Scorer,
   ScorerConfig,
   ScorerDefaults,
   ScorerTypes,
-  ScorerVersion,
   ModelType,
   ChainPollTemplate,
   OutputType,
   InputType,
-  ValidateRegisteredScorerResult
+  ValidateRegisteredScorerResult,
+  createScorerOptions,
+  ScorerResponse,
+  CreateScorerRequest,
+  ListScorersResponse,
+  BaseScorerVersionResponse,
+  DeleteScorerResponse
 } from '../types/scorer.types';
 import {
   CollaboratorUpdate,
@@ -1346,20 +1350,56 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentService!.createExperiment(name, dataset);
   }
 
+  /**
+   * Lists scorers with optional filtering (backward compatible, use
+   * getScorersPage for pagination and limit).
+   * @param options - (Optional) The filtering options.
+   * @param options.type - (Optional) Filter by a single scorer type.
+   * @param options.names - (Optional) Filter by multiple scorer names.
+   * @returns A promise that resolves to an array of scorers.
+   */
   public async getScorers(options?: {
     type?: ScorerTypes;
     names?: string[];
-  }): Promise<Scorer[]> {
+  }): Promise<ScorerResponse[]> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorers(options);
+    const response = await this.scorerService!.getScorers(options);
+    return response.scorers ?? [];
   }
 
-  public async getScorerVersion(
-    scorer_id: string,
-    version: number
-  ): Promise<ScorerVersion> {
+  /**
+   * Lists scorers with pagination support.
+   * @param options - (Optional) The filtering and pagination options.
+   * @param options.name - (Optional) Filter by a single scorer name.
+   * @param options.names - (Optional) Filter by multiple scorer names.
+   * @param options.types - (Optional) Filter by scorer types.
+   * @param options.startingToken - (Optional) The starting token for pagination.
+   * @param options.limit - (Optional) The maximum number of scorers to return.
+   * @returns A promise that resolves to an object containing scorers and the next starting token.
+   */
+  public async getScorersPage(options?: {
+    name?: string;
+    names?: string[];
+    types?: ScorerTypes[];
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorerVersion(scorer_id, version);
+    return this.scorerService!.getScorersPage(options);
+  }
+
+  /**
+   * Retrieves a specific version of a scorer.
+   * @param scorerId - The unique identifier of the scorer.
+   * @param version - The version number to retrieve.
+   * @returns A promise that resolves to the scorer version.
+   */
+  public async getScorerVersion(
+    scorerId: string,
+    version: number
+  ): Promise<BaseScorerVersionResponse> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.getScorerVersion(scorerId, version);
   }
 
   public async createRunScorerSettings(
@@ -1417,6 +1457,39 @@ export class GalileoApiClient extends BaseClient {
     );
   }
 
+  /**
+   * Creates a new scorer.
+   * @param options - The scorer creation options.
+   * @param options.name - The name of the scorer.
+   * @param options.scorerType - The type of the scorer.
+   * @param options.description - (Optional) A description for the scorer.
+   * @param options.tags - (Optional) Tags to associate with the scorer.
+   * @param options.defaults - (Optional) Default settings for the scorer. Required for LLM scorers.
+   * @param options.modelType - (Optional) The model type for the scorer.
+   * @param options.defaultVersionId - (Optional) The default version ID for the scorer.
+   * @param options.scoreableNodeTypes - (Optional) The node types that can be scored.
+   * @param options.outputType - (Optional) The output type for the scorer.
+   * @param options.inputType - (Optional) The input type for the scorer.
+   * @returns A promise that resolves to the created scorer.
+   */
+  public async createScorer(
+    options: createScorerOptions
+  ): Promise<ScorerResponse>;
+
+  /**
+   * Creates a new scorer.
+   * @param name - The name of the scorer.
+   * @param scorerType - The type of the scorer.
+   * @param description - (Optional) A description for the scorer.
+   * @param tags - (Optional) Tags to associate with the scorer.
+   * @param defaults - (Optional) Default settings for the scorer. Required for LLM scorers.
+   * @param modelType - (Optional) The model type for the scorer.
+   * @param defaultVersionId - (Optional) The default version ID for the scorer.
+   * @param scoreableNodeTypes - (Optional) The node types that can be scored.
+   * @param outputType - (Optional) The output type for the scorer.
+   * @param inputType - (Optional) The input type for the scorer.
+   * @returns A promise that resolves to the created scorer.
+   */
   public async createScorer(
     name: string,
     scorerType: ScorerTypes,
@@ -1428,22 +1501,78 @@ export class GalileoApiClient extends BaseClient {
     scoreableNodeTypes?: StepType[],
     outputType?: OutputType,
     inputType?: InputType
-  ): Promise<Scorer> {
+  ): Promise<ScorerResponse>;
+
+  public async createScorer(
+    nameOrOptions: string | createScorerOptions,
+    scorerType?: ScorerTypes,
+    description?: string,
+    tags?: string[],
+    defaults?: ScorerDefaults,
+    modelType?: ModelType,
+    defaultVersionId?: string,
+    scoreableNodeTypes?: StepType[],
+    outputType?: OutputType,
+    inputType?: InputType
+  ): Promise<ScorerResponse> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.createScorer(
-      name,
-      scorerType,
-      description,
-      tags,
-      defaults,
-      modelType,
-      defaultVersionId,
-      scoreableNodeTypes,
-      outputType,
-      inputType
-    );
+
+    let requestOptions: CreateScorerRequest;
+    if (typeof nameOrOptions === 'object') {
+      requestOptions = nameOrOptions;
+    } else {
+      requestOptions = {
+        name: nameOrOptions,
+        scorerType: scorerType!,
+        description,
+        tags,
+        defaults,
+        modelType,
+        defaultVersionId,
+        scoreableNodeTypes,
+        outputType,
+        inputType
+      };
+    }
+
+    return this.scorerService!.createScorer(requestOptions);
   }
 
+  /**
+   * Creates a new LLM scorer version.
+   * @param scorerId - The unique identifier of the scorer.
+   * @param options - The LLM scorer version creation options.
+   * @param options.instructions - (Optional) Instructions for the LLM scorer.
+   * @param options.chainPollTemplate - (Optional) Chain poll template configuration.
+   * @param options.userPrompt - (Optional) User prompt for the LLM scorer.
+   * @param options.cotEnabled - (Optional) Whether chain-of-thought is enabled.
+   * @param options.modelName - (Optional) The model name to use.
+   * @param options.numJudges - (Optional) The number of judges for consensus.
+   * @returns A promise that resolves to the created scorer version.
+   */
+  public async createLlmScorerVersion(
+    scorerId: string,
+    options: {
+      instructions?: string;
+      chainPollTemplate?: ChainPollTemplate;
+      userPrompt?: string;
+      cotEnabled?: boolean;
+      modelName?: string;
+      numJudges?: number;
+    }
+  ): Promise<BaseScorerVersionResponse>;
+
+  /**
+   * Creates a new LLM scorer version.
+   * @param scorerId - The unique identifier of the scorer.
+   * @param instructions - (Optional) Instructions for the LLM scorer.
+   * @param chainPollTemplate - (Optional) Chain poll template configuration.
+   * @param userPrompt - (Optional) User prompt for the LLM scorer.
+   * @param cotEnabled - (Optional) Whether chain-of-thought is enabled.
+   * @param modelName - (Optional) The model name to use.
+   * @param numJudges - (Optional) The number of judges for consensus.
+   * @returns A promise that resolves to the created scorer version.
+   */
   public async createLlmScorerVersion(
     scorerId: string,
     instructions?: string,
@@ -1452,29 +1581,66 @@ export class GalileoApiClient extends BaseClient {
     cotEnabled?: boolean,
     modelName?: string,
     numJudges?: number
-  ): Promise<ScorerVersion> {
+  ): Promise<BaseScorerVersionResponse>;
+
+  public async createLlmScorerVersion(
+    scorerId: string,
+    instructionsOrOptions?:
+      | string
+      | {
+          instructions?: string;
+          chainPollTemplate?: ChainPollTemplate;
+          userPrompt?: string;
+          cotEnabled?: boolean;
+          modelName?: string;
+          numJudges?: number;
+        },
+    chainPollTemplate?: ChainPollTemplate,
+    userPrompt?: string,
+    cotEnabled?: boolean,
+    modelName?: string,
+    numJudges?: number
+  ): Promise<BaseScorerVersionResponse> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.createLLMScorerVersion(
-      scorerId,
-      instructions,
-      chainPollTemplate,
-      userPrompt,
-      cotEnabled,
-      modelName,
-      numJudges
-    );
+
+    // Parse input into a single options object
+    const options =
+      typeof instructionsOrOptions === 'object'
+        ? instructionsOrOptions
+        : {
+            instructions: instructionsOrOptions,
+            chainPollTemplate,
+            userPrompt,
+            cotEnabled,
+            modelName,
+            numJudges
+          };
+
+    return this.scorerService!.createLLMScorerVersion(scorerId, options);
   }
 
-  public async deleteScorer(scorerId: string): Promise<void> {
+  /**
+   * Deletes a scorer by its unique identifier.
+   * @param scorerId - The unique identifier of the scorer to delete.
+   * @returns A promise that resolves to a response containing a success message.
+   */
+  public async deleteScorer(scorerId: string): Promise<DeleteScorerResponse> {
     this.ensureService(this.scorerService);
     return this.scorerService!.deleteScorer(scorerId);
   }
 
+  /**
+   * Creates a code-based scorer version.
+   * @param scorerId - The unique identifier of the scorer.
+   * @param codeContent - The Python code content for the scorer.
+   * @param validationResult - (Optional) The validation result JSON string.
+   * @returns A promise that resolves to the created scorer version.
+   */
   public async createCodeScorerVersion(
     scorerId: string,
     codeContent: string,
     validationResult?: string
-  ): Promise<ScorerVersion> {
+  ): Promise<BaseScorerVersionResponse> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createCodeScorerVersion(
       scorerId,
