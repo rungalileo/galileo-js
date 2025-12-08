@@ -159,11 +159,18 @@ export class Dataset {
 export class Datasets {
   private client: GalileoApiClient | null = null;
 
-  private async ensureClient(): Promise<GalileoApiClient> {
-    if (!this.client) {
-      this.client = new GalileoApiClient();
-      await this.client.init({ projectScoped: false });
-    }
+  private async ensureClient(
+    options: {
+      projectId?: string;
+      projectName?: string;
+    } = {}
+  ): Promise<GalileoApiClient> {
+    this.client = new GalileoApiClient();
+    await this.client.init({
+      projectId: options.projectId,
+      projectName: options.projectName,
+      projectScoped: options.projectId || options.projectName ? true : false
+    });
     return this.client;
   }
 
@@ -296,8 +303,10 @@ export class Datasets {
     projectId?: string;
     projectName?: string;
   }): Promise<Dataset> {
-    const client = await this.ensureClient();
-
+    const client = await this.ensureClient({
+      projectId: options.projectId,
+      projectName: options.projectName
+    });
     if (options.projectName) {
       const project = await client.getGlobalProjectByName(options.projectName);
       options.projectId = project.id;
