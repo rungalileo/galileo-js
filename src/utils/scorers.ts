@@ -214,7 +214,8 @@ export const validateCodeScorer = async (
   codeContent: string,
   scoreableNodeTypes: StepType[],
   timeoutMs?: number,
-  pollIntervalMs?: number
+  pollIntervalMs?: number,
+  required_scorers?: string[]
 ): Promise<ValidateRegisteredScorerResult> => {
   const client = new GalileoApiClient();
   await client.init();
@@ -223,6 +224,7 @@ export const validateCodeScorer = async (
     codeContent,
     scoreableNodeTypes,
     timeoutMs,
-    pollIntervalMs
+    pollIntervalMs,
+    required_scorers
   );
 };
