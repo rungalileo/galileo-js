@@ -1,90 +1,98 @@
-import {
-  GalileoApiClient,
-  DatasetRow,
-  SyntheticDatasetExtensionRequest
-} from '../api-client';
-import {
-  Dataset,
+import type {
+  DatasetFormat,
+  DatasetDBType,
   DatasetRecord,
-  DatasetRecordOptions
+  DatasetRecordOptions,
+  DatasetVersionHistory,
+  DatasetContent,
+  DatasetProject,
+  DatasetType,
+  DatasetRow,
+  SyntheticDatasetExtensionRequest,
+  CreateDatasetOptions
 } from '../types/dataset.types';
+import { DatasetFormatObject } from '../types/dataset.types';
 import { existsSync, PathLike, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { RunExperimentParams } from './experiments';
+import { Dataset, Datasets } from '../entities/datasets';
 
-export const getDatasets = async (): Promise<Dataset[]> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
+// Re-export types
+export { Dataset, Datasets };
 
-  const datasets = await apiClient.getDatasets();
-  return datasets.map((dataset) => ({
-    id: dataset.id,
-    name: dataset.name,
-    column_names: dataset.column_names,
-    project_count: dataset.project_count,
-    created_at: dataset.created_at,
-    updated_at: dataset.updated_at,
-    num_rows: dataset.num_rows,
-    created_by_user: dataset.created_by_user,
-    current_version_index: dataset.current_version_index,
-    draft: dataset.draft
-  }));
-};
+// ============================================================================
+// Internal Helper Functions
+// ============================================================================
 
-export type DatasetType =
-  | PathLike
-  | string
-  | Record<string, string[] | Record<string, string>[]> // column name -> values list
-  | Array<Record<string, string | Record<string, string>>>; // rows, each row is a dictionary of column name -> value
-
-enum DatasetFormat {
-  CSV = 'csv',
-  JSONL = 'jsonl',
-  FEATHER = 'feather'
+function _isCreateDatasetOptions(
+  value: DatasetType | CreateDatasetOptions
+): value is CreateDatasetOptions {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    'name' in value &&
+    'content' in value
+  );
 }
 
-function stringify_value(value: string | Record<string, string>): string {
+function _serializeToString(value: unknown): string {
+  return typeof value === 'string' ? value : JSON.stringify(value);
+}
+
+function _isJsonParseError(error: unknown): boolean {
+  return (
+    error instanceof SyntaxError &&
+    // ts 20+
+    (error.message.includes('is not valid JSON') ||
+      // ts 18
+      (error.message.includes('Unexpected token') &&
+        error.message.includes('in JSON')))
+  );
+}
+
+function _stringifyValue(value: string | Record<string, string>): string {
   if (typeof value === 'object') {
     return JSON.stringify(value);
   }
   return value;
 }
 
-function transposeDictToRows(
+function _transposeDictToRows(
   dataset: Record<string, string[]>
 ): Array<Record<string, string>> {
   const keyRows = Object.entries(dataset).map(([key, values]) =>
-    values.map((value) => ({ [key]: stringify_value(value) }))
+    values.map((value) => ({ [key]: _stringifyValue(value) }))
   );
   return keyRows[0].map((_, i) =>
     Object.assign({}, ...keyRows.map((keyRow) => keyRow[i]))
   );
 }
 
-function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
+function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
   let datasetPath: PathLike;
   let datasetFormat: DatasetFormat;
 
   if (typeof dataset === 'string') {
     datasetPath = dataset;
   } else if (typeof dataset === 'object' && !Array.isArray(dataset)) {
-    const datasetRows = transposeDictToRows(
+    const datasetRows = _transposeDictToRows(
       dataset as Record<string, string[]>
     );
-    const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.JSONL}`);
-    const rows = datasetRows.map((row) => stringify_value(row)).join('\n');
+    const tempFilePath = join(tmpdir(), `temp.${DatasetFormatObject.JSONL}`);
+    const rows = datasetRows.map((row) => _stringifyValue(row)).join('\n');
     writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
     datasetPath = tempFilePath;
   } else if (Array.isArray(dataset)) {
-    const tempFilePath = join(tmpdir(), `temp.${DatasetFormat.JSONL}`);
+    const tempFilePath = join(tmpdir(), `temp.${DatasetFormatObject.JSONL}`);
     const rows = dataset
       .map((item) => {
         const jsonifiedInner: Record<string, string> = {};
         for (const key in item) {
-          jsonifiedInner[key] = stringify_value(item[key]);
+          jsonifiedInner[key] = _stringifyValue(item[key]);
         }
-        return stringify_value(jsonifiedInner);
+        return _stringifyValue(jsonifiedInner);
       })
       .join('\n');
     writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
@@ -101,14 +109,14 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
 
   const suffix = datasetPath.toString().split('.').pop()?.toLowerCase();
   switch (suffix) {
-    case DatasetFormat.CSV:
-      datasetFormat = DatasetFormat.CSV;
+    case DatasetFormatObject.CSV:
+      datasetFormat = DatasetFormatObject.CSV;
       break;
-    case DatasetFormat.JSONL:
-      datasetFormat = DatasetFormat.JSONL;
+    case DatasetFormatObject.JSONL:
+      datasetFormat = DatasetFormatObject.JSONL;
       break;
-    case DatasetFormat.FEATHER:
-      datasetFormat = DatasetFormat.FEATHER;
+    case DatasetFormatObject.FEATHER:
+      datasetFormat = DatasetFormatObject.FEATHER;
       break;
     default:
       throw new Error(
@@ -119,111 +127,38 @@ function parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
   return [datasetPath, datasetFormat];
 }
 
-export const createDataset = async (
-  dataset: DatasetType,
-  name: string
-): Promise<Dataset> => {
-  const [datasetPath, datasetFormat] = parseDataset(dataset);
+// ============================================================================
+// Convenience Functions
+// ============================================================================
 
-  if (!name) {
-    // use file name
-    name = datasetPath.toString().split('/').pop() ?? datasetPath.toString();
-  }
-
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
-
-  const createdDataset = await apiClient.createDataset(
-    name,
-    datasetPath.toString(),
-    datasetFormat
-  );
-
-  return {
-    id: createdDataset.id,
-    name: createdDataset.name,
-    column_names: createdDataset.column_names,
-    project_count: createdDataset.project_count,
-    created_at: createdDataset.created_at,
-    updated_at: createdDataset.updated_at,
-    num_rows: createdDataset.num_rows,
-    created_by_user: createdDataset.created_by_user,
-    current_version_index: createdDataset.current_version_index,
-    draft: createdDataset.draft
-  };
-};
-
-/*
- * Gets a dataset by id or name.
+/**
+ * Creates a normalized dataset record from the provided options.
+ * @param options - The options used to create the dataset record.
+ * @param options.id - (Optional) The unique identifier of the record.
+ * @param options.input - The input value to serialize into the record.
+ * @param options.output - (Optional) The output value to serialize into the record.
+ * @param options.metadata - (Optional) Additional metadata for the record as a string or object.
+ * @returns The normalized dataset record.
  */
-export const getDataset = async ({
-  id,
-  name
-}: {
-  id?: string;
-  name?: string;
-}): Promise<Dataset> => {
-  if (!id && !name) {
-    throw new Error('Either id or name must be provided');
-  }
-
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
-
-  if (id) {
-    return await apiClient.getDataset(id);
-  }
-
-  return await apiClient.getDatasetByName(name!);
-};
-
-export const getDatasetContent = async ({
-  datasetId,
-  datasetName
-}: {
-  datasetId?: string;
-  datasetName?: string;
-}): Promise<DatasetRow[]> => {
-  if (!datasetId && !datasetName) {
-    throw new Error('Either datasetId or datasetName must be provided');
-  }
-
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
-
-  if (datasetName) {
-    const dataset = await apiClient.getDatasetByName(datasetName);
-    if (!dataset) {
-      throw new Error(`Dataset not found: ${datasetName}`);
-    }
-    datasetId = dataset.id;
-  }
-
-  return await apiClient.getDatasetContent(datasetId!);
-};
-
-export const createDatasetRecord = ({
-  id,
-  input,
-  output,
-  metadata
-}: DatasetRecordOptions): DatasetRecord => {
+export function createDatasetRecord(
+  options: DatasetRecordOptions
+): DatasetRecord {
   let resultMetadata: Record<string, string> | undefined = undefined;
-  if (metadata != null) {
+  if (options.metadata != null) {
     // checks null & undefined
     let record: Record<string, unknown> = {};
-    if (typeof metadata === 'string') {
+    if (typeof options.metadata === 'string') {
       try {
-        record = JSON.parse(metadata);
+        record = JSON.parse(options.metadata);
       } catch (error) {
-        if (isJsonParseError(error)) {
-          record = { metadata: metadata };
+        if (_isJsonParseError(error)) {
+          record = { metadata: options.metadata };
         } else {
           throw error;
         }
       }
-    } else if (typeof metadata === 'object') {
-      record = metadata as Record<string, unknown>;
+    } else if (typeof options.metadata === 'object') {
+      record = options.metadata as Record<string, unknown>;
     } else {
       throw new Error('Dataset metadata must be a string or object');
     }
@@ -236,258 +171,423 @@ export const createDatasetRecord = ({
   }
 
   return {
-    id,
-    input: serializeToString(input),
-    output: output === undefined ? undefined : serializeToString(output),
+    id: options.id,
+    input: _serializeToString(options.input),
+    output: options.output ? _serializeToString(options.output) : undefined,
     metadata: resultMetadata
   };
-};
+}
 
-const serializeToString = (value: unknown): string => {
-  return typeof value === 'string' ? value : JSON.stringify(value);
-};
+/**
+ * Converts dataset rows to their values dictionaries.
+ * @param datasetContent - The dataset rows to convert.
+ * @returns The array of values dictionaries for each row.
+ * @deprecated Use datasetContent.map(row => row.valuesDict) instead.
+ */
+export function convertDatasetContentToRecords(
+  datasetContent: DatasetRow[]
+): DatasetRow['valuesDict'][] {
+  return datasetContent.map((row) => row.valuesDict);
+}
 
-export const deserializeInputFromString = (
+/**
+ * Deserializes a JSON string into an object, with a fallback for non-JSON values.
+ * @param value - (Optional) The string value to deserialize.
+ * @returns An object parsed from JSON, an object wrapping the raw value, or an empty object.
+ */
+export function deserializeInputFromString(
   value?: string
-): Record<string, unknown> => {
+): Record<string, unknown> {
   if (value === undefined) {
     return {};
   }
   try {
     return JSON.parse(value);
   } catch (error) {
-    if (isJsonParseError(error)) {
+    if (_isJsonParseError(error)) {
       return { value: value };
     } else {
       throw error;
     }
   }
-};
+}
 
-const isJsonParseError = (error: unknown): boolean => {
-  return (
-    error instanceof SyntaxError &&
-    // ts 20+
-    (error.message.includes('is not valid JSON') ||
-      // ts 18
-      (error.message.includes('Unexpected token') &&
-        error.message.includes('in JSON')))
-  );
-};
-
-export const getRecordsForDataset = async ({
-  datasetId,
-  datasetName
-}: {
+/**
+ * Gets dataset records for a dataset identified by ID or name.
+ * @param options - The options used to locate the dataset.
+ * @param options.datasetId - (Optional) The ID of the dataset.
+ * @param options.datasetName - (Optional) The name of the dataset.
+ * @returns A promise that resolves to the list of dataset records.
+ */
+export async function getRecordsForDataset(options: {
   datasetId?: string;
   datasetName?: string;
-}): Promise<DatasetRecord[]> => {
-  const datasetRows = await getDatasetContent({ datasetId, datasetName });
-  return Promise.all(
-    datasetRows.map((row) => convertDatasetRowToRecord({ datasetRow: row }))
-  );
-};
-
-export const getDatasetRecordsFromArray = async (
-  recordsArray: Record<string, unknown>[]
-): Promise<DatasetRecord[]> => {
-  return Promise.all(
-    recordsArray.map((row) =>
-      createDatasetRecord({
-        input: row['input'],
-        output: row['output'],
-        metadata: row['metadata']
-      })
-    )
-  );
-};
-
-export const convertDatasetRowToRecord = async ({
-  datasetRow
-}: {
-  datasetRow: DatasetRow;
-}): Promise<DatasetRecord> => {
-  const valuesDict = datasetRow.values_dict;
-  if (!('input' in valuesDict)) {
-    throw new Error('DatasetRow must have an "input" field');
-  }
-  return createDatasetRecord({
-    id: datasetRow.row_id,
-    input: valuesDict['input'],
-    output: valuesDict['output'],
-    metadata: valuesDict['metadata']
+}): Promise<DatasetRecord[]> {
+  const datasetRows = await getDatasetContent({
+    datasetId: options.datasetId,
+    datasetName: options.datasetName
   });
-};
+  return datasetRows.map((row) => convertDatasetRowToRecord(row));
+}
 
-/*
- * Appends rows to a dataset.
- *
- * @param datasetId - The ID of the dataset to which rows will be appended.
- * @param rows - An array of rows to append to the dataset.
- * @returns A Promise that resolves when the rows have been appended.
- *
- * @example
- * ```typescript
- * await addRowsToDataset(datasetId, [{ input: 'value1', output: 'value2' }]);
- * ```
+/**
+ * Converts an array of raw record objects into dataset records.
+ * @param recordsArray - The raw records to convert.
+ * @returns The list of dataset records created from the raw records.
  */
-export const addRowsToDataset = async ({
-  datasetId,
-  rows
-}: {
-  datasetId: string;
-  rows: Record<string, string | Record<string, string>>[];
-}): Promise<void> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
-  const etag = await apiClient.getDatasetEtag(datasetId);
-  const stringifiedRows = rows.map((row) => {
-    const stringifiedRow: Record<string, string> = {};
-    for (const key in row) {
-      stringifiedRow[key] = stringify_value(row[key]);
-    }
-    return stringifiedRow;
-  });
-
-  await apiClient.appendRowsToDatasetContent(
-    datasetId,
-    etag,
-    stringifiedRows.map((row) => ({
-      edit_type: 'append_row',
-      values: row
-    }))
+export function getDatasetRecordsFromArray(
+  recordsArray: Record<string, unknown>[]
+): DatasetRecord[] {
+  return recordsArray.map((row) =>
+    createDatasetRecord({
+      input: row['input'],
+      output: row['output'],
+      metadata: row['metadata']
+    })
   );
-};
+}
 
-// TODO: Remove this once the datasets team adds a dictionary field to DatasetRow
-export const convertDatasetContentToRecords = async (
-  dataset: Dataset,
-  datasetContent: DatasetRow[]
-): Promise<Record<string, string>[]> => {
-  const columnNames = dataset.column_names;
-  if (!columnNames) {
-    throw new Error('Column names not found in dataset');
+// ============================================================================
+// Overloaded Utility Functions - Delegate to Class Methods
+// ============================================================================
+
+/**
+ * @overload
+ * Lists all datasets.
+ * @returns A promise that resolves to the list of datasets.
+ */
+export function getDatasets(): Promise<DatasetDBType[]>;
+/**
+ * @overload
+ * Lists datasets with optional filtering by project.
+ * @param options - (Optional) Options for listing datasets.
+ * @param options.limit - (Optional) The maximum number of datasets to return.
+ * @param options.projectId - (Optional) The ID of the project that uses the datasets.
+ * @param options.projectName - (Optional) The name of the project that uses the datasets.
+ * @returns A promise that resolves to the list of datasets.
+ */
+export function getDatasets(options: {
+  limit?: number;
+  projectId?: string;
+  projectName?: string;
+}): Promise<DatasetDBType[]>;
+export async function getDatasets(options?: {
+  limit?: number;
+  projectId?: string;
+  projectName?: string;
+}): Promise<DatasetDBType[]> {
+  const datasetsService = new Datasets();
+  const datasets = await datasetsService.list(options);
+  return datasets.map((dataset) => dataset.toDatasetDB());
+}
+
+/**
+ * @overload
+ * Creates a new dataset from content and a name.
+ * @param dataset - The dataset content as a path, object, or array.
+ * @param name - The name of the dataset.
+ * @returns A promise that resolves to the created dataset.
+ */
+export function createDataset(
+  dataset: DatasetType,
+  name: string
+): Promise<DatasetDBType>;
+/**
+ * @overload
+ * Creates a new dataset from an options object.
+ * @param options - The options used to create the dataset.
+ * @param options.name - The name of the dataset.
+ * @param options.content - The dataset content as a path, object, or array.
+ * @param options.projectId - (Optional) The ID of the project that will use the dataset.
+ * @param options.projectName - (Optional) The name of the project that will use the dataset.
+ * @returns A promise that resolves to the created dataset.
+ */
+export function createDataset(
+  options: CreateDatasetOptions
+): Promise<DatasetDBType>;
+export async function createDataset(
+  datasetOrOptions: DatasetType | CreateDatasetOptions,
+  name?: string
+): Promise<DatasetDBType> {
+  // Resolve overloaded arguments
+  let resolvedOptions: {
+    name: string;
+    filePath: string;
+    format: DatasetFormat;
+    projectId?: string;
+    projectName?: string;
+  };
+
+  if (_isCreateDatasetOptions(datasetOrOptions)) {
+    // New object signature
+    const [datasetPath, datasetFormat] = _parseDataset(
+      datasetOrOptions.content as DatasetType
+    );
+    resolvedOptions = {
+      name: datasetOrOptions.name,
+      filePath: datasetPath.toString(),
+      format: datasetFormat,
+      projectId: datasetOrOptions.projectId,
+      projectName: datasetOrOptions.projectName
+    };
+  } else {
+    // Old positional signature: createDataset(dataset, name)
+    const [datasetPath, datasetFormat] = _parseDataset(
+      datasetOrOptions as DatasetType
+    );
+    const resolvedName =
+      name ?? datasetPath.toString().split('/').pop() ?? datasetPath.toString();
+    resolvedOptions = {
+      name: resolvedName,
+      filePath: datasetPath.toString(),
+      format: datasetFormat
+    };
   }
 
-  return datasetContent.map((row) => {
-    const record: Record<string, string> = {};
-    for (let i = 0; i < columnNames.length; i++) {
-      record[columnNames[i]] = (row.values[i] || '') as string;
-    }
-    return record;
+  const datasetsService = new Datasets();
+  const dataset = await datasetsService.create(resolvedOptions);
+  return dataset.toDatasetDB();
+}
+
+/**
+ * Gets a dataset database record by ID or name with optional content loading and project validation.
+ * Delegates to Datasets.get().
+ * @param options - The options used to locate the dataset.
+ * @param options.id - (Optional) The ID of the dataset.
+ * @param options.name - (Optional) The name of the dataset.
+ * @param options.withContent - (Optional) Whether to load the dataset content.
+ * @param options.projectId - (Optional) The ID of the project to validate against.
+ * @param options.projectName - (Optional) The name of the project to validate against.
+ * @returns A promise that resolves to the dataset database object.
+ */
+export async function getDataset(options: {
+  id?: string;
+  name?: string;
+  withContent?: boolean;
+  projectId?: string;
+  projectName?: string;
+}): Promise<DatasetDBType> {
+  const datasetsService = new Datasets();
+  const dataset = await datasetsService.get(options);
+  if (!dataset) {
+    throw new Error(`Dataset ${options.name ?? options.id} not found`);
+  }
+  return dataset.toDatasetDB();
+}
+
+/**
+ * Gets dataset content for a dataset identified by ID or name.
+ * @param options - The options used to locate the dataset.
+ * @param options.datasetId - (Optional) The ID of the dataset.
+ * @param options.datasetName - (Optional) The name of the dataset.
+ * @returns A promise that resolves to the rows of the dataset.
+ */
+export async function getDatasetContent(options: {
+  datasetId?: string;
+  datasetName?: string;
+}): Promise<DatasetRow[]> {
+  if (!options.datasetId && !options.datasetName) {
+    throw new Error('Either datasetId or datasetName must be provided');
+  }
+
+  const datasetsService = new Datasets();
+  const dataset = await datasetsService.get({
+    id: options.datasetId,
+    name: options.datasetName
   });
-};
+
+  if (!dataset) {
+    throw new Error(
+      `Dataset not found: ${options.datasetName ?? options.datasetId}`
+    );
+  }
+
+  return await dataset.getContent();
+}
+
+/**
+ * Appends rows to a dataset identified by ID or name.
+ * Delegates to Dataset.addRows().
+ * @param options - The options used to locate the dataset and rows to append.
+ * @param options.datasetId - (Optional) The ID of the dataset.
+ * @param options.datasetName - (Optional) The name of the dataset.
+ * @param options.rows - The rows to append to the dataset.
+ * @returns A promise that resolves when the rows have been appended.
+ */
+export async function addRowsToDataset(options: {
+  datasetId?: string;
+  datasetName?: string;
+  rows: Record<
+    string,
+    string | number | Record<string, string | number | null> | null
+  >[];
+}): Promise<void> {
+  const datasetsService = new Datasets();
+  const dataset = await datasetsService.get({
+    id: options.datasetId,
+    name: options.datasetName
+  });
+  if (!dataset) {
+    throw new Error(
+      `Dataset ${options.datasetName ?? options.datasetId} not found`
+    );
+  }
+  await dataset.addRows(options.rows);
+}
 
 /**
  * Deletes a dataset by its unique identifier or name.
- *
- * If both `id` and `name` are provided, `id` takes precedence.
- * If only `name` is provided, the dataset will be looked up by name.
- * Throws an error if neither `id` nor `name` is provided, or if the dataset cannot be found.
- *
- * @param id - (Optional) The unique identifier of the dataset to delete.
- * @param name - (Optional) The name of the dataset to delete.
- * @returns A promise that resolves when the dataset is deleted.
- * @throws Error if neither id nor name is provided, or if the dataset cannot be found.
+ * Delegates to Datasets.delete().
+ * @param options - The options used to locate the dataset.
+ * @param options.id - (Optional) The ID of the dataset.
+ * @param options.name - (Optional) The name of the dataset.
+ * @param options.projectId - (Optional) The ID of the project to validate against.
+ * @param options.projectName - (Optional) The name of the project to validate against.
+ * @returns A promise that resolves when the dataset has been deleted.
  */
-export const deleteDataset = async ({
-  id,
-  name
-}: {
+export async function deleteDataset(options: {
   id?: string;
   name?: string;
-}): Promise<void> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
-  if (!id && !name) {
-    throw new Error('Either id or name must be provided');
-  }
+  projectId?: string;
+  projectName?: string;
+}): Promise<void> {
+  const datasetsService = new Datasets();
+  return datasetsService.delete(options);
+}
 
-  if (name && !id) {
-    const dataset = await apiClient.getDatasetByName(name);
-    id = dataset.id;
-  }
-
-  await apiClient.deleteDataset(id!);
-};
-
-export const getDatasetMetadata = async <T extends Record<string, unknown>>(
+/**
+ * Gets dataset metadata from experiment params.
+ * Delegates to Datasets.get() for fetching by id or name.
+ * @param params - Experiment parameters that may contain a dataset reference.
+ * @param projectName - Project name used for dataset lookup when needed.
+ * @returns A promise that resolves to the dataset or null if not found.
+ */
+export async function getDatasetMetadata<T extends Record<string, unknown>>(
   params: RunExperimentParams<T>,
   projectName: string
-): Promise<Dataset | undefined> => {
+): Promise<Dataset | null> {
+  // If dataset object is directly provided, return it as-is
   if ('dataset' in params && params.dataset) {
     if (!(params.dataset instanceof Array)) {
       return params.dataset as Dataset;
     }
-  } else if ('datasetId' in params && params.datasetId) {
-    const apiClient = new GalileoApiClient();
-    await apiClient.init({ projectName });
-    return await apiClient.getDataset(params.datasetId);
-  } else if ('datasetName' in params && params.datasetName) {
-    const apiClient = new GalileoApiClient();
-    await apiClient.init({ projectName });
-    return await apiClient.getDatasetByName(params.datasetName);
+    return null;
   }
-};
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  // Delegate to Datasets service for fetching
+  const datasetsService = new Datasets();
+
+  if ('datasetId' in params && params.datasetId) {
+    const dataset = await datasetsService.get({
+      id: params.datasetId,
+      projectName
+    });
+    return dataset;
+  }
+
+  if ('datasetName' in params && params.datasetName) {
+    const dataset = await datasetsService.get({
+      name: params.datasetName,
+      projectName
+    });
+    return dataset;
+  }
+
+  return null;
+}
 
 /**
  * Extends a dataset with synthetically generated data based on the provided parameters.
- *
- * This function initiates a dataset extension job, waits for it to complete by polling its status,
- * and then returns the content of the extended dataset.
- *
- * @param {object} params - The parameters for the synthetic dataset extension request.
- * @param {object} params.prompt_settings - Settings for the prompt generation.
- * @param {string} params.prompt_settings.model_alias - The model to use for generation (e.g., 'GPT-4o mini').
- * @param {string} params.prompt - A description of the assistant's role.
- * @param {string} params.instructions - Instructions for the assistant.
- * @param {string[]} params.examples - Examples of user prompts.
- * @param {string[]} params.data_types - The types of data to generate. Possible values are: 'General Query', 'Prompt Injection', 'Off-Topic Query', 'Toxic Content in Query', 'Multiple Questions in Query', 'Sexist Content in Query'.
- * @param {number} params.count - The number of synthetic examples to generate.
- * @returns {Promise<DatasetRow[]>} A promise that resolves with the rows of the extended dataset.
- *
- * @example
- * ```javascript
- * const extended_dataset = await extendDataset({
- *   prompt_settings: {
- *     model_alias: 'GPT-4o mini'
- *   },
- *   prompt:
- *     'Financial planning assistant that helps clients design an investment strategy.',
- *   instructions:
- *     'You are a financial planning assistant that helps clients design an investment strategy.',
- *   examples: ['I want to invest $1000 per month.'],
- *   data_types: ['Prompt Injection'],
- *   count: 3
- * });
- * console.log('Extended dataset:', extended_dataset);
- * ```
+ * Delegates to Datasets.extend().
+ * @param params - Configuration for synthetic data generation.
+ * @returns A promise that resolves to the generated dataset rows.
  */
-export const extendDataset = async (
+export async function extendDataset(
   params: SyntheticDatasetExtensionRequest
-): Promise<DatasetRow[]> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectScoped: false });
+): Promise<DatasetRow[]> {
+  const datasetsService = new Datasets();
+  return await datasetsService.extend(params);
+}
 
-  const { dataset_id } = await apiClient.extendDataset(params);
+// ============================================================================
+// New Utility Functions for Dataset Versioning and Projects
+// ============================================================================
 
-  let job;
+/**
+ * Gets the version history of a dataset.
+ * Delegates to Datasets.getVersionHistory().
+ * @param options - The options used to locate the dataset.
+ * @param options.datasetId - (Optional) The ID of the dataset.
+ * @param options.datasetName - (Optional) The name of the dataset.
+ * @returns A promise that resolves to the version history for the dataset.
+ */
+export async function getDatasetVersionHistory(options: {
+  datasetId?: string;
+  datasetName?: string;
+}): Promise<DatasetVersionHistory> {
+  const datasetsService = new Datasets();
+  return datasetsService.getVersionHistory({
+    datasetId: options.datasetId,
+    datasetName: options.datasetName
+  });
+}
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    // Wait for job to finish
-    job = await apiClient.getExtendDatasetStatus(dataset_id);
-    if (job.steps_completed === job.steps_total) {
-      break;
-    }
-    // eslint-disable-next-line no-console
-    console.log(
-      `(${job.steps_completed}/${job.steps_total}) ${job.progress_message}`
-    );
-    await sleep(1000);
+/**
+ * Gets a specific version of a dataset.
+ * Delegates to Datasets.getVersion().
+ * @param options - The options used to locate the dataset version.
+ * @param options.versionIndex - The version index to retrieve.
+ * @param options.datasetId - (Optional) The ID of the dataset.
+ * @param options.datasetName - (Optional) The name of the dataset.
+ * @returns A promise that resolves to the dataset content at the specified version.
+ */
+export async function getDatasetVersion(options: {
+  versionIndex: number;
+  datasetId?: string;
+  datasetName?: string;
+}): Promise<DatasetContent> {
+  const datasetsService = new Datasets();
+  return datasetsService.getVersion(options);
+}
+
+/**
+ * Lists all projects that use a dataset.
+ * Delegates to Datasets.listProjects().
+ * @param options - The options used to locate the dataset.
+ * @param options.datasetId - (Optional) The ID of the dataset.
+ * @param options.datasetName - (Optional) The name of the dataset.
+ * @param options.limit - (Optional) The maximum number of projects to return.
+ * @returns A promise that resolves to the list of projects that use the dataset.
+ */
+export async function listDatasetProjects(options: {
+  datasetId?: string;
+  datasetName?: string;
+  limit?: number;
+}): Promise<DatasetProject[]> {
+  const datasetsService = new Datasets();
+  return datasetsService.listProjects({
+    datasetId: options.datasetId,
+    datasetName: options.datasetName,
+    limit: options.limit ?? 100
+  });
+}
+
+/**
+ * Converts a dataset row to a dataset record.
+ * @param datasetRow - The dataset row to convert.
+ * @returns The dataset record created from the row.
+ */
+export function convertDatasetRowToRecord(
+  datasetRow: DatasetRow
+): DatasetRecord {
+  const valuesDict = datasetRow.valuesDict;
+  if (!('input' in valuesDict)) {
+    throw new Error('DatasetRow must have an input field');
   }
-
-  return apiClient.getDatasetContent(dataset_id);
-};
+  return createDatasetRecord({
+    id: datasetRow.rowId,
+    input: valuesDict['input'],
+    output: valuesDict['output'],
+    metadata: valuesDict['metadata']
+  });
+}

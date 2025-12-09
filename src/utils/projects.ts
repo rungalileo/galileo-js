@@ -124,7 +124,7 @@ export class Projects {
     }
 
     const apiClient = new GalileoApiClient();
-    await apiClient.init({ projectScoped: true, projectId });
+    await apiClient.init({ projectScoped: true, projectId, projectName: name });
 
     if (projectId) {
       return await apiClient.getProject(projectId!);

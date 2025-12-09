@@ -33,6 +33,7 @@ const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
+const mockGetScorersPage = jest.fn();
 const mockCreateRunScorerSettings = jest.fn();
 const mockGetProject = jest.fn();
 const mockGetProjectByName = jest.fn();
@@ -52,6 +53,7 @@ jest.mock('../../src/api-client', () => {
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion,
         getScorers: mockGetScorers,
+        getScorersPage: mockGetScorersPage,
         createRunScorerSettings: mockCreateRunScorerSettings,
         getProject: mockGetProject,
         getProjectByName: mockGetProjectByName,
@@ -136,6 +138,23 @@ describe('metrics utils', () => {
         scorer_type: ScorerTypes.preset
       }
     ]);
+    mockGetScorersPage.mockResolvedValue({
+      scorers: [
+        EXAMPLE_SCORER,
+        EXAMPLE_CUSTOM_SCORER,
+        {
+          id: 'completeness-scorer',
+          name: 'completeness',
+          scorer_type: ScorerTypes.preset
+        },
+        {
+          id: 'toxicity-scorer',
+          name: 'toxicity',
+          scorer_type: ScorerTypes.preset
+        }
+      ],
+      nextStartingToken: null
+    });
     mockDeleteScorer.mockResolvedValue(undefined);
     mockCreateRunScorerSettings.mockResolvedValue(undefined);
     mockGetProject.mockResolvedValue(EXAMPLE_PROJECT);
@@ -175,18 +194,18 @@ describe('metrics utils', () => {
       });
 
       expect(result).toEqual(EXAMPLE_CUSTOM_SCORER_VERSION);
-      expect(mockCreateScorer).toHaveBeenCalledWith(
-        'custom_metric',
-        ScorerTypes.llm,
-        'Custom description',
-        ['tag1', 'tag2'],
-        { model_name: 'gpt-4', num_judges: 5 },
-        undefined,
-        undefined,
-        ['trace'],
-        'categorical',
-        undefined
-      );
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'custom_metric',
+        scorerType: ScorerTypes.llm,
+        description: 'Custom description',
+        tags: ['tag1', 'tag2'],
+        defaults: { model_name: 'gpt-4', num_judges: 5 },
+        modelType: undefined,
+        defaultVersionId: undefined,
+        scoreableNodeTypes: ['trace'],
+        outputType: 'categorical',
+        inputType: undefined
+      });
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         EXAMPLE_CUSTOM_SCORER.id,
         undefined,
@@ -204,21 +223,18 @@ describe('metrics utils', () => {
         userPrompt: 'Test prompt'
       });
 
-      expect(mockCreateScorer).toHaveBeenCalledWith(
-        'Test Metric',
-        ScorerTypes.llm,
-        '',
-        [],
-        {
-          model_name: 'gpt-4.1-mini',
-          num_judges: 3
-        },
-        undefined,
-        undefined,
-        ['llm'],
-        OutputType.BOOLEAN,
-        undefined
-      );
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'Test Metric',
+        scorerType: ScorerTypes.llm,
+        description: '',
+        tags: [],
+        defaults: { model_name: 'gpt-4.1-mini', num_judges: 3 },
+        modelType: undefined,
+        defaultVersionId: undefined,
+        scoreableNodeTypes: ['llm'],
+        outputType: 'boolean',
+        inputType: undefined
+      });
     });
 
     it('should call createLlmScorerVersion with the correct parameters for object-based API', async () => {
@@ -268,17 +284,22 @@ describe('metrics utils', () => {
   describe('deleteMetric', () => {
     it('should delete a metric by name and type', async () => {
       // Mock getScorers to return only the matching scorer
-      mockGetScorers.mockResolvedValueOnce([EXAMPLE_CUSTOM_SCORER]);
+      mockGetScorersPage.mockResolvedValueOnce({
+        scorers: [EXAMPLE_CUSTOM_SCORER],
+        nextStartingToken: null
+      });
 
       await deleteMetric({
         scorerName: 'custom_metric',
         scorerType: ScorerTypes.llm
       });
 
-      expect(mockGetScorers).toHaveBeenCalledWith({
-        type: ScorerTypes.llm,
-        names: ['custom_metric']
-      });
+      expect(mockGetScorersPage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          types: [ScorerTypes.llm],
+          name: 'custom_metric'
+        })
+      );
       expect(mockDeleteScorer).toHaveBeenCalledWith(EXAMPLE_CUSTOM_SCORER.id);
     });
 
@@ -289,7 +310,10 @@ describe('metrics utils', () => {
         scorer_type: ScorerTypes.llm,
         tags: []
       };
-      mockGetScorers.mockResolvedValueOnce([mockScorer]);
+      mockGetScorersPage.mockResolvedValueOnce({
+        scorers: [mockScorer],
+        nextStartingToken: null
+      });
 
       await deleteMetric({
         scorerName: 'Test Scorer',
@@ -300,7 +324,10 @@ describe('metrics utils', () => {
     });
 
     it('should throw error when metric is not found', async () => {
-      mockGetScorers.mockResolvedValueOnce([]);
+      mockGetScorersPage.mockResolvedValueOnce({
+        scorers: [],
+        nextStartingToken: null
+      });
 
       await expect(
         deleteMetric({
@@ -311,7 +338,10 @@ describe('metrics utils', () => {
     });
 
     it('should throw an error if the scorer is not found for object-based API', async () => {
-      mockGetScorers.mockResolvedValueOnce([]);
+      mockGetScorersPage.mockResolvedValueOnce({
+        scorers: [],
+        nextStartingToken: null
+      });
 
       await expect(
         deleteMetric({
@@ -497,18 +527,18 @@ describe('metrics utils', () => {
       });
 
       expect(result).toEqual(CODE_SCORER_VERSION);
-      expect(mockCreateScorer).toHaveBeenCalledWith(
-        'my_code_metric',
-        ScorerTypes.code,
-        'My custom code scorer',
-        ['custom'],
-        undefined,
-        undefined,
-        undefined,
-        [StepType.llm],
-        undefined,
-        undefined
-      );
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'my_code_metric',
+        scorerType: ScorerTypes.code,
+        description: 'My custom code scorer',
+        tags: ['custom'],
+        defaults: undefined,
+        modelType: undefined,
+        defaultVersionId: undefined,
+        scoreableNodeTypes: ['llm'],
+        outputType: undefined,
+        inputType: undefined
+      });
       expect(mockCreateCodeScorerVersion).toHaveBeenCalledWith(
         'code-scorer-789',
         'def score(input, output):\n    return 1.0\n',

@@ -1,24 +1,32 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import type { components, paths } from '../../types/api.types';
 import { promises as fs } from 'fs';
-
-export type DatasetFormat = components['schemas']['DatasetFormat'];
-export type ListDatasetResponse = components['schemas']['ListDatasetResponse'];
-export type DatasetContent = components['schemas']['DatasetContent'];
-export type Dataset = components['schemas']['DatasetDB'];
-export type DatasetRow = components['schemas']['DatasetRow'];
-export type DatasetAppendRow = components['schemas']['DatasetAppendRow'];
-export type SyntheticDatasetExtensionRequest =
-  components['schemas']['SyntheticDatasetExtensionRequest'];
-export type SyntheticDatasetExtensionResponse =
-  components['schemas']['SyntheticDatasetExtensionResponse'];
-export type JobProgress = components['schemas']['JobProgress'];
-
-type CollectionPaths =
-  | paths['/datasets']
-  | paths['/datasets/{dataset_id}/content'];
-type CollectionResponse = ListDatasetResponse | DatasetContent;
+import {
+  DatasetFormat,
+  ListDatasetResponse,
+  DatasetContent,
+  DatasetDBType,
+  DatasetRow,
+  DatasetAppendRow,
+  SyntheticDatasetExtensionRequest,
+  SyntheticDatasetExtensionResponse,
+  JobProgress,
+  DatasetVersionHistory,
+  ListDatasetProjectsResponse,
+  ListDatasetParams,
+  DatasetOpenAPI,
+  ListDatasetProjectsResponseOpenAPI,
+  DatasetContentOpenAPI,
+  DatasetVersionHistoryOpenAPI,
+  ListDatasetResponseOpenAPI,
+  ListDatasetParamsOpenAPI,
+  JobProgressOpenAPI,
+  SyntheticDatasetExtensionResponseOpenAPI,
+  SyntheticDatasetExtensionRequestOpenAPI,
+  DatasetRowOpenAPI,
+  DatasetAppendRowOpenAPI
+} from '../../types/dataset.types';
+import { BodyCreateDatasetDatasetsPost } from '../../types/openapi.types';
 
 export class DatasetService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -28,82 +36,73 @@ export class DatasetService extends BaseClient {
     this.initializeClient();
   }
 
-  private async fetchAllPaginatedItems<
-    Path extends CollectionPaths,
-    Response extends CollectionResponse,
-    Item
-  >(
-    path: '/datasets' | '/datasets/{dataset_id}/content',
-    extractItems: (response: Response) => Item[],
-    params: Path['get']['parameters']
-  ): Promise<Item[]> {
-    if (!this.client) {
-      throw new Error('Client not initialized');
-    }
-
-    let items: Item[] = [];
-    let startingToken: number | null = 0;
+  public async getDatasets(limit?: number): Promise<DatasetDBType[]> {
+    const allDatasetsOpenAPI: DatasetOpenAPI[] = [];
     let pageNumber = 1;
 
+    const params: Record<string, unknown> = {
+      starting_token: 0,
+      limit: limit ?? 100
+    };
+
     do {
-      const updatedParams: Record<string, unknown> = {
-        path: params.path,
-        query: { ...params.query, starting_token: startingToken }
-      };
-
       try {
-        const { data, error } = await this.client.GET(path, {
-          params: updatedParams
-        });
+        const pageOpenAPI = await this.makeRequest<ListDatasetResponseOpenAPI>(
+          RequestMethod.GET,
+          Routes.datasets,
+          null,
+          params
+        );
 
-        const collection = this.processResponse(data as Response, error);
-        items = items.concat(extractItems(collection));
-        startingToken = collection.next_starting_token ?? null;
-        pageNumber++;
+        if (pageOpenAPI.datasets?.length) {
+          allDatasetsOpenAPI.push(...pageOpenAPI.datasets);
+        }
+
+        if (
+          typeof pageOpenAPI.next_starting_token === 'number' &&
+          pageOpenAPI.next_starting_token >= 0
+        ) {
+          params.starting_token = pageOpenAPI.next_starting_token;
+          pageNumber++;
+        } else {
+          params.starting_token = undefined;
+        }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        const contextInfo = `Failed to fetch paginated items from ${path} at page ${pageNumber}`;
+        const contextInfo = `Failed to fetch datasets page ${pageNumber}`;
         throw new Error(`${contextInfo}. ${errorMessage}`);
       }
-    } while (startingToken !== null);
+    } while (params.starting_token);
 
-    return items;
+    return allDatasetsOpenAPI.map((ds) =>
+      this.convertToCamelCase<DatasetOpenAPI, DatasetDBType>(ds)
+    );
   }
 
-  public getDatasets = async (): Promise<Dataset[]> => {
-    return await this.fetchAllPaginatedItems<
-      paths['/datasets'],
-      ListDatasetResponse,
-      Dataset
-    >(
-      '/datasets',
-      (response: ListDatasetResponse) => response.datasets ?? [],
-      {}
-    );
-  };
-
-  public getDataset = async (id: string): Promise<Dataset> => {
-    return await this.makeRequest<Dataset>(
+  public async getDataset(datasetId: string): Promise<DatasetDBType> {
+    const response = await this.makeRequest<DatasetOpenAPI>(
       RequestMethod.GET,
       Routes.dataset,
       null,
-      { dataset_id: id }
+      { dataset_id: datasetId }
     );
-  };
 
-  public getDatasetEtag = async (id: string): Promise<string> => {
-    const response = await this.makeRequestRaw<Dataset>(
+    return this.convertToCamelCase<DatasetOpenAPI, DatasetDBType>(response);
+  }
+
+  public async getDatasetEtag(datasetId: string): Promise<string> {
+    const response = await this.makeRequestRaw<DatasetDBType>(
       RequestMethod.GET,
       Routes.datasetContent,
       null,
-      { dataset_id: id, limit: 1 }
+      { dataset_id: datasetId, limit: 1 }
     );
     return response.headers['etag'];
-  };
+  }
 
-  public getDatasetByName = async (name: string): Promise<Dataset> => {
-    const { datasets } = await this.makeRequest<{ datasets: Dataset[] }>(
+  public async getDatasetByName(name: string): Promise<DatasetDBType> {
+    const response = await this.makeRequest<ListDatasetResponseOpenAPI>(
       RequestMethod.POST,
       Routes.datasetsQuery,
       {
@@ -117,81 +116,135 @@ export class DatasetService extends BaseClient {
       }
     );
 
-    if (!datasets.length) {
+    const formattedResponse = this.convertToCamelCase<
+      ListDatasetResponseOpenAPI,
+      ListDatasetResponse
+    >(response);
+
+    if (!formattedResponse.datasets?.length) {
       throw new Error(`Galileo dataset ${name} not found`);
     }
 
-    if (datasets.length > 1) {
+    if (formattedResponse.datasets?.length > 1) {
       throw new Error(`Multiple Galileo datasets found with name: ${name}`);
     }
 
-    return datasets[0];
-  };
+    return formattedResponse.datasets[0];
+  }
 
-  public async createDataset(
-    name: string,
-    filePath: string,
-    format: DatasetFormat
-  ): Promise<Dataset> {
+  public async createDataset(options: {
+    name: string;
+    filePath: string;
+    format: DatasetFormat;
+    projectId?: string | null;
+    draft?: boolean;
+    hidden?: boolean;
+    appendSuffixIfDuplicate?: boolean;
+    copyFromDatasetId?: string | null;
+    copyFromDatasetVersionIndex?: number | null;
+  }): Promise<DatasetDBType> {
     if (!this.client) {
       throw new Error('Client not initialized');
     }
 
     let fileBuffer: Buffer;
     try {
-      fileBuffer = await fs.readFile(filePath);
+      fileBuffer = await fs.readFile(options.filePath);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Failed to read file '${filePath}' for dataset '${name}': ${errorMessage}`
+        `Failed to read file '${options.filePath}' for dataset '${options.name}': ${errorMessage}`
       );
     }
 
     // Convert Buffer to Uint8Array for Blob compatibility
     const blob: Blob = new Blob([new Uint8Array(fileBuffer)]);
+
+    const body: BodyCreateDatasetDatasetsPost = {
+      name: options.name,
+      project_id: options?.projectId ?? null,
+      draft: options?.draft ?? false,
+      hidden: options?.hidden ?? false,
+      append_suffix_if_duplicate: options?.appendSuffixIfDuplicate ?? false,
+      copy_from_dataset_id: options?.copyFromDatasetId ?? null,
+      copy_from_dataset_version_index:
+        options?.copyFromDatasetVersionIndex ?? null,
+      file: blob
+    };
+
     const formdata = new FormData();
-    formdata.append('file', blob, name);
+    for (const [key, value] of Object.entries(body)) {
+      if (value === undefined || value === null) continue;
+
+      if (key === 'file' && value instanceof Blob) {
+        // Include filename for consistency
+        formdata.append('file', value, options.name);
+      } else {
+        // All non-file fields are sent as text parts
+        formdata.append(key, String(value));
+      }
+    }
 
     try {
-      const { data, error } = await this.client.POST('/datasets', {
-        params: { query: { format } },
-        // @ts-expect-error openapi-typescript does not properly translate FormData for uploading files
-        body: formdata,
-        bodySerializer: (body) => {
-          // define a custom serializer to prevent openapi-fetch from serializing the FormData object as JSON
-          return body;
-        }
-      });
+      const datasetOpenAPI = await this.makeRequest<DatasetOpenAPI>(
+        RequestMethod.POST,
+        Routes.datasets,
+        // Send FormData directly; Axios will handle multipart encoding
+        formdata,
+        { format: options.format }
+      );
 
-      const dataset = this.processResponse(data, error) as Dataset;
+      const dataset = this.convertToCamelCase<DatasetOpenAPI, DatasetDBType>(
+        datasetOpenAPI
+      );
       // eslint-disable-next-line no-console
       console.log(
-        `✅  Dataset '${dataset.name}' with ${dataset.num_rows} rows uploaded.`
+        `✅  Dataset '${dataset.name}' with ${dataset.numRows} rows uploaded.`
       );
+
       return dataset;
     } catch (error) {
       // Enhance error with upload context
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const contextInfo = `Failed to create dataset '${name}'`;
+      const contextInfo = `Failed to create dataset '${options.name}'`;
       throw new Error(`${contextInfo}. ${errorMessage}`);
     }
   }
 
   public async getDatasetContent(datasetId: string): Promise<DatasetRow[]> {
-    if (!this.client) {
-      throw new Error('Client not initialized');
-    }
+    const allRows: DatasetRowOpenAPI[] = [];
+    let pageNumber = 1;
 
-    return await this.fetchAllPaginatedItems<
-      paths['/datasets/{dataset_id}/content'],
-      DatasetContent,
-      DatasetRow
-    >(
-      `/datasets/{dataset_id}/content`,
-      (response: DatasetContent) => response.rows ?? [],
-      { path: { dataset_id: datasetId } }
+    const params = { starting_token: 0, dataset_id: datasetId };
+
+    do {
+      try {
+        // Fetch a single page in OpenAPI (snake_case) form
+        const pageOpenAPI = await this.makeRequest<DatasetContentOpenAPI>(
+          RequestMethod.GET,
+          Routes.datasetContent,
+          undefined,
+          params
+        );
+
+        if (pageOpenAPI.rows?.length) {
+          allRows.push(...pageOpenAPI.rows);
+        }
+
+        params.starting_token = pageOpenAPI.next_starting_token ?? 0;
+        pageNumber++;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        const contextInfo = `Failed to fetch dataset content for '${datasetId}' at page ${pageNumber}`;
+        throw new Error(`${contextInfo}. ${errorMessage}`);
+      }
+    } while (params.starting_token);
+
+    return allRows.map((row: DatasetRowOpenAPI) =>
+      this.convertToCamelCase<DatasetRowOpenAPI, DatasetRow>(row)
     );
   }
 
@@ -200,18 +253,17 @@ export class DatasetService extends BaseClient {
     etag: string,
     rows: DatasetAppendRow[]
   ): Promise<void> {
-    if (!this.client) {
-      throw new Error('Client not initialized');
-    }
-
     const extraHeaders = {
       'If-Match': etag
     };
 
+    const rowsOpenAPI = rows.map((row) =>
+      this.convertToSnakeCase<DatasetAppendRow, DatasetAppendRowOpenAPI>(row)
+    );
     await this.makeRequest<void>(
       RequestMethod.PATCH,
       Routes.datasetContent,
-      { edits: rows },
+      { edits: rowsOpenAPI },
       { dataset_id: datasetId },
       extraHeaders
     );
@@ -230,33 +282,136 @@ export class DatasetService extends BaseClient {
    * @throws Error if the client is not initialized, neither id nor name is provided, or the dataset cannot be found.
    */
   public async deleteDataset(id: string): Promise<void> {
-    if (!this.client) {
-      throw new Error('Client not initialized');
-    }
-
-    const path = Routes.dataset.replace('{dataset_id}', id!);
-
-    await this.makeRequest<void>(RequestMethod.DELETE, path as Routes);
+    await this.makeRequest<void>(RequestMethod.DELETE, Routes.dataset, null, {
+      dataset_id: id
+    });
   }
 
   public async extendDataset(
     params: SyntheticDatasetExtensionRequest
   ): Promise<SyntheticDatasetExtensionResponse> {
-    return this.makeRequest<SyntheticDatasetExtensionResponse>(
-      RequestMethod.POST,
-      Routes.datasetExtend,
-      params
-    );
+    const request = this.convertToSnakeCase<
+      SyntheticDatasetExtensionRequest,
+      SyntheticDatasetExtensionRequestOpenAPI
+    >(params);
+
+    const response =
+      await this.makeRequest<SyntheticDatasetExtensionResponseOpenAPI>(
+        RequestMethod.POST,
+        Routes.datasetExtend,
+        request
+      );
+
+    return this.convertToCamelCase<
+      SyntheticDatasetExtensionResponseOpenAPI,
+      SyntheticDatasetExtensionResponse
+    >(response);
   }
 
   public getExtendDatasetStatus = async (
     datasetId: string
   ): Promise<JobProgress> => {
-    return await this.makeRequest<JobProgress>(
+    const response = await this.makeRequest<JobProgressOpenAPI>(
       RequestMethod.GET,
       Routes.datasetExtendStatus,
       null,
       { dataset_id: datasetId }
     );
+
+    return this.convertToCamelCase<JobProgressOpenAPI, JobProgress>(response);
   };
+
+  /**
+   * Queries datasets with filters.
+   * Equivalent to Python's query_datasets_datasets_query_post.
+   */
+  public async queryDatasets(
+    params: ListDatasetParams,
+    query?: {
+      startingToken?: number;
+      limit?: number;
+    }
+  ): Promise<ListDatasetResponse> {
+    const request = this.convertToSnakeCase<
+      ListDatasetParams,
+      ListDatasetParamsOpenAPI
+    >(params);
+
+    const queryRequest = query
+      ? { starting_token: query.startingToken, limit: query.limit }
+      : { limit: 100 };
+
+    const response = await this.makeRequest<ListDatasetResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.datasetsQuery,
+      request,
+      queryRequest
+    );
+
+    return this.convertToCamelCase<
+      ListDatasetResponseOpenAPI,
+      ListDatasetResponse
+    >(response);
+  }
+
+  /**
+   * Gets the version history of a dataset.
+   * Equivalent to Python's query_dataset_versions_datasets_dataset_id_versions_query_post.
+   */
+  public async getDatasetVersionHistory(
+    datasetId: string
+  ): Promise<DatasetVersionHistory> {
+    const response = await this.makeRequest<DatasetVersionHistoryOpenAPI>(
+      RequestMethod.POST,
+      Routes.datasetVersionsQuery,
+      undefined,
+      { dataset_id: datasetId }
+    );
+
+    return this.convertToCamelCase<
+      DatasetVersionHistoryOpenAPI,
+      DatasetVersionHistory
+    >(response);
+  }
+
+  /**
+   * Gets the content of a specific version of a dataset.
+   * Equivalent to Python's get_dataset_version_content_datasets_dataset_id_versions_version_index_content_get.
+   */
+  public async getDatasetVersionContent(
+    datasetId: string,
+    versionIndex: number
+  ): Promise<DatasetContent> {
+    const response = await this.makeRequest<DatasetContentOpenAPI>(
+      RequestMethod.GET,
+      Routes.datasetVersionContent,
+      undefined,
+      { dataset_id: datasetId, version_index: versionIndex.toString() }
+    );
+
+    return this.convertToCamelCase<DatasetContentOpenAPI, DatasetContent>(
+      response
+    );
+  }
+
+  /**
+   * Lists all projects that use a dataset.
+   * Equivalent to Python's list_dataset_projects_datasets_dataset_id_projects_get.
+   */
+  public async listDatasetProjects(
+    datasetId: string,
+    limit: number = 100
+  ): Promise<ListDatasetProjectsResponse> {
+    const response = await this.makeRequest<ListDatasetProjectsResponseOpenAPI>(
+      RequestMethod.GET,
+      Routes.datasetProjects,
+      undefined,
+      { dataset_id: datasetId, limit }
+    );
+
+    return this.convertToCamelCase<
+      ListDatasetProjectsResponseOpenAPI,
+      ListDatasetProjectsResponse
+    >(response);
+  }
 }
