@@ -64,10 +64,11 @@ export class ExperimentService extends BaseClient {
     projectId: string,
     scorers: ScorerConfig[]
   ): Promise<void> => {
+    const scorerRequest = this.convertToSnakeCase(scorers);
     return await this.makeRequest<void>(
       RequestMethod.POST,
       Routes.runScorerSettings,
-      { run_id: experimentId, scorers },
+      { run_id: experimentId, scorers: scorerRequest },
       {
         project_id: projectId,
         experiment_id: experimentId
@@ -85,6 +86,7 @@ export class ExperimentService extends BaseClient {
     name?: string,
     taskType?: TaskType
   ): Promise<CreateJobResponse> => {
+    const scorerRequest = scorers ? this.convertToSnakeCase(scorers) : null;
     return await this.makeRequest<CreateJobResponse>(
       RequestMethod.POST,
       Routes.jobs,
@@ -95,7 +97,7 @@ export class ExperimentService extends BaseClient {
         prompt_template_version_id: promptTemplateVersionId,
         prompt_settings: promptSettings || {},
         dataset_id: datasetId,
-        scorers: scorers,
+        scorers: scorerRequest,
         task_type: taskType || EXPERIMENT_TASK_TYPE
       }
     );

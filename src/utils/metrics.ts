@@ -496,8 +496,6 @@ function isLocalMetricConfig(value: any): value is LocalMetricConfig {
 export const createCustomLlmMetric = async (
   params: CreateCustomLlmMetricParams
 ): Promise<BaseScorerVersionResponse> => {
-  console.log('################### params: ', params);
-
   const metrics = new Metrics();
   return await metrics.createCustomLlmMetric(params);
 };
