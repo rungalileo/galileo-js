@@ -417,7 +417,10 @@ export async function getDatasetContent(options: {
 export async function addRowsToDataset(options: {
   datasetId?: string;
   datasetName?: string;
-  rows: Record<string, string | Record<string, string>>[];
+  rows: Record<
+    string,
+    string | number | Record<string, string | number | null> | null
+  >[];
 }): Promise<void> {
   const datasetsService = new Datasets();
   const dataset = await datasetsService.get({

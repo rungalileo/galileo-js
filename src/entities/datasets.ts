@@ -74,17 +74,27 @@ export class Dataset {
    * @returns A promise that resolves to the updated dataset.
    */
   async addRows(
-    rows: Record<string, string | Record<string, string>>[]
+    rows: Record<
+      string,
+      string | number | Record<string, string | number | null> | null
+    >[]
   ): Promise<Dataset> {
     const client = await this.ensureClient();
     const etag = await client.getDatasetEtag(this.id);
 
+    // Sanitize values: convert all non-null values to strings (matching Python's sanitize_values)
     const stringifiedRows = rows.map((row) => {
-      const stringifiedRow: Record<string, string> = {};
+      const stringifiedRow: Record<string, string | null> = {};
       for (const key in row) {
         const value = row[key];
-        stringifiedRow[key] =
-          typeof value === 'object' ? JSON.stringify(value) : value;
+        if (value === null) {
+          stringifiedRow[key] = null;
+        } else if (typeof value === 'object') {
+          stringifiedRow[key] = JSON.stringify(value);
+        } else {
+          // Convert numbers and strings to strings
+          stringifiedRow[key] = String(value);
+        }
       }
       return stringifiedRow;
     });
@@ -196,28 +206,16 @@ export class Datasets {
         options.projectId ??
         (await this.resolveProjectId(options.projectName!));
 
-      const allDatasets: DatasetDBType[] = [];
-      let startingToken: number | null | undefined = 0;
-
-      do {
-        const response = await client.queryDatasets(
-          {
-            filters: [{ name: 'used_in_project', value: projectId }]
-          },
-          {
-            startingToken: startingToken ?? undefined,
-            limit: options.limit ?? 100
-          }
-        );
-
-        if (response.datasets?.length) {
-          allDatasets.push(...response.datasets);
+      const response = await client.queryDatasets(
+        {
+          filters: [{ name: 'used_in_project', value: projectId }]
+        },
+        {
+          limit: options.limit ?? 100
         }
+      );
 
-        startingToken = response.nextStartingToken;
-      } while (startingToken);
-
-      return allDatasets.map((db) => new Dataset(db));
+      return response.datasets?.map((db) => new Dataset(db)) || [];
     } else {
       const datasets = await client.getDatasets(options?.limit);
       return datasets.map((db) => new Dataset(db));
