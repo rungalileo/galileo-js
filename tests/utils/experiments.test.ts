@@ -11,7 +11,7 @@ import {
   PromptTemplateVersion
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
-import { Dataset, DatasetRow } from '../../src/types/dataset.types';
+import { DatasetDBType, DatasetRow } from '../../src/types/dataset.types';
 import { GalileoScorers } from '../../src/types/metrics.types';
 import { Trace } from '../../src/types';
 
@@ -33,6 +33,8 @@ const mockGetDatasetByName = jest.fn();
 const mockGetDatasetContent = jest.fn();
 const mockIngestTracesLegacy = jest.fn();
 const mockGetScorerVersion = jest.fn();
+const mockGetGlobalProjectByName = jest.fn();
+const mockListDatasetProjects = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -55,7 +57,9 @@ jest.mock('../../src/api-client', () => {
           getDatasets: mockGetDatasets,
           getDatasetByName: mockGetDatasetByName,
           getDatasetContent: mockGetDatasetContent,
-          ingestTracesLegacy: mockIngestTracesLegacy
+          ingestTracesLegacy: mockIngestTracesLegacy,
+          getGlobalProjectByName: mockGetGlobalProjectByName,
+          listDatasetProjects: mockListDatasetProjects
         };
       }),
       {
@@ -101,28 +105,28 @@ const mockProject: Project = {
   updatedAt: '2021-09-10T00:00:00Z'
 };
 
-const mockDataset: Dataset = {
+const mockDataset: DatasetDBType = {
   id: 'test-dataset-id',
   name: 'test-dataset',
-  column_names: ['input'],
-  project_count: 1,
-  created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z',
-  num_rows: 1,
-  created_by_user: null,
-  current_version_index: 1,
+  columnNames: ['input'],
+  projectCount: 1,
+  createdAt: '2023-01-01T00:00:00Z',
+  updatedAt: '2023-01-01T00:00:00Z',
+  numRows: 1,
+  createdByUser: null,
+  currentVersionIndex: 1,
   draft: false
 };
 
 const mockDatasetRow: DatasetRow = {
   index: 0,
-  row_id: 'row-123',
+  rowId: 'row-123',
   values: [
     '{"country":"France"}',
     '{"value":"Paris"}',
     '{"iteration":"alpha"}'
   ],
-  values_dict: {
+  valuesDict: {
     input: '{"country":"France"}',
     output: '{"value":"Paris"}',
     metadata: '{"iteration":"alpha"}'
@@ -223,6 +227,10 @@ describe('experiments utility', () => {
     mockGetDatasetByName.mockResolvedValue(mockDataset);
     mockGetDatasetContent.mockResolvedValue([mockDatasetRow]);
     mockIngestTracesLegacy.mockResolvedValue(undefined);
+    mockGetGlobalProjectByName.mockResolvedValue(mockProject);
+    mockListDatasetProjects.mockResolvedValue({
+      projects: [{ id: projectId }]
+    });
   });
 
   afterEach(() => {
