@@ -233,16 +233,8 @@ export class DatasetService extends BaseClient {
           allRows.push(...pageOpenAPI.rows);
         }
 
-        // Decide whether to continue based on nextStartingToken
-        if (
-          typeof pageOpenAPI.next_starting_token === 'number' &&
-          pageOpenAPI.next_starting_token >= 0
-        ) {
-          params.starting_token = pageOpenAPI.next_starting_token;
-          pageNumber++;
-        } else {
-          params.starting_token = 0;
-        }
+        params.starting_token = pageOpenAPI.next_starting_token ?? 0;
+        pageNumber++;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
