@@ -121,7 +121,7 @@ export interface CreateCustomCodeMetricParams {
   /** Interval between validation polling attempts in milliseconds (default: 1000ms) */
   pollIntervalMs?: number;
   /** List of required metrics that this scorer depends on (can be GalileoScorers enum values or metric name strings) */
-  required_metrics?: (GalileoScorers | string)[];
+  requiredMetrics?: (GalileoScorers | string)[];
 }
 
 export interface DeleteMetricParams {

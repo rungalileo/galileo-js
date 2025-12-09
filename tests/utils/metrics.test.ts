@@ -556,12 +556,12 @@ describe('metrics utils', () => {
       ).rejects.toThrow('Code file is empty');
     });
 
-    it('should pass required_metrics as string array to validation', async () => {
+    it('should pass requiredMetrics as string array to validation', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
-        required_metrics: ['correctness', 'context_adherence']
+        requiredMetrics: ['correctness', 'context_adherence']
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -573,12 +573,12 @@ describe('metrics utils', () => {
       );
     });
 
-    it('should pass required_metrics as GalileoScorers enum values to validation', async () => {
+    it('should pass requiredMetrics as GalileoScorers enum values to validation', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
-        required_metrics: [
+        requiredMetrics: [
           GalileoScorers.correctness,
           GalileoScorers.contextAdherence
         ]
@@ -593,12 +593,12 @@ describe('metrics utils', () => {
       );
     });
 
-    it('should pass mixed required_metrics (enum and string) to validation', async () => {
+    it('should pass mixed requiredMetrics (enum and string) to validation', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
-        required_metrics: [GalileoScorers.correctness, 'custom_metric']
+        requiredMetrics: [GalileoScorers.correctness, 'custom_metric']
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -610,14 +610,14 @@ describe('metrics utils', () => {
       );
     });
 
-    it('should pass custom timeout and poll interval with required_metrics', async () => {
+    it('should pass custom timeout and poll interval with requiredMetrics', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
         timeoutMs: 60000,
         pollIntervalMs: 2000,
-        required_metrics: [GalileoScorers.correctness]
+        requiredMetrics: [GalileoScorers.correctness]
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(

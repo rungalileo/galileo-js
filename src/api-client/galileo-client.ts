@@ -1488,7 +1488,7 @@ export class GalileoApiClient extends BaseClient {
     scoreableNodeTypes: StepType[],
     timeoutMs?: number,
     pollIntervalMs?: number,
-    required_scorers?: string[]
+    requiredScorers?: string[]
   ): Promise<ValidateRegisteredScorerResult> {
     this.ensureService(this.scorerService);
     return this.scorerService!.validateCodeScorerAndWait(
@@ -1496,7 +1496,7 @@ export class GalileoApiClient extends BaseClient {
       scoreableNodeTypes,
       timeoutMs,
       pollIntervalMs,
-      required_scorers
+      requiredScorers
     );
   }
 
