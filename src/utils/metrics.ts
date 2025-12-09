@@ -5,7 +5,6 @@ import {
   DeleteMetricByNameParams,
   OutputType,
   ScorerTypes,
-  ScorerVersion,
   StepType
 } from '../types';
 
@@ -24,7 +23,7 @@ import {
   Metric,
   MetricValueType
 } from '../types/metrics.types';
-import { ScorerConfig } from '../types/scorer.types';
+import { BaseScorerVersionResponse, ScorerConfig } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import { Trace } from '../types/logging/trace.types';
 import { Span, StepWithChildSpans } from '../types/logging/span.types';
@@ -56,7 +55,7 @@ export class Metrics {
     description = '',
     tags = [],
     outputType = OutputType.BOOLEAN
-  }: CreateCustomLlmMetricParams): Promise<ScorerVersion> {
+  }: CreateCustomLlmMetricParams): Promise<BaseScorerVersionResponse> {
     const scoreableNodeTypes = [nodeLevel];
 
     const scorer = await createScorer(
@@ -98,7 +97,7 @@ export class Metrics {
     tags = [],
     timeoutMs,
     pollIntervalMs
-  }: CreateCustomCodeMetricParams): Promise<ScorerVersion> {
+  }: CreateCustomCodeMetricParams): Promise<BaseScorerVersionResponse> {
     console.log(`Creating custom code metric: ${name}`);
 
     // Read the code file
@@ -173,7 +172,7 @@ export class Metrics {
    * Deletes a metric by its name and type.
    *
    * @param params - The parameters for deleting the metric.
-   * @returns A promise that resolves when the scorer is deleted.
+   * @returns A promise that resolves when the scorer is successfully deleted.
    * @throws Error if the scorer with the given name is not found.
    */
   public async deleteMetric(params: DeleteMetricParams): Promise<void>;
@@ -181,7 +180,7 @@ export class Metrics {
    * Deletes a metric by its name only. Deletes all scorers with the given name.
    *
    * @param params - The parameters for deleting the metric by name.
-   * @returns A promise that resolves when all matching scorers are deleted.
+   * @returns A promise that resolves when all matching scorers are successfully deleted.
    * @throws Error if no scorer with the given name is found.
    */
   public async deleteMetric(params: DeleteMetricByNameParams): Promise<void>;
@@ -316,13 +315,13 @@ export class Metrics {
           const scorerConfig: ScorerConfig = {
             id: scorer.id,
             name: scorer.name,
-            scorer_type: scorer.scorer_type
+            scorerType: scorer.scorerType
           };
 
           // Set the version on the ScorerConfig if provided
           if (scorerVersion !== undefined) {
             const rawVersion = await getScorerVersion(scorer.id, scorerVersion);
-            scorerConfig.scorer_version = rawVersion;
+            scorerConfig.scorerVersion = rawVersion;
           }
 
           scorers.push(scorerConfig);
@@ -496,9 +495,7 @@ function isLocalMetricConfig(value: any): value is LocalMetricConfig {
  */
 export const createCustomLlmMetric = async (
   params: CreateCustomLlmMetricParams
-): Promise<ScorerVersion> => {
-  console.log('################### params: ', params);
-
+): Promise<BaseScorerVersionResponse> => {
   const metrics = new Metrics();
   return await metrics.createCustomLlmMetric(params);
 };
@@ -511,16 +508,16 @@ export const createCustomLlmMetric = async (
  */
 export const createCustomCodeMetric = async (
   params: CreateCustomCodeMetricParams
-): Promise<ScorerVersion> => {
+): Promise<BaseScorerVersionResponse> => {
   const metrics = new Metrics();
   return await metrics.createCustomCodeMetric(params);
 };
 
 /**
- * Deletes a metric by its name and type.
+ * Deletes a metric by its name and type, or by name only.
  *
  * @param params - The parameters for deleting the metric.
- * @returns A promise that resolves when the scorer is deleted.
+ * @returns A promise that resolves when the scorer(s) are successfully deleted.
  * @throws Error if the scorer with the given name is not found.
  */
 export const deleteMetric = async (

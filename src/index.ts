@@ -38,6 +38,17 @@ import {
   populateLocalMetrics,
   getMetrics
 } from './utils/metrics';
+import {
+  getScorers,
+  getScorerVersion,
+  createScorer,
+  createLlmScorerVersion,
+  createCodeScorerVersion,
+  deleteScorer,
+  createRunScorerSettings,
+  validateCodeScorer
+} from './utils/scorers';
+import { Scorers, ScorerSettings } from './entities/scorers';
 import { exportRecords } from './utils/export';
 import { Jobs } from './utils/jobs';
 import {
@@ -175,6 +186,17 @@ export {
   deleteMetric,
   createMetricConfigs,
   populateLocalMetrics,
+  // Scorers
+  Scorers,
+  ScorerSettings,
+  getScorers,
+  getScorerVersion,
+  createScorer,
+  createLlmScorerVersion,
+  createCodeScorerVersion,
+  deleteScorer,
+  createRunScorerSettings,
+  validateCodeScorer,
   // Jobs (legacy)
   getScorerJobs,
   getScorerJobsStatus,
