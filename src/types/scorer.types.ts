@@ -1,6 +1,47 @@
 import { Models } from './models.types';
 import type { components } from './api.types';
 
+import type {
+  CreateScorerRequest,
+  ScorerResponse,
+  ListScorersRequest,
+  ListScorersResponse,
+  BaseScorerVersionResponse,
+  CreateLlmScorerVersionRequest,
+  DeleteScorerResponse,
+  ScorerConfig
+} from './new-api.types';
+
+import type {
+  CreateScorerRequest as CreateScorerRequestOpenAPI,
+  ScorerResponse as ScorerResponseOpenAPI,
+  ListScorersRequest as ListScorersRequestOpenAPI,
+  ListScorersResponse as ListScorersResponseOpenAPI,
+  BaseScorerVersionResponse as BaseScorerVersionResponseOpenAPI,
+  CreateLlmScorerVersionRequest as CreateLlmScorerVersionRequestOpenAPI,
+  DeleteScorerResponse as DeleteScorerResponseOpenAPI,
+  ScorerConfig as ScorerConfigOpenAPI
+} from './openapi.types';
+
+export {
+  CreateScorerRequest,
+  ScorerResponse,
+  ListScorersRequest,
+  ListScorersResponse,
+  BaseScorerVersionResponse,
+  CreateLlmScorerVersionRequest,
+  DeleteScorerResponse,
+  ScorerConfig,
+  CreateScorerRequestOpenAPI,
+  ScorerResponseOpenAPI,
+  ListScorersRequestOpenAPI,
+  ListScorersResponseOpenAPI,
+  BaseScorerVersionResponseOpenAPI,
+  CreateLlmScorerVersionRequestOpenAPI,
+  DeleteScorerResponseOpenAPI,
+  ScorerConfigOpenAPI
+};
+
 export interface ScorersConfiguration {
   adherence_nli?: boolean;
   chunk_attribution_utilization_gpt?: boolean;
@@ -53,7 +94,7 @@ export enum ScorerTypes {
 
 export type ScorerVersion = components['schemas']['BaseScorerVersionDB'];
 
-export type ScorerConfig = components['schemas']['ScorerConfig'];
+//export type ScorerConfig = components['schemas']['ScorerConfig'];
 
 export type ScorerDefaults = components['schemas']['ScorerDefaults'];
 
@@ -145,3 +186,16 @@ export interface RegisteredScorerTaskResultResponse {
   status: TaskStatus;
   result: ValidateRegisteredScorerResult | string | null;
 }
+
+export type createScorerOptions = {
+  name: string;
+  scorerType: ScorerTypes;
+  description?: string;
+  tags?: string[];
+  defaults?: ScorerDefaults;
+  modelType?: ModelType;
+  defaultVersionId?: string;
+  scoreableNodeTypes?: StepType[];
+  outputType?: OutputType;
+  inputType?: InputType;
+};

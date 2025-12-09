@@ -5,7 +5,8 @@ import {
   deleteScorer,
   getScorerVersion,
   getScorers,
-  validateCodeScorer
+  validateCodeScorer,
+  createRunScorerSettings
 } from '../../src/utils/scorers';
 import {
   Scorer,
@@ -13,9 +14,13 @@ import {
   ScorerTypes,
   OutputType,
   ValidateRegisteredScorerResult,
-  ResultType
+  ResultType,
+  DeleteScorerResponse,
+  ScorerResponse,
+  BaseScorerVersionResponse
 } from '../../src/types/scorer.types';
 import { StepType } from '../../src/types';
+import { Scorers, ScorerSettings } from '../../src/entities/scorers';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -25,7 +30,9 @@ const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
+const mockGetScorersPage = jest.fn();
 const mockValidateCodeScorerAndWait = jest.fn();
+const mockCreateRunScorerSettings = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -40,8 +47,10 @@ jest.mock('../../src/api-client', () => {
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion,
         getScorers: mockGetScorers,
+        getScorersPage: mockGetScorersPage,
         validateCodeScorerAndWait: (...args: unknown[]) =>
-          mockValidateCodeScorerAndWait(...args)
+          mockValidateCodeScorerAndWait(...args),
+        createRunScorerSettings: mockCreateRunScorerSettings
       };
     })
   };
@@ -124,18 +133,18 @@ describe('scorers utility', () => {
         'llm',
         'ver-uuid'
       );
-      expect(mockCreateScorer).toHaveBeenCalledWith(
-        'test',
-        ScorerTypes.llm,
-        'desc',
-        ['tag1'],
-        { model_name: 'gpt-4' },
-        'llm',
-        'ver-uuid',
-        undefined, // scoreableNodeTypes
-        undefined, // outputType
-        undefined // inputType
-      );
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'test',
+        scorerType: ScorerTypes.llm,
+        description: 'desc',
+        tags: ['tag1'],
+        defaults: { model_name: 'gpt-4' },
+        modelType: 'llm',
+        defaultVersionId: 'ver-uuid',
+        scoreableNodeTypes: undefined,
+        outputType: undefined,
+        inputType: undefined
+      });
     });
 
     it('should return the created scorer', async () => {
@@ -338,7 +347,10 @@ describe('scorers utility', () => {
     beforeEach(() => {
       jest.clearAllMocks();
       mockInit.mockResolvedValue(undefined);
-      mockGetScorers.mockResolvedValue(mockScorers);
+      mockGetScorersPage.mockResolvedValue({
+        scorers: mockScorers,
+        nextStartingToken: null
+      });
     });
 
     it('should initialize the API client', async () => {
@@ -346,19 +358,30 @@ describe('scorers utility', () => {
       expect(mockInit).toHaveBeenCalled();
     });
 
-    it('should call getScorers with no filters', async () => {
+    it('should call getScorersPage with no filters', async () => {
       await getScorers();
-      expect(mockGetScorers).toHaveBeenCalled();
+      expect(mockGetScorersPage).toHaveBeenCalledWith({
+        limit: 100,
+        startingToken: 0
+      });
     });
 
-    it('should call getScorers with type filter', async () => {
+    it('should call getScorersPage with type filter', async () => {
       await getScorers({ type: ScorerTypes.llm });
-      expect(mockGetScorers).toHaveBeenCalledWith({ type: ScorerTypes.llm });
+      expect(mockGetScorersPage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          types: [ScorerTypes.llm]
+        })
+      );
     });
 
-    it('should call getScorers with names filter', async () => {
+    it('should call getScorersPage with names filter', async () => {
       await getScorers({ names: ['foo', 'bar'] });
-      expect(mockGetScorers).toHaveBeenCalledWith({ names: ['foo', 'bar'] });
+      expect(mockGetScorersPage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          names: ['foo', 'bar']
+        })
+      );
     });
 
     it('should return the scorers from the API', async () => {
@@ -368,7 +391,7 @@ describe('scorers utility', () => {
 
     it('should handle API errors gracefully', async () => {
       const apiError = new Error('API error');
-      mockGetScorers.mockRejectedValueOnce(apiError);
+      mockGetScorersPage.mockRejectedValueOnce(apiError);
       await expect(getScorers()).rejects.toThrow(apiError);
     });
   });
@@ -572,6 +595,392 @@ describe('scorers utility', () => {
         undefined,
         undefined
       );
+    });
+  });
+
+  describe('createScorer with options object', () => {
+    const mockScorer: ScorerResponse = {
+      id: 'scorer-123',
+      name: 'test-scorer',
+      scorerType: ScorerTypes.llm,
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z',
+      tags: []
+    };
+
+    beforeEach(() => {
+      mockCreateScorer.mockResolvedValue(mockScorer);
+    });
+
+    it('should accept options object with all parameters', async () => {
+      const options = {
+        name: 'my-scorer',
+        scorerType: ScorerTypes.llm,
+        description: 'Test description',
+        tags: ['tag1', 'tag2'],
+        defaults: { model_name: 'gpt-4', num_judges: 3 },
+        modelType: 'llm' as const,
+        defaultVersionId: 'version-123',
+        scoreableNodeTypes: [StepType.llm],
+        outputType: OutputType.BOOLEAN,
+        inputType: undefined
+      };
+
+      const result = await createScorer(
+        options.name,
+        options.scorerType,
+        options.description,
+        options.tags,
+        options.defaults,
+        options.modelType,
+        options.defaultVersionId,
+        options.scoreableNodeTypes,
+        options.outputType,
+        options.inputType
+      );
+
+      expect(result).toEqual(mockScorer);
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'my-scorer',
+        scorerType: ScorerTypes.llm,
+        description: 'Test description',
+        tags: ['tag1', 'tag2'],
+        defaults: { model_name: 'gpt-4', num_judges: 3 },
+        modelType: 'llm',
+        defaultVersionId: 'version-123',
+        scoreableNodeTypes: [StepType.llm],
+        outputType: OutputType.BOOLEAN,
+        inputType: undefined
+      });
+    });
+
+    it('should work with minimal options', async () => {
+      await createScorer('minimal-scorer', ScorerTypes.code);
+
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'minimal-scorer',
+        scorerType: ScorerTypes.code,
+        description: undefined,
+        tags: undefined,
+        defaults: undefined,
+        modelType: undefined,
+        defaultVersionId: undefined,
+        scoreableNodeTypes: undefined,
+        outputType: undefined,
+        inputType: undefined
+      });
+    });
+  });
+
+  describe('createLlmScorerVersion with options object', () => {
+    const mockScorerVersion: BaseScorerVersionResponse = {
+      id: 'version-123',
+      version: 1,
+      scorerId: 'scorer-123',
+      createdAt: '2024-01-01T00:00:00Z',
+      updatedAt: '2024-01-01T00:00:00Z'
+    };
+
+    beforeEach(() => {
+      mockCreateLlmScorerVersion.mockResolvedValue(mockScorerVersion);
+    });
+
+    it('should accept individual parameters', async () => {
+      const result = await createLlmScorerVersion({
+        scorerId: 'scorer-123',
+        instructions: 'Test instructions',
+        userPrompt: 'Test prompt',
+        cotEnabled: true,
+        modelName: 'gpt-4',
+        numJudges: 5
+      });
+
+      expect(result).toEqual(mockScorerVersion);
+      expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
+        'scorer-123',
+        'Test instructions',
+        undefined,
+        'Test prompt',
+        true,
+        'gpt-4',
+        5
+      );
+    });
+
+    it('should work with minimal parameters', async () => {
+      await createLlmScorerVersion({
+        scorerId: 'scorer-123'
+      });
+
+      expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
+        'scorer-123',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined
+      );
+    });
+  });
+
+  describe('deleteScorer with DeleteScorerResponse', () => {
+    const mockDeleteResponse: DeleteScorerResponse = {
+      message: 'Scorer deleted successfully'
+    };
+
+    beforeEach(() => {
+      mockDeleteScorer.mockResolvedValue(mockDeleteResponse);
+    });
+
+    it('should return DeleteScorerResponse with message', async () => {
+      const result = await deleteScorer('scorer-123');
+
+      expect(result).toEqual(mockDeleteResponse);
+      expect(result.message).toBe('Scorer deleted successfully');
+      expect(mockDeleteScorer).toHaveBeenCalledWith('scorer-123');
+    });
+
+    it('should handle different success messages', async () => {
+      const customResponse: DeleteScorerResponse = {
+        message: 'Custom deletion message'
+      };
+      mockDeleteScorer.mockResolvedValue(customResponse);
+
+      const result = await deleteScorer('scorer-456');
+
+      expect(result.message).toBe('Custom deletion message');
+    });
+  });
+
+  describe('getScorers with new filtering options', () => {
+    const mockScorers: ScorerResponse[] = [
+      {
+        id: 'scorer-1',
+        name: 'scorer-one',
+        scorerType: ScorerTypes.llm,
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+        tags: []
+      },
+      {
+        id: 'scorer-2',
+        name: 'scorer-two',
+        scorerType: ScorerTypes.code,
+        createdAt: '2024-01-02T00:00:00Z',
+        updatedAt: '2024-01-02T00:00:00Z',
+        tags: []
+      }
+    ];
+
+    beforeEach(() => {
+      mockGetScorersPage.mockResolvedValue({
+        scorers: mockScorers,
+        nextStartingToken: null
+      });
+    });
+
+    it('should filter by single type using type option', async () => {
+      const result = await getScorers({ type: ScorerTypes.llm });
+
+      expect(result).toEqual(mockScorers);
+      expect(mockGetScorersPage).toHaveBeenCalledWith({
+        name: undefined,
+        names: undefined,
+        types: [ScorerTypes.llm],
+        startingToken: 0,
+        limit: 100
+      });
+    });
+
+    it('should filter by multiple types using types option', async () => {
+      await getScorers({ types: [ScorerTypes.llm, ScorerTypes.code] });
+
+      expect(mockGetScorersPage).toHaveBeenCalledWith({
+        name: undefined,
+        names: undefined,
+        types: [ScorerTypes.llm, ScorerTypes.code],
+        startingToken: 0,
+        limit: 100
+      });
+    });
+
+    it('should filter by single name using name option', async () => {
+      await getScorers({ name: 'my-scorer' });
+
+      expect(mockGetScorersPage).toHaveBeenCalledWith({
+        name: 'my-scorer',
+        names: undefined,
+        types: undefined,
+        startingToken: 0,
+        limit: 100
+      });
+    });
+
+    it('should filter by multiple names using names option', async () => {
+      await getScorers({ names: ['scorer-1', 'scorer-2'] });
+
+      expect(mockGetScorersPage).toHaveBeenCalledWith({
+        name: undefined,
+        names: ['scorer-1', 'scorer-2'],
+        types: undefined,
+        startingToken: 0,
+        limit: 100
+      });
+    });
+
+    it('should handle pagination correctly', async () => {
+      mockGetScorersPage
+        .mockResolvedValueOnce({
+          scorers: [mockScorers[0]],
+          nextStartingToken: 100
+        })
+        .mockResolvedValueOnce({
+          scorers: [mockScorers[1]],
+          nextStartingToken: null
+        });
+
+      const result = await getScorers();
+
+      expect(result).toHaveLength(2);
+      expect(mockGetScorersPage).toHaveBeenCalledTimes(2);
+      expect(mockGetScorersPage).toHaveBeenNthCalledWith(1, {
+        name: undefined,
+        names: undefined,
+        types: undefined,
+        startingToken: 0,
+        limit: 100
+      });
+      expect(mockGetScorersPage).toHaveBeenNthCalledWith(2, {
+        name: undefined,
+        names: undefined,
+        types: undefined,
+        startingToken: 100,
+        limit: 100
+      });
+    });
+
+    it('should combine type and name filters', async () => {
+      await getScorers({
+        type: ScorerTypes.llm,
+        name: 'my-llm-scorer'
+      });
+
+      expect(mockGetScorersPage).toHaveBeenCalledWith({
+        name: 'my-llm-scorer',
+        names: undefined,
+        types: [ScorerTypes.llm],
+        startingToken: 0,
+        limit: 100
+      });
+    });
+  });
+
+  describe('createRunScorerSettings', () => {
+    beforeEach(() => {
+      mockCreateRunScorerSettings.mockResolvedValue(undefined);
+    });
+
+    it('should create run scorer settings with experimentId and projectId', async () => {
+      const scorers = [
+        {
+          id: 'scorer-1',
+          name: 'completeness',
+          scorerType: ScorerTypes.preset
+        }
+      ];
+
+      await createRunScorerSettings({
+        experimentId: 'exp-123',
+        projectId: 'proj-456',
+        scorers
+      });
+
+      expect(mockCreateRunScorerSettings).toHaveBeenCalledWith(
+        'exp-123',
+        'proj-456',
+        scorers
+      );
+    });
+
+    it('should handle multiple scorers', async () => {
+      const scorers = [
+        {
+          id: 'scorer-1',
+          name: 'completeness',
+          scorerType: ScorerTypes.preset
+        },
+        {
+          id: 'scorer-2',
+          name: 'custom-llm',
+          scorerType: ScorerTypes.llm
+        }
+      ];
+
+      await createRunScorerSettings({
+        experimentId: 'exp-123',
+        projectId: 'proj-456',
+        scorers
+      });
+
+      expect(mockCreateRunScorerSettings).toHaveBeenCalledWith(
+        'exp-123',
+        'proj-456',
+        scorers
+      );
+    });
+
+    it('should handle empty scorers array', async () => {
+      await createRunScorerSettings({
+        experimentId: 'exp-123',
+        projectId: 'proj-456',
+        scorers: []
+      });
+
+      expect(mockCreateRunScorerSettings).toHaveBeenCalledWith(
+        'exp-123',
+        'proj-456',
+        []
+      );
+    });
+  });
+
+  describe('Scorers class', () => {
+    it('should be exported and instantiable', () => {
+      const scorers = new Scorers();
+      expect(scorers).toBeInstanceOf(Scorers);
+    });
+
+    it('should have list method', () => {
+      const scorers = new Scorers();
+      expect(typeof scorers.list).toBe('function');
+    });
+
+    it('should have getScorerVersion method', () => {
+      const scorers = new Scorers();
+      expect(typeof scorers.getScorerVersion).toBe('function');
+    });
+
+    it('should have create method', () => {
+      const scorers = new Scorers();
+      expect(typeof scorers.create).toBe('function');
+    });
+
+    it('should have delete method', () => {
+      const scorers = new Scorers();
+      expect(typeof scorers.delete).toBe('function');
+    });
+  });
+
+  describe('ScorerSettings class', () => {
+    it('should be exported and instantiable', () => {
+      const settings = new ScorerSettings();
+      expect(settings).toBeInstanceOf(ScorerSettings);
+    });
+
+    it('should have create method', () => {
+      const settings = new ScorerSettings();
+      expect(typeof settings.create).toBe('function');
     });
   });
 });

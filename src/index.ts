@@ -19,16 +19,33 @@ import {
   LogRecordsMetricsQueryRequest
 } from './types/search.types';
 import {
+  DatasetRow,
+  DatasetContent,
+  DatasetFormat,
+  ListDatasetResponse,
+  SyntheticDatasetExtensionRequest,
+  JobProgress
+} from './types/dataset.types';
+import {
   addRowsToDataset,
   createDataset,
   createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
+  convertDatasetContentToRecords,
+  getRecordsForDataset,
+  getDatasetRecordsFromArray,
   getDatasets,
   getDatasetContent,
   getDataset,
   getDatasetMetadata,
-  extendDataset
+  extendDataset,
+  getDatasetVersionHistory,
+  getDatasetVersion,
+  listDatasetProjects,
+  convertDatasetRowToRecord,
+  Dataset,
+  Datasets
 } from './utils/datasets';
 import {
   createCustomLlmMetric,
@@ -38,6 +55,17 @@ import {
   populateLocalMetrics,
   getMetrics
 } from './utils/metrics';
+import {
+  getScorers,
+  getScorerVersion,
+  createScorer,
+  createLlmScorerVersion,
+  createCodeScorerVersion,
+  deleteScorer,
+  createRunScorerSettings,
+  validateCodeScorer
+} from './utils/scorers';
+import { Scorers, ScorerSettings } from './entities/scorers';
 import { exportRecords } from './utils/export';
 import { Jobs } from './utils/jobs';
 import {
@@ -116,6 +144,8 @@ export {
   // OpenAI
   wrapOpenAI,
   // Datasets
+  Dataset,
+  Datasets,
   getDatasets,
   createDataset,
   getDatasetContent,
@@ -124,8 +154,15 @@ export {
   addRowsToDataset,
   createDatasetRecord,
   deserializeInputFromString,
+  convertDatasetContentToRecords,
+  getRecordsForDataset,
+  getDatasetRecordsFromArray,
   getDatasetMetadata,
   extendDataset,
+  getDatasetVersionHistory,
+  getDatasetVersion,
+  listDatasetProjects,
+  convertDatasetRowToRecord,
   // Prompt templates
   getPromptTemplate,
   getPromptTemplates,
@@ -175,6 +212,17 @@ export {
   deleteMetric,
   createMetricConfigs,
   populateLocalMetrics,
+  // Scorers
+  Scorers,
+  ScorerSettings,
+  getScorers,
+  getScorerVersion,
+  createScorer,
+  createLlmScorerVersion,
+  createCodeScorerVersion,
+  deleteScorer,
+  createRunScorerSettings,
+  validateCodeScorer,
   // Jobs (legacy)
   getScorerJobs,
   getScorerJobsStatus,
@@ -203,5 +251,11 @@ export type {
   LocalMetricConfig,
   LogRecordsFilter,
   LogRecordsExportRequest,
-  LogRecordsMetricsQueryRequest
+  LogRecordsMetricsQueryRequest,
+  DatasetRow,
+  DatasetContent,
+  DatasetFormat,
+  ListDatasetResponse,
+  SyntheticDatasetExtensionRequest,
+  JobProgress
 };

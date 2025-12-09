@@ -9,31 +9,42 @@ import {
   extendDataset,
   getDatasetContent,
   getDatasets,
-  getDatasetMetadata
+  getDatasetMetadata,
+  getDataset,
+  getDatasetVersionHistory,
+  getDatasetVersion,
+  listDatasetProjects,
+  getRecordsForDataset,
+  getDatasetRecordsFromArray,
+  convertDatasetRowToRecord
 } from '../../src';
 import { commonHandlers, TEST_HOST } from '../common';
-import { Dataset, DatasetContent, DatasetRow } from '../../src/api-client';
-import { DatasetType } from '../../src/utils/datasets';
+import {
+  DatasetDBType,
+  DatasetContent,
+  DatasetRow,
+  DatasetType
+} from '../../src/types/dataset.types';
 import { RunExperimentParams } from '../../src/utils/experiments';
 
-const EXAMPLE_DATASET: Dataset = {
+const EXAMPLE_DATASET: DatasetDBType = {
   id: 'c7b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3d',
   name: 'My Dataset',
-  column_names: ['firstName', 'lastName'],
-  project_count: 1,
-  created_at: '2021-09-10T00:00:00Z',
-  updated_at: '2021-09-10T00:00:00Z',
-  num_rows: 1,
-  created_by_user: null,
-  current_version_index: 1,
+  columnNames: ['firstName', 'lastName'],
+  projectCount: 1,
+  createdAt: '2021-09-10T00:00:00Z',
+  updatedAt: '2021-09-10T00:00:00Z',
+  numRows: 1,
+  createdByUser: { id: '', email: '' },
+  currentVersionIndex: 1,
   draft: false
 };
 
 const EXAMPLE_DATASET_ROW: DatasetRow = {
   index: 0,
-  row_id: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
+  rowId: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
   values: ['John', 'Doe'],
-  values_dict: { firstName: 'John', lastName: 'Doe' },
+  valuesDict: { firstName: 'John', lastName: 'Doe' },
   metadata: null
 };
 
@@ -41,9 +52,9 @@ const EXTENDED_DATASET_ID = 'a8b3d8e0-5e0b-4b0f-8b3a-3b9f4b3d3b3a';
 
 const EXTENDED_DATASET_ROW: DatasetRow = {
   index: 0,
-  row_id: 'be4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
+  rowId: 'be4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
   values: ['Extended', 'Row'],
-  values_dict: { col1: 'Extended', col2: 'Row' },
+  valuesDict: { col1: 'Extended', col2: 'Row' },
   metadata: null
 };
 
@@ -80,6 +91,12 @@ const getDatasetHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(EXAMPLE_DATASET);
 });
 
+const listDatasetProjectsHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json({
+    projects: [{ id: 'proj-123', name: 'test-project' }]
+  });
+});
+
 const addRowsToDatasetHandler = jest.fn().mockImplementation(() => {
   return new HttpResponse(null, { status: 204 });
 });
@@ -108,6 +125,25 @@ const getExtendDatasetStatusHandler = jest.fn().mockImplementation(() => {
   return HttpResponse.json(jobProgress);
 });
 
+const EXAMPLE_VERSION_HISTORY = {
+  versions: [
+    { versionIndex: 0, createdAt: '2021-09-10T00:00:00Z', numRows: 1 },
+    { versionIndex: 1, createdAt: '2021-09-11T00:00:00Z', numRows: 2 }
+  ]
+};
+
+const EXAMPLE_VERSION_CONTENT: DatasetContent = {
+  rows: [EXAMPLE_DATASET_ROW]
+};
+
+const getDatasetVersionHistoryHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json(EXAMPLE_VERSION_HISTORY);
+});
+
+const getDatasetVersionContentHandler = jest.fn().mockImplementation(() => {
+  return HttpResponse.json(EXAMPLE_VERSION_CONTENT);
+});
+
 export const handlers = [
   ...commonHandlers,
   http.post(`${TEST_HOST}/datasets`, postDatasetsHandler),
@@ -126,6 +162,10 @@ export const handlers = [
     addRowsToDatasetHandler
   ),
   http.get(`${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}`, getDatasetHandler),
+  http.get(
+    `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/projects`,
+    listDatasetProjectsHandler
+  ),
   http.post(`${TEST_HOST}/datasets/extend`, extendDatasetHandler),
   http.get(
     `${TEST_HOST}/datasets/extend/${EXTENDED_DATASET_ID}`,
@@ -134,6 +174,14 @@ export const handlers = [
   http.get(
     `${TEST_HOST}/datasets/${EXTENDED_DATASET_ID}/content`,
     getExtendedDatasetContentHandler
+  ),
+  http.post(
+    `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/versions/query`,
+    getDatasetVersionHistoryHandler
+  ),
+  http.get(
+    `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/versions/0/content`,
+    getDatasetVersionContentHandler
   )
 ];
 
@@ -368,16 +416,16 @@ describe('datasets utils', () => {
 
 test('extend dataset', async () => {
   const extendPromise = extendDataset({
-    prompt_settings: {
-      model_alias: 'GPT-4o mini',
-      response_format: { type: 'json_object' }
+    promptSettings: {
+      modelAlias: 'GPT-4o mini',
+      responseFormat: { type: 'json_object' }
     },
     prompt:
       'Financial planning assistant that helps clients design an investment strategy.',
     instructions:
       'You are a financial planning assistant that helps clients design an investment strategy.',
     examples: ['I want to invest $1000 per month.'],
-    data_types: ['Prompt Injection'],
+    dataTypes: ['Prompt Injection'],
     count: 3
   });
 
@@ -390,4 +438,210 @@ test('extend dataset', async () => {
   expect(result).toEqual([EXTENDED_DATASET_ROW]);
   expect(extendDatasetHandler).toHaveBeenCalled();
   expect(getExtendedDatasetContentHandler).toHaveBeenCalled();
+});
+
+// ============================================================================
+// New Feature Tests
+// ============================================================================
+
+describe('getDataset', () => {
+  it('should get a dataset by id', async () => {
+    const dataset = await getDataset({ id: EXAMPLE_DATASET.id });
+    expect(dataset).toEqual(EXAMPLE_DATASET);
+    expect(getDatasetHandler).toHaveBeenCalled();
+  });
+
+  it('should get a dataset by name', async () => {
+    const dataset = await getDataset({ name: EXAMPLE_DATASET.name });
+    expect(dataset).toEqual(EXAMPLE_DATASET);
+    expect(getDatasetByNameHandler).toHaveBeenCalled();
+  });
+});
+
+describe('getDatasetVersionHistory', () => {
+  it('should get version history by dataset id', async () => {
+    const history = await getDatasetVersionHistory({
+      datasetId: EXAMPLE_DATASET.id
+    });
+    expect(history).toEqual(EXAMPLE_VERSION_HISTORY);
+    expect(getDatasetVersionHistoryHandler).toHaveBeenCalled();
+  });
+
+  it('should get version history by dataset name', async () => {
+    const history = await getDatasetVersionHistory({
+      datasetName: EXAMPLE_DATASET.name
+    });
+    expect(history).toEqual(EXAMPLE_VERSION_HISTORY);
+    expect(getDatasetByNameHandler).toHaveBeenCalled();
+    expect(getDatasetVersionHistoryHandler).toHaveBeenCalled();
+  });
+});
+
+describe('getDatasetVersion', () => {
+  it('should get a specific version by dataset id', async () => {
+    const content = await getDatasetVersion({
+      versionIndex: 0,
+      datasetId: EXAMPLE_DATASET.id
+    });
+    expect(content).toEqual(EXAMPLE_VERSION_CONTENT);
+    expect(getDatasetVersionContentHandler).toHaveBeenCalled();
+  });
+
+  it('should get a specific version by dataset name', async () => {
+    const content = await getDatasetVersion({
+      versionIndex: 0,
+      datasetName: EXAMPLE_DATASET.name
+    });
+    expect(content).toEqual(EXAMPLE_VERSION_CONTENT);
+    expect(getDatasetByNameHandler).toHaveBeenCalled();
+    expect(getDatasetVersionContentHandler).toHaveBeenCalled();
+  });
+});
+
+describe('listDatasetProjects', () => {
+  it('should list projects by dataset id', async () => {
+    const projects = await listDatasetProjects({
+      datasetId: EXAMPLE_DATASET.id
+    });
+    expect(projects).toEqual([{ id: 'proj-123', name: 'test-project' }]);
+    expect(listDatasetProjectsHandler).toHaveBeenCalled();
+  });
+
+  it('should list projects by dataset name', async () => {
+    const projects = await listDatasetProjects({
+      datasetName: EXAMPLE_DATASET.name
+    });
+    expect(projects).toEqual([{ id: 'proj-123', name: 'test-project' }]);
+    expect(getDatasetByNameHandler).toHaveBeenCalled();
+    expect(listDatasetProjectsHandler).toHaveBeenCalled();
+  });
+});
+
+describe('convertDatasetRowToRecord', () => {
+  it('should convert a dataset row to a record', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-123',
+      values: ['input-value', 'output-value'],
+      valuesDict: {
+        input: 'input-value',
+        output: 'output-value',
+        metadata: '{"key":"value"}'
+      },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record).toEqual({
+      id: 'row-123',
+      input: 'input-value',
+      output: 'output-value',
+      metadata: { key: 'value' }
+    });
+  });
+
+  it('should throw error if row has no input field', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-123',
+      values: ['value'],
+      valuesDict: { output: 'value' },
+      metadata: null
+    };
+    expect(() => convertDatasetRowToRecord(row)).toThrow(
+      'DatasetRow must have an input field'
+    );
+  });
+
+  it('should handle row with only input field', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-456',
+      values: ['only-input'],
+      valuesDict: { input: 'only-input' },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record).toEqual({
+      id: 'row-456',
+      input: 'only-input',
+      output: undefined,
+      metadata: undefined
+    });
+  });
+});
+
+describe('getRecordsForDataset', () => {
+  it('should get records by dataset id', async () => {
+    // Need a dataset row with input field for this to work
+    const inputRow: DatasetRow = {
+      index: 0,
+      rowId: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
+      values: ['test-input'],
+      valuesDict: { input: 'test-input' },
+      metadata: null
+    };
+
+    // Override the handler for this test
+    server.use(
+      http.get(`${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`, () =>
+        HttpResponse.json({ rows: [inputRow] })
+      )
+    );
+
+    const records = await getRecordsForDataset({
+      datasetId: EXAMPLE_DATASET.id
+    });
+    expect(records).toEqual([
+      {
+        id: 'ae4dcadf-a0a2-475e-91e4-7bd03fdf5de8',
+        input: 'test-input',
+        output: undefined,
+        metadata: undefined
+      }
+    ]);
+  });
+});
+
+describe('getDatasetRecordsFromArray', () => {
+  it('should convert an array of raw records to dataset records', () => {
+    const rawRecords = [
+      { input: 'input1', output: 'output1' },
+      { input: 'input2', output: 'output2', metadata: { key: 'value' } }
+    ];
+    const records = getDatasetRecordsFromArray(rawRecords);
+    expect(records).toEqual([
+      {
+        id: undefined,
+        input: 'input1',
+        output: 'output1',
+        metadata: undefined
+      },
+      {
+        id: undefined,
+        input: 'input2',
+        output: 'output2',
+        metadata: { key: 'value' }
+      }
+    ]);
+  });
+
+  it('should handle empty array', () => {
+    const records = getDatasetRecordsFromArray([]);
+    expect(records).toEqual([]);
+  });
+
+  it('should handle records with object input/output', () => {
+    const rawRecords = [
+      { input: { nested: 'value' }, output: { result: 'data' } }
+    ];
+    const records = getDatasetRecordsFromArray(rawRecords);
+    expect(records).toEqual([
+      {
+        id: undefined,
+        input: '{"nested":"value"}',
+        output: '{"result":"data"}',
+        metadata: undefined
+      }
+    ]);
+  });
 });
