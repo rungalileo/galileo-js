@@ -98,7 +98,7 @@ export class Metrics {
     timeoutMs,
     pollIntervalMs,
     requiredMetrics
-  }: CreateCustomCodeMetricParams): Promise<ScorerVersion> {
+  }: CreateCustomCodeMetricParams): Promise<BaseScorerVersionResponse> {
     console.log(`Creating custom code metric: ${name}`);
 
     // Read the code file
