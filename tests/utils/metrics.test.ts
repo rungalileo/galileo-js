@@ -585,6 +585,79 @@ describe('metrics utils', () => {
         })
       ).rejects.toThrow('Code file is empty');
     });
+
+    it('should pass requiredMetrics as string array to validation', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        requiredMetrics: ['correctness', 'context_adherence']
+      });
+
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        'def score(input, output):\n    return 1.0\n',
+        [StepType.llm],
+        undefined, // uses default timeout
+        undefined, // uses default poll interval
+        ['correctness', 'context_adherence']
+      );
+    });
+
+    it('should pass requiredMetrics as GalileoScorers enum values to validation', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        requiredMetrics: [
+          GalileoScorers.correctness,
+          GalileoScorers.contextAdherence
+        ]
+      });
+
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        'def score(input, output):\n    return 1.0\n',
+        [StepType.llm],
+        undefined,
+        undefined,
+        [GalileoScorers.correctness, GalileoScorers.contextAdherence]
+      );
+    });
+
+    it('should pass mixed requiredMetrics (enum and string) to validation', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        requiredMetrics: [GalileoScorers.correctness, 'custom_metric']
+      });
+
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        'def score(input, output):\n    return 1.0\n',
+        [StepType.llm],
+        undefined,
+        undefined,
+        [GalileoScorers.correctness, 'custom_metric']
+      );
+    });
+
+    it('should pass custom timeout and poll interval with requiredMetrics', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        timeoutMs: 60000,
+        pollIntervalMs: 2000,
+        requiredMetrics: [GalileoScorers.correctness]
+      });
+
+      expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
+        'def score(input, output):\n    return 1.0\n',
+        [StepType.llm],
+        60000,
+        2000,
+        [GalileoScorers.correctness]
+      );
+    });
   });
 
   describe('getMetrics', () => {

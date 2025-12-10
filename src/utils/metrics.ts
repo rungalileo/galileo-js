@@ -96,7 +96,8 @@ export class Metrics {
     description = '',
     tags = [],
     timeoutMs,
-    pollIntervalMs
+    pollIntervalMs,
+    requiredMetrics
   }: CreateCustomCodeMetricParams): Promise<BaseScorerVersionResponse> {
     console.log(`Creating custom code metric: ${name}`);
 
@@ -139,7 +140,8 @@ export class Metrics {
       codeContent,
       scoreableNodeTypes,
       timeoutMs,
-      pollIntervalMs
+      pollIntervalMs,
+      requiredMetrics
     );
 
     // Create the scorer with type 'code'

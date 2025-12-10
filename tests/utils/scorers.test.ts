@@ -438,6 +438,7 @@ describe('scorers utility', () => {
         validCode,
         [StepType.llm],
         undefined,
+        undefined,
         undefined
       );
     });
@@ -455,7 +456,8 @@ describe('scorers utility', () => {
         validCode,
         [StepType.llm],
         customTimeout,
-        customPollInterval
+        customPollInterval,
+        undefined
       );
     });
 
@@ -498,6 +500,7 @@ describe('scorers utility', () => {
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
         validCode,
         [StepType.llm, StepType.tool, StepType.retriever],
+        undefined,
         undefined,
         undefined
       );
@@ -574,6 +577,7 @@ describe('scorers utility', () => {
         multilineCode,
         [StepType.llm],
         undefined,
+        undefined,
         undefined
       );
     });
@@ -587,6 +591,7 @@ describe('scorers utility', () => {
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
         codeWithSpecialChars,
         [StepType.tool],
+        undefined,
         undefined,
         undefined
       );

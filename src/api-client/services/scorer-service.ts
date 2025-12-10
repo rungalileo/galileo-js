@@ -312,7 +312,8 @@ export class ScorerService extends BaseClient {
    */
   public validateCodeScorer = async (
     codeContent: string,
-    scoreableNodeTypes: StepType[]
+    scoreableNodeTypes: StepType[],
+    requiredScorers?: string[]
   ): Promise<ValidateCodeScorerResponse> => {
     console.log(`Submitting code for validation...`);
     console.log(`Step type(s): ${JSON.stringify(scoreableNodeTypes)}`);
@@ -321,6 +322,9 @@ export class ScorerService extends BaseClient {
     const blob = new Blob([codeContent], { type: 'text/x-python' });
     formData.append('file', blob, 'scorer.py');
     formData.append('scoreable_node_types', JSON.stringify(scoreableNodeTypes));
+    if (requiredScorers && requiredScorers.length > 0) {
+      formData.append('required_scorers', JSON.stringify(requiredScorers));
+    }
 
     const response = await this.makeRequest<ValidateCodeScorerResponse>(
       RequestMethod.POST,
@@ -362,12 +366,14 @@ export class ScorerService extends BaseClient {
     codeContent: string,
     scoreableNodeTypes: StepType[],
     timeoutMs: number = 60000,
-    pollIntervalMs: number = 1000
+    pollIntervalMs: number = 1000,
+    requiredScorers?: string[]
   ): Promise<ValidateRegisteredScorerResult> => {
     // Submit validation request
     const { task_id } = await this.validateCodeScorer(
       codeContent,
-      scoreableNodeTypes
+      scoreableNodeTypes,
+      requiredScorers
     );
 
     const startTime = Date.now();
