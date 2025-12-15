@@ -6,7 +6,7 @@ import {
 } from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
-  GalileoScorers,
+  GalileoMetrics,
   LocalMetricConfig,
   Metric,
   LogRecordsMetricsQueryRequest,
@@ -384,7 +384,7 @@ describe('metrics utils', () => {
       const localMetrics = await enableMetrics({
         projectName: 'test-project',
         logStreamName: 'test-log-stream',
-        metrics: [GalileoScorers.correctness, localMetric]
+        metrics: [GalileoMetrics.correctness, localMetric]
       });
 
       expect(localMetrics).toHaveLength(1);
@@ -408,7 +408,7 @@ describe('metrics utils', () => {
         enableMetrics({
           projectName: 'nonexistent-project',
           logStreamName: 'test-log-stream',
-          metrics: [GalileoScorers.correctness]
+          metrics: [GalileoMetrics.correctness]
         })
       ).rejects.toThrow("Project 'nonexistent-project' not found");
     });
@@ -420,7 +420,7 @@ describe('metrics utils', () => {
         enableMetrics({
           projectName: 'test-project',
           logStreamName: 'nonexistent-log-stream',
-          metrics: [GalileoScorers.correctness]
+          metrics: [GalileoMetrics.correctness]
         })
       ).rejects.toThrow(
         "Log stream 'nonexistent-log-stream' not found in project 'test-project'"
@@ -444,8 +444,8 @@ describe('metrics utils', () => {
         projectName: 'test-project',
         logStreamName: 'test-log-stream',
         metrics: [
-          GalileoScorers.correctness,
-          GalileoScorers.completeness,
+          GalileoMetrics.correctness,
+          GalileoMetrics.completeness,
           'toxicity',
           metric,
           localMetric
@@ -603,14 +603,14 @@ describe('metrics utils', () => {
       );
     });
 
-    it('should pass requiredMetrics as GalileoScorers enum values to validation', async () => {
+    it('should pass requiredMetrics as GalileoMetrics values to validation', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
         requiredMetrics: [
-          GalileoScorers.correctness,
-          GalileoScorers.contextAdherence
+          GalileoMetrics.correctness,
+          GalileoMetrics.contextAdherence
         ]
       });
 
@@ -619,7 +619,7 @@ describe('metrics utils', () => {
         [StepType.llm],
         undefined,
         undefined,
-        [GalileoScorers.correctness, GalileoScorers.contextAdherence]
+        [GalileoMetrics.correctness, GalileoMetrics.contextAdherence]
       );
     });
 
@@ -628,7 +628,7 @@ describe('metrics utils', () => {
         name: 'my_code_metric',
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
-        requiredMetrics: [GalileoScorers.correctness, 'custom_metric']
+        requiredMetrics: [GalileoMetrics.correctness, 'custom_metric']
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -636,7 +636,7 @@ describe('metrics utils', () => {
         [StepType.llm],
         undefined,
         undefined,
-        [GalileoScorers.correctness, 'custom_metric']
+        [GalileoMetrics.correctness, 'custom_metric']
       );
     });
 
@@ -647,7 +647,7 @@ describe('metrics utils', () => {
         nodeLevel: StepType.llm,
         timeoutMs: 60000,
         pollIntervalMs: 2000,
-        requiredMetrics: [GalileoScorers.correctness]
+        requiredMetrics: [GalileoMetrics.correctness]
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -655,7 +655,7 @@ describe('metrics utils', () => {
         [StepType.llm],
         60000,
         2000,
-        [GalileoScorers.correctness]
+        [GalileoMetrics.correctness]
       );
     });
   });

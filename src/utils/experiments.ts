@@ -19,7 +19,7 @@ import {
   getDatasetMetadata
 } from '../utils/datasets';
 import {
-  GalileoScorers,
+  GalileoMetrics,
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
@@ -32,7 +32,7 @@ type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 
 type BaseRunExperimentParams = {
   name: string;
-  metrics?: (GalileoScorers | string | Metric | LocalMetricConfig)[];
+  metrics?: (GalileoMetrics | string | Metric | LocalMetricConfig)[];
   projectName?: string;
   projectId?: string;
 };
@@ -102,7 +102,7 @@ export const createExperiment = async (
   name: string,
   projectName: string,
   dataset?: ExperimentDatasetRequest | null,
-  metrics?: (GalileoScorers | Metric | string)[]
+  metrics?: (GalileoMetrics | Metric | string)[]
 ): Promise<Experiment> => {
   if (!name) {
     throw new Error('A valid `name` must be provided to create an experiment');
