@@ -19,7 +19,7 @@ export type MetricValueType =
   | Record<string, SingleMetricValue>;
 
 /**
- * Galileo scorers as a const object.
+ * Galileo metrics as a const object.
  * Generated from OpenAPI schema to ensure type safety and completeness.
  *
  * This object provides camelCase keys for better developer experience
@@ -29,14 +29,14 @@ export type MetricValueType =
  *
  * @example
  * ```typescript
- * import { GalileoScorers } from 'galileo';
+ * import { GalileoMetrics } from 'galileo';
  *
  * // Use const object values
- * const metrics = [GalileoScorers.correctness, GalileoScorers.completeness];
+ * const metrics = [GalileoMetrics.correctness, GalileoMetrics.completeness];
  * ```
  */
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
-export const GalileoScorers = {
+export const GalileoMetrics = {
   // Primary entries (all unique values from OpenAPI)
   actionCompletionLuna: 'action_completion_luna',
   actionAdvancementLuna: 'action_advancement_luna',
@@ -93,6 +93,9 @@ export const GalileoScorers = {
 } as const satisfies Record<string, ScorerNameOpenAPI>;
 /* eslint-enable @typescript-eslint/no-duplicate-enum-values */
 
+/** @deprecated Use GalileoMetrics instead */
+export const GalileoScorers = GalileoMetrics;
+
 export interface Metric {
   name: string;
   version?: number;
@@ -120,8 +123,8 @@ export interface CreateCustomCodeMetricParams {
   timeoutMs?: number;
   /** Interval between validation polling attempts in milliseconds (default: 1000ms) */
   pollIntervalMs?: number;
-  /** List of required metrics that this scorer depends on (can be GalileoScorers enum values or metric name strings) */
-  requiredMetrics?: (GalileoScorers | string)[];
+  /** List of required metrics that this scorer depends on (can be GalileoMetrics values or metric name strings) */
+  requiredMetrics?: (GalileoMetrics | string)[];
 }
 
 export interface DeleteMetricParams {
@@ -177,22 +180,25 @@ export type LogRecordsMetricsResponse =
   ObjectToCamel<LogRecordsMetricsResponseOpenAPI>;
 
 /**
- * Type representing all valid Galileo scorer names.
+ * Type representing all valid Galileo metric names.
  * This is a union of all string literal values from the OpenAPI schema.
  *
- * Use the {@link GalileoScorers} const object for runtime access to scorer names.
+ * Use the {@link GalileoMetrics} const object for runtime access to metric names.
  *
  * @example
  * ```typescript
- * import { GalileoScorers, type GalileoScorers as GalileoScorersType } from 'galileo';
+ * import { GalileoMetrics, type GalileoMetrics as GalileoMetricsType } from 'galileo';
  *
  * // Runtime usage
- * const scorer: string = GalileoScorers.correctness;
+ * const metric: string = GalileoMetrics.correctness;
  *
  * // Type usage
- * function validateScorer(name: GalileoScorersType): boolean {
- *   return Object.values(GalileoScorers).includes(name);
+ * function validateMetric(name: GalileoMetricsType): boolean {
+ *   return Object.values(GalileoMetrics).includes(name);
  * }
  * ```
  */
-export type GalileoScorers = ScorerNameOpenAPI;
+export type GalileoMetrics = ScorerNameOpenAPI;
+
+/** @deprecated Use GalileoMetrics type instead */
+export type GalileoScorers = GalileoMetrics;

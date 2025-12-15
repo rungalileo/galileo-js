@@ -5,6 +5,7 @@ import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
 import {
+  GalileoMetrics,
   GalileoScorers,
   LocalMetricConfig,
   Metric
@@ -140,6 +141,7 @@ export {
   GalileoApiClient,
   GalileoLogger,
   GalileoCallback,
+  GalileoMetrics,
   GalileoScorers,
   // OpenAI
   wrapOpenAI,

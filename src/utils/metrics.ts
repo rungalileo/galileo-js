@@ -18,7 +18,7 @@ import {
   getScorerVersion
 } from './scorers';
 import {
-  GalileoScorers,
+  GalileoMetrics,
   LocalMetricConfig,
   Metric,
   MetricValueType
@@ -271,18 +271,18 @@ export class Metrics {
   public async createMetricConfigs(
     projectId: string,
     runId: string,
-    metrics: (GalileoScorers | Metric | LocalMetricConfig | string)[]
+    metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
   ): Promise<[ScorerConfig[], LocalMetricConfig[]]> {
     const localMetricConfigs: LocalMetricConfig[] = [];
     const scorerNameVersions: Array<[string, number | undefined]> = [];
 
     // Categorize metrics by type - match Python order: const object value first, then Metric, then LocalMetricConfig, then string
     for (const metric of metrics) {
-      // Check if it's a GalileoScorers const object value
-      // When you use GalileoScorers.correctness, it's actually the string value
+      // Check if it's a GalileoMetrics const object value
+      // When you use GalileoMetrics.correctness, it's actually the string value
       // So we check if it's a string that matches a const object value first
       if (typeof metric === 'string') {
-        const constValue = Object.values(GalileoScorers).find(
+        const constValue = Object.values(GalileoMetrics).find(
           (val) => val === metric
         );
         if (constValue) {
@@ -298,7 +298,7 @@ export class Metrics {
         localMetricConfigs.push(metric);
       } else {
         throw new Error(
-          `Invalid metric format. Expected string, GalileoScorers const object value, Metric object with 'name' property, or LocalMetricConfig with 'name' and 'scorerFn'. Received: ${JSON.stringify(metric)}`
+          `Invalid metric format. Expected string, GalileoMetrics const object value, Metric object with 'name' property, or LocalMetricConfig with 'name' and 'scorerFn'. Received: ${JSON.stringify(metric)}`
         );
       }
     }
@@ -564,7 +564,7 @@ export const getMetrics = async (
  * @param projectId - The ID of the project
  * @param runId - The ID of the run (can be experiment ID or log stream ID)
  * @param metrics - List of metrics to configure. Can include:
- *                  - GalileoScorers const object values (e.g., GalileoScorers.correctness)
+ *                  - GalileoMetrics const object values (e.g., GalileoMetrics.correctness)
  *                  - Metric objects with name and optional version
  *                  - LocalMetricConfig objects for client-side scoring
  *                  - String names of metrics
@@ -579,8 +579,8 @@ export const getMetrics = async (
  *   'project-123',
  *   'log-stream-456',
  *   [
- *     GalileoScorers.correctness,
- *     GalileoScorers.completeness,
+ *     GalileoMetrics.correctness,
+ *     GalileoMetrics.completeness,
  *     'toxicity',
  *     { name: 'custom_metric', version: 2 }
  *   ]
@@ -590,7 +590,7 @@ export const getMetrics = async (
 export const createMetricConfigs = async (
   projectId: string,
   runId: string,
-  metrics: (GalileoScorers | Metric | LocalMetricConfig | string)[]
+  metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
 ): Promise<[ScorerConfig[], LocalMetricConfig[]]> => {
   const metricsInstance = new Metrics();
   return await metricsInstance.createMetricConfigs(projectId, runId, metrics);

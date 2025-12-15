@@ -1,7 +1,7 @@
 import { LogStream } from '../types/log-stream.types';
 import { GalileoApiClient } from '../api-client';
 import {
-  GalileoScorers,
+  GalileoMetrics,
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
@@ -67,7 +67,7 @@ export const getLogStream = async ({
  * @param options.logStreamName - Log stream name (overrides env var)
  * @param options.projectName - Project name (overrides env var)
  * @param options.metrics - Metrics to enable. Accepts:
- *   - GalileoScorers const object values (e.g., GalileoScorers.correctness)
+ *   - GalileoMetrics const object values (e.g., GalileoMetrics.correctness)
  *   - String names (e.g., 'toxicity')
  *   - Metric objects (e.g., { name: 'custom', version: 2 })
  *   - LocalMetricConfig objects with scorerFn for client-side scoring
@@ -82,7 +82,7 @@ export const getLogStream = async ({
  * const localMetrics = await enableMetrics({
  *   projectName: 'My Project',
  *   logStreamName: 'Production',
- *   metrics: [GalileoScorers.correctness, 'toxicity']
+ *   metrics: [GalileoMetrics.correctness, 'toxicity']
  * });
  * ```
  */
@@ -93,7 +93,7 @@ export const enableMetrics = async ({
 }: {
   logStreamName?: string;
   projectName?: string;
-  metrics: (GalileoScorers | Metric | LocalMetricConfig | string)[];
+  metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[];
 }): Promise<LocalMetricConfig[]> => {
   // Validate metrics array
   if (!metrics || metrics.length === 0) {
