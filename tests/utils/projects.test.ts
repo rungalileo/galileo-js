@@ -191,18 +191,20 @@ describe('projects utils', () => {
       expect(result).toEqual(mockProject);
     });
 
-    it('throws when explicit id is provided and GALILEO_PROJECT (name) is set', async () => {
+    it('uses explicit id and ignores GALILEO_PROJECT (name) when both are set', async () => {
       process.env.GALILEO_PROJECT = projectName;
-      await expect(getProjectWithEnvFallbacks({ projectId })).rejects.toThrow(
-        'Provide only one of projectId or name'
-      );
+      const result = await getProjectWithEnvFallbacks({ projectId });
+      expect(mockGetProject).toHaveBeenCalledWith(projectId);
+      expect(result).toEqual(mockProject);
     });
 
-    it('throws when explicit name is provided and GALILEO_PROJECT_ID is set', async () => {
+    it('uses explicit name and ignores GALILEO_PROJECT_ID when both are set', async () => {
       process.env.GALILEO_PROJECT_ID = projectId;
-      await expect(
-        getProjectWithEnvFallbacks({ name: projectName })
-      ).rejects.toThrow('Provide only one of projectId or name');
+      const result = await getProjectWithEnvFallbacks({ name: projectName });
+      expect(mockGetProjectByName).toHaveBeenCalledWith(projectName, {
+        projectType: undefined
+      });
+      expect(result).toEqual(mockProject);
     });
 
     it('throws when both explicit id and name are provided (regardless of env)', async () => {

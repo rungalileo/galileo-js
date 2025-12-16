@@ -96,8 +96,18 @@ export class Projects {
     name,
     projectType
   }: GetProjectOptions): Promise<Project> {
-    projectId = projectId ?? process.env.GALILEO_PROJECT_ID;
-    name = name ?? process.env.GALILEO_PROJECT;
+    // Check if both env vars are set when neither parameter is provided
+    if (!projectId && !name) {
+      const envProjectId = process.env.GALILEO_PROJECT_ID;
+      const envProjectName = process.env.GALILEO_PROJECT;
+      if (envProjectId && envProjectName) {
+        throw new Error('Provide only one of projectId or name');
+      }
+    }
+
+    projectId =
+      projectId ?? (name ? undefined : process.env.GALILEO_PROJECT_ID);
+    name = name ?? (projectId ? undefined : process.env.GALILEO_PROJECT);
 
     return this.get({ projectId, name, projectType });
   }

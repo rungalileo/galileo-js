@@ -67,13 +67,7 @@ export class LogStreams {
     projectId?: string;
     projectName?: string;
   }): Promise<LogStream[]> {
-    let projectId = options.projectId;
-    let projectName = options.projectName;
-
-    // Apply environment variable fallbacks
-    projectId = projectId ?? process.env.GALILEO_PROJECT_ID;
-    projectName = projectName ?? process.env.GALILEO_PROJECT;
-
+    const { projectId, projectName } = options;
     if (!projectId && !projectName) {
       throw new Error(
         'Either projectId or projectName must be provided, or set GALILEO_PROJECT_ID or GALILEO_PROJECT environment variable'
@@ -110,17 +104,14 @@ export class LogStreams {
     projectId?: string;
     projectName?: string;
   }): Promise<LogStream | undefined> {
-    if (!options.id && !options.name) {
+    const { id, name, projectId, projectName } = options;
+    if (!id && !name) {
       throw new Error('Either id or name must be provided');
     }
 
-    if (options.id && options.name) {
+    if (id && name) {
       throw new Error('Provide only one of id or name');
     }
-
-    // Apply environment variable fallbacks
-    const projectId = options.projectId ?? process.env.GALILEO_PROJECT_ID;
-    const projectName = options.projectName ?? process.env.GALILEO_PROJECT;
 
     if (!projectId && !projectName) {
       throw new Error(
@@ -140,10 +131,10 @@ export class LogStreams {
     }
 
     let logStream: LogStreamType | undefined;
-    if (options.id) {
-      logStream = await apiClient.getLogStream(options.id);
-    } else if (options.name) {
-      logStream = await apiClient.getLogStreamByName(options.name);
+    if (id) {
+      logStream = await apiClient.getLogStream(id);
+    } else if (name) {
+      logStream = await apiClient.getLogStreamByName(name);
     }
 
     return logStream ? new LogStream(logStream) : undefined;
@@ -164,13 +155,7 @@ export class LogStreams {
       projectName?: string;
     }
   ): Promise<LogStream> {
-    let projectId = options?.projectId;
-    let projectName = options?.projectName;
-
-    // Apply environment variable fallbacks
-    projectId = projectId ?? process.env.GALILEO_PROJECT_ID;
-    projectName = projectName ?? process.env.GALILEO_PROJECT;
-
+    const { projectId, projectName } = options ?? {};
     if (!projectId && !projectName) {
       throw new Error(
         'Either projectId or projectName must be provided, or set GALILEO_PROJECT_ID or GALILEO_PROJECT environment variable'
