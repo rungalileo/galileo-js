@@ -67,6 +67,7 @@ import { ScorerService } from './services/scorer-service';
 import { ExportService } from './services/export-service';
 import { JobsService } from './services/job-service';
 import { JobProgressService } from './services/job-progress-service';
+import { RunsService } from './services/runs-service';
 import {
   DatasetAppendRow,
   SyntheticDatasetExtensionRequest,
@@ -102,6 +103,8 @@ import {
   LogRecordsMetricsQueryRequest,
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
+import { SegmentFilter } from '../types/openapi.types';
+import { RunScorerSettingsResponse } from '../types/runs.types';
 
 const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
 
@@ -142,6 +145,7 @@ export class GalileoApiClient extends BaseClient {
   private experimentService?: ExperimentService;
   private scorerService?: ScorerService;
   private exportService?: ExportService;
+  private runsService?: RunsService;
 
   static timestampRecord: number = 0;
 
@@ -297,6 +301,12 @@ export class GalileoApiClient extends BaseClient {
         this.scorerService = new ScorerService(this.apiUrl, this.token);
 
         this.exportService = new ExportService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+
+        this.runsService = new RunsService(
           this.apiUrl,
           this.token,
           this.projectId
@@ -1604,6 +1614,34 @@ export class GalileoApiClient extends BaseClient {
     return this.scorerService!.getScorerVersion(scorerId, version);
   }
 
+  /**
+   * Updates scorer settings for a specific run using PATCH upsert semantics.
+   * @param options - The run scorer settings options.
+   * @param options.projectId - The unique identifier of the project.
+   * @param options.runId - The unique identifier of the run.
+   * @param options.scorers - The list of scorer configurations to apply.
+   * @param options.segmentFilters - (Optional) The list of segment filters to apply.
+   * @returns A promise that resolves to the updated scorer settings response.
+   * @throws Error if validation errors occur (HTTP 422) or if the update fails.
+   */
+  public async updateRunScorerSettings(options: {
+    projectId: string;
+    runId: string;
+    scorers: ScorerConfig[];
+    segmentFilters?: SegmentFilter[] | null;
+  }): Promise<RunScorerSettingsResponse> {
+    this.ensureService(this.runsService);
+    return await this.runsService.updateScorerSettings(options);
+  }
+
+  /**
+   * Creates run scorer settings (backward compatibility method).
+   * @param experimentId - The experiment ID (used as runId).
+   * @param projectId - The unique identifier of the project.
+   * @param scorers - The list of scorer configurations to apply.
+   * @returns A promise that resolves when the settings are created.
+   * @deprecated Use updateRunScorerSettings instead for new code.
+   */
   public async createRunScorerSettings(
     experimentId: string,
     projectId: string,

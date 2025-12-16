@@ -33,6 +33,7 @@ import {
 } from '../types/metrics.types';
 import fs from 'fs/promises';
 import path from 'path';
+import { ScorerSettings } from '../entities/scorers';
 
 /**
  * Metrics class for managing metrics in the Galileo platform.
@@ -344,7 +345,12 @@ export class Metrics {
         await apiClient.init({ projectId });
 
         // Use the run scorer settings endpoint (works for both experiments and log streams)
-        await apiClient.createRunScorerSettings(runId, projectId, scorers);
+        const scorerSettings = new ScorerSettings();
+        await scorerSettings.create({
+          projectId,
+          runId,
+          scorers
+        });
       }
     }
 
