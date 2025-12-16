@@ -12,7 +12,7 @@ import {
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { DatasetDBType, DatasetRow } from '../../src/types/dataset.types';
-import { GalileoScorers } from '../../src/types/metrics.types';
+import { GalileoMetrics } from '../../src/types/metrics.types';
 import { Trace } from '../../src/types';
 
 // Create mock implementation functions
@@ -384,7 +384,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [GalileoScorers.correctness],
+        metrics: [GalileoMetrics.correctness],
         projectName
       });
       expect(result).toHaveProperty(

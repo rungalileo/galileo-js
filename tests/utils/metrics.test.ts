@@ -6,11 +6,11 @@ import {
 } from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
-  GalileoMetrics,
   LocalMetricConfig,
   Metric,
   LogRecordsMetricsQueryRequest,
-  LogRecordsMetricsResponse
+  LogRecordsMetricsResponse,
+  GalileoMetrics
 } from '../../src/types/metrics.types';
 import {
   Scorer,
@@ -19,7 +19,7 @@ import {
   OutputType
 } from '../../src/types/scorer.types';
 import { StepType } from '../../src/types';
-import { LogStream } from '../../src/types/log-stream.types';
+import { LogStreamType } from '../../src/types/log-stream.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -103,13 +103,13 @@ describe('metrics utils', () => {
     updatedAt: '2021-09-10T00:00:00Z'
   };
 
-  const EXAMPLE_LOG_STREAM: LogStream = {
+  const EXAMPLE_LOG_STREAM: LogStreamType = {
     id: 'log-stream-123',
     name: 'test-log-stream',
-    project_id: 'project-123',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    created_by: null
+    projectId: 'project-123',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    createdBy: null
   };
 
   const MOCK_METRICS_RESPONSE: LogRecordsMetricsResponse = {
@@ -385,6 +385,7 @@ describe('metrics utils', () => {
         projectName: 'test-project',
         logStreamName: 'test-log-stream',
         metrics: [GalileoMetrics.correctness, localMetric]
+        metrics: [GalileoMetrics.correctness, localMetric]
       });
 
       expect(localMetrics).toHaveLength(1);
@@ -409,6 +410,7 @@ describe('metrics utils', () => {
           projectName: 'nonexistent-project',
           logStreamName: 'test-log-stream',
           metrics: [GalileoMetrics.correctness]
+          metrics: [GalileoMetrics.correctness]
         })
       ).rejects.toThrow("Project 'nonexistent-project' not found");
     });
@@ -420,6 +422,7 @@ describe('metrics utils', () => {
         enableMetrics({
           projectName: 'test-project',
           logStreamName: 'nonexistent-log-stream',
+          metrics: [GalileoMetrics.correctness]
           metrics: [GalileoMetrics.correctness]
         })
       ).rejects.toThrow(
@@ -444,6 +447,8 @@ describe('metrics utils', () => {
         projectName: 'test-project',
         logStreamName: 'test-log-stream',
         metrics: [
+          GalileoMetrics.correctness,
+          GalileoMetrics.completeness,
           GalileoMetrics.correctness,
           GalileoMetrics.completeness,
           'toxicity',
@@ -611,6 +616,8 @@ describe('metrics utils', () => {
         requiredMetrics: [
           GalileoMetrics.correctness,
           GalileoMetrics.contextAdherence
+          GalileoMetrics.correctness,
+          GalileoMetrics.contextAdherence
         ]
       });
 
@@ -619,6 +626,7 @@ describe('metrics utils', () => {
         [StepType.llm],
         undefined,
         undefined,
+        [GalileoMetrics.correctness, GalileoMetrics.contextAdherence]
         [GalileoMetrics.correctness, GalileoMetrics.contextAdherence]
       );
     });
@@ -629,6 +637,7 @@ describe('metrics utils', () => {
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
         requiredMetrics: [GalileoMetrics.correctness, 'custom_metric']
+        requiredMetrics: [GalileoMetrics.correctness, 'custom_metric']
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -636,6 +645,7 @@ describe('metrics utils', () => {
         [StepType.llm],
         undefined,
         undefined,
+        [GalileoMetrics.correctness, 'custom_metric']
         [GalileoMetrics.correctness, 'custom_metric']
       );
     });
@@ -648,6 +658,7 @@ describe('metrics utils', () => {
         timeoutMs: 60000,
         pollIntervalMs: 2000,
         requiredMetrics: [GalileoMetrics.correctness]
+        requiredMetrics: [GalileoMetrics.correctness]
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -655,6 +666,7 @@ describe('metrics utils', () => {
         [StepType.llm],
         60000,
         2000,
+        [GalileoMetrics.correctness]
         [GalileoMetrics.correctness]
       );
     });

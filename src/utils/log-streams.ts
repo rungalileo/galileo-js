@@ -1,149 +1,148 @@
-import { LogStream } from '../types/log-stream.types';
-import { GalileoApiClient } from '../api-client';
+import { LogStreams, LogStream } from '../entities/log-streams';
 import {
   GalileoMetrics,
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
-import { createMetricConfigs } from './metrics';
-import { getProject } from './projects';
 
-/*
- * Gets all log streams.
+// Re-export classes
+export { LogStreams, LogStream };
+
+/**
+ * Lists all log streams for a project.
+ * @param projectName - The name of the project.
+ * @returns A promise that resolves to an array of log streams.
  */
-export const getLogStreams = async (
-  projectName: string
-): Promise<LogStream[]> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectName });
-  return await apiClient.getLogStreams();
-};
+export async function getLogStreams(projectName: string): Promise<LogStream[]>;
+/**
+ * Lists all log streams for a project.
+ * @param options - The options for listing log streams.
+ * @param options.projectId - (Optional) The ID of the project.
+ * @param options.projectName - (Optional) The name of the project.
+ * @returns A promise that resolves to an array of log streams.
+ */
+export async function getLogStreams(options: {
+  projectId?: string;
+  projectName?: string;
+}): Promise<LogStream[]>;
+export async function getLogStreams(
+  optionsOrProjectName:
+    | {
+        projectId?: string;
+        projectName?: string;
+      }
+    | string
+): Promise<LogStream[]> {
+  const logStreams = new LogStreams();
+  if (typeof optionsOrProjectName === 'string') {
+    return await logStreams.list({ projectName: optionsOrProjectName });
+  }
+  return await logStreams.list(optionsOrProjectName);
+}
 
-/*
+/**
  * Creates a new log stream.
+ * @param name - The name of the log stream.
+ * @param projectName - The name of the project.
+ * @returns A promise that resolves to the created log stream.
  */
-export const createLogStream = async (
+export async function createLogStream(
   name: string,
   projectName: string
-): Promise<LogStream> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectName });
-  return await apiClient.createLogStream(name);
-};
-
-/*
- * Gets a log stream by id or name.
+): Promise<LogStream>;
+/**
+ * Creates a new log stream.
+ * @param name - The name of the log stream.
+ * @param options - (Optional) The options for creating the log stream.
+ * @param options.projectId - (Optional) The ID of the project.
+ * @param options.projectName - (Optional) The name of the project.
+ * @returns A promise that resolves to the created log stream.
  */
-export const getLogStream = async ({
-  id,
-  name,
-  projectName
-}: {
+export async function createLogStream(
+  name: string,
+  options?: {
+    projectId?: string;
+    projectName?: string;
+  }
+): Promise<LogStream>;
+export async function createLogStream(
+  name: string,
+  optionsOrProjectName?:
+    | {
+        projectId?: string;
+        projectName?: string;
+      }
+    | string
+): Promise<LogStream> {
+  const logStreams = new LogStreams();
+  if (typeof optionsOrProjectName === 'string') {
+    return await logStreams.create(name, { projectName: optionsOrProjectName });
+  }
+  return await logStreams.create(name, optionsOrProjectName);
+}
+
+/**
+ * Retrieves a log stream by ID or name.
+ * @param options - The options for retrieving a log stream.
+ * @param options.id - (Optional) The ID of the log stream.
+ * @param options.name - (Optional) The name of the log stream.
+ * @param options.projectName - The name of the project.
+ * @returns A promise that resolves to the log stream.
+ */
+export async function getLogStream(options: {
   id?: string;
   name?: string;
   projectName: string;
-}): Promise<LogStream> => {
-  if (!id && !name) {
+}): Promise<LogStream>;
+/**
+ * Retrieves a log stream by ID or name.
+ * @param options - The options for retrieving a log stream.
+ * @param options.id - (Optional) The ID of the log stream.
+ * @param options.name - (Optional) The name of the log stream.
+ * @param options.projectId - (Optional) The ID of the project.
+ * @param options.projectName - (Optional) The name of the project.
+ * @returns A promise that resolves to the log stream.
+ */
+export async function getLogStream(options: {
+  id?: string;
+  name?: string;
+  projectId?: string;
+  projectName?: string;
+}): Promise<LogStream>;
+export async function getLogStream(options: {
+  id?: string;
+  name?: string;
+  projectId?: string;
+  projectName?: string;
+}): Promise<LogStream> {
+  if (!options.id && !options.name) {
     throw new Error(
       'To fetch a log stream with `getLogStream`, either id or name must be provided'
     );
   }
 
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectName });
-  if (id) {
-    return await apiClient.getLogStream(id);
+  const logStreams = new LogStreams();
+  const logStream = await logStreams.get(options);
+  if (!logStream) {
+    const identifier = options.id || options.name;
+    throw new Error(`Log stream '${identifier}' not found`);
   }
-
-  return await apiClient.getLogStreamByName(name!);
-};
+  return logStream;
+}
 
 /**
- * Enable metrics for a log stream.
- *
- * Supports explicit parameters or environment variables (GALILEO_PROJECT/GALILEO_LOG_STREAM).
- *
- * @param options - Configuration options
- * @param options.logStreamName - Log stream name (overrides env var)
- * @param options.projectName - Project name (overrides env var)
- * @param options.metrics - Metrics to enable. Accepts:
- *   - GalileoMetrics const object values (e.g., GalileoMetrics.correctness)
- *   - String names (e.g., 'toxicity')
- *   - Metric objects (e.g., { name: 'custom', version: 2 })
- *   - LocalMetricConfig objects with scorerFn for client-side scoring
- *
- * @returns LocalMetricConfig[] - Client-side metrics that need local processing.
- *          Server-side metrics are automatically registered.
- *
- * @throws Error if project/log stream not found or metrics don't exist
- *
- * @example
- * ```typescript
- * const localMetrics = await enableMetrics({
- *   projectName: 'My Project',
- *   logStreamName: 'Production',
- *   metrics: [GalileoMetrics.correctness, 'toxicity']
- * });
- * ```
+ * Enables metrics for a log stream.
+ * @param options - The options for enabling metrics.
+ * @param options.logStreamName - (Optional) The name of the log stream.
+ * @param options.projectName - (Optional) The name of the project.
+ * @param options.metrics - List of metrics to enable. Can include GalileoMetrics const object values, string names, Metric objects, or LocalMetricConfig objects with scorerFn for client-side scoring.
+ * @returns A promise that resolves to the list of local metric configurations that need client-side processing.
  */
-export const enableMetrics = async ({
-  logStreamName,
-  projectName,
-  metrics
-}: {
+export const enableMetrics = async (options: {
   logStreamName?: string;
   projectName?: string;
   metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[];
 }): Promise<LocalMetricConfig[]> => {
-  // Validate metrics array
-  if (!metrics || metrics.length === 0) {
-    throw new Error('At least one metric must be provided');
-  }
-
-  // Apply environment variable fallbacks
-  const finalProjectName =
-    projectName ||
-    process.env.GALILEO_PROJECT ||
-    process.env.GALILEO_PROJECT_NAME;
-  const finalLogStreamName =
-    logStreamName ||
-    process.env.GALILEO_LOG_STREAM ||
-    process.env.GALILEO_LOG_STREAM_NAME;
-
-  if (!finalProjectName) {
-    throw new Error(
-      'Project name must be provided via projectName parameter or GALILEO_PROJECT/GALILEO_PROJECT_NAME environment variable'
-    );
-  }
-
-  if (!finalLogStreamName) {
-    throw new Error(
-      'Log stream name must be provided via logStreamName parameter or GALILEO_LOG_STREAM/GALILEO_LOG_STREAM_NAME environment variable'
-    );
-  }
-
-  // Get project
-  const project = await getProject({ name: finalProjectName });
-  if (!project || !project.id) {
-    throw new Error(`Project '${finalProjectName}' not found`);
-  }
-
-  // Get log stream
-  const logStream = await getLogStream({
-    name: finalLogStreamName,
-    projectName: finalProjectName
-  });
-  if (!logStream || !logStream.id) {
-    throw new Error(
-      `Log stream '${finalLogStreamName}' not found in project '${finalProjectName}'`
-    );
-  }
-
-  // Create metric configurations
-  const [, localMetrics] = await createMetricConfigs(
-    project.id,
-    logStream.id,
-    metrics
-  );
-  return localMetrics;
+  const logStreams = new LogStreams();
+  return await logStreams.enableMetrics(options);
 };

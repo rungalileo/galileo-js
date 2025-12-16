@@ -1,4 +1,4 @@
-import { GalileoScorers } from '../../src/types/metrics.types';
+import { GalileoMetrics } from '../../src/types/metrics.types';
 import { snakeCase } from 'lodash';
 
 describe('GalileoScorers', () => {
@@ -10,8 +10,8 @@ describe('GalileoScorers', () => {
    * as a primary scorer (i.e., an alias).
    */
   const testCases: [
-    keyof typeof GalileoScorers,
-    (keyof typeof GalileoScorers)[]
+    keyof typeof GalileoMetrics,
+    (keyof typeof GalileoMetrics)[]
   ][] = [
     ['actionCompletionLuna', []],
     ['actionAdvancementLuna', []],
@@ -54,7 +54,7 @@ describe('GalileoScorers', () => {
   test.each(testCases)(
     'scorer %s has correct value and aliases',
     (primaryScorerKey, additionalScorerKeys) => {
-      const primaryScorerValue = GalileoScorers[primaryScorerKey];
+      const primaryScorerValue = GalileoMetrics[primaryScorerKey];
 
       // For non-alias enums, the snake_cased key should equal the value
       if (snakeCase(primaryScorerKey as string) === primaryScorerValue) {
@@ -62,7 +62,7 @@ describe('GalileoScorers', () => {
       }
 
       additionalScorerKeys.forEach((aliasKey) => {
-        expect(GalileoScorers[aliasKey]).toBe(primaryScorerValue);
+        expect(GalileoMetrics[aliasKey]).toBe(primaryScorerValue);
       });
     }
   );
