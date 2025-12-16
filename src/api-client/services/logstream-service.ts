@@ -125,7 +125,7 @@ export class LogStreamService extends BaseClient {
       { run_id: logStreamId, scorers },
       {
         project_id: this.projectId,
-        experiment_id: logStreamId
+        run_id: logStreamId
       }
     );
   }
