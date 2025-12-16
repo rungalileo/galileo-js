@@ -1,7 +1,6 @@
 import { GalileoApiClient } from '../api-client';
 import { ScorerConfig } from '../types/scorer.types';
-import { SegmentFilter } from '../types/openapi.types';
-import { RunScorerSettingsResponse } from '../types/new-api.types';
+import { SegmentFilter, RunScorerSettingsResponse } from '../types/runs.types';
 
 /**
  * Service class for run-scoped operations.

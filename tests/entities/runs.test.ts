@@ -1,7 +1,9 @@
 import { Runs } from '../../src/entities/runs';
 import { ScorerConfig, ScorerTypes } from '../../src/types/scorer.types';
-import { RunScorerSettingsResponse } from '../../src/types/new-api.types';
-import { SegmentFilter } from '../../src/types/openapi.types';
+import {
+  SegmentFilter,
+  RunScorerSettingsResponse
+} from '../../src/types/runs.types';
 
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -32,9 +34,9 @@ describe('Runs', () => {
 
   const mockSegmentFilters: SegmentFilter[] = [
     {
-      sample_rate: 0.5,
+      sampleRate: 0.5,
       filter: null,
-      llm_scorers: false
+      llmScorers: false
     }
   ];
 

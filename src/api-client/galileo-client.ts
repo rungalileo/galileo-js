@@ -103,8 +103,7 @@ import {
   LogRecordsMetricsQueryRequest,
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
-import { SegmentFilter } from '../types/openapi.types';
-import { RunScorerSettingsResponse } from '../types/runs.types';
+import { SegmentFilter, RunScorerSettingsResponse } from '../types/runs.types';
 
 const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
 

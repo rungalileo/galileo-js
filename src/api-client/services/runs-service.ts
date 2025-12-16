@@ -1,8 +1,8 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import { ScorerConfig } from '../../types/scorer.types';
-import { SegmentFilter } from '../../types/openapi.types';
 import {
+  SegmentFilter,
   RunScorerSettingsResponse,
   RunScorerSettingsPatchRequestOpenAPI,
   RunScorerSettingsResponseOpenAPI

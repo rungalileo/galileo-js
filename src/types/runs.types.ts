@@ -1,15 +1,19 @@
 import {
   RunScorerSettingsPatchRequest as RunScorerSettingsPatchRequestOpenAPI,
-  RunScorerSettingsResponse as RunScorerSettingsResponseOpenAPI
+  RunScorerSettingsResponse as RunScorerSettingsResponseOpenAPI,
+  SegmentFilter as SegmentFilterOpenAPI
 } from './openapi.types';
 import {
   RunScorerSettingsPatchRequest,
-  RunScorerSettingsResponse
+  RunScorerSettingsResponse,
+  SegmentFilter
 } from './new-api.types';
 
 export type {
   RunScorerSettingsPatchRequest,
   RunScorerSettingsPatchRequestOpenAPI,
   RunScorerSettingsResponse,
-  RunScorerSettingsResponseOpenAPI
+  RunScorerSettingsResponseOpenAPI,
+  SegmentFilter,
+  SegmentFilterOpenAPI
 };
