@@ -69,9 +69,7 @@ export class LogStreams {
   }): Promise<LogStream[]> {
     const { projectId, projectName } = options;
     if (!projectId && !projectName) {
-      throw new Error(
-        'Either projectId or projectName must be provided, or set GALILEO_PROJECT_ID or GALILEO_PROJECT environment variable'
-      );
+      throw new Error('Either projectId or projectName must be provided');
     }
 
     if (projectId && projectName) {
@@ -155,23 +153,20 @@ export class LogStreams {
       projectName?: string;
     }
   ): Promise<LogStream> {
-    const { projectId, projectName } = options ?? {};
-    if (!projectId && !projectName) {
-      throw new Error(
-        'Either projectId or projectName must be provided, or set GALILEO_PROJECT_ID or GALILEO_PROJECT environment variable'
-      );
-    }
-
-    if (projectId && projectName) {
+    let clientInitConfig = {};
+    if (options?.projectId && options?.projectName) {
       throw new Error('Provide only one of projectId or projectName');
+    } else if (options?.projectId) {
+      clientInitConfig = { projectScoped: true, projectId: options.projectId };
+    } else if (options?.projectName) {
+      clientInitConfig = {
+        projectScoped: true,
+        projectName: options.projectName
+      };
     }
 
     const apiClient = new GalileoApiClient();
-    if (projectId) {
-      await apiClient.init({ projectScoped: true, projectId });
-    } else {
-      await apiClient.init({ projectScoped: true, projectName });
-    }
+    await apiClient.init(clientInitConfig);
 
     const logStream = await apiClient.createLogStream(name);
     return new LogStream(logStream);
