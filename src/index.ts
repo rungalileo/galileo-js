@@ -105,6 +105,8 @@ import {
   unshareProjectWithUser
 } from './utils/projects';
 import {
+  LogStreams,
+  LogStream,
   getLogStreams,
   createLogStream,
   getLogStream,
@@ -194,6 +196,8 @@ export {
   shareProjectWithUser,
   unshareProjectWithUser,
   // Log streams
+  LogStreams,
+  LogStream,
   getLogStreams,
   createLogStream,
   getLogStream,

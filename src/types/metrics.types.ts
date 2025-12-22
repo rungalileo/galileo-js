@@ -20,6 +20,7 @@ export type MetricValueType =
 
 /**
  * Galileo metrics as a const object.
+ * Galileo metrics as a const object.
  * Generated from OpenAPI schema to ensure type safety and completeness.
  *
  * This object provides camelCase keys for better developer experience
@@ -30,8 +31,10 @@ export type MetricValueType =
  * @example
  * ```typescript
  * import { GalileoMetrics } from 'galileo';
+ * import { GalileoMetrics } from 'galileo';
  *
  * // Use const object values
+ * const metrics = [GalileoMetrics.correctness, GalileoMetrics.completeness];
  * const metrics = [GalileoMetrics.correctness, GalileoMetrics.completeness];
  * ```
  */
@@ -123,7 +126,7 @@ export interface CreateCustomCodeMetricParams {
   timeoutMs?: number;
   /** Interval between validation polling attempts in milliseconds (default: 1000ms) */
   pollIntervalMs?: number;
-  /** List of required metrics that this scorer depends on (can be GalileoMetrics values or metric name strings) */
+  /** List of required metrics that this scorer depends on (can be GalileoMetrics enum values or metric name strings) */
   requiredMetrics?: (GalileoMetrics | string)[];
 }
 
@@ -181,18 +184,24 @@ export type LogRecordsMetricsResponse =
 
 /**
  * Type representing all valid Galileo metric names.
+ * Type representing all valid Galileo metric names.
  * This is a union of all string literal values from the OpenAPI schema.
  *
+ * Use the {@link GalileoMetrics} const object for runtime access to metric names.
  * Use the {@link GalileoMetrics} const object for runtime access to metric names.
  *
  * @example
  * ```typescript
  * import { GalileoMetrics, type GalileoMetrics as GalileoMetricsType } from 'galileo';
+ * import { GalileoMetrics, type GalileoMetrics as GalileoMetricsType } from 'galileo';
  *
  * // Runtime usage
  * const metric: string = GalileoMetrics.correctness;
+ * const metric: string = GalileoMetrics.correctness;
  *
  * // Type usage
+ * function validateMetric(name: GalileoMetricsType): boolean {
+ *   return Object.values(GalileoMetrics).includes(name);
  * function validateMetric(name: GalileoMetricsType): boolean {
  *   return Object.values(GalileoMetrics).includes(name);
  * }

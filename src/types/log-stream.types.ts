@@ -1,3 +1,4 @@
-import type { components } from './api.types';
+import type { LogStreamResponse as LogStreamType } from './new-api.types';
+import type { LogStreamResponse as LogStreamTypeOpenAPI } from './openapi.types';
 
-export type LogStream = components['schemas']['LogStreamResponse'];
+export type { LogStreamType, LogStreamTypeOpenAPI };

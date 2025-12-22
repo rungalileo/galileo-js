@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { Project, ProjectTypes } from '../src/types';
-import { LogStream } from '../src/types/log-stream.types';
+import { LogStreamType } from '../src/types/log-stream.types';
 export const TEST_HOST = 'http://localhost:8088';
 
 export const mockProject: Project = {
@@ -19,13 +19,13 @@ export const mockProject: Project = {
   updatedAt: '2021-09-10T00:00:00Z'
 };
 
-export const mockLogStream: LogStream = {
+export const mockLogStream: LogStreamType = {
   id: 'ls-123',
   name: 'default',
-  created_at: '2021-09-10T00:00:00Z',
-  updated_at: '2021-09-10T00:00:00Z',
-  project_id: mockProject.id,
-  created_by: null
+  createdAt: '2021-09-10T00:00:00Z',
+  updatedAt: '2021-09-10T00:00:00Z',
+  projectId: mockProject.id,
+  createdBy: null
 };
 
 const getProjectByNameHandler = jest.fn().mockImplementation(() => {

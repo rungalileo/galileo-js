@@ -496,26 +496,51 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Log Stream methods - delegate to LogStreamService
+  /**
+   * Lists all log streams for the project.
+   * @returns A promise that resolves to an array of log streams.
+   */
   public async getLogStreams() {
     this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStreams();
   }
 
+  /**
+   * Retrieves a log stream by ID.
+   * @param id - The ID of the log stream to retrieve.
+   * @returns A promise that resolves to the log stream.
+   */
   public async getLogStream(id: string) {
     this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStream(id);
   }
 
+  /**
+   * Retrieves a log stream by name.
+   * @param name - The name of the log stream to retrieve.
+   * @returns A promise that resolves to the log stream.
+   */
   public async getLogStreamByName(name: string) {
     this.ensureService(this.logStreamService);
     return this.logStreamService!.getLogStreamByName(name);
   }
 
+  /**
+   * Creates a new log stream.
+   * @param name - The name of the log stream to create.
+   * @returns A promise that resolves to the created log stream.
+   */
   public async createLogStream(name: string) {
     this.ensureService(this.logStreamService);
     return this.logStreamService!.createLogStream(name);
   }
 
+  /**
+   * Creates scorer settings for a log stream.
+   * @param logStreamId - The ID of the log stream to configure scorers for.
+   * @param scorers - Array of scorer configurations to apply.
+   * @returns A promise that resolves when the scorer settings are created.
+   */
   public async createLogStreamScorerSettings(
     logStreamId: string,
     scorers: ScorerConfig[]
@@ -1318,8 +1343,8 @@ export class GalileoApiClient extends BaseClient {
         // Sort by created_at and get the first one
         const sortedLogStreams = [...logStreams].sort(
           (a, b) =>
-            new Date(a.created_at || 0).getTime() -
-            new Date(b.created_at || 0).getTime()
+            new Date(a.createdAt || 0).getTime() -
+            new Date(b.createdAt || 0).getTime()
         );
 
         if (sortedLogStreams.length > 0) {

@@ -6,11 +6,11 @@ import {
 } from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
-  GalileoMetrics,
   LocalMetricConfig,
   Metric,
   LogRecordsMetricsQueryRequest,
-  LogRecordsMetricsResponse
+  LogRecordsMetricsResponse,
+  GalileoMetrics
 } from '../../src/types/metrics.types';
 import {
   Scorer,
@@ -19,7 +19,7 @@ import {
   OutputType
 } from '../../src/types/scorer.types';
 import { StepType } from '../../src/types';
-import { LogStream } from '../../src/types/log-stream.types';
+import { LogStreamType } from '../../src/types/log-stream.types';
 import { Project, ProjectTypes } from '../../src/types/project.types';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -103,13 +103,13 @@ describe('metrics utils', () => {
     updatedAt: '2021-09-10T00:00:00Z'
   };
 
-  const EXAMPLE_LOG_STREAM: LogStream = {
+  const EXAMPLE_LOG_STREAM: LogStreamType = {
     id: 'log-stream-123',
     name: 'test-log-stream',
-    project_id: 'project-123',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z',
-    created_by: null
+    projectId: 'project-123',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+    createdBy: null
   };
 
   const MOCK_METRICS_RESPONSE: LogRecordsMetricsResponse = {
