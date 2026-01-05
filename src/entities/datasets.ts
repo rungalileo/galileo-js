@@ -386,7 +386,10 @@ export class Datasets {
       );
     }
 
-    const client = await this.ensureClient();
+    const client = await this.ensureClient({
+      projectId: options.projectId,
+      projectName: options.projectName
+    });
 
     let datasetDb: DatasetDBType;
     try {

@@ -105,7 +105,7 @@ export class ExperimentService extends BaseClient {
       { run_id: experimentId, scorers: scorerRequest },
       {
         project_id: projectId || this.projectId,
-        experiment_id: experimentId
+        run_id: experimentId
       }
     );
   }
