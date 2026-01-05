@@ -20,7 +20,7 @@ import {
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { DatasetDBType, DatasetRow } from '../../src/types/dataset.types';
-import { GalileoMetrics } from '../../src/types/metrics.types';
+import { GalileoMetrics, GalileoScorers } from '../../src/types/metrics.types';
 import { Trace } from '../../src/types';
 
 // Create mock implementation functions

@@ -33,6 +33,7 @@ import {
 } from '../types/metrics.types';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { ScorerSettings } from '../entities/scorers';
 
 /**
  * Metrics class for managing metrics in the Galileo platform.
