@@ -250,6 +250,10 @@ export class BaseClient {
         params && 'group_id' in params ? (params.group_id as string) : ''
       )
       .replace(
+        '{tag_id}',
+        params && 'tag_id' in params ? (params.tag_id as string) : ''
+      )
+      .replace(
         '{version_index}',
         params && 'version_index' in params
           ? (params.version_index as string)

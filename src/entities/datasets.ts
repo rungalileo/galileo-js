@@ -6,9 +6,14 @@ import type {
   DatasetVersionHistory,
   DatasetContent,
   DatasetProject,
-  DatasetDBType
+  DatasetDBType,
+  DatasetRecord
 } from '../types/dataset.types';
-import { UserInfo } from '../types/openapi.types';
+import type { UserInfo } from '../types/openapi.types';
+import {
+  getDatasetRecordsFromArray,
+  convertDatasetRowToRecord
+} from '../utils/datasets';
 
 /**
  * Dataset entity for working with dataset metadata and content.
@@ -179,9 +184,130 @@ export class Datasets {
     await this.client.init({
       projectId: options.projectId,
       projectName: options.projectName,
-      projectScoped: options.projectId || options.projectName ? true : false
+      projectScoped: !!(options.projectId || options.projectName)
     });
     return this.client;
+  }
+
+  /**
+   * Gets dataset records for a dataset identified by ID or name.
+   * @param options - The options used to locate the dataset.
+   * @param options.datasetId - (Optional) The ID of the dataset.
+   * @param options.datasetName - (Optional) The name of the dataset.
+   * @returns A promise that resolves to the list of dataset records.
+   */
+  static async getRecordsForDataset(options: {
+    datasetId?: string;
+    datasetName?: string;
+  }): Promise<DatasetRecord[]> {
+    if (!options.datasetId && !options.datasetName) {
+      throw new Error('Either datasetId or datasetName must be provided');
+    }
+
+    const datasetsService = new Datasets();
+    const dataset = await datasetsService.get({
+      id: options.datasetId,
+      name: options.datasetName
+    });
+
+    if (!dataset) {
+      throw new Error(
+        `Dataset not found: ${options.datasetName ?? options.datasetId}`
+      );
+    }
+
+    const datasetRows = await dataset.getContent();
+    return datasetRows.map((row) => convertDatasetRowToRecord(row));
+  }
+
+  /**
+   * Loads dataset and records based on provided parameters.
+   *
+   * Priority order:
+   * 1. datasetId (explicit ID)
+   * 2. datasetName (explicit name)
+   * 3. dataset as string (interpreted as name)
+   * 4. dataset as Dataset object
+   * 5. dataset as array of records
+   *
+   * @param options - Dataset loading options
+   * @param options.dataset - Dataset object, array of records, or dataset name (string)
+   * @param options.datasetId - Optional explicit dataset ID
+   * @param options.datasetName - Optional explicit dataset name
+   * @param options.projectName - Optional project name for dataset lookup
+   * @returns Promise resolving to tuple of [Dataset | null, DatasetRecord[]]
+   * @throws Error if no valid dataset information is provided
+   */
+  static async loadDatasetAndRecords(options: {
+    dataset?: DatasetDBType | Record<string, unknown>[] | string;
+    datasetId?: string;
+    datasetName?: string;
+    projectName?: string;
+  }): Promise<[Dataset | null, DatasetRecord[]]> {
+    const { dataset, datasetId, datasetName, projectName } = options;
+    const datasetsService = new Datasets();
+
+    if (datasetId) {
+      const datasetObj = await datasetsService.get({
+        id: datasetId,
+        projectName
+      });
+      if (!datasetObj) {
+        throw new Error(`Could not find dataset with id ${datasetId}`);
+      }
+      const records = await Datasets.getRecordsForDataset({ datasetId });
+      return [datasetObj, records];
+    }
+
+    if (datasetName) {
+      const datasetObj = await datasetsService.get({
+        name: datasetName,
+        projectName
+      });
+      if (!datasetObj) {
+        throw new Error(`Could not find dataset with name ${datasetName}`);
+      }
+      const records = await Datasets.getRecordsForDataset({ datasetName });
+      return [datasetObj, records];
+    }
+
+    if (dataset && typeof dataset === 'string') {
+      const datasetObj = await datasetsService.get({
+        name: dataset,
+        projectName
+      });
+      if (!datasetObj) {
+        throw new Error(`Could not find dataset with name ${dataset}`);
+      }
+      const records = await Datasets.getRecordsForDataset({
+        datasetName: dataset
+      });
+      return [datasetObj, records];
+    }
+
+    if (
+      dataset &&
+      !Array.isArray(dataset) &&
+      typeof dataset === 'object' &&
+      'id' in dataset &&
+      typeof dataset !== 'string'
+    ) {
+      const datasetObj = dataset as DatasetDBType;
+      const records = await Datasets.getRecordsForDataset({
+        datasetId: datasetObj.id
+      });
+      // Wrap DatasetDBType in Dataset entity
+      return [new Dataset(datasetObj), records];
+    }
+
+    if (Array.isArray(dataset)) {
+      const records = getDatasetRecordsFromArray(dataset);
+      return [null, records];
+    }
+
+    throw new Error(
+      'To load dataset records, dataset, datasetName, or datasetId must be provided'
+    );
   }
 
   /**

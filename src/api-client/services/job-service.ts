@@ -60,7 +60,7 @@ export class JobsService extends BaseClient {
         createParams
       );
 
-      if (!response || !response.job_id) {
+      if (!response || !response.jobId) {
         throw new Error(
           `Create job failed: ${JSON.stringify(response || 'No response')}`
         );

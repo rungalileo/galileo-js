@@ -31,9 +31,8 @@ import {
   LogRecordsMetricsQueryRequest,
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
-import fs from 'fs/promises';
-import path from 'path';
-import { ScorerSettings } from '../entities/scorers';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 /**
  * Metrics class for managing metrics in the Galileo platform.
@@ -411,8 +410,7 @@ export class Metrics {
         ) {
           // If result is a dict/object, set each key as a separate metric
           for (const [suffix, value] of Object.entries(aggregateMetricResult)) {
-            const metricName =
-              localMetric.name + '_' + suffix.replace(/^_/, '');
+            const metricName = `${localMetric.name}_${suffix.replace(/^_/, '')}`;
             step.metrics[metricName] = value;
           }
         } else {

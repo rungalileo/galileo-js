@@ -27,6 +27,7 @@ import {
   SyntheticDatasetExtensionRequest,
   JobProgress
 } from './types/dataset.types';
+import type { RunExperimentParams } from './types/experiment.types';
 import {
   addRowsToDataset,
   createDataset,
@@ -116,8 +117,12 @@ import {
   getExperiments,
   createExperiment,
   getExperiment,
-  runExperiment
+  runExperiment,
+  updateExperiment,
+  deleteExperiment
 } from './utils/experiments';
+import { ExperimentTags } from './entities/experiment-tags';
+import { Experiments } from './entities/experiments';
 import { GalileoLogger } from './utils/galileo-logger';
 import {
   init,
@@ -182,6 +187,11 @@ export {
   createExperiment,
   getExperiment,
   runExperiment,
+  updateExperiment,
+  deleteExperiment,
+  // Experiment entities
+  ExperimentTags,
+  Experiments,
   // Projects
   Projects,
   getProjects,
@@ -263,5 +273,14 @@ export type {
   DatasetFormat,
   ListDatasetResponse,
   SyntheticDatasetExtensionRequest,
-  JobProgress
+  JobProgress,
+  RunExperimentParams
 };
+
+export {
+  APIException,
+  ExperimentAPIException,
+  ExperimentTagsAPIException,
+  DatasetAPIException,
+  ProjectAPIException
+} from './utils/errors';

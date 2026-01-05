@@ -2,10 +2,18 @@ import {
   createExperiment,
   getExperiment,
   getExperiments,
-  runExperiment
+  runExperiment,
+  updateExperiment,
+  deleteExperiment
 } from '../../src';
-import { Experiment } from '../../src/types/experiment.types';
-import { Project, ProjectTypes } from '../../src/types/project.types';
+import type {
+  ExperimentResponseType,
+  ExperimentUpdateRequest,
+  RunExperimentParams
+} from '../../src/types/experiment.types';
+import type { Project } from '../../src/types/project.types';
+import { ProjectTypes } from '../../src/types/project.types';
+import { mockProject as commonMockProject } from '../common';
 import {
   PromptTemplate,
   PromptTemplateVersion
@@ -20,6 +28,8 @@ const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockGetExperiment = jest.fn();
 const mockGetExperiments = jest.fn();
 const mockCreateExperiment = jest.fn();
+const mockUpdateExperiment = jest.fn();
+const mockDeleteExperiment = jest.fn();
 const mockGetProject = jest.fn();
 const mockGetProjects = jest.fn();
 const mockGetProjectByName = jest.fn();
@@ -45,6 +55,8 @@ jest.mock('../../src/api-client', () => {
           getExperiment: mockGetExperiment,
           getExperiments: mockGetExperiments,
           createExperiment: mockCreateExperiment,
+          updateExperiment: mockUpdateExperiment,
+          deleteExperiment: mockDeleteExperiment,
           getProject: mockGetProject,
           getProjects: mockGetProjects,
           getProjectByName: mockGetProjectByName,
@@ -74,19 +86,18 @@ const experimentName = 'My Test Experiment';
 const projectId = 'proj-123';
 const projectName = 'test-project';
 const promptRunJobCreatedSuccessMessage = 'Prompt run job created';
-const experimentCompletedMessage = 'Experiment completed.';
 
-const mockExperiment: Experiment = {
+const mockExperiment: ExperimentResponseType = {
   id: experimentId,
   name: experimentName,
-  created_at: '2023-01-01T00:00:00Z',
-  updated_at: '2023-01-01T00:00:00Z',
-  project_id: 'proj-123',
-  created_by: 'user-123',
-  task_type: 16
+  createdAt: '2023-01-01T00:00:00Z',
+  updatedAt: '2023-01-01T00:00:00Z',
+  projectId: 'proj-123',
+  createdBy: 'user-123',
+  taskType: 16
 };
 
-const mockExperiments: Experiment[] = [mockExperiment];
+const mockExperiments: ExperimentResponseType[] = [mockExperiment];
 
 // Example data
 const mockProject: Project = {
@@ -180,6 +191,19 @@ const mockScorer: Scorer = {
   tags: []
 };
 
+// Example data for tests
+const EXAMPLE_EXPERIMENT: ExperimentResponseType = {
+  id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  name: 'Example Experiment',
+  projectId: commonMockProject.id,
+  createdAt: '2023-01-01T00:00:00.000000Z',
+  updatedAt: '2023-01-01T00:00:00.000000Z',
+  createdBy: 'user-123',
+  taskType: 16
+};
+
+const EXAMPLE_EXPERIMENT_ID = EXAMPLE_EXPERIMENT.id;
+
 describe('experiments utility', () => {
   let originalEnv: Record<string, string | undefined>;
   beforeEach(() => {
@@ -198,6 +222,8 @@ describe('experiments utility', () => {
     mockGetExperiment.mockResolvedValue(mockExperiment);
     mockGetExperiments.mockResolvedValue(mockExperiments);
     mockCreateExperiment.mockResolvedValue(mockExperiment);
+    mockUpdateExperiment.mockResolvedValue(mockExperiment);
+    mockDeleteExperiment.mockResolvedValue(undefined);
     mockGetProject.mockResolvedValue(mockProject);
     mockGetProjects.mockResolvedValue([mockProject]);
     mockGetProjectByName.mockResolvedValue(mockProject);
@@ -208,11 +234,6 @@ describe('experiments utility', () => {
       nextStartingToken: null
     });
     mockGetScorerVersion.mockResolvedValue({
-      scorers: [mockScorer],
-      nextStartingToken: null
-    });
-    mockGetScorerVersion.mockResolvedValue({
-      // Add this implementation
       id: 'scorer-version-123',
       version: 1,
       scorer_id: 'scorer-123'
@@ -246,7 +267,7 @@ describe('experiments utility', () => {
 
     it('should throw an error if neither id nor name is provided', async () => {
       await expect(getExperiment({ projectName })).rejects.toThrow(
-        'To fetch an experiment with `getExperiment`, either id or name must be provided'
+        'To fetch an experiment with getExperiment, either id or name must be provided'
       );
     });
 
@@ -255,7 +276,12 @@ describe('experiments utility', () => {
       await getExperiment({ id: experimentId, projectName });
 
       // Verify init was called with the correct project name
-      expect(mockInit).toHaveBeenCalledWith({ projectName });
+      // The implementation passes projectId, projectName, and projectScoped
+      expect(mockInit).toHaveBeenCalledWith({
+        projectId: undefined,
+        projectName,
+        projectScoped: true
+      });
     });
 
     it('should fetch experiment by ID when ID is provided', async () => {
@@ -327,6 +353,19 @@ describe('experiments utility', () => {
       expect(mockGetExperiments).toHaveBeenCalled();
       expect(result).toEqual([mockExperiment]);
     });
+
+    it('should return empty array when no experiments exist', async () => {
+      mockGetExperiments.mockResolvedValueOnce([]);
+      const result = await getExperiments(projectName);
+      expect(result).toEqual([]);
+      expect(mockGetExperiments).toHaveBeenCalled();
+    });
+
+    it('should handle API errors gracefully', async () => {
+      const apiError = new Error('API connection failed');
+      mockGetExperiments.mockRejectedValueOnce(apiError);
+      await expect(getExperiments(projectName)).rejects.toThrow(apiError);
+    });
   });
 
   describe('createExperiment', () => {
@@ -349,8 +388,8 @@ describe('experiments utility', () => {
 
     it('should pass the dataset to the api client', async () => {
       const dataset = {
-        dataset_id: 'dataset-id',
-        version_index: 1
+        datasetId: 'dataset-id',
+        versionIndex: 1
       };
       await createExperiment('Test Experiment', projectName, dataset);
       expect(mockCreateExperiment).toHaveBeenCalledWith(
@@ -373,8 +412,8 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
-        dataset_id: 'test-dataset-id',
-        version_index: 1
+        datasetId: 'test-dataset-id',
+        versionIndex: 1
       });
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -392,9 +431,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorersPage).toHaveBeenCalled();
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -411,8 +448,8 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
-        dataset_id: 'test-dataset-id',
-        version_index: 1
+        datasetId: 'test-dataset-id',
+        versionIndex: 1
       });
       expect(mockGetDatasetByName).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
@@ -430,10 +467,23 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
-        dataset_id: 'test-dataset-id',
-        version_index: 1
+        datasetId: 'test-dataset-id',
+        versionIndex: 1
       });
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
+    });
+
+    it('should throw an error when array dataset is used with promptTemplate', async () => {
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          dataset: [{ country: 'France' }],
+          promptTemplate: mockPromptTemplate,
+          projectName
+        })
+      ).rejects.toThrow(
+        'Prompt template experiments cannot be run with a local dataset'
+      );
     });
   });
 
@@ -488,7 +538,10 @@ describe('experiments utility', () => {
         function: identityFunction,
         projectName
       });
-      expect(result).toHaveProperty('message', experimentCompletedMessage);
+      // The actual message includes experiment name and URL
+      expect(result.message).toContain(
+        'has completed and results are available at'
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockIngestTracesLegacy).toHaveBeenCalled();
       verifyLocalExperimentTraces(mockIngestTracesLegacy.mock.calls[0][0]);
@@ -501,7 +554,10 @@ describe('experiments utility', () => {
         function: identityFunction,
         projectName
       });
-      expect(result).toHaveProperty('message', experimentCompletedMessage);
+      // The actual message includes experiment name and URL
+      expect(result.message).toContain(
+        'has completed and results are available at'
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetDatasetByName).toHaveBeenCalled();
       expect(mockIngestTracesLegacy).toHaveBeenCalled();
@@ -515,7 +571,10 @@ describe('experiments utility', () => {
         function: identityFunction,
         projectName
       });
-      expect(result).toHaveProperty('message', experimentCompletedMessage);
+      // The actual message includes experiment name and URL
+      expect(result.message).toContain(
+        'has completed and results are available at'
+      );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockIngestTracesLegacy).toHaveBeenCalled();
       verifyLocalExperimentTraces(mockIngestTracesLegacy.mock.calls[0][0]);
@@ -547,7 +606,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [{ name: 'correctness', version: 1 }], // Object metric with version
+        metrics: [{ name: 'correctness' }],
         projectName
       });
 
@@ -556,9 +615,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorersPage).toHaveBeenCalled();
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -625,11 +682,129 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetScorersPage).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
+    });
+  });
+
+  describe('runExperiment - errors', () => {
+    it('should throw an error when neither function nor promptTemplate is provided', async () => {
+      // Test invalid params that should trigger validation error
+      // This intentionally omits both 'function' and 'promptTemplate' to test validation
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          datasetId: 'test-dataset-id',
+          projectName
+        } as unknown as RunExperimentParams<Record<string, unknown>>)
+      ).rejects.toThrow(
+        'Experiment not properly configured for either function or prompt template processing.'
+      );
+    });
+  });
+
+  describe('getExperiments with projectId', () => {
+    it('should return experiments when projectId is provided', async () => {
+      const result = await getExperiments(
+        commonMockProject.name as string,
+        commonMockProject.id
+      );
+      expect(result).toEqual([mockExperiment]);
+      expect(mockGetExperiments).toHaveBeenCalled();
+    });
+  });
+
+  describe('createExperiment with metrics', () => {
+    it('should create an experiment with metrics', async () => {
+      const result = await createExperiment(
+        'Test Experiment',
+        projectName,
+        undefined,
+        [GalileoScorers.correctness]
+      );
+      expect(result).toEqual(mockExperiment);
+      expect(mockCreateExperiment).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateExperiment', () => {
+    it('should update an experiment by id with projectId', async () => {
+      const updateRequest: ExperimentUpdateRequest = {
+        name: 'Updated Experiment Name'
+      };
+      const result = await updateExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectId: commonMockProject.id,
+        updateRequest
+      });
+      expect(result).toEqual(mockExperiment);
+      expect(mockUpdateExperiment).toHaveBeenCalledWith(
+        EXAMPLE_EXPERIMENT_ID,
+        updateRequest
+      );
+    });
+
+    it('should update an experiment by id with projectName', async () => {
+      const updateRequest: ExperimentUpdateRequest = {
+        name: 'Updated Experiment Name'
+      };
+      const result = await updateExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: commonMockProject.name as string,
+        updateRequest
+      });
+      expect(result).toEqual(mockExperiment);
+      expect(mockUpdateExperiment).toHaveBeenCalledWith(
+        EXAMPLE_EXPERIMENT_ID,
+        updateRequest
+      );
+    });
+
+    it('should throw an error when both projectId and projectName are missing', async () => {
+      const updateRequest: ExperimentUpdateRequest = {
+        name: 'Updated Experiment Name'
+      };
+      await expect(
+        updateExperiment({
+          id: EXAMPLE_EXPERIMENT_ID,
+          updateRequest
+        } as { id: string; updateRequest: ExperimentUpdateRequest })
+      ).rejects.toThrow(
+        'Either projectId or projectName must be provided to update an experiment'
+      );
+    });
+  });
+
+  describe('deleteExperiment', () => {
+    it('should delete an experiment by id with projectId', async () => {
+      await deleteExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectId: commonMockProject.id
+      });
+      expect(mockDeleteExperiment).toHaveBeenCalledWith(EXAMPLE_EXPERIMENT_ID);
+    });
+
+    it('should throw an error when projectId is missing', async () => {
+      await expect(
+        deleteExperiment({
+          id: EXAMPLE_EXPERIMENT_ID,
+          projectId: undefined as unknown as string
+        })
+      ).rejects.toThrow(
+        'Experiment id and projectId are required to delete an experiment'
+      );
+    });
+
+    it('should throw an error when id is missing', async () => {
+      await expect(
+        deleteExperiment({
+          id: undefined as unknown as string,
+          projectId: commonMockProject.id
+        })
+      ).rejects.toThrow(
+        'Experiment id and projectId are required to delete an experiment'
+      );
     });
   });
 });

@@ -143,7 +143,7 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
 export function createDatasetRecord(
   options: DatasetRecordOptions
 ): DatasetRecord {
-  let resultMetadata: Record<string, string> | undefined = undefined;
+  let resultMetadata: Record<string, string> | undefined;
   if (options.metadata != null) {
     // checks null & undefined
     let record: Record<string, unknown> = {};
@@ -214,6 +214,7 @@ export function deserializeInputFromString(
 
 /**
  * Gets dataset records for a dataset identified by ID or name.
+ * Delegates to Datasets.getRecordsForDataset() static method.
  * @param options - The options used to locate the dataset.
  * @param options.datasetId - (Optional) The ID of the dataset.
  * @param options.datasetName - (Optional) The name of the dataset.
@@ -223,11 +224,7 @@ export async function getRecordsForDataset(options: {
   datasetId?: string;
   datasetName?: string;
 }): Promise<DatasetRecord[]> {
-  const datasetRows = await getDatasetContent({
-    datasetId: options.datasetId,
-    datasetName: options.datasetName
-  });
-  return datasetRows.map((row) => convertDatasetRowToRecord(row));
+  return Datasets.getRecordsForDataset(options);
 }
 
 /**
@@ -456,8 +453,38 @@ export async function deleteDataset(options: {
 }
 
 /**
+ * Loads dataset and records based on provided parameters.
+ * Supports flexible input types matching Python's load_dataset_and_records().
+ * Delegates to Datasets.loadDatasetAndRecords() static method.
+ *
+ * Priority order:
+ * 1. datasetId (explicit ID)
+ * 2. datasetName (explicit name)
+ * 3. dataset as string (interpreted as name)
+ * 4. dataset as Dataset object
+ * 5. dataset as array of records
+ *
+ * @param options - Dataset loading options
+ * @param options.dataset - Dataset object, array of records, or dataset name (string)
+ * @param options.datasetId - Optional explicit dataset ID
+ * @param options.datasetName - Optional explicit dataset name
+ * @param options.projectName - Optional project name for dataset lookup
+ * @returns Promise resolving to tuple of [Dataset | null, DatasetRecord[]]
+ * @throws Error if no valid dataset information is provided
+ */
+export async function loadDatasetAndRecords(options: {
+  dataset?: DatasetDBType | Record<string, unknown>[] | string;
+  datasetId?: string;
+  datasetName?: string;
+  projectName?: string;
+}): Promise<[Dataset | null, DatasetRecord[]]> {
+  return Datasets.loadDatasetAndRecords(options);
+}
+
+/**
  * Gets dataset metadata from experiment params.
  * Delegates to Datasets.get() for fetching by id or name.
+ * Supports string shortcuts (dataset as string interpreted as name).
  * @param params - Experiment parameters that may contain a dataset reference.
  * @param projectName - Project name used for dataset lookup when needed.
  * @returns A promise that resolves to the dataset or null if not found.
@@ -468,7 +495,17 @@ export async function getDatasetMetadata<T extends Record<string, unknown>>(
 ): Promise<Dataset | null> {
   // If dataset object is directly provided, return it as-is
   if ('dataset' in params && params.dataset) {
-    if (!(params.dataset instanceof Array)) {
+    if (!Array.isArray(params.dataset)) {
+      // Check if it's a string (new support for string shortcuts)
+      if (typeof params.dataset === 'string') {
+        const datasetsService = new Datasets();
+        const dataset = await datasetsService.get({
+          name: params.dataset,
+          projectName
+        });
+        return dataset;
+      }
+      // Otherwise, it's a Dataset object
       return params.dataset as Dataset;
     }
     return null;

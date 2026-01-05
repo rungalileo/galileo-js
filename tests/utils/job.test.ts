@@ -46,9 +46,9 @@ describe('Jobs', () => {
   const name = JobName.playground_run;
 
   const mockPromptSettings: PromptRunSettings = {
-    model_alias: 'GPT-4o',
+    modelAlias: 'GPT-4o',
     temperature: 0.7,
-    max_tokens: 1000
+    maxTokens: 1000
   };
 
   const mockScorers: ScorerConfig[] = [
@@ -60,9 +60,9 @@ describe('Jobs', () => {
   ];
 
   const mockCreateJobResponse: CreateJobResponse = {
-    project_id: projectId,
-    run_id: runId,
-    job_id: 'test-job-id',
+    projectId: projectId,
+    runId: runId,
+    jobId: 'test-job-id',
     link: 'https://app.galileo.ai/project/test-project-id/experiments/test-run-id',
     message: 'Job created successfully'
   };

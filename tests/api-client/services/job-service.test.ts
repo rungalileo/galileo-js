@@ -4,7 +4,8 @@ import { Routes } from '../../../src/types/routes.types';
 import { TaskType, JobName } from '../../../src/types/job.types';
 import {
   CreateJobResponse,
-  PromptRunSettings
+  PromptRunSettings,
+  PromptRunSettingsOpenAPI
 } from '../../../src/types/experiment.types';
 import { ScorerConfig, ScorerTypes } from '../../../src/types/scorer.types';
 
@@ -23,7 +24,7 @@ describe('JobsService', () => {
   const taskType = TaskType.VALUE_16;
   const name = JobName.playground_run;
 
-  const mockPromptSettings: PromptRunSettings = {
+  const mockPromptSettings: PromptRunSettingsOpenAPI = {
     model_alias: 'GPT-4o',
     temperature: 0.7,
     max_tokens: 1000
@@ -38,9 +39,9 @@ describe('JobsService', () => {
   ];
 
   const mockCreateJobResponse: CreateJobResponse = {
-    project_id: projectId,
-    run_id: runId,
-    job_id: 'test-job-id',
+    projectId: projectId,
+    runId: runId,
+    jobId: 'test-job-id',
     link: 'https://app.galileo.ai/project/test-project-id/experiments/test-run-id',
     message: 'Job created successfully'
   };
@@ -138,8 +139,8 @@ describe('JobsService', () => {
 
     it('should throw error if response is missing job_id', async () => {
       const invalidResponse = {
-        project_id: projectId,
-        run_id: runId,
+        projectId: projectId,
+        runId: runId,
         link: 'https://example.com',
         message: 'Job created'
       } as CreateJobResponse;
