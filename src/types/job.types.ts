@@ -1,6 +1,14 @@
-import { components } from './api.types';
+export type {
+  CreateJobResponse as CreateJobResponseType,
+  CreateJobRequest as CreateJobRequestType,
+  JobDb as JobDbType
+} from './new-api.types';
 
-export type Job = components['schemas']['JobDB'];
+export type {
+  CreateJobResponse as CreateJobResponseOpenAPI,
+  CreateJobRequest as CreateJobRequestOpenAPI,
+  JobDb as JobDBOpenAPIType
+} from './openapi.types';
 
 /**
  * Valid task types for modeling (stored as ints for database lookups).

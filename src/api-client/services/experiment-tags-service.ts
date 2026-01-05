@@ -1,6 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import type { RunTagDB } from '../../types/experiment.types';
+import type { RunTagDB, RunTagDBOpenAPI } from '../../types/experiment.types';
 import { ExperimentTagsAPIException } from '../../utils/errors';
 import type { HTTPValidationError } from '../../types/errors.types';
 
@@ -23,7 +23,7 @@ export class ExperimentTagsService extends BaseClient {
     experimentId: string
   ): Promise<RunTagDB[]> => {
     try {
-      return await this.makeRequest<RunTagDB[]>(
+      const response = await this.makeRequest<RunTagDBOpenAPI[]>(
         RequestMethod.GET,
         Routes.experimentTags,
         null,
@@ -31,6 +31,10 @@ export class ExperimentTagsService extends BaseClient {
           project_id: this.projectId,
           experiment_id: experimentId
         }
+      );
+
+      return response.map((item) =>
+        this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(item)
       );
     } catch (error) {
       // Check if it's an HTTPValidationError

@@ -216,7 +216,16 @@ export class Datasets {
       );
     }
 
+    return await Datasets.recoverDatasetRecords(dataset);
+  }
+
+  static async recoverDatasetRecords(
+    dataset: Dataset
+  ): Promise<DatasetRecord[]> {
     const datasetRows = await dataset.getContent();
+    if (!datasetRows) {
+      throw new Error('Dataset has no content');
+    }
     return datasetRows.map((row) => convertDatasetRowToRecord(row));
   }
 
@@ -255,7 +264,7 @@ export class Datasets {
       if (!datasetObj) {
         throw new Error(`Could not find dataset with id ${datasetId}`);
       }
-      const records = await Datasets.getRecordsForDataset({ datasetId });
+      const records = await Datasets.recoverDatasetRecords(datasetObj);
       return [datasetObj, records];
     }
 
@@ -267,7 +276,7 @@ export class Datasets {
       if (!datasetObj) {
         throw new Error(`Could not find dataset with name ${datasetName}`);
       }
-      const records = await Datasets.getRecordsForDataset({ datasetName });
+      const records = await Datasets.recoverDatasetRecords(datasetObj);
       return [datasetObj, records];
     }
 
@@ -279,9 +288,7 @@ export class Datasets {
       if (!datasetObj) {
         throw new Error(`Could not find dataset with name ${dataset}`);
       }
-      const records = await Datasets.getRecordsForDataset({
-        datasetName: dataset
-      });
+      const records = await Datasets.recoverDatasetRecords(datasetObj);
       return [datasetObj, records];
     }
 

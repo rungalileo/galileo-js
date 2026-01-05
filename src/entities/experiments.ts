@@ -497,15 +497,25 @@ export class Experiments {
     experimentId: string
   ): Promise<void> {
     if (experimentTags) {
-      const experimentTags = new ExperimentTags();
+      const experimentTagsService = new ExperimentTags();
       for (const [key, value] of Object.entries(experimentTags)) {
-        await experimentTags.upsertExperimentTag({
-          projectId,
-          experimentId,
-          key,
-          value,
-          tagType: 'generic'
-        });
+        try {
+          await experimentTagsService.upsertExperimentTag({
+            projectId,
+            experimentId,
+            key,
+            value,
+            tagType: 'generic'
+          });
+          console.debug(
+            `Added tag ${key}=${value} to experiment ${experimentId}`
+          );
+        } catch (e) {
+          console.warn(
+            `Failed to add tag ${key}=${value} to experiment ${experimentId}: ${e}`
+          );
+          // Continue with other tags even if one fails (matches Python behavior)
+        }
       }
     }
   }

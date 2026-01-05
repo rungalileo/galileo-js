@@ -252,19 +252,14 @@ export class ExperimentService extends BaseClient {
 
   /**
    * Gets available columns for experiments.
-   * @param experimentId - The unique identifier of the experiment.
    * @returns A promise that resolves to the available columns response.
    */
-  public async getAvailableColumns(
-    experimentId: string
-  ): Promise<ExperimentsAvailableColumnsResponse> {
+  public async getAvailableColumns(): Promise<ExperimentsAvailableColumnsResponse> {
     const response =
       await this.makeRequest<ExperimentsAvailableColumnsResponseOpenAPI>(
         RequestMethod.POST,
         Routes.experimentsAvailableColumns,
-        {
-          log_stream_id: experimentId
-        },
+        null,
         {
           project_id: this.projectId
         }

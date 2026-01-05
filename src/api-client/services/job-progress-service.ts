@@ -1,6 +1,10 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { Job, JobName } from '../../types/job.types';
+import {
+  type JobDbType,
+  type JobDBOpenAPIType,
+  JobName
+} from '../../types/job.types';
 
 /**
  * Service for job progress tracking and monitoring.
@@ -20,8 +24,8 @@ export class JobProgressService extends BaseClient {
    * @returns The job object with current status and progress information.
    * @throws Error if the job cannot be retrieved.
    */
-  public async getJob(jobId: string): Promise<Job> {
-    const response = await this.makeRequest<Job>(
+  public async getJob(jobId: string): Promise<JobDbType> {
+    const response = await this.makeRequest<JobDBOpenAPIType>(
       RequestMethod.GET,
       Routes.job,
       undefined,
@@ -34,7 +38,7 @@ export class JobProgressService extends BaseClient {
       throw new Error(`Failed to get job status for job ${jobId}`);
     }
 
-    return response;
+    return this.convertToCamelCase<JobDBOpenAPIType, JobDbType>(response);
   }
 
   /**
@@ -48,8 +52,8 @@ export class JobProgressService extends BaseClient {
   public async getRunScorerJobs(
     projectId: string,
     runId: string
-  ): Promise<Job[]> {
-    const response = await this.makeRequest<Job[]>(
+  ): Promise<JobDbType[]> {
+    const response = await this.makeRequest<JobDBOpenAPIType[]>(
       RequestMethod.GET,
       Routes.jobsForProjectRun,
       undefined,
@@ -66,7 +70,9 @@ export class JobProgressService extends BaseClient {
     }
 
     // Filter to only return log_stream_scorer jobs
-    return response.filter((job) => job.job_name === JobName.log_stream_scorer);
+    return response
+      .filter((job) => job.job_name === JobName.log_stream_scorer)
+      .map((job) => this.convertToCamelCase<JobDBOpenAPIType, JobDbType>(job));
   }
 
   /**
@@ -79,8 +85,8 @@ export class JobProgressService extends BaseClient {
   public async getLatestJobForProjectRun(
     projectId: string,
     runId: string
-  ): Promise<Job | null> {
-    const response = await this.makeRequest<Job | null>(
+  ): Promise<JobDbType | null> {
+    const response = await this.makeRequest<JobDBOpenAPIType | null>(
       RequestMethod.GET,
       Routes.jobsLatestForProjectRun,
       undefined,
@@ -90,6 +96,8 @@ export class JobProgressService extends BaseClient {
       }
     );
 
-    return response;
+    return response
+      ? this.convertToCamelCase<JobDBOpenAPIType, JobDbType>(response)
+      : null;
   }
 }

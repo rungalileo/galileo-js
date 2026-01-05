@@ -14,14 +14,16 @@ const mockInit = jest.fn<
 const mockCreateJob = jest.fn<
   Promise<CreateJobResponse>,
   [
-    string,
-    string,
-    string,
-    string,
-    string,
-    TaskType,
-    PromptRunSettings,
-    ScorerConfig[] | undefined
+    {
+      projectId: string;
+      name: string;
+      runId: string;
+      datasetId: string;
+      promptTemplateId: string;
+      taskType: TaskType;
+      promptSettings: PromptRunSettings;
+      scorers?: ScorerConfig[];
+    }
   ]
 >();
 
@@ -88,16 +90,16 @@ describe('Jobs', () => {
 
       expect(result).toEqual(mockCreateJobResponse);
       expect(mockInit).toHaveBeenCalledWith({ projectId, projectScoped: true });
-      expect(mockCreateJob).toHaveBeenCalledWith(
+      expect(mockCreateJob).toHaveBeenCalledWith({
         projectId,
         name,
         runId,
         datasetId,
         promptTemplateId,
         taskType,
-        mockPromptSettings,
-        undefined
-      );
+        promptSettings: mockPromptSettings,
+        scorers: undefined
+      });
     });
 
     it('should create a job with optional scorers', async () => {
@@ -114,16 +116,16 @@ describe('Jobs', () => {
       );
 
       expect(result).toEqual(mockCreateJobResponse);
-      expect(mockCreateJob).toHaveBeenCalledWith(
+      expect(mockCreateJob).toHaveBeenCalledWith({
         projectId,
         name,
         runId,
         datasetId,
         promptTemplateId,
         taskType,
-        mockPromptSettings,
-        mockScorers
-      );
+        promptSettings: mockPromptSettings,
+        scorers: mockScorers
+      });
     });
 
     it('should initialize GalileoApiClient with correct parameters', async () => {
@@ -155,16 +157,16 @@ describe('Jobs', () => {
         mockScorers
       );
 
-      expect(mockCreateJob).toHaveBeenCalledWith(
+      expect(mockCreateJob).toHaveBeenCalledWith({
         projectId,
         name,
         runId,
         datasetId,
         promptTemplateId,
         taskType,
-        mockPromptSettings,
-        mockScorers
-      );
+        promptSettings: mockPromptSettings,
+        scorers: mockScorers
+      });
     });
 
     it('should throw error if createJob fails', async () => {
@@ -198,16 +200,16 @@ describe('Jobs', () => {
         emptyPromptSettings
       );
 
-      expect(mockCreateJob).toHaveBeenCalledWith(
+      expect(mockCreateJob).toHaveBeenCalledWith({
         projectId,
         name,
         runId,
         datasetId,
         promptTemplateId,
         taskType,
-        emptyPromptSettings,
-        undefined
-      );
+        promptSettings: emptyPromptSettings,
+        scorers: undefined
+      });
     });
 
     it('should handle undefined scorers', async () => {
@@ -223,16 +225,16 @@ describe('Jobs', () => {
         undefined
       );
 
-      expect(mockCreateJob).toHaveBeenCalledWith(
+      expect(mockCreateJob).toHaveBeenCalledWith({
         projectId,
         name,
         runId,
         datasetId,
         promptTemplateId,
         taskType,
-        mockPromptSettings,
-        undefined
-      );
+        promptSettings: mockPromptSettings,
+        scorers: undefined
+      });
     });
 
     it('should create a new GalileoApiClient instance for each call', async () => {

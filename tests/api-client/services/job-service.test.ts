@@ -38,6 +38,14 @@ describe('JobsService', () => {
     }
   ];
 
+  const mockCreateJobResponseOpenAPI = {
+    project_id: projectId,
+    run_id: runId,
+    job_id: 'test-job-id',
+    link: 'https://app.galileo.ai/project/test-project-id/experiments/test-run-id',
+    message: 'Job created successfully'
+  };
+
   const mockCreateJobResponse: CreateJobResponse = {
     projectId: projectId,
     runId: runId,
@@ -53,17 +61,17 @@ describe('JobsService', () => {
 
   describe('create', () => {
     it('should call makeRequest with correct parameters and return job response', async () => {
-      mockMakeRequest.mockResolvedValue(mockCreateJobResponse);
+      mockMakeRequest.mockResolvedValue(mockCreateJobResponseOpenAPI);
 
-      const result = await jobsService.create(
+      const result = await jobsService.create({
         projectId,
-        name,
+        jobName: name,
         runId,
         datasetId,
-        promptTemplateId,
+        promptTemplateVersionId: promptTemplateId,
         taskType,
-        mockPromptSettings
-      );
+        promptSettings: mockPromptSettings
+      });
 
       expect(mockMakeRequest).toHaveBeenCalledTimes(1);
       expect(mockMakeRequest).toHaveBeenCalledWith(
@@ -84,18 +92,18 @@ describe('JobsService', () => {
     });
 
     it('should create job with optional scorers', async () => {
-      mockMakeRequest.mockResolvedValue(mockCreateJobResponse);
+      mockMakeRequest.mockResolvedValue(mockCreateJobResponseOpenAPI);
 
-      const result = await jobsService.create(
+      const result = await jobsService.create({
         projectId,
-        name,
+        jobName: name,
         runId,
         datasetId,
-        promptTemplateId,
+        promptTemplateVersionId: promptTemplateId,
         taskType,
-        mockPromptSettings,
-        mockScorers
-      );
+        promptSettings: mockPromptSettings,
+        scorers: mockScorers
+      });
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -108,7 +116,13 @@ describe('JobsService', () => {
           prompt_settings: mockPromptSettings,
           prompt_template_version_id: promptTemplateId,
           task_type: taskType,
-          scorers: mockScorers
+          scorers: [
+            {
+              id: 'scorer-1',
+              scorer_type: 'preset',
+              name: 'completeness'
+            }
+          ]
         }
       );
       expect(result).toEqual(mockCreateJobResponse);
@@ -116,17 +130,17 @@ describe('JobsService', () => {
 
     it('should handle empty prompt settings', async () => {
       const emptyPromptSettings: PromptRunSettings = {};
-      mockMakeRequest.mockResolvedValue(mockCreateJobResponse);
+      mockMakeRequest.mockResolvedValue(mockCreateJobResponseOpenAPI);
 
-      await jobsService.create(
+      await jobsService.create({
         projectId,
-        name,
+        jobName: name,
         runId,
         datasetId,
-        promptTemplateId,
+        promptTemplateVersionId: promptTemplateId,
         taskType,
-        emptyPromptSettings
-      );
+        promptSettings: emptyPromptSettings
+      });
 
       expect(mockMakeRequest).toHaveBeenCalledWith(
         RequestMethod.POST,
@@ -139,39 +153,41 @@ describe('JobsService', () => {
 
     it('should throw error if response is missing job_id', async () => {
       const invalidResponse = {
-        projectId: projectId,
-        runId: runId,
+        project_id: projectId,
+        run_id: runId,
         link: 'https://example.com',
         message: 'Job created'
-      } as CreateJobResponse;
+      };
       mockMakeRequest.mockResolvedValue(invalidResponse);
 
       await expect(
-        jobsService.create(
+        jobsService.create({
           projectId,
-          name,
+          jobName: name,
           runId,
           datasetId,
-          promptTemplateId,
+          promptTemplateVersionId: promptTemplateId,
           taskType,
-          mockPromptSettings
-        )
+          promptSettings: mockPromptSettings
+        })
       ).rejects.toThrow('Create job failed');
     });
 
     it('should throw error if response is null', async () => {
-      mockMakeRequest.mockResolvedValue(null as unknown as CreateJobResponse);
+      mockMakeRequest.mockResolvedValue(
+        null as unknown as typeof mockCreateJobResponseOpenAPI
+      );
 
       await expect(
-        jobsService.create(
+        jobsService.create({
           projectId,
-          name,
+          jobName: name,
           runId,
           datasetId,
-          promptTemplateId,
+          promptTemplateVersionId: promptTemplateId,
           taskType,
-          mockPromptSettings
-        )
+          promptSettings: mockPromptSettings
+        })
       ).rejects.toThrow('Create job failed');
     });
 
@@ -187,15 +203,15 @@ describe('JobsService', () => {
       mockMakeRequest.mockRejectedValue(apiError);
 
       await expect(
-        jobsService.create(
+        jobsService.create({
           projectId,
-          name,
+          jobName: name,
           runId,
           datasetId,
-          promptTemplateId,
+          promptTemplateVersionId: promptTemplateId,
           taskType,
-          mockPromptSettings
-        )
+          promptSettings: mockPromptSettings
+        })
       ).rejects.toThrow('Create job failed: Invalid project ID');
     });
 
@@ -206,15 +222,15 @@ describe('JobsService', () => {
       mockMakeRequest.mockRejectedValue(apiError);
 
       await expect(
-        jobsService.create(
+        jobsService.create({
           projectId,
-          name,
+          jobName: name,
           runId,
           datasetId,
-          promptTemplateId,
+          promptTemplateVersionId: promptTemplateId,
           taskType,
-          mockPromptSettings
-        )
+          promptSettings: mockPromptSettings
+        })
       ).rejects.toThrow('Create job failed: Network error');
     });
 
@@ -223,15 +239,15 @@ describe('JobsService', () => {
       mockMakeRequest.mockRejectedValue(error);
 
       await expect(
-        jobsService.create(
+        jobsService.create({
           projectId,
-          name,
+          jobName: name,
           runId,
           datasetId,
-          promptTemplateId,
+          promptTemplateVersionId: promptTemplateId,
           taskType,
-          mockPromptSettings
-        )
+          promptSettings: mockPromptSettings
+        })
       ).rejects.toThrow('Create job failed: Connection timeout');
     });
 
@@ -239,15 +255,15 @@ describe('JobsService', () => {
       mockMakeRequest.mockRejectedValue('String error');
 
       await expect(
-        jobsService.create(
+        jobsService.create({
           projectId,
-          name,
+          jobName: name,
           runId,
           datasetId,
-          promptTemplateId,
+          promptTemplateVersionId: promptTemplateId,
           taskType,
-          mockPromptSettings
-        )
+          promptSettings: mockPromptSettings
+        })
       ).rejects.toThrow('Create job failed');
     });
   });

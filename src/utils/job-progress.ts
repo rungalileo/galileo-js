@@ -1,6 +1,6 @@
 import cliProgress from 'cli-progress';
 import { GalileoApiClient } from '../api-client';
-import { Job, JobStatus, RequestData, Scorers } from '../types/job.types';
+import { JobDbType, JobStatus, RequestData, Scorers } from '../types/job.types';
 
 export interface JobProgressLogger {
   info?: (message: string) => void;
@@ -11,7 +11,7 @@ export interface PollJobOptions {
   timeout?: number;
   initialBackoff?: number;
   maxBackoff?: number;
-  onProgress?: (job: Job) => void;
+  onProgress?: (job: JobDbType) => void;
   signal?: AbortSignal;
   showProgressBar?: boolean;
   logger?: JobProgressLogger;
@@ -110,7 +110,7 @@ export async function logScorerJobsStatus(
   const scorerJobs = await apiClient.getRunScorerJobs(projectId, runId);
 
   for (const job of scorerJobs) {
-    const scorerName = extractScorerName(job.request_data || {});
+    const scorerName = extractScorerName(job.requestData || {});
 
     if (!scorerName) {
       debug(`Scorer job ${job.id} has no scorer name.`);
@@ -126,7 +126,7 @@ export async function logScorerJobsStatus(
       info(`${cleanName}: Computing 🚧`);
     } else if (isJobFailed(job.status)) {
       info(
-        `${cleanName}: Failed ❌, error was: ${job.error_message || 'Unknown error'}`
+        `${cleanName}: Failed ❌, error was: ${job.errorMessage || 'Unknown error'}`
       );
     } else {
       info(`${cleanName}: Done ✅`);
@@ -178,11 +178,11 @@ export async function getJobProgress(
 
   // Initialize progress bar if requested
   if (showProgressBar && isJobIncomplete(job.status)) {
-    const completed = job.steps_completed || 0;
+    const completed = job.stepsCompleted || 0;
     progressBar = createProgressBar(
-      job.steps_total || 100,
+      job.stepsTotal || 100,
       completed,
-      job.progress_message || 'Processing...'
+      job.progressMessage || 'Processing...'
     );
   }
 
@@ -212,8 +212,8 @@ export async function getJobProgress(
 
     // Update progress bar
     if (progressBar) {
-      progressBar.update(job.steps_completed || 0, {
-        message: job.progress_message || 'Processing...'
+      progressBar.update(job.stepsCompleted || 0, {
+        message: job.progressMessage || 'Processing...'
       });
     }
 
@@ -231,10 +231,17 @@ export async function getJobProgress(
     progressBar.stop();
   }
 
+  // Call progress callback with final job state
+  // This ensures the callback is called at least once, even if the job completed immediately
+  // or if the while loop never executed
+  if (onProgress) {
+    onProgress(job);
+  }
+
   // Check for failure
   if (isJobFailed(job.status)) {
     throw new Error(
-      `Job failed with error message: ${job.error_message || 'Unknown error'}`
+      `Job failed with error message: ${job.errorMessage || 'Unknown error'}`
     );
   }
 
@@ -256,7 +263,7 @@ export async function getJobProgress(
  * @param jobId The unique identifier of the job.
  * @returns The job object.
  */
-export async function getJob(jobId: string): Promise<Job> {
+export async function getJob(jobId: string): Promise<JobDbType> {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectScoped: false });
   return apiClient.getJob(jobId);
@@ -271,7 +278,7 @@ export async function getJob(jobId: string): Promise<Job> {
 export async function getRunScorerJobs(
   projectId: string,
   runId: string
-): Promise<Job[]> {
+): Promise<JobDbType[]> {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId });
   return apiClient.getRunScorerJobs(projectId, runId);
@@ -293,7 +300,7 @@ export const getScorerJobsStatus = async (
   const scorerJobs = await apiClient.getJobsForProjectRun(projectId, runId);
 
   for (const job of scorerJobs) {
-    const requestData = job.request_data as RequestData;
+    const requestData = job.requestData as RequestData;
     let scorerName: string | undefined;
 
     if (requestData?.prompt_scorer_settings?.scorer_name) {
@@ -313,7 +320,7 @@ export const getScorerJobsStatus = async (
     if (isJobIncomplete(job.status)) {
       console.log(`${cleanName}: Computing 🚧`);
     } else if (isJobFailed(job.status)) {
-      console.log(`${cleanName}: Failed ❌, error was: ${job.error_message}`);
+      console.log(`${cleanName}: Failed ❌, error was: ${job.errorMessage}`);
     } else {
       console.log(`${cleanName}: Done ✅`);
     }
@@ -330,7 +337,7 @@ export const getScorerJobsStatus = async (
 export const getScorerJobs = async (
   projectId: string,
   runId: string
-): Promise<Job[]> => {
+): Promise<JobDbType[]> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId });
   return apiClient.getJobsForProjectRun(projectId, runId);

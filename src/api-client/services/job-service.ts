@@ -1,11 +1,11 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import { TaskType } from '../../types/job.types';
-import { ScorerConfig } from '../../types/scorer.types';
-import {
-  CreateJobResponse,
-  PromptRunSettings
-} from '../../types/experiment.types';
+import type {
+  CreateJobResponseType,
+  CreateJobRequestType,
+  CreateJobResponseOpenAPI,
+  CreateJobRequestOpenAPI
+} from '../../types/job.types';
 
 /**
  * Internal JobsService for job creation functionality.
@@ -19,54 +19,31 @@ export class JobsService extends BaseClient {
     this.initializeClient();
   }
 
-  /**
-   * Creates a new job in the Galileo platform for executing a prompt run with specified scorers.
-   * @param projectId Unique identifier of the project
-   * @param name Name for the job (e.g., "playground_run")
-   * @param runId Unique identifier of the run (typically experiment ID)
-   * @param datasetId Unique identifier of the dataset to process
-   * @param promptTemplateId Version ID of the prompt template to use
-   * @param taskType Type of task to execute (e.g., EXPERIMENT_TASK_TYPE = 16)
-   * @param scorers Optional list of scorer configurations to apply
-   * @param promptSettings Settings for the prompt run (model, temperature, etc.)
-   * @returns CreateJobResponse containing job details
-   * @throws Error if job creation fails
-   */
   public async create(
-    projectId: string,
-    name: string,
-    runId: string,
-    datasetId: string,
-    promptTemplateId: string,
-    taskType: TaskType,
-    promptSettings: PromptRunSettings,
-    scorers?: ScorerConfig[]
-  ): Promise<CreateJobResponse> {
-    const createParams = {
-      project_id: projectId,
-      dataset_id: datasetId,
-      job_name: name,
-      run_id: runId,
-      prompt_settings: promptSettings || {},
-      prompt_template_version_id: promptTemplateId,
-      task_type: taskType,
-      scorers: scorers
-    };
+    options: CreateJobRequestType
+  ): Promise<CreateJobResponseType> {
+    const requestBody = this.convertToSnakeCase<
+      CreateJobRequestType,
+      CreateJobRequestOpenAPI
+    >(options);
 
     try {
-      const response = await this.makeRequest<CreateJobResponse>(
+      const response = await this.makeRequest<CreateJobResponseOpenAPI>(
         RequestMethod.POST,
         Routes.jobs,
-        createParams
+        requestBody
       );
 
-      if (!response || !response.jobId) {
+      if (!response || !response.job_id) {
         throw new Error(
           `Create job failed: ${JSON.stringify(response || 'No response')}`
         );
       }
 
-      return response;
+      return this.convertToCamelCase<
+        CreateJobResponseOpenAPI,
+        CreateJobResponseType
+      >(response);
     } catch (error: unknown) {
       let errorMessage = 'Create job failed';
 

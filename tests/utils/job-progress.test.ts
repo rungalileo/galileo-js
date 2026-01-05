@@ -6,16 +6,24 @@ import {
   getScorerJobsStatus,
   JobProgressLogger
 } from '../../src/utils/job-progress';
-import { Job, JobStatus, JobName, RequestData } from '../../src/types';
+import {
+  JobDbType,
+  JobStatus,
+  JobName,
+  RequestData
+} from '../../src/types/job.types';
 
 // Create mock functions that will be accessible
 const mockInit = jest.fn<
   Promise<void>,
-  [{ projectId?: string; runId?: string }]
+  [{ projectId?: string; runId?: string; projectScoped?: boolean }]
 >();
-const mockGetJob = jest.fn<Promise<Job>, [string]>();
-const mockGetRunScorerJobs = jest.fn<Promise<Job[]>, [string, string]>();
-const mockGetJobsForProjectRun = jest.fn<Promise<Job[]>, [string]>();
+const mockGetJob = jest.fn<Promise<JobDbType>, [string]>();
+const mockGetRunScorerJobs = jest.fn<Promise<JobDbType[]>, [string, string]>();
+const mockGetJobsForProjectRun = jest.fn<
+  Promise<JobDbType[]>,
+  [string, string]
+>();
 
 // Mock GalileoApiClient
 jest.mock('../../src/api-client', () => {
@@ -63,20 +71,20 @@ describe('Job Progress Utilities', () => {
     stepsTotal = 100,
     progressMessage = 'Processing...',
     errorMessage?: string
-  ): Job => ({
+  ): JobDbType => ({
     id: jobId,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     status,
-    job_name: JobName.log_stream_scorer,
-    project_id: projectId,
-    run_id: runId,
-    request_data: {},
-    progress_percent: (stepsCompleted / stepsTotal) * 100,
-    steps_completed: stepsCompleted,
-    steps_total: stepsTotal,
-    progress_message: progressMessage,
-    error_message: errorMessage,
+    jobName: JobName.log_stream_scorer,
+    projectId: projectId,
+    runId: runId,
+    requestData: {},
+    progressPercent: (stepsCompleted / stepsTotal) * 100,
+    stepsCompleted: stepsCompleted,
+    stepsTotal: stepsTotal,
+    progressMessage: progressMessage,
+    errorMessage: errorMessage,
     retries: 0
   });
 
@@ -88,7 +96,7 @@ describe('Job Progress Utilities', () => {
       const result = await getJob(jobId);
 
       expect(result).toEqual(mockJob);
-      expect(mockInit).toHaveBeenCalled();
+      expect(mockInit).toHaveBeenCalledWith({ projectScoped: false });
       expect(mockGetJob).toHaveBeenCalledWith(jobId);
     });
 
@@ -124,7 +132,7 @@ describe('Job Progress Utilities', () => {
         | 'prompt_scorer_settings'
         | 'scorer_config' = 'prompt_scorer_settings',
       errorMessage?: string
-    ): Job => {
+    ): JobDbType => {
       const requestData: RequestData =
         source === 'prompt_scorer_settings'
           ? { prompt_scorer_settings: { scorer_name: scorerName } }
@@ -132,15 +140,15 @@ describe('Job Progress Utilities', () => {
 
       return {
         id: `job-${scorerName}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         status,
-        job_name: JobName.log_stream_scorer,
-        project_id: projectId,
-        run_id: runId,
-        request_data: requestData as Record<string, unknown>,
-        progress_percent: status === JobStatus.completed ? 100 : 50,
-        error_message: errorMessage,
+        jobName: JobName.log_stream_scorer,
+        projectId: projectId,
+        runId: runId,
+        requestData: requestData as Record<string, unknown>,
+        progressPercent: status === JobStatus.completed ? 100 : 50,
+        errorMessage: errorMessage,
         retries: 0
       };
     };
@@ -177,7 +185,7 @@ describe('Job Progress Utilities', () => {
         createScorerJob('completeness_nli', JobStatus.completed),
         {
           ...createScorerJob('correctness', JobStatus.completed),
-          request_data: {}
+          requestData: {}
         }
       ];
       mockGetRunScorerJobs.mockResolvedValue(jobs);
@@ -285,7 +293,7 @@ describe('Job Progress Utilities', () => {
       const pendingJob = createMockJob(JobStatus.pending, 0, 100);
       const processingJob = createMockJob(JobStatus.processing, 50, 100);
       const completedJob = createMockJob(JobStatus.completed, 100, 100);
-      const onProgress = jest.fn<void, [Job]>();
+      const onProgress = jest.fn<void, [JobDbType]>();
 
       mockGetJob
         .mockResolvedValueOnce(pendingJob)
@@ -400,10 +408,10 @@ describe('Job Progress Utilities', () => {
 
   describe('getScorerJobsStatus (legacy)', () => {
     it('should log scorer jobs status', async () => {
-      const jobs: Job[] = [
+      const jobs: JobDbType[] = [
         {
           ...createMockJob(JobStatus.completed),
-          request_data: {
+          requestData: {
             prompt_scorer_settings: { scorer_name: 'completeness_nli' }
           } as Record<string, unknown>
         }

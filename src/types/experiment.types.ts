@@ -34,7 +34,7 @@ import type {
   ExperimentMetricsResponse as ExperimentMetricsResponseOpenAPI,
   ListExperimentResponse as ListExperimentResponseOpenAPI,
   ExperimentsAvailableColumnsResponse as ExperimentsAvailableColumnsResponseOpenAPI,
-  RunTagDb as RunTagDbOpenAPI,
+  RunTagDb as RunTagDBOpenAPI,
   RunTagCreateRequest as RunTagCreateRequestOpenAPI,
   ExperimentCreateRequest as ExperimentCreateRequestOpenAPI
 } from './openapi.types';
@@ -61,7 +61,7 @@ export {
   ExperimentMetricsResponseOpenAPI,
   ListExperimentResponseOpenAPI,
   ExperimentsAvailableColumnsResponseOpenAPI,
-  RunTagDbOpenAPI,
+  RunTagDBOpenAPI,
   RunTagCreateRequestOpenAPI,
   ExperimentCreateRequestOpenAPI
 };
