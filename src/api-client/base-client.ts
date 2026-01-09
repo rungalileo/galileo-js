@@ -12,6 +12,7 @@ import {
   ObjectToSnake,
   ObjectToCamel
 } from 'ts-case-convert';
+import { HTTPValidationError } from '../types/errors.types';
 
 // Type guards for snake_case and camelCase conversion
 type ValidatedSnakeCase<T extends object, TTarget> =
@@ -45,127 +46,6 @@ export class BaseClient {
   protected apiUrl: string = '';
   protected token: string = '';
   protected client: Client<paths> | undefined = undefined;
-
-  protected initializeClient(): void {
-    if (this.apiUrl && this.token) {
-      this.client = createClient({
-        baseUrl: this.apiUrl,
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-          'X-Galileo-SDK': getSdkIdentifier()
-        }
-      });
-    }
-  }
-
-  protected getApiUrl(projectType: string): string {
-    let consoleUrl = process.env.GALILEO_CONSOLE_URL;
-
-    if (!consoleUrl && projectType === 'gen_ai') {
-      return 'https://api.galileo.ai';
-    }
-
-    if (!consoleUrl) {
-      throw new Error('❗ GALILEO_CONSOLE_URL must be set');
-    }
-
-    if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
-      return 'http://localhost:8088';
-    }
-
-    consoleUrl = consoleUrl
-      .replace('app.galileo.ai', 'api.galileo.ai')
-      .replace('console', 'api');
-
-    // remove trailing slash
-    if (consoleUrl.endsWith('/')) {
-      consoleUrl = consoleUrl.slice(0, -1);
-    }
-
-    return consoleUrl;
-  }
-
-  protected async healthCheck(): Promise<boolean> {
-    return await this.makeRequest<boolean>(
-      RequestMethod.GET,
-      Routes.healthCheck
-    );
-  }
-
-  protected processResponse<T>(
-    data: T | undefined,
-    error: object | unknown
-  ): T {
-    if (error) {
-      let statusCode: number | undefined;
-      let errorData: any = error;
-
-      if (typeof error === 'object' && error !== null) {
-        if ('status' in error && typeof error.status === 'number') {
-          statusCode = error.status;
-        }
-
-        if ('data' in error) {
-          errorData = error.data;
-        } else if ('response' in error && typeof error.response === 'object') {
-          const response = error.response as any;
-          if (response?.status) {
-            statusCode = response.status;
-          }
-          if (response?.data) {
-            errorData = response.data;
-          }
-        }
-      }
-
-      // Use parseApiErrorMessage for consistent error message formatting
-      const errorMessage = parseApiErrorMessage(errorData);
-
-      // Format error message similar to validateResponse
-      if (statusCode) {
-        const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`;
-        throw new Error(msg);
-      }
-
-      throw new Error(`Request failed: ${errorMessage}`);
-    }
-
-    if (data) {
-      return data;
-    }
-    throw new Error('Request failed: No data received from API');
-  }
-
-  protected getAuthHeader(token: string): { Authorization: string } {
-    return { Authorization: `Bearer ${token}` };
-  }
-
-  protected validateResponse(response: AxiosResponse): void {
-    if (response.status >= 300) {
-      const errorMessage = parseApiErrorMessage(response.data);
-      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${errorMessage}`;
-      throw new Error(msg);
-    }
-  }
-
-  protected async refreshTokenIfNeeded(endpoint: Routes): Promise<void> {
-    if (
-      ![
-        Routes.login,
-        Routes.apiKeyLogin,
-        Routes.socialLogin,
-        Routes.refreshToken
-      ].includes(endpoint) &&
-      this.token
-    ) {
-      const payload = decode(this.token, { json: true });
-      if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        throw new Error(
-          'Token expired - refreshToken not implemented in base class'
-        );
-      }
-    }
-  }
 
   /**
    * Make an HTTP request to the Galileo API and return the raw Axios response.
@@ -418,5 +298,153 @@ export class BaseClient {
     obj: T
   ): ValidatedCamelCase<T, TTarget> {
     return objectToCamel<T>(obj) as ValidatedCamelCase<T, TTarget>;
+  }
+
+  protected initializeClient(): void {
+    if (this.apiUrl && this.token) {
+      this.client = createClient({
+        baseUrl: this.apiUrl,
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'X-Galileo-SDK': getSdkIdentifier()
+        }
+      });
+    }
+  }
+
+  protected getApiUrl(projectType: string): string {
+    let consoleUrl = process.env.GALILEO_CONSOLE_URL;
+
+    if (!consoleUrl && projectType === 'gen_ai') {
+      return 'https://api.galileo.ai';
+    }
+
+    if (!consoleUrl) {
+      throw new Error('❗ GALILEO_CONSOLE_URL must be set');
+    }
+
+    if (consoleUrl.includes('localhost') || consoleUrl.includes('127.0.0.1')) {
+      return 'http://localhost:8088';
+    }
+
+    consoleUrl = consoleUrl
+      .replace('app.galileo.ai', 'api.galileo.ai')
+      .replace('console', 'api');
+
+    // remove trailing slash
+    if (consoleUrl.endsWith('/')) {
+      consoleUrl = consoleUrl.slice(0, -1);
+    }
+
+    return consoleUrl;
+  }
+
+  protected async healthCheck(): Promise<boolean> {
+    return await this.makeRequest<boolean>(
+      RequestMethod.GET,
+      Routes.healthCheck
+    );
+  }
+
+  protected processResponse<T>(
+    data: T | undefined,
+    error: object | unknown
+  ): T {
+    if (error) {
+      let statusCode: number | undefined;
+      let errorData: any = error;
+
+      if (typeof error === 'object' && error !== null) {
+        if ('status' in error && typeof error.status === 'number') {
+          statusCode = error.status;
+        }
+
+        if ('data' in error) {
+          errorData = error.data;
+        } else if ('response' in error && typeof error.response === 'object') {
+          const response = error.response as any;
+          if (response?.status) {
+            statusCode = response.status;
+          }
+          if (response?.data) {
+            errorData = response.data;
+          }
+        }
+      }
+
+      // Use parseApiErrorMessage for consistent error message formatting
+      const errorMessage = parseApiErrorMessage(errorData);
+
+      // Format error message similar to validateResponse
+      if (statusCode) {
+        const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`;
+        throw new Error(msg);
+      }
+
+      throw new Error(`Request failed: ${errorMessage}`);
+    }
+
+    if (data) {
+      return data;
+    }
+    throw new Error('Request failed: No data received from API');
+  }
+
+  protected getAuthHeader(token: string): { Authorization: string } {
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  protected validateResponse(response: AxiosResponse): void {
+    if (response.status >= 300) {
+      const errorMessage = parseApiErrorMessage(response.data);
+      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${errorMessage}`;
+      throw new Error(msg);
+    }
+  }
+
+  protected async refreshTokenIfNeeded(endpoint: Routes): Promise<void> {
+    if (
+      ![
+        Routes.login,
+        Routes.apiKeyLogin,
+        Routes.socialLogin,
+        Routes.refreshToken
+      ].includes(endpoint) &&
+      this.token
+    ) {
+      const payload = decode(this.token, { json: true });
+      if (payload?.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        throw new Error(
+          'Token expired - refreshToken not implemented in base class'
+        );
+      }
+    }
+  }
+
+  protected isHTTPValidationError(
+    error: unknown
+  ): error is HTTPValidationError {
+    return typeof error === 'object' && error !== null && 'detail' in error;
+  }
+
+  protected extractErrorDetail(error: unknown): string {
+    if (this.isHTTPValidationError(error)) {
+      const httpError = error as HTTPValidationError;
+      if (typeof httpError.detail === 'string') {
+        return httpError.detail;
+      }
+      // Handle array of validation errors
+      if (Array.isArray(httpError.detail)) {
+        return httpError.detail
+          .map((err) => {
+            const loc = err.loc ? err.loc.join('.') : 'unknown';
+            const msg = err.msg || 'validation error';
+            return `${loc}: ${msg}`;
+          })
+          .join('; ');
+      }
+      return JSON.stringify(httpError.detail);
+    }
+    return error instanceof Error ? error.message : String(error);
   }
 }

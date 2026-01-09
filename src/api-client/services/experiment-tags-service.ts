@@ -2,7 +2,6 @@ import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import type { RunTagDB, RunTagDBOpenAPI } from '../../types/experiment.types';
 import { ExperimentTagsAPIException } from '../../utils/errors';
-import type { HTTPValidationError } from '../../types/errors.types';
 
 export class ExperimentTagsService extends BaseClient {
   private projectId: string;
@@ -19,9 +18,7 @@ export class ExperimentTagsService extends BaseClient {
    * @param experimentId - The unique identifier of the experiment.
    * @returns A promise that resolves to an array of experiment tags.
    */
-  public getExperimentTags = async (
-    experimentId: string
-  ): Promise<RunTagDB[]> => {
+  public async getExperimentTags(experimentId: string): Promise<RunTagDB[]> {
     try {
       const response = await this.makeRequest<RunTagDBOpenAPI[]>(
         RequestMethod.GET,
@@ -48,31 +45,6 @@ export class ExperimentTagsService extends BaseClient {
         error instanceof Error ? error.message : String(error)
       );
     }
-  };
-
-  private isHTTPValidationError(error: unknown): error is HTTPValidationError {
-    return typeof error === 'object' && error !== null && 'detail' in error;
-  }
-
-  private extractErrorDetail(error: unknown): string {
-    if (this.isHTTPValidationError(error)) {
-      const httpError = error as HTTPValidationError;
-      if (typeof httpError.detail === 'string') {
-        return httpError.detail;
-      }
-      // Handle array of validation errors
-      if (Array.isArray(httpError.detail)) {
-        return httpError.detail
-          .map((err) => {
-            const loc = err.loc ? err.loc.join('.') : 'unknown';
-            const msg = err.msg || 'validation error';
-            return `${loc}: ${msg}`;
-          })
-          .join('; ');
-      }
-      return JSON.stringify(httpError.detail);
-    }
-    return error instanceof Error ? error.message : String(error);
   }
 
   /**
@@ -85,12 +57,12 @@ export class ExperimentTagsService extends BaseClient {
    * @param tagType - (Optional) The type of tag (default: 'generic').
    * @returns A promise that resolves to the created or updated tag.
    */
-  public upsertExperimentTag = async (
+  public async upsertExperimentTag(
     experimentId: string,
     key: string,
     value: string,
     tagType: string = 'generic'
-  ): Promise<RunTagDB> => {
+  ): Promise<RunTagDB> {
     try {
       // First, check if a tag with this key already exists
       const existingTags = await this.getExperimentTags(experimentId);
@@ -149,7 +121,7 @@ export class ExperimentTagsService extends BaseClient {
         error instanceof Error ? error.message : String(error)
       );
     }
-  };
+  }
 
   /**
    * Deletes a tag for a specific experiment.
@@ -157,10 +129,10 @@ export class ExperimentTagsService extends BaseClient {
    * @param tagId - The unique identifier of the tag to delete.
    * @returns A promise that resolves when the tag is deleted.
    */
-  public deleteExperimentTag = async (
+  public async deleteExperimentTag(
     experimentId: string,
     tagId: string
-  ): Promise<void> => {
+  ): Promise<void> {
     try {
       await this.makeRequest<void>(
         RequestMethod.DELETE,
@@ -182,5 +154,5 @@ export class ExperimentTagsService extends BaseClient {
         error instanceof Error ? error.message : String(error)
       );
     }
-  };
+  }
 }
