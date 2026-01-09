@@ -70,7 +70,7 @@ export class ExperimentTagsService extends BaseClient {
 
       if (existingTag) {
         // Tag exists - use PUT to update it
-        const response = await this.makeRequest<RunTagDB>(
+        const response = await this.makeRequest<RunTagDBOpenAPI>(
           RequestMethod.PUT,
           Routes.experimentTag,
           {
@@ -87,10 +87,11 @@ export class ExperimentTagsService extends BaseClient {
         if (!response) {
           throw new ExperimentTagsAPIException('No response received from API');
         }
-        return response;
+
+        return this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(response);
       } else {
         // Tag doesn't exist - use POST to create it
-        const response = await this.makeRequest<RunTagDB>(
+        const response = await this.makeRequest<RunTagDBOpenAPI>(
           RequestMethod.POST,
           Routes.experimentTags,
           {
@@ -106,7 +107,7 @@ export class ExperimentTagsService extends BaseClient {
         if (!response) {
           throw new ExperimentTagsAPIException('No response received from API');
         }
-        return response;
+        return this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(response);
       }
     } catch (error) {
       if (error instanceof ExperimentTagsAPIException) {
