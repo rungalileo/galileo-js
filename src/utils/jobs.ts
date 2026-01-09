@@ -1,9 +1,6 @@
-import { TaskType } from '../types/job.types';
+import { CreateJobResponseType, TaskType } from '../types/job.types';
 import { ScorerConfig } from '../types/scorer.types';
-import {
-  CreateJobResponse,
-  PromptRunSettings
-} from '../types/experiment.types';
+import { PromptRunSettings } from '../types/experiment.types';
 import { GalileoApiClient } from '../api-client';
 
 /**
@@ -34,10 +31,10 @@ export class Jobs {
     taskType: TaskType,
     promptSettings: PromptRunSettings,
     scorers?: ScorerConfig[]
-  ): Promise<CreateJobResponse> {
+  ): Promise<CreateJobResponseType> {
     const apiClient: GalileoApiClient = new GalileoApiClient();
     await apiClient.init({ projectId, projectScoped: true });
-    return apiClient.createJob(
+    return apiClient.createJob({
       projectId,
       name,
       runId,
@@ -46,6 +43,6 @@ export class Jobs {
       taskType,
       promptSettings,
       scorers
-    );
+    });
   }
 }

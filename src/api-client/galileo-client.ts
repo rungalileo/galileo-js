@@ -48,7 +48,8 @@ import {
   AggregatedTraceViewRequest,
   AggregatedTraceViewResponse,
   LogTracesIngestRequest,
-  LogTracesIngestResponse
+  LogTracesIngestResponse,
+  Trace
 } from '../types/logging/trace.types';
 import { AuthService } from './services/auth-service';
 import {
@@ -63,6 +64,14 @@ import {
 import { DatasetService } from './services/dataset-service';
 import { TraceService } from './services/trace-service';
 import { ExperimentService } from './services/experiment-service';
+import type {
+  ExperimentUpdateRequest,
+  ExperimentMetricsRequest,
+  ExperimentMetricsResponse,
+  ListExperimentResponse,
+  ExperimentsAvailableColumnsResponse
+} from '../types/experiment.types';
+import { ExperimentTagsService } from './services/experiment-tags-service';
 import { ScorerService } from './services/scorer-service';
 import { ExportService } from './services/export-service';
 import { JobsService } from './services/job-service';
@@ -82,7 +91,9 @@ import {
 import {
   CreateJobResponse,
   ExperimentDatasetRequest,
-  PromptRunSettings
+  PromptRunSettings,
+  ExperimentResponseType,
+  RunTagDB
 } from '../types/experiment.types';
 import {
   RenderTemplateRequest,
@@ -91,7 +102,7 @@ import {
   GlobalPromptTemplateListOptions,
   ListPromptTemplateResponse
 } from '../types/prompt-template.types';
-import { Job, TaskType } from '../types/job.types';
+import { JobDbType, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
 import { StepType } from '../types/logging/step.types';
 import { LogRecordsExportRequest } from '../types/export.types';
@@ -142,6 +153,7 @@ export class GalileoApiClient extends BaseClient {
   private datasetService?: DatasetService;
   private traceService?: TraceService;
   private experimentService?: ExperimentService;
+  private experimentTagsService?: ExperimentTagsService;
   private scorerService?: ScorerService;
   private exportService?: ExportService;
   private runsService?: RunsService;
@@ -293,6 +305,11 @@ export class GalileoApiClient extends BaseClient {
         );
 
         this.experimentService = new ExperimentService(
+          this.apiUrl,
+          this.token,
+          this.projectId
+        );
+        this.experimentTagsService = new ExperimentTagsService(
           this.apiUrl,
           this.token,
           this.projectId
@@ -777,7 +794,7 @@ export class GalileoApiClient extends BaseClient {
   }
 
   // Trace methods - delegate to TraceService
-  public async ingestTracesLegacy(traces: any[]) {
+  public async ingestTracesLegacy(traces: Trace[]) {
     this.ensureService(this.traceService);
     return this.traceService!.ingestTracesLegacy(traces);
   }
@@ -1545,12 +1562,12 @@ export class GalileoApiClient extends BaseClient {
   // Experiment methods - delegate to ExperimentService
   public async getExperiments() {
     this.ensureService(this.experimentService);
-    return this.experimentService!.getExperiments();
+    return this.experimentService.getExperiments();
   }
 
   public async getExperiment(id: string) {
     this.ensureService(this.experimentService);
-    return this.experimentService!.getExperiment(id);
+    return this.experimentService.getExperiment(id);
   }
 
   public async createExperiment(
@@ -1558,7 +1575,7 @@ export class GalileoApiClient extends BaseClient {
     dataset?: ExperimentDatasetRequest | null
   ) {
     this.ensureService(this.experimentService);
-    return this.experimentService!.createExperiment(name, dataset);
+    return this.experimentService.createExperiment(name, dataset);
   }
 
   /**
@@ -1574,7 +1591,7 @@ export class GalileoApiClient extends BaseClient {
     names?: string[];
   }): Promise<ScorerResponse[]> {
     this.ensureService(this.scorerService);
-    const response = await this.scorerService!.getScorers(options);
+    const response = await this.scorerService.getScorers(options);
     return response.scorers ?? [];
   }
 
@@ -1596,7 +1613,7 @@ export class GalileoApiClient extends BaseClient {
     limit?: number;
   }): Promise<ListScorersResponse> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorersPage(options);
+    return this.scorerService.getScorersPage(options);
   }
 
   /**
@@ -1610,7 +1627,7 @@ export class GalileoApiClient extends BaseClient {
     version: number
   ): Promise<BaseScorerVersionResponse> {
     this.ensureService(this.scorerService);
-    return this.scorerService!.getScorerVersion(scorerId, version);
+    return this.scorerService.getScorerVersion(scorerId, version);
   }
 
   /**
@@ -1647,7 +1664,7 @@ export class GalileoApiClient extends BaseClient {
     scorers: ScorerConfig[]
   ): Promise<void> {
     this.ensureService(this.experimentService);
-    return this.experimentService!.createRunScorerSettings(
+    return this.experimentService.createRunScorerSettings(
       experimentId,
       projectId,
       scorers
@@ -1663,7 +1680,7 @@ export class GalileoApiClient extends BaseClient {
     promptSettings?: PromptRunSettings
   ): Promise<CreateJobResponse> {
     this.ensureService(this.experimentService);
-    return this.experimentService!.createPromptRunJob(
+    return this.experimentService.createPromptRunJob(
       experimentId,
       projectId,
       promptTemplateVersionId,
@@ -1673,27 +1690,143 @@ export class GalileoApiClient extends BaseClient {
     );
   }
 
-  public async createJob(
+  /**
+   * Updates an experiment.
+   * @param id - The unique identifier of the experiment.
+   * @param updateRequest - The experiment update request.
+   * @returns A promise that resolves to the updated experiment.
+   */
+  public async updateExperiment(
+    id: string,
+    updateRequest: ExperimentUpdateRequest
+  ): Promise<ExperimentResponseType> {
+    this.ensureService(this.experimentService);
+    return this.experimentService.updateExperiment(id, updateRequest);
+  }
+
+  /**
+   * Deletes an experiment.
+   * @param id - The unique identifier of the experiment.
+   * @returns A promise that resolves when the experiment is deleted.
+   */
+  public async deleteExperiment(id: string): Promise<void> {
+    this.ensureService(this.experimentService);
+    return this.experimentService.deleteExperiment(id);
+  }
+
+  /**
+   * Gets experiment metrics.
+   * @param id - The unique identifier of the experiment.
+   * @param metricsRequest - The experiment metrics request.
+   * @returns A promise that resolves to the experiment metrics response.
+   */
+  public async getExperimentMetrics(
+    id: string,
     projectId: string,
-    name: string,
-    runId: string,
-    datasetId: string,
-    promptTemplateId: string,
-    taskType: TaskType,
-    promptSettings: PromptRunSettings,
-    scorers?: ScorerConfig[]
-  ): Promise<CreateJobResponse> {
-    this.ensureService(this.jobsService);
-    return this.jobsService.create(
+    metricsRequest: ExperimentMetricsRequest
+  ): Promise<ExperimentMetricsResponse> {
+    this.ensureService(this.experimentService);
+    return this.experimentService.getExperimentMetrics(
+      id,
       projectId,
-      name,
-      runId,
-      datasetId,
-      promptTemplateId,
-      taskType,
-      promptSettings,
-      scorers
+      metricsRequest
     );
+  }
+
+  /**
+   * Gets paginated experiments.
+   * @param options - The pagination options.
+   * @param options.startingToken - (Optional) The starting token for pagination (default: 0).
+   * @param options.limit - (Optional) The maximum number of records to return (default: 100).
+   * @param options.includeCounts - (Optional) Whether to include counts (default: false).
+   * @returns A promise that resolves to the paginated experiments response.
+   */
+  public async getExperimentsPaginated(options?: {
+    startingToken?: number;
+    limit?: number;
+    includeCounts?: boolean;
+  }): Promise<ListExperimentResponse> {
+    this.ensureService(this.experimentService);
+    return this.experimentService.getExperimentsPaginated(options);
+  }
+
+  /**
+   * Gets available columns for experiments.
+   * @returns A promise that resolves to the available columns response.
+   */
+  public async getExperimentsAvailableColumns(): Promise<ExperimentsAvailableColumnsResponse> {
+    this.ensureService(this.experimentService);
+    return this.experimentService.getAvailableColumns();
+  }
+
+  /**
+   * Gets all tags for a specific experiment.
+   * @param experimentId - The unique identifier of the experiment.
+   * @returns A promise that resolves to an array of experiment tags.
+   */
+  public async getExperimentTags(experimentId: string): Promise<RunTagDB[]> {
+    this.ensureService(this.experimentTagsService);
+    return this.experimentTagsService.getExperimentTags(experimentId);
+  }
+
+  /**
+   * Upserts (creates or updates) a tag for a specific experiment.
+   * @param experimentId - The unique identifier of the experiment.
+   * @param key - The tag key.
+   * @param value - The tag value.
+   * @param tagType - (Optional) The type of tag (default: 'generic').
+   * @returns A promise that resolves to the created or updated tag.
+   */
+  public async upsertExperimentTag(
+    experimentId: string,
+    key: string,
+    value: string,
+    tagType: string = 'generic'
+  ): Promise<RunTagDB> {
+    this.ensureService(this.experimentTagsService);
+    return this.experimentTagsService.upsertExperimentTag(
+      experimentId,
+      key,
+      value,
+      tagType
+    );
+  }
+
+  /**
+   * Deletes a tag for a specific experiment.
+   * @param experimentId - The unique identifier of the experiment.
+   * @param tagId - The unique identifier of the tag to delete.
+   * @returns A promise that resolves when the tag is deleted.
+   */
+  public async deleteExperimentTag(
+    experimentId: string,
+    tagId: string
+  ): Promise<void> {
+    this.ensureService(this.experimentTagsService);
+    return this.experimentTagsService.deleteExperimentTag(experimentId, tagId);
+  }
+
+  public async createJob(options: {
+    projectId: string;
+    name: string;
+    runId: string;
+    datasetId: string;
+    promptTemplateId: string;
+    taskType: TaskType;
+    promptSettings: PromptRunSettings;
+    scorers?: ScorerConfig[];
+  }): Promise<CreateJobResponse> {
+    this.ensureService(this.jobsService);
+    return this.jobsService.create({
+      projectId: options.projectId,
+      jobName: options.name,
+      runId: options.runId,
+      datasetId: options.datasetId,
+      promptTemplateVersionId: options.promptTemplateId,
+      taskType: options.taskType,
+      promptSettings: options.promptSettings,
+      scorers: options.scorers
+    });
   }
 
   /**
@@ -1974,24 +2107,24 @@ export class GalileoApiClient extends BaseClient {
     return this.traceService!.searchMetrics(options);
   }
 
-  public async getJob(jobId: string): Promise<Job> {
+  public async getJob(jobId: string): Promise<JobDbType> {
     this.ensureService(this.jobProgressService);
-    return this.jobProgressService!.getJob(jobId);
+    return this.jobProgressService.getJob(jobId);
   }
 
   // This method maintains backward compatibility but delegates to getRunScorerJobs
   public async getJobsForProjectRun(
     projectId: string,
     runId: string
-  ): Promise<Job[]> {
+  ): Promise<JobDbType[]> {
     this.ensureService(this.jobProgressService);
-    return this.jobProgressService!.getRunScorerJobs(projectId, runId);
+    return this.jobProgressService.getRunScorerJobs(projectId, runId);
   }
 
   public async getRunScorerJobs(
     projectId: string,
     runId: string
-  ): Promise<Job[]> {
+  ): Promise<JobDbType[]> {
     this.ensureService(this.jobProgressService);
     return this.jobProgressService.getRunScorerJobs(projectId, runId);
   }

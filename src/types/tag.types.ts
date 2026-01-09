@@ -1,4 +1,4 @@
-enum TagType {
+export enum TagType {
   GENERIC = 'generic',
   RAG = 'rag'
 }

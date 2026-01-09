@@ -137,7 +137,7 @@ export class Projects {
     await apiClient.init({ projectScoped: true, projectId, projectName: name });
 
     if (projectId) {
-      return await apiClient.getProject(projectId!);
+      return await apiClient.getProject(projectId);
     }
 
     return await apiClient.getProjectByName(name!, {

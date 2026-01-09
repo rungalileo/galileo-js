@@ -1,7 +1,12 @@
 import { JobProgressService } from '../../../src/api-client/services/job-progress-service';
 import { BaseClient, RequestMethod } from '../../../src/api-client/base-client';
 import { Routes } from '../../../src/types/routes.types';
-import { Job, JobStatus, JobName } from '../../../src/types';
+import {
+  JobDbType,
+  JobDBOpenAPIType,
+  JobStatus,
+  JobName
+} from '../../../src/types/job.types';
 
 const mockMakeRequest = jest
   .spyOn(BaseClient.prototype, 'makeRequest')
@@ -20,7 +25,7 @@ describe('JobProgressService', () => {
 
   describe('getJob', () => {
     const jobId = 'test-job-id';
-    const mockJob: Job = {
+    const mockJobOpenAPI: JobDBOpenAPIType = {
       id: jobId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -33,8 +38,21 @@ describe('JobProgressService', () => {
       retries: 0
     };
 
+    const mockJobExpected: JobDbType = {
+      id: jobId,
+      createdAt: mockJobOpenAPI.created_at,
+      updatedAt: mockJobOpenAPI.updated_at,
+      status: JobStatus.completed,
+      jobName: JobName.log_stream_scorer,
+      projectId: mockProjectId,
+      runId: 'test-run-id',
+      requestData: {},
+      progressPercent: 100,
+      retries: 0
+    };
+
     it('should call makeRequest with correct parameters and return its result', async () => {
-      mockMakeRequest.mockResolvedValue(mockJob);
+      mockMakeRequest.mockResolvedValue(mockJobOpenAPI);
 
       const result = await jobProgressService.getJob(jobId);
 
@@ -45,7 +63,7 @@ describe('JobProgressService', () => {
         undefined,
         { job_id: jobId }
       );
-      expect(result).toEqual(mockJob);
+      expect(result).toEqual(mockJobExpected);
     });
 
     it('should throw an error if job cannot be retrieved', async () => {
@@ -57,7 +75,7 @@ describe('JobProgressService', () => {
     });
 
     it('should throw an error if job response is missing id', async () => {
-      mockMakeRequest.mockResolvedValue({} as Job);
+      mockMakeRequest.mockResolvedValue({} as JobDBOpenAPIType);
 
       await expect(jobProgressService.getJob(jobId)).rejects.toThrow(
         `Failed to get job status for job ${jobId}`
@@ -75,7 +93,7 @@ describe('JobProgressService', () => {
 
   describe('getRunScorerJobs', () => {
     const runId = 'test-run-id';
-    const mockJobs: Job[] = [
+    const mockJobsOpenAPI: JobDBOpenAPIType[] = [
       {
         id: 'test-job-id-1',
         created_at: new Date().toISOString(),
@@ -115,7 +133,7 @@ describe('JobProgressService', () => {
     ];
 
     it('should call makeRequest with correct parameters and filter to scorer jobs', async () => {
-      mockMakeRequest.mockResolvedValue(mockJobs);
+      mockMakeRequest.mockResolvedValue(mockJobsOpenAPI);
 
       const result = await jobProgressService.getRunScorerJobs(
         mockProjectId,
@@ -132,7 +150,7 @@ describe('JobProgressService', () => {
       // Should only return log_stream_scorer jobs
       expect(result).toHaveLength(2);
       expect(
-        result.every((job) => job.job_name === JobName.log_stream_scorer)
+        result.every((job) => job.jobName === JobName.log_stream_scorer)
       ).toBe(true);
     });
 
@@ -147,7 +165,7 @@ describe('JobProgressService', () => {
     });
 
     it('should return empty array if no scorer jobs exist', async () => {
-      const nonScorerJobs: Job[] = [
+      const nonScorerJobs: JobDBOpenAPIType[] = [
         {
           id: 'test-job-id-1',
           created_at: new Date().toISOString(),
@@ -174,7 +192,7 @@ describe('JobProgressService', () => {
 
   describe('getLatestJobForProjectRun', () => {
     const runId = 'test-run-id';
-    const mockJob: Job = {
+    const mockJobOpenAPI: JobDBOpenAPIType = {
       id: 'latest-job-id',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -187,8 +205,21 @@ describe('JobProgressService', () => {
       retries: 0
     };
 
+    const mockJobExpected: JobDbType = {
+      id: 'latest-job-id',
+      createdAt: mockJobOpenAPI.created_at,
+      updatedAt: mockJobOpenAPI.updated_at,
+      status: JobStatus.completed,
+      jobName: JobName.playground_run,
+      projectId: mockProjectId,
+      runId: runId,
+      requestData: {},
+      progressPercent: 100,
+      retries: 0
+    };
+
     it('should call makeRequest with correct parameters and return latest job', async () => {
-      mockMakeRequest.mockResolvedValue(mockJob);
+      mockMakeRequest.mockResolvedValue(mockJobOpenAPI);
 
       const result = await jobProgressService.getLatestJobForProjectRun(
         mockProjectId,
@@ -202,7 +233,7 @@ describe('JobProgressService', () => {
         undefined,
         { project_id: mockProjectId, run_id: runId }
       );
-      expect(result).toEqual(mockJob);
+      expect(result).toEqual(mockJobExpected);
     });
 
     it('should return null if no latest job found', async () => {

@@ -22,6 +22,7 @@ import {
 import { toStringValue } from './serialization';
 import { LogRecordsQueryRequest } from '../types/shared.types';
 import { LocalMetricConfig } from '../types/metrics.types';
+import { populateLocalMetrics } from './metrics';
 
 class GalileoLoggerConfig {
   public projectName?: string;
@@ -924,10 +925,17 @@ class GalileoLogger {
         sessionId: this.sessionId
       });
 
+      // Compute local metrics if configured
+      if (this.localMetrics && this.localMetrics.length > 0) {
+        console.info('Computing metrics for local scorers...');
+        for (const trace of this.traces) {
+          populateLocalMetrics(trace, this.localMetrics);
+        }
+      }
+
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
-      //// @ts-expect-error - FIXME: Type this
       await this.client.ingestTracesLegacy(loggedTraces);
 
       console.info(`Successfully flushed ${loggedTraces.length} traces.`);
