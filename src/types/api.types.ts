@@ -813,6 +813,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/projects/{project_id}/log_streams/{log_stream_id}/metric_settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Metric Settings */
+    get: operations['get_metric_settings_projects__project_id__log_streams__log_stream_id__metric_settings_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Metric Settings */
+    patch: operations['update_metric_settings_projects__project_id__log_streams__log_stream_id__metric_settings_patch'];
+    trace?: never;
+  };
   '/projects/{project_id}/traces': {
     parameters: {
       query?: never;
@@ -1351,6 +1369,24 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/experiments/{experiment_id}/metric_settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Metric Settings */
+    get: operations['get_metric_settings_projects__project_id__experiments__experiment_id__metric_settings_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Metric Settings */
+    patch: operations['update_metric_settings_projects__project_id__experiments__experiment_id__metric_settings_patch'];
     trace?: never;
   };
   '/jobs': {
@@ -2151,6 +2187,47 @@ export interface paths {
     put?: never;
     /** Create Llm Scorer Version */
     post: operations['create_llm_scorer_version_scorers__scorer_id__version_llm_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/code/validate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Validate Code Scorer */
+    post: operations['validate_code_scorer_scorers_code_validate_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/code/validate/{task_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Validate Code Scorer Task Result
+     * @description Poll for a code-scorer validation task result (returns status/result).
+     *
+     *     The validation job creates an entry in `registered_scorer_task_results` (pending) and the runner
+     *     will PATCH the internal task-results endpoint when it finishes. This GET allows clients to poll
+     *     the current task result.
+     */
+    get: operations['get_validate_code_scorer_task_result_scorers_code_validate__task_id__get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -4355,6 +4432,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -4485,6 +4563,11 @@ export interface components {
        * Format: binary
        */
       file: string;
+      /**
+       * Validation Result
+       * @description Pre-validated result as JSON string to skip validation
+       */
+      validation_result?: string | null;
     };
     /** Body_create_dataset_datasets_post */
     Body_create_dataset_datasets_post: {
@@ -4563,20 +4646,17 @@ export interface components {
        */
       file: string;
     };
-    /**
-     * BooleanFilter
-     * @description Filters on a boolean field.
-     */
-    BooleanFilter: {
-      /** Name */
-      name: string | null;
+    /** Body_validate_code_scorer_scorers_code_validate_post */
+    Body_validate_code_scorer_scorers_code_validate_post: {
       /**
-       * Operator
-       * @enum {string}
+       * File
+       * Format: binary
        */
-      operator: 'eq' | 'ne';
-      /** Value */
-      value: boolean;
+      file: string;
+      /** Required Scorers */
+      required_scorers?: string | string[] | null;
+      /** Scoreable Node Types */
+      scoreable_node_types?: string | string[] | null;
     };
     /** BucketedMetric */
     BucketedMetric: {
@@ -4644,6 +4724,11 @@ export interface components {
       /** Message */
       message: string;
     };
+    /**
+     * ChainAggregationStrategy
+     * @enum {string}
+     */
+    ChainAggregationStrategy: 'sum' | 'average' | 'first' | 'last';
     /**
      * ChainPollTemplate
      * @description Template for a chainpoll metric prompt,
@@ -4807,26 +4892,6 @@ export interface components {
     /** CollaboratorUpdate */
     CollaboratorUpdate: {
       role: components['schemas']['CollaboratorRole'];
-    };
-    /**
-     * CollectionFilter
-     * @description Filters for string items in a collection/list.
-     */
-    CollectionFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @enum {string}
-       */
-      operator: 'eq' | 'contains' | 'not_in';
-      /** Value */
-      value: string | string[];
-      /**
-       * Case Sensitive
-       * @default true
-       */
-      case_sensitive?: boolean;
     };
     /**
      * ColumnCategory
@@ -5307,6 +5372,11 @@ export interface components {
        * @default false
        */
       log_metric_computing_records?: boolean;
+      /**
+       * Stream Metrics
+       * @default false
+       */
+      stream_metrics?: boolean;
     };
     /** CreateJobResponse */
     CreateJobResponse: {
@@ -5471,6 +5541,11 @@ export interface components {
        * @default false
        */
       log_metric_computing_records?: boolean;
+      /**
+       * Stream Metrics
+       * @default false
+       */
+      stream_metrics?: boolean;
       /** Message */
       message: string;
       /** Link */
@@ -5608,18 +5683,6 @@ export interface components {
      * @enum {string}
      */
     CustomAuthenticationType: 'oauth2';
-    /** CustomBooleanFilter */
-    CustomBooleanFilter: {
-      /** Name */
-      name: string | null;
-      /** Value */
-      value: boolean;
-    };
-    /** CustomFunctionFilter */
-    CustomFunctionFilter: {
-      /** Name */
-      name: string | null;
-    };
     /** CustomIntegration */
     CustomIntegration: {
       /** @default oauth2 */
@@ -5692,28 +5755,6 @@ export interface components {
       oauth2_token_url?: string | null;
       /** Token */
       token: string;
-    };
-    /** CustomNumberFilter */
-    CustomNumberFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @enum {string}
-       */
-      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
-      /** Value */
-      value: number | number[] | number[];
-    };
-    /** CustomUUIDFilter */
-    CustomUUIDFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Value
-       * Format: uuid4
-       */
-      value: string;
     };
     /** CustomizedAgenticSessionSuccessGPTScorer */
     CustomizedAgenticSessionSuccessGPTScorer: {
@@ -5809,6 +5850,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -5919,6 +5961,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6019,6 +6062,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6118,6 +6162,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6227,6 +6272,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6333,6 +6379,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6439,6 +6486,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6545,6 +6593,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6651,6 +6700,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6757,6 +6807,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6868,6 +6919,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -6974,6 +7026,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -7084,6 +7137,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -7190,6 +7244,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -7296,6 +7351,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
+      roll_up_strategy?: components['schemas']['RollUpStrategy'] | null;
       /** Prompt */
       prompt?: string | null;
       /** Lora Task Id */
@@ -7982,9 +8038,10 @@ export interface components {
       name: 'draft';
       /**
        * Operator
+       * @default eq
        * @enum {string}
        */
-      operator: 'eq' | 'ne';
+      operator?: 'eq' | 'ne';
       /** Value */
       value: boolean;
     };
@@ -8353,24 +8410,6 @@ export interface components {
        */
       sort_type?: 'column';
     };
-    /**
-     * DateFilter
-     * @description Filters on a datetime field.
-     */
-    DateFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @enum {string}
-       */
-      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
-      /**
-       * Value
-       * Format: date-time
-       */
-      value: string;
-    };
     /** DeletePromptResponse */
     DeletePromptResponse: {
       /** Message */
@@ -8476,21 +8515,6 @@ export interface components {
       end_index: number;
       /** Label */
       label: string;
-    };
-    /**
-     * EnumFilter
-     * @description Filters on a string field, with limited categories.
-     */
-    EnumFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @enum {string}
-       */
-      operator: 'eq' | 'ne' | 'one_of' | 'not_in';
-      /** Value */
-      value: string | string[];
     };
     /**
      * ExecutionStatus
@@ -8630,8 +8654,10 @@ export interface components {
       /** Created By */
       created_by?: string | null;
       created_by_user?: components['schemas']['UserInfo'] | null;
-      /** Num Samples */
-      num_samples?: number | null;
+      /** Num Spans */
+      num_spans?: number | null;
+      /** Num Traces */
+      num_traces?: number | null;
       task_type: components['schemas']['TaskType'];
       dataset?: components['schemas']['ExperimentDataset'] | null;
       /** Aggregate Metrics */
@@ -11083,19 +11109,7 @@ export interface components {
       | components['schemas']['NotNode'];
     /** FilterLeaf */
     FilterLeaf: {
-      /** Filter */
-      filter:
-        | components['schemas']['CollectionFilter']
-        | components['schemas']['StringFilter']
-        | components['schemas']['IDFilter']
-        | components['schemas']['CustomUUIDFilter']
-        | components['schemas']['DateFilter']
-        | components['schemas']['BooleanFilter']
-        | components['schemas']['CustomNumberFilter']
-        | components['schemas']['EnumFilter']
-        | components['schemas']['MapFilter']
-        | components['schemas']['CustomBooleanFilter']
-        | components['schemas']['CustomFunctionFilter'];
+      filter: components['schemas']['RawFilter'];
     };
     /** FilterParams */
     FilterParams: {
@@ -11633,22 +11647,6 @@ export interface components {
      * @enum {string}
      */
     HistogramStrategy: 'fixed' | 'trimmed' | 'quantile';
-    /**
-     * IDFilter
-     * @description Filters on a UUID field.
-     */
-    IDFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @default eq
-       * @enum {string}
-       */
-      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
-      /** Value */
-      value: string | string[];
-    };
     /** InputMap */
     InputMap: {
       /** Prompt */
@@ -12143,6 +12141,17 @@ export interface components {
       | 'vegas_gateway'
       | 'vertex_ai'
       | 'writer';
+    /** InvalidResult */
+    InvalidResult: {
+      /**
+       * Result Type
+       * @default invalid
+       * @constant
+       */
+      result_type?: 'invalid';
+      /** Error Message */
+      error_message: string;
+    };
     /** InvokeResponse */
     InvokeResponse: {
       /** @default skipped */
@@ -13650,6 +13659,11 @@ export interface components {
       project_id: string;
       /** Created By */
       created_by?: string | null;
+      created_by_user?: components['schemas']['UserInfo'] | null;
+      /** Num Spans */
+      num_spans?: number | null;
+      /** Num Traces */
+      num_traces?: number | null;
       /**
        * Has User Created Sessions
        * @default false
@@ -13897,23 +13911,6 @@ export interface components {
      * @enum {string}
      */
     LunaOutputTypeEnum: 'float' | 'string' | 'string_list';
-    /**
-     * MapFilter
-     * @description Filters for string items in a map / dictionary.
-     */
-    MapFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @enum {string}
-       */
-      operator: 'one_of' | 'not_in' | 'eq' | 'ne';
-      /** Key */
-      key: string;
-      /** Value */
-      value: string | string[];
-    };
     /** Messages */
     Messages: components['schemas']['galileo_core__schemas__shared__message__Message'][];
     /**
@@ -14103,6 +14100,29 @@ export interface components {
        */
       status_type: 'pending';
       scorer_type?: components['schemas']['ScorerType'] | null;
+    };
+    /** MetricSettingsRequest */
+    MetricSettingsRequest: {
+      /**
+       * Scorers
+       * @description List of Galileo scorers to enable.
+       */
+      scorers?: components['schemas']['ScorerConfig'][] | null;
+      /**
+       * Segment Filters
+       * @description List of segment filters to apply to the run.
+       */
+      segment_filters?: components['schemas']['SegmentFilter'][] | null;
+    };
+    /** MetricSettingsResponse */
+    MetricSettingsResponse: {
+      /** Scorers */
+      scorers: components['schemas']['ScorerConfig'][];
+      /**
+       * Segment Filters
+       * @description List of segment filters to apply to the run.
+       */
+      segment_filters?: components['schemas']['SegmentFilter'][] | null;
     };
     /** MetricSuccess */
     MetricSuccess: {
@@ -14452,6 +14472,21 @@ export interface components {
       type?: string;
       function: components['schemas']['OpenAIFunction'];
     };
+    /**
+     * Operator
+     * @enum {string}
+     */
+    Operator:
+      | 'eq'
+      | 'ne'
+      | 'contains'
+      | 'one_of'
+      | 'not_in'
+      | 'gt'
+      | 'gte'
+      | 'lt'
+      | 'lte'
+      | 'between';
     /** OrNode */
     OrNode: {
       /** Or */
@@ -15715,6 +15750,22 @@ export interface components {
       sort?: components['schemas']['DatasetContentSortClause'] | null;
     };
     /**
+     * RawFilter
+     * @description Raw filter input. At least one of 'name' or 'column_id' is required.
+     *     'value' is required. 'operator' and 'case_sensitive' are optional.
+     */
+    RawFilter: {
+      /** Name */
+      name?: string | null;
+      /** Column Id */
+      column_id?: string | null;
+      operator?: components['schemas']['Operator'] | null;
+      /** Value */
+      value: unknown;
+      /** Case Sensitive */
+      case_sensitive?: boolean | null;
+    };
+    /**
      * RecomputeLogRecordsMetricsRequest
      * @description Request to recompute metrics for a genai project run (log stream or experiment).
      *     This request is used to trigger recomputation of metrics based on the provided filters and scorer IDs.
@@ -15836,6 +15887,30 @@ export interface components {
      * @enum {string}
      */
     RegisteredScorerAction: 'update' | 'delete';
+    /** RegisteredScorerTaskResultResponse */
+    RegisteredScorerTaskResultResponse: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      status: components['schemas']['TaskResultStatus'];
+      /** Result */
+      result?:
+        | components['schemas']['ValidateRegisteredScorerResult']
+        | string
+        | null;
+    };
     /** RenderTemplateRequest */
     RenderTemplateRequest: {
       /** Template */
@@ -15992,6 +16067,12 @@ export interface components {
         | components['schemas']['ToolSpan']
       )[];
     };
+    /**
+     * RollUpStrategy
+     * @description Strategies for rolling metrics up the Session/Trace/Span hierarchy.
+     * @enum {string}
+     */
+    RollUpStrategy: 'avg' | 'sum' | 'first' | 'last' | 'none';
     /** RollbackRequest */
     RollbackRequest: {
       /** Rollback Version */
@@ -16277,12 +16358,6 @@ export interface components {
     /** RunScorerSettingsPatchRequest */
     RunScorerSettingsPatchRequest: {
       /**
-       * Run Id
-       * Format: uuid4
-       * @description ID of the run.
-       */
-      run_id: string;
-      /**
        * Scorers
        * @description List of Galileo scorers to enable.
        */
@@ -16292,15 +16367,15 @@ export interface components {
        * @description List of segment filters to apply to the run.
        */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
-    };
-    /** RunScorerSettingsResponse */
-    RunScorerSettingsResponse: {
       /**
        * Run Id
        * Format: uuid4
        * @description ID of the run.
        */
       run_id: string;
+    };
+    /** RunScorerSettingsResponse */
+    RunScorerSettingsResponse: {
       /** Scorers */
       scorers: components['schemas']['ScorerConfig'][];
       /**
@@ -16308,6 +16383,12 @@ export interface components {
        * @description List of segment filters to apply to the run.
        */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
+      /**
+       * Run Id
+       * Format: uuid4
+       * @description ID of the run.
+       */
+      run_id: string;
     };
     /** RunTagCreateRequest */
     RunTagCreateRequest: {
@@ -17233,26 +17314,6 @@ export interface components {
       /** Input Strings */
       input_strings: string[];
     };
-    /**
-     * StringFilter
-     * @description Filters on a string field.
-     */
-    StringFilter: {
-      /** Name */
-      name: string | null;
-      /**
-       * Operator
-       * @enum {string}
-       */
-      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
-      /** Value */
-      value: string | string[];
-      /**
-       * Case Sensitive
-       * @default true
-       */
-      case_sensitive?: boolean;
-    };
     /** SubscriptionConfig */
     SubscriptionConfig: {
       /**
@@ -17319,6 +17380,8 @@ export interface components {
        * @default 10
        */
       count?: number;
+      /** Project Id */
+      project_id?: string | null;
     };
     /**
      * SyntheticDatasetExtensionResponse
@@ -17444,6 +17507,11 @@ export interface components {
       memory_mb?: number;
     };
     /**
+     * TaskResultStatus
+     * @enum {string}
+     */
+    TaskResultStatus: 'pending' | 'completed' | 'failed';
+    /**
      * TaskType
      * @description Valid task types for modeling.
      *
@@ -17474,6 +17542,12 @@ export interface components {
     TemplateStubRequest: {
       /** Templates */
       templates: string[];
+    };
+    /** TestScore */
+    TestScore: {
+      node_type: components['schemas']['NodeType'];
+      /** Score */
+      score?: number | string | boolean | null;
     };
     /** TextRating */
     TextRating: {
@@ -18291,6 +18365,37 @@ export interface components {
      * @enum {string}
      */
     UserRole: 'admin' | 'manager' | 'user' | 'read_only';
+    /** ValidResult */
+    ValidResult: {
+      /**
+       * Result Type
+       * @default valid
+       * @constant
+       */
+      result_type?: 'valid';
+      /** Score Type */
+      score_type: string;
+      /** Scoreable Node Types */
+      scoreable_node_types: components['schemas']['NodeType'][];
+      /**
+       * Include Llm Credentials
+       * @default false
+       */
+      include_llm_credentials?: boolean;
+      chain_aggregation?:
+        | components['schemas']['ChainAggregationStrategy']
+        | null;
+      /** Test Scores */
+      test_scores: components['schemas']['TestScore'][];
+    };
+    /** ValidateCodeScorerResponse */
+    ValidateCodeScorerResponse: {
+      /**
+       * Task Id
+       * Format: uuid4
+       */
+      task_id: string;
+    };
     /**
      * ValidateLLMScorerLogRecordRequest
      * @description Request to validate a new LLM scorer based on a log record.
@@ -18366,6 +18471,13 @@ export interface components {
        * Format: uuid4
        */
       metrics_experiment_id: string;
+    };
+    /** ValidateRegisteredScorerResult */
+    ValidateRegisteredScorerResult: {
+      /** Result */
+      result:
+        | components['schemas']['ValidResult']
+        | components['schemas']['InvalidResult'];
     };
     /** ValidationError */
     ValidationError: {
@@ -20625,7 +20737,9 @@ export interface operations {
   };
   list_log_streams_projects__project_id__log_streams_get: {
     parameters: {
-      query?: never;
+      query?: {
+        include_counts?: boolean;
+      };
       header?: never;
       path: {
         project_id: string;
@@ -20692,6 +20806,7 @@ export interface operations {
   list_log_streams_paginated_projects__project_id__log_streams_paginated_get: {
     parameters: {
       query?: {
+        include_counts?: boolean;
         starting_token?: number;
         limit?: number;
       };
@@ -20809,6 +20924,74 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_metric_settings_projects__project_id__log_streams__log_stream_id__metric_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        log_stream_id: string;
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MetricSettingsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_metric_settings_projects__project_id__log_streams__log_stream_id__metric_settings_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        log_stream_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricSettingsRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MetricSettingsResponse'];
+        };
       };
       /** @description Validation Error */
       422: {
@@ -21696,7 +21879,9 @@ export interface operations {
   };
   list_experiments_projects__project_id__experiments_get: {
     parameters: {
-      query?: never;
+      query?: {
+        include_counts?: boolean;
+      };
       header?: never;
       path: {
         project_id: string;
@@ -21763,6 +21948,7 @@ export interface operations {
   list_experiments_paginated_projects__project_id__experiments_paginated_get: {
     parameters: {
       query?: {
+        include_counts?: boolean;
         starting_token?: number;
         limit?: number;
       };
@@ -21994,6 +22180,74 @@ export interface operations {
       };
     };
   };
+  get_metric_settings_projects__project_id__experiments__experiment_id__metric_settings_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        experiment_id: string;
+        project_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MetricSettingsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_metric_settings_projects__project_id__experiments__experiment_id__metric_settings_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        experiment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MetricSettingsRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MetricSettingsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_job_jobs_post: {
     parameters: {
       query?: never;
@@ -22129,8 +22383,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        project_id: string;
         run_id: string;
+        project_id: string;
       };
       cookie?: never;
     };
@@ -23362,6 +23616,70 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  validate_code_scorer_scorers_code_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_validate_code_scorer_scorers_code_validate_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ValidateCodeScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_validate_code_scorer_task_result_scorers_code_validate__task_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegisteredScorerTaskResultResponse'];
         };
       };
       /** @description Validation Error */
