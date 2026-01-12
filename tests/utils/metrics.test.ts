@@ -6,7 +6,6 @@ import {
 } from '../../src/utils/metrics';
 import { enableMetrics } from '../../src/utils/log-streams';
 import {
-  GalileoMetrics,
   LocalMetricConfig,
   Metric,
   LogRecordsMetricsQueryRequest,
@@ -447,8 +446,6 @@ describe('metrics utils', () => {
         metrics: [
           GalileoMetrics.correctness,
           GalileoMetrics.completeness,
-          GalileoMetrics.correctness,
-          GalileoMetrics.completeness,
           'toxicity',
           metric,
           localMetric
@@ -614,8 +611,6 @@ describe('metrics utils', () => {
         requiredMetrics: [
           GalileoMetrics.correctness,
           GalileoMetrics.contextAdherence
-          GalileoMetrics.correctness,
-          GalileoMetrics.contextAdherence
         ]
       });
 
@@ -634,7 +629,6 @@ describe('metrics utils', () => {
         codePath: validCodeFile,
         nodeLevel: StepType.llm,
         requiredMetrics: [GalileoMetrics.correctness, 'custom_metric']
-        requiredMetrics: [GalileoMetrics.correctness, 'custom_metric']
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -642,7 +636,6 @@ describe('metrics utils', () => {
         [StepType.llm],
         undefined,
         undefined,
-        [GalileoMetrics.correctness, 'custom_metric']
         [GalileoMetrics.correctness, 'custom_metric']
       );
     });
@@ -655,7 +648,6 @@ describe('metrics utils', () => {
         timeoutMs: 60000,
         pollIntervalMs: 2000,
         requiredMetrics: [GalileoMetrics.correctness]
-        requiredMetrics: [GalileoMetrics.correctness]
       });
 
       expect(mockValidateCodeScorerAndWait).toHaveBeenCalledWith(
@@ -663,7 +655,6 @@ describe('metrics utils', () => {
         [StepType.llm],
         60000,
         2000,
-        [GalileoMetrics.correctness]
         [GalileoMetrics.correctness]
       );
     });

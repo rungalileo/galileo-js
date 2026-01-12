@@ -1,7 +1,6 @@
 import { LogStreams, LogStream } from '../entities/log-streams';
 import {
   GalileoMetrics,
-  GalileoMetrics,
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
@@ -162,7 +161,6 @@ export async function getLogStream(options: {
 export const enableMetrics = async (options: {
   logStreamName?: string;
   projectName?: string;
-  metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[];
   metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[];
 }): Promise<LocalMetricConfig[]> => {
   const logStreams = new LogStreams();

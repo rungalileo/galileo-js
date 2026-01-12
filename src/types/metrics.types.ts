@@ -37,7 +37,6 @@ export type MetricValueType =
  */
 /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 export const GalileoMetrics = {
-export const GalileoMetrics = {
   // Primary entries (all unique values from OpenAPI)
   actionCompletionLuna: 'action_completion_luna',
   actionAdvancementLuna: 'action_advancement_luna',
@@ -93,9 +92,6 @@ export const GalileoMetrics = {
   outputSexismLuna: 'output_sexist_luna'
 } as const satisfies Record<string, ScorerNameOpenAPI>;
 /* eslint-enable @typescript-eslint/no-duplicate-enum-values */
-
-/** @deprecated Use GalileoMetrics instead */
-export const GalileoScorers = GalileoMetrics;
 
 /** @deprecated Use GalileoMetrics instead */
 export const GalileoScorers = GalileoMetrics;
@@ -202,10 +198,6 @@ export type LogRecordsMetricsResponse =
  * }
  * ```
  */
-export type GalileoMetrics = ScorerNameOpenAPI;
-
-/** @deprecated Use GalileoMetrics type instead */
-export type GalileoScorers = GalileoMetrics;
 export type GalileoMetrics = ScorerNameOpenAPI;
 
 /** @deprecated Use GalileoMetrics type instead */

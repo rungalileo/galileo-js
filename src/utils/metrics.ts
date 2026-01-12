@@ -275,7 +275,6 @@ export class Metrics {
     projectId: string,
     runId: string,
     metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
-    metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
   ): Promise<[ScorerConfig[], LocalMetricConfig[]]> {
     const localMetricConfigs: LocalMetricConfig[] = [];
     const scorerNameVersions: Array<[string, number | undefined]> = [];
@@ -288,7 +287,6 @@ export class Metrics {
       // When you use GalileoMetrics.correctness, it's actually the string value
       // So we check if it's a string that matches a const object value first
       if (typeof metric === 'string') {
-        const constValue = Object.values(GalileoMetrics).find(
         const constValue = Object.values(GalileoMetrics).find(
           (val) => val === metric
         );
@@ -305,7 +303,6 @@ export class Metrics {
         localMetricConfigs.push(metric);
       } else {
         throw new Error(
-          `Invalid metric format. Expected string, GalileoMetrics const object value, Metric object with 'name' property, or LocalMetricConfig with 'name' and 'scorerFn'. Received: ${JSON.stringify(metric)}`
           `Invalid metric format. Expected string, GalileoMetrics const object value, Metric object with 'name' property, or LocalMetricConfig with 'name' and 'scorerFn'. Received: ${JSON.stringify(metric)}`
         );
       }
@@ -605,7 +602,6 @@ export const getMetrics = async (
 export const createMetricConfigs = async (
   projectId: string,
   runId: string,
-  metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
   metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
 ): Promise<[ScorerConfig[], LocalMetricConfig[]]> => {
   const metricsInstance = new Metrics();
