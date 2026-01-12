@@ -1,9 +1,110 @@
 /* galileo 2.0 Traces */
 
-import type { components } from '../api.types';
-import { StepWithChildSpans, StepWithChildSpansOptions } from './span.types';
+import {
+  StepWithChildSpans,
+  type StepWithChildSpansOptions
+} from './span.types';
 import { StepType } from './step.types';
-import type { ObjectToCamel } from 'ts-case-convert';
+
+import type {
+  AgentSpan as AgentSpanOpenAPI,
+  WorkflowSpan as WorkflowSpanOpenAPI,
+  LlmSpan as LlmSpanOpenAPI,
+  RetrieverSpan as RetrieverSpanOpenAPI,
+  ToolSpan as ToolSpanOpenAPI,
+  ExtendedAgentSpanRecordWithChildren as ExtendedAgentSpanRecordWithChildrenOpenAPI,
+  ExtendedWorkflowSpanRecordWithChildren as ExtendedWorkflowSpanRecordWithChildrenOpenAPI,
+  ExtendedLlmSpanRecord as ExtendedLlmSpanRecordOpenAPI,
+  ExtendedToolSpanRecordWithChildren as ExtendedToolSpanRecordWithChildrenOpenAPI,
+  ExtendedRetrieverSpanRecordWithChildren as ExtendedRetrieverSpanRecordWithChildrenOpenAPI
+} from '../openapi.types';
+
+import type {
+  AgentSpan,
+  WorkflowSpan,
+  LlmSpan,
+  RetrieverSpan,
+  ToolSpan,
+  ExtendedAgentSpanRecordWithChildren,
+  ExtendedWorkflowSpanRecordWithChildren,
+  ExtendedLlmSpanRecord,
+  ExtendedToolSpanRecordWithChildren,
+  ExtendedRetrieverSpanRecordWithChildren
+} from '../new-api.types';
+
+export type {
+  Trace as TraceSchema,
+  LogTraceUpdateRequest,
+  LogTraceUpdateResponse,
+  LogSpanUpdateRequest,
+  LogSpanUpdateResponse,
+  LogSpansIngestRequest,
+  LogSpansIngestResponse,
+  ExtendedTraceRecordWithChildren,
+  LogRecordsDeleteRequest,
+  LogRecordsDeleteResponse,
+  LogRecordsQueryCountRequest,
+  LogRecordsQueryCountResponse,
+  LogRecordsAvailableColumnsRequest,
+  LogRecordsAvailableColumnsResponse,
+  RecomputeLogRecordsMetricsRequest,
+  ExtendedSessionRecordWithChildren,
+  AggregatedTraceViewRequest,
+  AggregatedTraceViewResponse,
+  LogTracesIngestRequest,
+  LogTracesIngestResponse
+} from '../new-api.types';
+
+export type ExtendedSpanRecord =
+  | ExtendedAgentSpanRecordWithChildren
+  | ExtendedWorkflowSpanRecordWithChildren
+  | ExtendedLlmSpanRecord
+  | ExtendedToolSpanRecordWithChildren
+  | ExtendedRetrieverSpanRecordWithChildren;
+
+export type SpanSchema =
+  | AgentSpan
+  | WorkflowSpan
+  | LlmSpan
+  | RetrieverSpan
+  | ToolSpan;
+
+export {
+  Trace as TraceSchemaOpenAPI,
+  RecomputeLogRecordsMetricsRequest as RecomputeLogRecordsMetricsRequestOpenAPI,
+  LogRecordsAvailableColumnsRequest as LogRecordsAvailableColumnsRequestOpenAPI,
+  LogRecordsAvailableColumnsResponse as LogRecordsAvailableColumnsResponseOpenAPI,
+  LogRecordsQueryCountRequest as LogRecordsQueryCountRequestOpenAPI,
+  LogRecordsQueryCountResponse as LogRecordsQueryCountResponseOpenAPI,
+  LogSpanUpdateRequest as LogSpanUpdateRequestOpenAPI,
+  LogSpanUpdateResponse as LogSpanUpdateResponseOpenAPI,
+  LogSpansIngestRequest as LogSpansIngestRequestOpenAPI,
+  LogSpansIngestResponse as LogSpansIngestResponseOpenAPI,
+  LogRecordsDeleteRequest as LogRecordsDeleteRequestOpenAPI,
+  LogRecordsDeleteResponse as LogRecordsDeleteResponseOpenAPI,
+  LogTraceUpdateRequest as LogTraceUpdateRequestOpenAPI,
+  LogTraceUpdateResponse as LogTraceUpdateResponseOpenAPI,
+  ExtendedTraceRecordWithChildren as ExtendedTraceRecordWithChildrenOpenAPI,
+  ExtendedSessionRecordWithChildren as ExtendedSessionRecordWithChildrenOpenAPI,
+  AggregatedTraceViewRequest as AggregatedTraceViewRequestOpenAPI,
+  AggregatedTraceViewResponse as AggregatedTraceViewResponseOpenAPI,
+  LogTracesIngestRequest as LogTracesIngestRequestOpenAPI,
+  LogTracesIngestResponse as LogTracesIngestResponseOpenAPI
+} from '../openapi.types';
+
+export type SpanSchemaOpenAPI =
+  | AgentSpanOpenAPI
+  | WorkflowSpanOpenAPI
+  | LlmSpanOpenAPI
+  | RetrieverSpanOpenAPI
+  | ToolSpanOpenAPI;
+
+export type ExtendedSpanRecordOpenAPI =
+  | ExtendedAgentSpanRecordWithChildrenOpenAPI
+  | ExtendedWorkflowSpanRecordWithChildrenOpenAPI
+  | ExtendedLlmSpanRecordOpenAPI
+  | ExtendedToolSpanRecordWithChildrenOpenAPI
+  | ExtendedRetrieverSpanRecordWithChildrenOpenAPI;
 
 export interface TraceOptions extends StepWithChildSpansOptions {
   input: string;
@@ -27,86 +128,3 @@ export class Trace extends StepWithChildSpans {
     this.redactedOutput = data.redactedOutput;
   }
 }
-
-// OpenAPI types from api.types.ts (source of truth)
-export type RecomputeLogRecordsMetricsRequestOpenAPI =
-  components['schemas']['RecomputeLogRecordsMetricsRequest'];
-export type LogRecordsAvailableColumnsRequestOpenAPI =
-  components['schemas']['LogRecordsAvailableColumnsRequest'];
-export type LogRecordsAvailableColumnsResponseOpenAPI =
-  components['schemas']['LogRecordsAvailableColumnsResponse'];
-export type LogRecordsQueryCountRequestOpenAPI =
-  components['schemas']['LogRecordsQueryCountRequest'];
-export type LogRecordsQueryCountResponseOpenAPI =
-  components['schemas']['LogRecordsQueryCountResponse'];
-export type LogSpanUpdateRequestOpenAPI =
-  components['schemas']['LogSpanUpdateRequest'];
-export type LogSpanUpdateResponseOpenAPI =
-  components['schemas']['LogSpanUpdateResponse'];
-export type LogSpansIngestRequestOpenAPI =
-  components['schemas']['LogSpansIngestRequest'];
-export type LogSpansIngestResponseOpenAPI =
-  components['schemas']['LogSpansIngestResponse'];
-export type LogRecordsDeleteRequestOpenAPI =
-  components['schemas']['LogRecordsDeleteRequest'];
-export type LogRecordsDeleteResponseOpenAPI =
-  components['schemas']['LogRecordsDeleteResponse'];
-export type LogTraceUpdateRequestOpenAPI =
-  components['schemas']['LogTraceUpdateRequest'];
-export type LogTraceUpdateResponseOpenAPI =
-  components['schemas']['LogTraceUpdateResponse'];
-export type ExtendedTraceRecordWithChildrenOpenAPI =
-  components['schemas']['ExtendedTraceRecordWithChildren'];
-export type ExtendedSpanRecordOpenAPI =
-  | components['schemas']['ExtendedAgentSpanRecordWithChildren']
-  | components['schemas']['ExtendedWorkflowSpanRecordWithChildren']
-  | components['schemas']['ExtendedLlmSpanRecord']
-  | components['schemas']['ExtendedToolSpanRecordWithChildren']
-  | components['schemas']['ExtendedRetrieverSpanRecordWithChildren'];
-export type ExtendedSessionRecordWithChildrenOpenAPI =
-  components['schemas']['ExtendedSessionRecordWithChildren'];
-export type AggregatedTraceViewRequestOpenAPI =
-  components['schemas']['AggregatedTraceViewRequest'];
-export type AggregatedTraceViewResponseOpenAPI =
-  components['schemas']['AggregatedTraceViewResponse'];
-export type LogTracesIngestRequestOpenAPI =
-  components['schemas']['LogTracesIngestRequest'];
-export type LogTracesIngestResponseOpenAPI =
-  components['schemas']['LogTracesIngestResponse'];
-
-// SDK-facing types (camelCase converted versions)
-export type LogTraceUpdateRequest = ObjectToCamel<LogTraceUpdateRequestOpenAPI>;
-export type LogTraceUpdateResponse =
-  ObjectToCamel<LogTraceUpdateResponseOpenAPI>;
-export type LogSpanUpdateRequest = ObjectToCamel<LogSpanUpdateRequestOpenAPI>;
-export type LogSpanUpdateResponse = ObjectToCamel<LogSpanUpdateResponseOpenAPI>;
-export type LogSpansIngestRequest = ObjectToCamel<LogSpansIngestRequestOpenAPI>;
-export type LogSpansIngestResponse =
-  ObjectToCamel<LogSpansIngestResponseOpenAPI>;
-export type ExtendedTraceRecordWithChildren =
-  ObjectToCamel<ExtendedTraceRecordWithChildrenOpenAPI>;
-export type LogRecordsDeleteRequest =
-  ObjectToCamel<LogRecordsDeleteRequestOpenAPI>;
-export type LogRecordsDeleteResponse =
-  ObjectToCamel<LogRecordsDeleteResponseOpenAPI>;
-export type LogRecordsQueryCountRequest =
-  ObjectToCamel<LogRecordsQueryCountRequestOpenAPI>;
-export type LogRecordsQueryCountResponse =
-  ObjectToCamel<LogRecordsQueryCountResponseOpenAPI>;
-export type LogRecordsAvailableColumnsRequest =
-  ObjectToCamel<LogRecordsAvailableColumnsRequestOpenAPI>;
-export type LogRecordsAvailableColumnsResponse =
-  ObjectToCamel<LogRecordsAvailableColumnsResponseOpenAPI>;
-export type RecomputeLogRecordsMetricsRequest =
-  ObjectToCamel<RecomputeLogRecordsMetricsRequestOpenAPI>;
-export type ExtendedSpanRecord = ObjectToCamel<ExtendedSpanRecordOpenAPI>;
-export type ExtendedSessionRecordWithChildren =
-  ObjectToCamel<ExtendedSessionRecordWithChildrenOpenAPI>;
-export type AggregatedTraceViewRequest =
-  ObjectToCamel<AggregatedTraceViewRequestOpenAPI>;
-export type AggregatedTraceViewResponse =
-  ObjectToCamel<AggregatedTraceViewResponseOpenAPI>;
-export type LogTracesIngestRequest =
-  ObjectToCamel<LogTracesIngestRequestOpenAPI>;
-export type LogTracesIngestResponse =
-  ObjectToCamel<LogTracesIngestResponseOpenAPI>;

@@ -1,7 +1,9 @@
+import { randomUUID } from 'crypto';
 import type { components } from '../api.types';
 import { Document } from '../document.types';
-import { isMessage, Message } from '../message.types';
-import { MetricValueType } from '../metrics.types';
+import { isMessage, type Message } from '../message.types';
+import type { MetricValueType } from '../metrics.types';
+import type { JsonArray } from './span.types';
 
 export type StepAllowedInputType =
   | string
@@ -40,7 +42,6 @@ export type RetrieverSpanAllowedOutputType =
 // Use API type as source of truth
 export type StepType = components['schemas']['StepType'];
 
-// Convert enum to const object with compile-time validation
 export const StepType = {
   session: 'session',
   trace: 'trace',
@@ -55,6 +56,7 @@ export interface MetricsOptions {
   durationNs?: number;
   [key: string]: MetricValueType | undefined;
 }
+export type SerializedMetrics = MetricsOptions;
 
 export class Metrics {
   durationNs?: number;
@@ -64,30 +66,29 @@ export class Metrics {
     | undefined
     | (() => Record<string, MetricValueType | undefined>);
 
-  constructor(options: MetricsOptions) {
-    for (const key in options) {
-      this[key] = options[key];
+  constructor(options: MetricsOptions | Metrics) {
+    const source =
+      options instanceof Metrics
+        ? Object.fromEntries(
+            Object.entries(options).filter(
+              ([, value]) => typeof value !== 'function'
+            )
+          )
+        : options;
+
+    for (const key in source) {
+      this[key] = source[key];
     }
   }
 
-  toJSON(): Record<string, MetricValueType | undefined> {
-    const result: Record<string, MetricValueType | undefined> = {};
-    for (const key in this) {
-      if (Object.prototype.hasOwnProperty.call(this, key)) {
-        const value = this[key];
-        // Ensure that we only serialize data properties, not methods.
-        if (typeof value !== 'function') {
-          switch (key) {
-            case 'durationNs':
-              result['duration_ns'] = value;
-              break;
-            default:
-              result[key] = value;
-          }
-        }
+  toJSON(): SerializedMetrics {
+    return Object.keys(this).reduce((result, key) => {
+      const value = this[key];
+      if (typeof value !== 'function') {
+        result[key] = value;
       }
-    }
-    return result;
+      return result;
+    }, {} as SerializedMetrics);
   }
 }
 
@@ -107,6 +108,21 @@ export interface BaseStepOptions {
   datasetInput?: string;
   datasetOutput?: string;
   datasetMetadata?: Record<string, string>;
+  id?: string;
+}
+
+export interface SerializedStep
+  extends Omit<
+    BaseStepOptions,
+    'metrics' | 'createdAt' | 'output' | 'redactedOutput'
+  > {
+  metrics?: SerializedMetrics;
+  type: StepType;
+  createdAt: string;
+  userMetadata: Record<string, string>;
+  datasetMetadata?: Record<string, string>;
+  output?: StepAllowedOutputType | JsonArray;
+  redactedOutput?: StepAllowedOutputType | JsonArray;
 }
 
 export class BaseStep {
@@ -126,6 +142,7 @@ export class BaseStep {
   datasetInput?: string;
   datasetOutput?: string;
   datasetMetadata?: Record<string, string> = {};
+  id: string;
 
   constructor(type: StepType, data: BaseStepOptions) {
     this.type = type;
@@ -144,6 +161,8 @@ export class BaseStep {
     this.datasetInput = data.datasetInput;
     this.datasetOutput = data.datasetOutput;
     this.datasetMetadata = data.datasetMetadata || {};
+    // Generate UUID if not provided (matching Python behavior)
+    this.id = data.id || randomUUID();
 
     // Validate serializable
     this.validateInputOutputSerializable(this.input);
@@ -158,15 +177,14 @@ export class BaseStep {
     try {
       JSON.stringify(val);
       return val;
-    } catch (e) {
+    } catch (_error) {
       throw new Error(
         `Input/output is not serializable. Please use a different format. Received: ${val}`
       );
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toJSON(): Record<string, any> {
+  toJSON(): SerializedStep {
     return {
       type: this.type,
       input: this.input,
@@ -174,27 +192,28 @@ export class BaseStep {
       output: this.output,
       redactedOutput: this.redactedOutput,
       name: this.name,
-      created_at: this.createdAt.toISOString(),
-      user_metadata: this.userMetadata,
+      createdAt: this.createdAt.toISOString(),
+      userMetadata: this.userMetadata,
       tags: this.tags,
-      status_code: this.statusCode,
+      statusCode: this.statusCode,
       metrics: this.metrics.toJSON(),
-      external_id: this.externalId,
-      step_number: this.stepNumber,
-      dataset_input: this.datasetInput,
-      dataset_output: this.datasetOutput,
-      dataset_metadata: this.datasetMetadata
+      externalId: this.externalId,
+      stepNumber: this.stepNumber,
+      datasetInput: this.datasetInput,
+      datasetOutput: this.datasetOutput,
+      datasetMetadata: this.datasetMetadata,
+      id: this.id
     };
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isDocument(obj: any): obj is Document {
+export function isDocument(obj: unknown): obj is Document {
   return obj instanceof Document;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isStepAllowedInputType(obj: any): obj is StepAllowedInputType {
+export function isStepAllowedInputType(
+  obj: unknown
+): obj is StepAllowedInputType {
   if (typeof obj === 'string') return true;
   if (Array.isArray(obj)) {
     return obj.every(
@@ -210,8 +229,7 @@ export function isStepAllowedInputType(obj: any): obj is StepAllowedInputType {
 }
 
 export function isStepAllowedOutputType(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  obj: any
+  obj: unknown
 ): obj is StepAllowedOutputType {
   if (typeof obj === 'string') return true;
   if (Array.isArray(obj)) {
@@ -229,15 +247,13 @@ export function isStepAllowedOutputType(
 }
 
 export function isLlmSpanAllowedInputType(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  obj: any
+  obj: unknown
 ): obj is LlmSpanAllowedInputType {
   return isStepAllowedInputType(obj);
 }
 
 export function isLlmSpanAllowedOutputType(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  obj: any
+  obj: unknown
 ): obj is LlmSpanAllowedOutputType {
   if (typeof obj === 'string') return true;
   if (isMessage(obj)) return true;
@@ -246,8 +262,7 @@ export function isLlmSpanAllowedOutputType(
 }
 
 export function isRetrieverSpanAllowedOutputType(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  obj: any
+  obj: unknown
 ): obj is RetrieverSpanAllowedOutputType {
   if (typeof obj === 'string') return true;
   if (isDocument(obj)) return true;
@@ -263,8 +278,7 @@ export function isRetrieverSpanAllowedOutputType(
   return false;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isRecordStringString(obj: any): obj is Record<string, string> {
+function isRecordStringString(obj: unknown): obj is Record<string, string> {
   if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
     return false;
   }
@@ -274,8 +288,9 @@ function isRecordStringString(obj: any): obj is Record<string, string> {
     return false;
   }
 
-  for (const key in obj) {
-    if (typeof key !== 'string' || typeof obj[key] !== 'string') {
+  const record = obj as Record<string, unknown>;
+  for (const key in record) {
+    if (typeof key !== 'string' || typeof record[key] !== 'string') {
       return false;
     }
   }

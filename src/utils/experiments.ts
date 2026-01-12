@@ -5,12 +5,78 @@ import type {
   RunExperimentParams,
   RunExperimentOutput
 } from '../types/experiment.types';
-import { Experiments } from '../entities/experiments';
+import {
+  PromptTemplate,
+  PromptTemplateVersion
+} from '../types/prompt-template.types';
+import { GalileoApiClient } from '../api-client';
+import { log } from '../wrappers';
+import { init, flush, experimentContext } from '../singleton';
+import { ScorerConfig } from '../types/scorer.types';
+import { DatasetDBType, DatasetRecord } from '../types/dataset.types';
+import {
+  deserializeInputFromString,
+  getDatasetRecordsFromArray,
+  getRecordsForDataset,
+  getDatasetMetadata
+} from '../utils/datasets';
+import {
+  GalileoMetrics,
+  LocalMetricConfig,
+  Metric
+} from '../types/metrics.types';
+import { createMetricConfigs } from './metrics';
+import { Project } from '../types';
 import { getProjectWithEnvFallbacks } from './projects';
-import type { GalileoScorers, Metric } from '../types/metrics.types';
 
-// Re-export types for backward compatibility
-export type { RunExperimentParams, RunExperimentOutput };
+type DatasetType = DatasetDBType | Record<string, unknown>[];
+type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
+
+type BaseRunExperimentParams = {
+  name: string;
+  metrics?: (GalileoMetrics | string | Metric | LocalMetricConfig)[];
+  projectName?: string;
+  projectId?: string;
+};
+
+type RunExperimentWithFunctionParams<T extends Record<string, unknown>> =
+  BaseRunExperimentParams & {
+    function: (
+      input: T,
+      metadata?: Record<string, unknown>
+    ) => Promise<unknown>;
+  };
+
+type RunExperimentWithPromptTemplateParams = BaseRunExperimentParams & {
+  promptTemplate: PromptTemplateType;
+  promptSettings?: PromptRunSettings;
+};
+
+type DatasetRunExperimentParams = BaseRunExperimentParams & {
+  dataset: DatasetType;
+};
+type DatasetIdRunExperimentParams = BaseRunExperimentParams & {
+  datasetId: string;
+};
+type DatasetNameRunExperimentParams = BaseRunExperimentParams & {
+  datasetName: string;
+};
+
+// Union of all possible parameter combinations
+export type RunExperimentParams<T extends Record<string, unknown>> =
+  | (RunExperimentWithFunctionParams<T> & DatasetRunExperimentParams)
+  | (RunExperimentWithFunctionParams<T> & DatasetIdRunExperimentParams)
+  | (RunExperimentWithFunctionParams<T> & DatasetNameRunExperimentParams)
+  | (RunExperimentWithPromptTemplateParams & DatasetRunExperimentParams)
+  | (RunExperimentWithPromptTemplateParams & DatasetIdRunExperimentParams)
+  | (RunExperimentWithPromptTemplateParams & DatasetNameRunExperimentParams);
+
+type RunExperimentOutput = {
+  results?: string[];
+  experiment: Experiment;
+  link: string;
+  message?: string;
+};
 
 /**
  * Gets all experiments.
@@ -38,16 +104,23 @@ export async function createExperiment(
   name: string,
   projectName: string,
   dataset?: ExperimentDatasetRequest | null,
-  metrics?: (GalileoScorers | Metric | string)[]
-): Promise<ExperimentResponseType> {
-  const experiment = new Experiments();
-  return await experiment.createExperiment({
-    name,
-    projectName,
-    dataset,
-    metrics
-  });
-}
+  metrics?: (GalileoMetrics | Metric | string)[]
+): Promise<Experiment> => {
+  if (!name) {
+    throw new Error('A valid `name` must be provided to create an experiment');
+  }
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectName });
+  const experiment = await apiClient.createExperiment(name, dataset);
+
+  // Configure metrics if provided
+  if (metrics && metrics.length > 0) {
+    const project = await apiClient.getProjectByName(projectName);
+    await createMetricConfigs(project.id, experiment.id, metrics);
+  }
+
+  return experiment;
+};
 
 /**
  * Gets an experiment by id or name.

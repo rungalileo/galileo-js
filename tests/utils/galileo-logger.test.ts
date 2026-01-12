@@ -9,14 +9,16 @@ import {
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
-import { AgentSpan } from '../../src/types';
+import { AgentSpan, TraceSchema } from '../../src/types';
 import { LogRecordsQueryFilter } from '../../src/types/search.types';
 import {
   LogRecordsQueryRequest,
   LogRecordsQueryResponse
 } from '../../src/types/shared.types';
+import type { GalileoLoggerConfigExtended } from '../../src/types/logging/logger.types';
 
 const mockProjectId = '9b9f20bd-2544-4e7d-ae6e-cdbad391b0b5';
+const mockLogStreamId = '7c5e4f8e-5b9b-5e8f-9d2g-4b9b4b9b4b9f';
 const mockSessionId = '6c4e3f7e-4a9a-4e7e-8c1f-3a9a3a9a3a9e';
 const mockPreviousSessionId = '11678e93-b5b9-4215-bd33-9fd4480c3c45';
 
@@ -25,7 +27,9 @@ type MockGalileoApiClient = {
   init: jest.MockedFunction<
     (config: {
       projectName?: string;
+      projectId?: string;
       logStreamName?: string;
+      logStreamId?: string;
       experimentId?: string;
       sessionId?: string;
     }) => Promise<void>
@@ -70,6 +74,7 @@ jest.mock('../../src/api-client', () => ({
     jest.fn().mockImplementation(() => ({
       init: jest.fn(),
       ingestTracesLegacy: jest.fn(),
+      ingestTraces: jest.fn(),
       createSessionLegacy: jest.fn().mockReturnValue({
         id: mockSessionId,
         name: 'test-session',
@@ -143,6 +148,260 @@ describe('GalileoLogger', () => {
         logStreamName: 'custom-log-stream'
       });
       expect(logger).toBeTruthy();
+    });
+  });
+
+  describe('Mode Configuration', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+
+    it('should default to batch mode when mode is not specified', () => {
+      logger = new GalileoLogger();
+      expect(logger['mode']).toBe('batch');
+    });
+
+    it('should set mode to batch when explicitly provided', () => {
+      logger = new GalileoLogger({ mode: 'batch' });
+      expect(logger['mode']).toBe('batch');
+    });
+
+    it('should set mode from experimental.mode when provided', () => {
+      logger = new GalileoLogger({ experimental: { mode: 'batch' } });
+      expect(logger['mode']).toBe('batch');
+    });
+
+    it('should prioritize config.mode over experimental.mode', () => {
+      logger = new GalileoLogger({
+        mode: 'batch',
+        experimental: { mode: 'streaming' }
+      });
+      expect(logger['mode']).toBe('batch');
+    });
+
+    it('should default to batch when both config.mode and experimental.mode are undefined', () => {
+      logger = new GalileoLogger({});
+      expect(logger['mode']).toBe('batch');
+    });
+  });
+
+  describe('Configuration Validation', () => {
+    it('should throw error when ingestionHook is used with mode="streaming"', () => {
+      const ingestionHook = jest.fn();
+      expect(() => {
+        new GalileoLogger({
+          mode: 'streaming',
+          ingestionHook
+        });
+      }).toThrow('ingestionHook can only be used in batch mode');
+    });
+
+    it('should not accept traceId in constructor (only via create() factory)', () => {
+      // traceId/spanId are not part of GalileoLoggerConfig, only GalileoLoggerConfigExtended
+      // They can only be used with the create() factory method, not the constructor
+      // TypeScript will prevent this, but if cast, the properties are simply ignored
+      const logger = new GalileoLogger({
+        mode: 'batch'
+      } as GalileoLoggerConfigExtended & { traceId?: string });
+      expect(logger).toBeTruthy();
+      // traceId is not set because it's not in the config type
+      expect(logger['traceId']).toBeUndefined();
+    });
+
+    it('should not accept spanId in constructor (only via create() factory)', () => {
+      // spanId is not part of GalileoLoggerConfig, only GalileoLoggerConfigExtended
+      // They can only be used with the create() factory method, not the constructor
+      const logger = new GalileoLogger({
+        mode: 'batch'
+      } as GalileoLoggerConfigExtended & { spanId?: string });
+      expect(logger).toBeTruthy();
+      // spanId is not set because it's not in the config type
+      expect(logger['spanId']).toBeUndefined();
+    });
+
+    it('should allow ingestionHook with mode="batch"', () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+      expect(logger).toBeTruthy();
+    });
+
+    it('should allow ingestionHook with mode undefined (defaults to batch)', () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        ingestionHook
+      });
+      expect(logger).toBeTruthy();
+    });
+
+    it('should not accept traceId in constructor even with streaming mode', () => {
+      // traceId/spanId must be used with create() factory method, not constructor
+      const logger = new GalileoLogger({
+        mode: 'streaming'
+      } as GalileoLoggerConfigExtended & { traceId?: string });
+      expect(logger).toBeTruthy();
+      expect(logger['traceId']).toBeUndefined();
+    });
+
+    it('should not accept spanId in constructor even with streaming mode', () => {
+      // traceId/spanId must be used with create() factory method, not constructor
+      const logger = new GalileoLogger({
+        mode: 'streaming'
+      } as GalileoLoggerConfigExtended & { spanId?: string });
+      expect(logger).toBeTruthy();
+      expect(logger['spanId']).toBeUndefined();
+    });
+  });
+
+  describe('Project ID and Log Stream ID', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger();
+    });
+
+    it('should create logger with projectId and logStreamId', () => {
+      logger = new GalileoLogger({
+        projectId: mockProjectId,
+        logStreamId: mockLogStreamId
+      });
+      expect(logger).toBeTruthy();
+      expect(logger['projectId']).toBe(mockProjectId);
+      expect(logger['logStreamId']).toBe(mockLogStreamId);
+    });
+
+    it('should pass projectId to client.init() during flush', async () => {
+      logger = new GalileoLogger({
+        projectId: mockProjectId,
+        logStreamId: mockLogStreamId
+      });
+      const mockInit = jest.spyOn(logger['client'], 'init');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockInit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: mockProjectId
+        })
+      );
+    });
+
+    it('should pass logStreamId to client.init() during flush', async () => {
+      logger = new GalileoLogger({
+        projectId: mockProjectId,
+        logStreamId: mockLogStreamId
+      });
+      const mockInit = jest.spyOn(logger['client'], 'init');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockInit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamId: mockLogStreamId
+        })
+      );
+    });
+
+    it('should include logStreamId in tracesIngestRequest during flush', async () => {
+      logger = new GalileoLogger({
+        projectId: mockProjectId,
+        logStreamId: mockLogStreamId
+      });
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockIngestTraces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamId: mockLogStreamId
+        })
+      );
+    });
+
+    it('should work with projectId/logStreamId instead of projectName/logStreamName', async () => {
+      logger = new GalileoLogger({
+        projectId: mockProjectId,
+        logStreamId: mockLogStreamId
+      });
+      const mockInit = jest.spyOn(logger['client'], 'init');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockInit).toHaveBeenCalled();
+      expect(logger['projectId']).toBe(mockProjectId);
+      expect(logger['logStreamId']).toBe(mockLogStreamId);
+    });
+
+    it('should pass both projectId and projectName to client.init() when both provided', async () => {
+      logger = new GalileoLogger({
+        projectName: 'test-project',
+        projectId: mockProjectId,
+        logStreamName: 'test-stream',
+        logStreamId: mockLogStreamId
+      });
+      const mockInit = jest.spyOn(logger['client'], 'init');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockInit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectName: 'test-project',
+          projectId: mockProjectId,
+          logStreamName: 'test-stream',
+          logStreamId: mockLogStreamId
+        })
+      );
+    });
+
+    it('should pass both logStreamId and logStreamName to client.init() when both provided', async () => {
+      logger = new GalileoLogger({
+        projectName: 'test-project',
+        projectId: mockProjectId,
+        logStreamName: 'test-stream',
+        logStreamId: mockLogStreamId
+      });
+      const mockInit = jest.spyOn(logger['client'], 'init');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockInit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamName: 'test-stream',
+          logStreamId: mockLogStreamId
+        })
+      );
+    });
+
+    it('should use client.logStreamId as fallback in tracesIngestRequest', async () => {
+      logger = new GalileoLogger({
+        projectName: 'test-project',
+        logStreamName: 'test-stream'
+      });
+      // Set client.logStreamId manually to simulate it being set during init
+      logger['client'].logStreamId = mockLogStreamId;
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockIngestTraces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamId: mockLogStreamId
+        })
+      );
     });
   });
 
@@ -550,10 +809,7 @@ describe('GalileoLogger', () => {
 
       // Mock the API client methods
       const mockInit = jest.spyOn(logger['client'], 'init');
-      const mockIngestTraces = jest.spyOn(
-        logger['client'],
-        'ingestTracesLegacy'
-      );
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
 
       // Flush traces
       const flushedTraces = await logger.flush();
@@ -564,7 +820,13 @@ describe('GalileoLogger', () => {
         logStreamName: undefined,
         experimentId: undefined
       });
-      expect(mockIngestTraces).toHaveBeenCalledWith([trace]);
+      expect(mockIngestTraces).toHaveBeenCalledWith({
+        experimentId: null,
+        isComplete: true,
+        logStreamId: null,
+        sessionId: null,
+        traces: [trace].map((trace) => trace.toJSON() as TraceSchema)
+      });
       expect(flushedTraces.length).toBe(1);
       expect(logger['traces'].length).toBe(0);
     });
@@ -572,6 +834,264 @@ describe('GalileoLogger', () => {
     it('should handle empty traces during flush', async () => {
       const flushedTraces = await logger.flush();
       expect(flushedTraces.length).toBe(0);
+    });
+  });
+
+  describe('Ingestion Hook', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger({ mode: 'batch' });
+    });
+
+    it('should call ingestionHook during flush in batch mode', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalled();
+    });
+
+    it('should pass correct tracesIngestRequest to ingestionHook', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          traces: expect.arrayContaining([
+            expect.objectContaining({
+              input: 'test input',
+              output: 'test output'
+            })
+          ]),
+          sessionId: null,
+          experimentId: null,
+          logStreamId: null,
+          isComplete: true
+        })
+      );
+    });
+
+    it('should handle async ingestionHook (returns Promise)', async () => {
+      const ingestionHook = jest.fn().mockResolvedValue(undefined);
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalled();
+      await expect(
+        ingestionHook.mock.results[0].value
+      ).resolves.toBeUndefined();
+    });
+
+    it('should handle sync ingestionHook (returns void)', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalled();
+      expect(ingestionHook.mock.results[0].value).toBeUndefined();
+    });
+
+    it('should not call client.ingestTraces when ingestionHook is provided', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalled();
+      expect(mockIngestTraces).not.toHaveBeenCalled();
+    });
+
+    it('should call client.ingestTraces when ingestionHook is not provided', async () => {
+      logger = new GalileoLogger({ mode: 'batch' });
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(mockIngestTraces).toHaveBeenCalled();
+    });
+
+    it('should handle ingestionHook errors gracefully', async () => {
+      const ingestionHook = jest
+        .fn()
+        .mockRejectedValue(new Error('Hook error'));
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+
+      // Should not throw, but should handle error
+      const flushedTraces = await logger.flush();
+      expect(flushedTraces).toEqual([]);
+      expect(ingestionHook).toHaveBeenCalled();
+    });
+
+    it('should include all trace data in ingestionHook request', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook
+      });
+
+      logger.startTrace({
+        input: 'test input',
+        name: 'test trace',
+        metadata: { key: 'value' },
+        tags: ['tag1', 'tag2']
+      });
+      logger.addLlmSpan({
+        input: 'llm input',
+        output: 'llm output',
+        model: 'gpt-4'
+      });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          traces: expect.arrayContaining([
+            expect.objectContaining({
+              input: 'test input',
+              output: 'test output',
+              name: 'test trace'
+            })
+          ])
+        })
+      );
+    });
+
+    it('should include sessionId in ingestionHook request when set', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook,
+        sessionId: mockSessionId
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: mockSessionId
+        })
+      );
+    });
+
+    it('should include experimentId in ingestionHook request when set', async () => {
+      const mockExperimentId = 'experiment-123';
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook,
+        experimentId: mockExperimentId
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          experimentId: mockExperimentId
+        })
+      );
+    });
+
+    it('should include logStreamId in ingestionHook request when set', async () => {
+      const ingestionHook = jest.fn();
+      logger = new GalileoLogger({
+        mode: 'batch',
+        ingestionHook,
+        logStreamId: mockLogStreamId
+      });
+
+      logger.startTrace({ input: 'test input' });
+      logger.conclude({ output: 'test output' });
+      await logger.flush();
+
+      expect(ingestionHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamId: mockLogStreamId
+        })
+      );
+    });
+  });
+
+  describe('Terminate in Batch Mode', () => {
+    beforeEach(() => {
+      logger = new GalileoLogger({ mode: 'batch' });
+    });
+
+    it('should call flush when terminate is called in batch mode', async () => {
+      const mockFlush = jest
+        .spyOn(GalileoLogger.prototype, 'flush')
+        .mockResolvedValue([]);
+      logger = new GalileoLogger({ mode: 'batch' });
+
+      await logger.terminate();
+
+      expect(mockFlush).toHaveBeenCalled();
+      mockFlush.mockRestore();
+    });
+
+    it('should await flush completion in batch mode', async () => {
+      let flushResolved = false;
+      const mockFlush = jest
+        .spyOn(GalileoLogger.prototype, 'flush')
+        .mockImplementation(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          flushResolved = true;
+          return [];
+        });
+      logger = new GalileoLogger({ mode: 'batch' });
+
+      const terminatePromise = logger.terminate();
+      expect(flushResolved).toBe(false);
+      await terminatePromise;
+      expect(flushResolved).toBe(true);
+
+      mockFlush.mockRestore();
+    });
+
+    it('should not wait for tasks in batch mode (no taskHandler)', () => {
+      logger = new GalileoLogger({ mode: 'batch' });
+      expect(logger['taskHandler']).toBeUndefined();
     });
   });
 
@@ -972,11 +1492,12 @@ describe('GalileoLogger', () => {
       logger.conclude({ output: 'trace output', statusCode: 200 });
 
       const serializedSpan = llmSpan.toJSON();
-      expect(serializedSpan['metrics']['num_input_tokens']).toBe(1);
-      expect(serializedSpan['metrics']['num_output_tokens']).toBe(1);
-      expect(serializedSpan['metrics']['num_total_tokens']).toBe(2);
-      expect(serializedSpan['metrics']['time_to_first_token_ns']).toBe(1000);
-      expect(serializedSpan['metrics']['duration_ns']).toBe(1000);
+      expect(serializedSpan['metrics']).toBeDefined();
+      expect(serializedSpan['metrics']!['numInputTokens']).toBe(1);
+      expect(serializedSpan['metrics']!['numOutputTokens']).toBe(1);
+      expect(serializedSpan['metrics']!['numTotalTokens']).toBe(2);
+      expect(serializedSpan['metrics']!['timeToFirstTokenNs']).toBe(1000);
+      expect(serializedSpan['metrics']!['durationNs']).toBe(1000);
     });
 
     it('should serialize duration values correctly', () => {
@@ -1034,19 +1555,19 @@ describe('GalileoLogger', () => {
       logger.conclude({ output: 'trace output', statusCode: 200 });
 
       const serializedWorkflowSpan = workflowSpan.toJSON();
-      expect(serializedWorkflowSpan['metrics']['duration_ns']).toBe(1000);
+      expect(serializedWorkflowSpan['metrics']!['durationNs']).toBe(1000);
 
       const serializedAgentSpan = agentSpan.toJSON();
-      expect(serializedAgentSpan['metrics']['duration_ns']).toBe(2000);
+      expect(serializedAgentSpan['metrics']!['durationNs']).toBe(2000);
 
       const serializedLlmSpan = llmSpan.toJSON();
-      expect(serializedLlmSpan['metrics']['duration_ns']).toBe(3000);
+      expect(serializedLlmSpan['metrics']!['durationNs']).toBe(3000);
 
       const serializedRetrieverSpan = retrieverSpan.toJSON();
-      expect(serializedRetrieverSpan['metrics']['duration_ns']).toBe(4000);
+      expect(serializedRetrieverSpan['metrics']!['durationNs']).toBe(4000);
 
       const serializedToolSpan = toolSpan.toJSON();
-      expect(serializedToolSpan['metrics']['duration_ns']).toBe(5000);
+      expect(serializedToolSpan['metrics']!['durationNs']).toBe(5000);
     });
   });
 
@@ -1087,10 +1608,7 @@ describe('GalileoLogger', () => {
 
     it('should include the session ID when flushing traces', async () => {
       const mockInit = jest.spyOn(logger['client'], 'init');
-      const mockIngestTraces = jest.spyOn(
-        logger['client'],
-        'ingestTracesLegacy'
-      );
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
 
       expect(logger.currentSessionId()).toBeUndefined();
       await logger.startSession({
@@ -1110,15 +1628,20 @@ describe('GalileoLogger', () => {
         experimentId: undefined,
         sessionId: mockSessionId
       });
-      expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
+      expect(mockIngestTraces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          traces: expect.any(Array),
+          sessionId: mockSessionId,
+          experimentId: null,
+          logStreamId: null,
+          isComplete: true
+        })
+      );
     });
 
     it('should allow setting the session ID manually', async () => {
       const mockInit = jest.spyOn(logger['client'], 'init');
-      const mockIngestTraces = jest.spyOn(
-        logger['client'],
-        'ingestTracesLegacy'
-      );
+      const mockIngestTraces = jest.spyOn(logger['client'], 'ingestTraces');
       expect(logger.currentSessionId()).toBeUndefined();
 
       // Instead of starting a session, we set the session ID directly
@@ -1136,7 +1659,15 @@ describe('GalileoLogger', () => {
         experimentId: undefined,
         sessionId: sessionId
       });
-      expect(mockIngestTraces).toHaveBeenCalledWith(expect.any(Array));
+      expect(mockIngestTraces).toHaveBeenCalledWith(
+        expect.objectContaining({
+          traces: expect.any(Array),
+          sessionId: sessionId,
+          experimentId: null,
+          logStreamId: null,
+          isComplete: true
+        })
+      );
     });
   });
 

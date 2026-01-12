@@ -41,7 +41,7 @@ const mockGetDataset = jest.fn();
 const mockGetDatasets = jest.fn();
 const mockGetDatasetByName = jest.fn();
 const mockGetDatasetContent = jest.fn();
-const mockIngestTracesLegacy = jest.fn();
+const mockIngestTraces = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetGlobalProjectByName = jest.fn();
 const mockListDatasetProjects = jest.fn();
@@ -69,7 +69,7 @@ jest.mock('../../src/api-client', () => {
           getDatasets: mockGetDatasets,
           getDatasetByName: mockGetDatasetByName,
           getDatasetContent: mockGetDatasetContent,
-          ingestTracesLegacy: mockIngestTracesLegacy,
+          ingestTraces: mockIngestTraces,
           getGlobalProjectByName: mockGetGlobalProjectByName,
           listDatasetProjects: mockListDatasetProjects
         };
@@ -247,7 +247,7 @@ describe('experiments utility', () => {
     mockGetDatasets.mockResolvedValue([mockDataset]);
     mockGetDatasetByName.mockResolvedValue(mockDataset);
     mockGetDatasetContent.mockResolvedValue([mockDatasetRow]);
-    mockIngestTracesLegacy.mockResolvedValue(undefined);
+    mockIngestTraces.mockResolvedValue(undefined);
     mockGetGlobalProjectByName.mockResolvedValue(mockProject);
     mockListDatasetProjects.mockResolvedValue({
       projects: [{ id: projectId }]
@@ -543,8 +543,8 @@ describe('experiments utility', () => {
         'has completed and results are available at'
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockIngestTracesLegacy).toHaveBeenCalled();
-      verifyLocalExperimentTraces(mockIngestTracesLegacy.mock.calls[0][0]);
+      expect(mockIngestTraces).toHaveBeenCalled();
+      verifyLocalExperimentTraces(mockIngestTraces.mock.calls[0][0].traces);
     });
 
     it('should run an experiment with a dataset name and a function', async () => {
@@ -560,8 +560,8 @@ describe('experiments utility', () => {
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
       expect(mockGetDatasetByName).toHaveBeenCalled();
-      expect(mockIngestTracesLegacy).toHaveBeenCalled();
-      verifyLocalExperimentTraces(mockIngestTracesLegacy.mock.calls[0][0]);
+      expect(mockIngestTraces).toHaveBeenCalled();
+      verifyLocalExperimentTraces(mockIngestTraces.mock.calls[0][0].traces);
     });
 
     it('should run an experiment with a dataset object and a function', async () => {
@@ -576,8 +576,8 @@ describe('experiments utility', () => {
         'has completed and results are available at'
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockIngestTracesLegacy).toHaveBeenCalled();
-      verifyLocalExperimentTraces(mockIngestTracesLegacy.mock.calls[0][0]);
+      expect(mockIngestTraces).toHaveBeenCalled();
+      verifyLocalExperimentTraces(mockIngestTraces.mock.calls[0][0].traces);
     });
 
     it('should handle string metric names', async () => {

@@ -1,31 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { serializeToStr } from '../entities/serialization';
+
 /**
- * Converts a value to a string
+ * Converts a value to a string using advanced serialization.
+ * @param value - The value to convert to a string.
+ * @returns A string representation of the value.
  */
 export const toStringValue = (value: unknown): string => {
-  if (value === null) {
-    return 'null';
-  }
-
-  if (value === undefined) {
-    return 'undefined';
-  }
-
-  if (typeof value === 'object') {
-    try {
-      // For complex objects, you might want to limit the depth/size of the output
-      return JSON.stringify(value, null, 0);
-    } catch (e) {
-      return '[Complex Object]';
-    }
-  }
-
-  // Handle other special cases like functions
-  if (typeof value === 'function') {
-    return '[Function]';
-  }
-
-  return String(value);
+  // Use EventSerializer for advanced serialization
+  return serializeToStr(value);
 };
 
 /**
