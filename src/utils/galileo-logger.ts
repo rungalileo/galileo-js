@@ -1238,14 +1238,6 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      // Compute local metrics if configured
-      if (this.localMetrics && this.localMetrics.length > 0) {
-        console.info('Computing metrics for local scorers...');
-        for (const trace of this.traces) {
-          populateLocalMetrics(trace, this.localMetrics);
-        }
-      }
-
       console.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
