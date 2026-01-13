@@ -62,7 +62,7 @@ function isRetryableError(error: unknown): boolean {
 /**
  * Wraps an async function to handle Galileo HTTP exceptions for retry.
  * Re-throws retryable exceptions (404, 408, 429, >= 500) so they can be handled by retry logic.
- * Returns null for non-retryable exceptions.
+ * Re-throws non-retryable exceptions (e.g., 400, 422) so tasks fail properly instead of silently succeeding.
  * @param fn - The async function to wrap.
  * @returns A wrapped function that handles HTTP exceptions.
  */
@@ -73,29 +73,28 @@ export function handleGalileoHttpExceptionsForRetry<
     try {
       return await fn(...args);
     } catch (error) {
-      if (isRetryableError(error)) {
-        const statusCode = getStatusCodeFromError(error);
-        if (statusCode === 404) {
-          console.info('Trace not found, retrying...');
-        } else if (statusCode === 408) {
-          console.info('Request timed out, retrying...');
-        } else if (statusCode === 429) {
-          console.info('Rate limited, retrying...');
-        } else if (statusCode !== undefined && statusCode >= 500) {
-          console.info('Server error, retrying...');
-        }
-        // Re-throw retryable exceptions
-        throw error;
+      const statusCode = getStatusCodeFromError(error);
+      if (statusCode === 404) {
+        console.info('Trace not found, retrying...');
+      } else if (statusCode === 408) {
+        console.info('Request timed out, retrying...');
+      } else if (statusCode === 429) {
+        console.info('Rate limited, retrying...');
+      } else if (statusCode !== undefined && statusCode >= 500) {
+        console.info('Server error, retrying...');
+      } else {
+        console.error(`Unrecoverable failure or unrecognized error: ${error}`);
       }
-      // Non-retryable exception - log and return null
-      console.error(`Unrecoverable failure or unrecognized error: ${error}`);
-      return null as ReturnType<T>;
+
+      throw error;
     }
   }) as T;
 }
 
 /**
  * Wraps an async function with exponential backoff retry logic.
+ * Only retries errors that are determined to be retryable (404, 408, 429, >= 500).
+ * Non-retryable errors (e.g., 400, 422) fail immediately without retries.
  * @param fn - The async function to wrap with retry logic.
  * @param taskId - Optional task ID for logging purposes.
  * @param maxRetries - Maximum number of retries. Defaults to STREAMING_MAX_RETRIES.
@@ -113,14 +112,21 @@ export async function withRetry<T>(
     async () => {
       attemptNumber++;
       if (taskId) {
-        console.info(`Retry #${attemptNumber - 1} for task ${taskId}`);
+        console.info(`Retry #${attemptNumber} for task ${taskId}`);
       }
       return await fn();
     },
     {
       retries: maxRetries,
       onFailedAttempt: (error: Error) => {
-        // Call onRetry callback if provided
+        // Check if error is non-retryable - abort retries immediately
+        if (!isRetryableError(error)) {
+          // Throw AbortError to stop retries for non-retryable errors
+          // Pass the original error to preserve it in error.originalError
+          throw new pRetry.AbortError(error);
+        }
+
+        // Call onRetry callback if provided (only for retryable errors)
         if (onRetry && attemptNumber <= maxRetries) {
           onRetry(error);
         } else if (taskId) {
