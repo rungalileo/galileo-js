@@ -32,7 +32,7 @@ export class TaskHandler {
    * Handle the completion of a task, triggering any dependent child tasks.
    * @param taskId - The ID of the completed task.
    */
-  private _handleTaskCompletion(taskId: string): void {
+  private handleTaskCompletion(taskId: string): void {
     // Find all child tasks that depend on this task
     for (const [, task] of this._tasks.entries()) {
       if (task.parentTaskId === taskId && task.callback) {
@@ -44,6 +44,53 @@ export class TaskHandler {
   }
 
   /**
+   * Handle parent task failure by rejecting dependent child tasks.
+   * @param parentTaskId - The ID of the failed parent task.
+   */
+  private handleTaskFailure(parentTaskId: string, parentError: Error): void {
+    const parentTask = this._tasks.get(parentTaskId);
+    if (!parentTask) return;
+
+    // Find all child tasks that depend on this failed parent
+    const childTasks: Array<{ taskId: string; task: Task }> = [];
+    for (const [taskId, task] of this._tasks.entries()) {
+      if (task.parentTaskId === parentTaskId) {
+        childTasks.push({ taskId, task });
+      }
+    }
+
+    if (childTasks.length === 0) return;
+
+    // Create error message for child tasks
+    const errorMessage = `Parent task ${parentTaskId} failed: ${parentError.message}`;
+
+    // Reject all child task promises and update their status
+    for (const { taskId: childTaskId, task } of childTasks) {
+      // Update child task status
+      task.status = 'failed';
+
+      // Reject the promise if resolver exists
+      if (task.resolver) {
+        // Create a rejected promise for the child
+        const rejectedPromise = Promise.reject(
+          new Error(`${errorMessage}. Child task ${childTaskId} skipped.`)
+        );
+        task.resolver(rejectedPromise);
+      }
+
+      // Log that child task is being skipped
+      console.warn(
+        `Skipping child task ${childTaskId} because parent task ${parentTaskId} failed.`
+      );
+    }
+
+    // Log summary
+    console.error(
+      `Parent task ${parentTaskId} failed. ${childTasks.length} dependent task(s) skipped.`
+    );
+  }
+
+  /**
    * Add or update a task in the tracking map.
    * @param taskId - The ID of the task.
    * @param promise - The promise representing the async task.
@@ -52,7 +99,7 @@ export class TaskHandler {
    * @param callback - The callback to run when the task is completed.
    * @param resolver - The resolver function for dependent tasks (to resolve the returned Promise).
    */
-  private _addOrUpdateTask(
+  private addOrUpdateTask(
     taskId: string,
     promise: Promise<unknown> | null = null,
     startTime: number | null = null,
@@ -88,14 +135,17 @@ export class TaskHandler {
           if (task) {
             task.status = 'completed';
           }
-          this._handleTaskCompletion(taskId);
+          this.handleTaskCompletion(taskId);
         })
-        .catch(() => {
+        .catch((error) => {
           const task = this._tasks.get(taskId);
           if (task) {
             task.status = 'failed';
           }
-          this._handleTaskCompletion(taskId);
+
+          const parentError =
+            error instanceof Error ? error : new Error(String(error));
+          this.handleTaskFailure(taskId, parentError);
         });
     }
   }
@@ -112,7 +162,7 @@ export class TaskHandler {
    * e.g., "trace-update-123" → "trace-ingest-123"
    *       "span-update-456" → "span-ingest-456"
    */
-  private _getCorrespondingIngestTaskId(taskId: string): string | null {
+  private getCorrespondingIngestTaskId(taskId: string): string | null {
     // Match pattern: {type}-update-{id}
     const updateMatch = taskId.match(/^(trace|span)-update-(.+)$/);
     if (updateMatch) {
@@ -132,7 +182,7 @@ export class TaskHandler {
       // Get existing resolver if task was queued as dependent
       const existingTask = this._tasks.get(taskId);
       const resolver = existingTask?.resolver || null;
-      this._addOrUpdateTask(taskId, promise, Date.now(), null, null, resolver);
+      this.addOrUpdateTask(taskId, promise, Date.now(), null, null, resolver);
 
       // If resolver exists, call it to resolve the Promise returned to caller
       if (resolver) {
@@ -144,7 +194,7 @@ export class TaskHandler {
 
     if (dependentOnPrev) {
       // For update tasks, find the corresponding ingest task
-      const dependentTaskId = this._getCorrespondingIngestTaskId(taskId);
+      const dependentTaskId = this.getCorrespondingIngestTaskId(taskId);
 
       if (!dependentTaskId) {
         // Not an update task pattern - this shouldn't happen with dependentOnPrev=true
@@ -173,7 +223,7 @@ export class TaskHandler {
           const callback = (): void => {
             _submit();
           };
-          this._addOrUpdateTask(
+          this.addOrUpdateTask(
             taskId,
             null,
             null,

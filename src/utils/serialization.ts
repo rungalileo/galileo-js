@@ -57,7 +57,7 @@ export const extractParamsInfo = <T extends unknown[], R>(
           defaultValueStr === 'undefined' ||
           defaultValueStr === 'true' ||
           defaultValueStr === 'false' ||
-          !isNaN(Number(defaultValueStr))
+          !Number.isNaN(defaultValueStr)
         ) {
           defaultValue = eval(defaultValueStr);
         }

@@ -174,10 +174,6 @@ export class EventSerializer {
  * @returns A JSON string representation of the data.
  */
 export function serializeToStr(inputData: unknown): string {
-  if (inputData === null || inputData === undefined) {
-    return '';
-  }
-
   if (typeof inputData === 'string') {
     return inputData;
   }
