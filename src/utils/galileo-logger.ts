@@ -1329,9 +1329,6 @@ class GalileoLogger implements IGalileoLogger {
     if (this.ingestionHook && this.mode !== 'batch') {
       throw new Error('ingestionHook can only be used in batch mode');
     }
-    if ((this.traceId || this.spanId) && this.mode !== 'streaming') {
-      throw new Error('traceId or spanId can only be used in streaming mode');
-    }
   }
 
   private initializeLoggerState(): void {
