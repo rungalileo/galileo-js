@@ -1279,10 +1279,10 @@ class GalileoLogger implements IGalileoLogger {
    */
   async terminate(): Promise<void> {
     try {
-      if (this.mode === 'batch') {
+      if (this.mode !== 'streaming') {
         await this.flush();
-      } else if (this.mode === 'streaming') {
-        // Wait for tasks to complete (matching Python behavior)
+      } else {
+        // Wait for tasks to complete
         if (this.taskHandler) {
           const timeoutSeconds = 5;
           const startWait = Date.now();
@@ -1327,7 +1327,9 @@ class GalileoLogger implements IGalileoLogger {
 
   private validateConfiguration(): void {
     if (this.ingestionHook && this.mode !== 'batch') {
-      throw new Error('ingestionHook can only be used in batch mode');
+      throw new Error(
+        'ingestionHook is intended for batch mode; using it with a non-batch mode may lead to unexpected behavior.'
+      );
     }
   }
 
@@ -1426,6 +1428,8 @@ class GalileoLogger implements IGalileoLogger {
     this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
     this.startSession = skipIfDisabledAsync(this.startSession, () => '');
     this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
+    this.initTrace = skipIfDisabledAsync(this.initTrace, () => undefined);
+    this.initSpan = skipIfDisabledAsync(this.initSpan, () => undefined);
   }
 
   private registerCleanupHandlers(): void {
@@ -1446,51 +1450,66 @@ class GalileoLogger implements IGalileoLogger {
     traceId: string,
     addToParentStack: boolean = true
   ): Promise<void> {
-    this.traceId = traceId;
+    const currentTraceId = this.traceId;
+    let localTrace: Trace | undefined;
+    try {
+      await this.ensureClientInitialized();
 
-    await this.client.init({
-      projectName: this.projectName,
-      projectId: this.projectId,
-      logStreamName: this.logStreamName,
-      logStreamId: this.logStreamId,
-      experimentId: this.experimentId,
-      sessionId: this.sessionId,
-      forceInit: false
-    });
+      const traceObj = await this.client.getTrace(traceId);
+      if (!traceObj) {
+        throw new Error(`Trace ${traceId} not found`);
+      }
 
-    const traceObj = await this.client.getTrace(this.traceId);
-    if (!traceObj) {
-      throw new Error(`Trace ${this.traceId} not found`);
-    }
+      localTrace = new Trace({
+        input: traceObj.input || '',
+        redactedInput: traceObj.redactedInput || undefined,
+        output: traceObj.output || undefined,
+        redactedOutput: traceObj.redactedOutput || undefined,
+        name: traceObj.name,
+        createdAt: traceObj.createdAt
+          ? new Date(traceObj.createdAt)
+          : undefined,
+        metadata: traceObj.userMetadata,
+        tags: traceObj.tags,
+        statusCode: traceObj.statusCode || undefined,
+        metrics: traceObj.metrics
+          ? new Metrics(traceObj.metrics as MetricsOptions)
+          : undefined,
+        externalId: traceObj.externalId || undefined,
+        datasetInput: traceObj.datasetInput || undefined,
+        datasetOutput: traceObj.datasetOutput || undefined,
+        datasetMetadata: traceObj.datasetMetadata || undefined,
+        id: traceObj.id
+      });
 
-    const trace = new Trace({
-      input: traceObj.input || '',
-      redactedInput: traceObj.redactedInput || undefined,
-      output: traceObj.output || undefined,
-      redactedOutput: traceObj.redactedOutput || undefined,
-      name: traceObj.name,
-      createdAt: traceObj.createdAt ? new Date(traceObj.createdAt) : undefined,
-      metadata: traceObj.userMetadata,
-      tags: traceObj.tags,
-      statusCode: traceObj.statusCode || undefined,
-      metrics: traceObj.metrics
-        ? new Metrics(traceObj.metrics as MetricsOptions)
-        : undefined,
-      externalId: traceObj.externalId || undefined,
-      datasetInput: traceObj.datasetInput || undefined,
-      datasetOutput: traceObj.datasetOutput || undefined,
-      datasetMetadata: traceObj.datasetMetadata || undefined,
-      id: traceObj.id
-    });
+      // Clear spans array
+      localTrace.spans = [];
+      this.traces.push(localTrace);
+      if (addToParentStack) {
+        const stack = this.getParentStack();
+        stack.push(localTrace);
+        this.setParentStack(stack);
+      }
+      this.traceId = traceId;
+    } catch (error) {
+      this.traceId = currentTraceId;
+      if (localTrace) {
+        // Remove last item if it's the one we just pushed
+        if (
+          this.traces.length > 0 &&
+          this.traces[this.traces.length - 1] === localTrace
+        ) {
+          this.traces.pop();
+        }
+        // Undo pushing to stack as well
+        const stack = this.getParentStack();
+        if (stack.length > 0 && stack[stack.length - 1] === localTrace) {
+          stack.pop();
+          this.setParentStack(stack);
+        }
+      }
 
-    // Clear spans array
-    trace.spans = [];
-    this.traces.push(trace);
-
-    if (addToParentStack) {
-      const stack = this.getParentStack();
-      stack.push(trace);
-      this.setParentStack(stack);
+      throw error;
     }
   }
 
@@ -1500,8 +1519,134 @@ class GalileoLogger implements IGalileoLogger {
    * Only workflow and agent spans can be initialized.
    */
   private async initSpan(spanId: string): Promise<void> {
-    this.spanId = spanId;
+    const currentSpanId = this.spanId;
+    let localSpan: WorkflowSpan | AgentSpan | undefined;
+    try {
+      await this.ensureClientInitialized();
 
+      const spanObj = await this.client.getSpan(spanId);
+      if (!spanObj) {
+        throw new Error(`Span ${this.spanId} not found`);
+      }
+
+      // Validate span belongs to trace if traceId is set
+      const spanTraceId = spanObj.traceId;
+      if (this.traceId && spanTraceId && spanTraceId !== this.traceId) {
+        throw new Error(
+          `Span ${this.spanId} does not belong to trace ${this.traceId}`
+        );
+      }
+
+      // Only workflow and agent spans can be initialized
+      const spanType = spanObj.type;
+      if (spanType !== 'workflow' && spanType !== 'agent') {
+        throw new Error(
+          `Only 'workflow' and 'agent' span types can be initialized, got ${spanType}`
+        );
+      }
+
+      // If trace hasn't been initialized yet, initialize it first
+      if (this.traces.length === 0 && spanTraceId) {
+        await this.initTrace(spanTraceId, false);
+      }
+
+      // Convert API response to span options
+      // For workflow/agent spans, input/output are strings
+      const inputValue = spanObj.input ? toStringValue(spanObj.input) : '';
+      const outputValue = spanObj.output
+        ? toStringValue(spanObj.output)
+        : undefined;
+      const redactedInputValue = spanObj.redactedInput
+        ? toStringValue(spanObj.redactedInput)
+        : undefined;
+      const redactedOutputValue = spanObj.redactedOutput
+        ? toStringValue(spanObj.redactedOutput)
+        : undefined;
+
+      if (spanType === 'agent') {
+        // Type guard to check if it's ExtendedAgentSpanRecordWithChildren
+        const agentSpanObj = spanObj as {
+          agentType?: AgentType;
+        };
+        localSpan = new AgentSpan({
+          input: inputValue,
+          redactedInput: redactedInputValue,
+          output: outputValue,
+          redactedOutput: redactedOutputValue,
+          name: spanObj.name,
+          createdAt: spanObj.createdAt
+            ? new Date(spanObj.createdAt)
+            : undefined,
+          metadata: spanObj.userMetadata,
+          tags: spanObj.tags,
+          statusCode: spanObj.statusCode || undefined,
+          metrics: spanObj.metrics
+            ? new Metrics(spanObj.metrics as MetricsOptions)
+            : undefined,
+          externalId: spanObj.externalId || undefined,
+          datasetInput: spanObj.datasetInput || undefined,
+          datasetOutput: spanObj.datasetOutput || undefined,
+          datasetMetadata: spanObj.datasetMetadata || undefined,
+          id: spanObj.id,
+          agentType: agentSpanObj.agentType || AgentType.DEFAULT
+        });
+      } else {
+        localSpan = new WorkflowSpan({
+          input: inputValue,
+          redactedInput: redactedInputValue,
+          output: outputValue,
+          redactedOutput: redactedOutputValue,
+          name: spanObj.name,
+          createdAt: spanObj.createdAt
+            ? new Date(spanObj.createdAt)
+            : undefined,
+          metadata: spanObj.userMetadata,
+          tags: spanObj.tags,
+          statusCode: spanObj.statusCode || undefined,
+          metrics: spanObj.metrics
+            ? new Metrics(spanObj.metrics as MetricsOptions)
+            : undefined,
+          externalId: spanObj.externalId || undefined,
+          datasetInput: spanObj.datasetInput || undefined,
+          datasetOutput: spanObj.datasetOutput || undefined,
+          datasetMetadata: spanObj.datasetMetadata || undefined,
+          id: spanObj.id
+        });
+      }
+
+      const stack = this.getParentStack();
+      stack.push(localSpan);
+      this.setParentStack(stack);
+      this.spanId = spanId;
+    } catch (error) {
+      this.spanId = currentSpanId;
+      if (localSpan) {
+        // Remove last item if it's the one we just pushed
+        const stack = this.getParentStack();
+        if (stack.length > 0 && stack[stack.length - 1] === localSpan) {
+          stack.pop();
+          this.setParentStack(stack);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  // ============================================
+  // Private Implementation Methods
+  // ============================================
+
+  /**
+   * Ensures the Galileo API client is initialized with the current logger's configuration.
+   *
+   * This method initializes the client with the logger's project, log stream, experiment,
+   * and session settings. Uses `forceInit: false` to avoid re-initializing if the client
+   * is already initialized, making it safe to call multiple times.
+   *
+   * @throws Error if client initialization fails
+   */
+  private async ensureClientInitialized(): Promise<void> {
     await this.client.init({
       projectName: this.projectName,
       projectId: this.projectId,
@@ -1511,103 +1656,7 @@ class GalileoLogger implements IGalileoLogger {
       sessionId: this.sessionId,
       forceInit: false
     });
-
-    const spanObj = await this.client.getSpan(this.spanId);
-    if (!spanObj) {
-      throw new Error(`Span ${this.spanId} not found`);
-    }
-
-    // Validate span belongs to trace if traceId is set
-    const spanTraceId = spanObj.traceId;
-    if (this.traceId && spanTraceId && spanTraceId !== this.traceId) {
-      throw new Error(
-        `Span ${this.spanId} does not belong to trace ${this.traceId}`
-      );
-    }
-
-    // Only workflow and agent spans can be initialized
-    const spanType = spanObj.type;
-    if (spanType !== 'workflow' && spanType !== 'agent') {
-      throw new Error(
-        `Only 'workflow' and 'agent' span types can be initialized, got ${spanType}`
-      );
-    }
-
-    // If trace hasn't been initialized yet, initialize it first
-    if (this.traces.length === 0 && spanTraceId) {
-      // Skip adding trace to parent stack to prevent modifications
-      await this.initTrace(spanTraceId, false);
-    }
-
-    // Convert API response to span options
-    // For workflow/agent spans, input/output are strings
-    const inputValue = spanObj.input ? toStringValue(spanObj.input) : '';
-    const outputValue = spanObj.output
-      ? toStringValue(spanObj.output)
-      : undefined;
-    const redactedInputValue = spanObj.redactedInput
-      ? toStringValue(spanObj.redactedInput)
-      : undefined;
-    const redactedOutputValue = spanObj.redactedOutput
-      ? toStringValue(spanObj.redactedOutput)
-      : undefined;
-
-    let span: WorkflowSpan | AgentSpan;
-    if (spanType === 'agent') {
-      // Type guard to check if it's ExtendedAgentSpanRecordWithChildren
-      const agentSpanObj = spanObj as {
-        agentType?: AgentType;
-      };
-      span = new AgentSpan({
-        input: inputValue,
-        redactedInput: redactedInputValue,
-        output: outputValue,
-        redactedOutput: redactedOutputValue,
-        name: spanObj.name,
-        createdAt: spanObj.createdAt ? new Date(spanObj.createdAt) : undefined,
-        metadata: spanObj.userMetadata,
-        tags: spanObj.tags,
-        statusCode: spanObj.statusCode || undefined,
-        metrics: spanObj.metrics
-          ? new Metrics(spanObj.metrics as MetricsOptions)
-          : undefined,
-        externalId: spanObj.externalId || undefined,
-        datasetInput: spanObj.datasetInput || undefined,
-        datasetOutput: spanObj.datasetOutput || undefined,
-        datasetMetadata: spanObj.datasetMetadata || undefined,
-        id: spanObj.id,
-        agentType: agentSpanObj.agentType || AgentType.DEFAULT
-      });
-    } else {
-      span = new WorkflowSpan({
-        input: inputValue,
-        redactedInput: redactedInputValue,
-        output: outputValue,
-        redactedOutput: redactedOutputValue,
-        name: spanObj.name,
-        createdAt: spanObj.createdAt ? new Date(spanObj.createdAt) : undefined,
-        metadata: spanObj.userMetadata,
-        tags: spanObj.tags,
-        statusCode: spanObj.statusCode || undefined,
-        metrics: spanObj.metrics
-          ? new Metrics(spanObj.metrics as MetricsOptions)
-          : undefined,
-        externalId: spanObj.externalId || undefined,
-        datasetInput: spanObj.datasetInput || undefined,
-        datasetOutput: spanObj.datasetOutput || undefined,
-        datasetMetadata: spanObj.datasetMetadata || undefined,
-        id: spanObj.id
-      });
-    }
-
-    const stack = this.getParentStack();
-    stack.push(span);
-    this.setParentStack(stack);
   }
-
-  // ============================================
-  // Private Implementation Methods
-  // ============================================
 
   /**
    * Get the parent stack from context or instance, maintaining backward compatibility.
@@ -1660,15 +1709,7 @@ class GalileoLogger implements IGalileoLogger {
     // Submit task with retry logic wrapped inside (fire-and-forget)
     this.taskHandler
       .submitTask(taskId, async () => {
-        await this.client.init({
-          projectName: this.projectName,
-          projectId: this.projectId,
-          logStreamName: this.logStreamName,
-          logStreamId: this.logStreamId,
-          experimentId: this.experimentId,
-          sessionId: this.sessionId,
-          forceInit: false
-        });
+        await this.ensureClientInitialized();
 
         await withRetry(
           handleGalileoHttpExceptionsForRetry(async () => {
@@ -1735,15 +1776,7 @@ class GalileoLogger implements IGalileoLogger {
     // Submit task with retry logic wrapped inside (fire-and-forget)
     this.taskHandler
       .submitTask(taskId, async () => {
-        await this.client.init({
-          projectName: this.projectName,
-          projectId: this.projectId,
-          logStreamName: this.logStreamName,
-          logStreamId: this.logStreamId,
-          experimentId: this.experimentId,
-          sessionId: this.sessionId,
-          forceInit: false
-        });
+        await this.ensureClientInitialized();
 
         await withRetry(
           handleGalileoHttpExceptionsForRetry(async () => {
@@ -1802,15 +1835,7 @@ class GalileoLogger implements IGalileoLogger {
       .submitTask(
         taskId,
         async () => {
-          await this.client.init({
-            projectName: this.projectName,
-            projectId: this.projectId,
-            logStreamName: this.logStreamName,
-            logStreamId: this.logStreamId,
-            experimentId: this.experimentId,
-            sessionId: this.sessionId,
-            forceInit: false
-          });
+          await this.ensureClientInitialized();
 
           await withRetry(
             handleGalileoHttpExceptionsForRetry(async () => {
@@ -1876,15 +1901,7 @@ class GalileoLogger implements IGalileoLogger {
       .submitTask(
         taskId,
         async () => {
-          await this.client.init({
-            projectName: this.projectName,
-            projectId: this.projectId,
-            logStreamName: this.logStreamName,
-            logStreamId: this.logStreamId,
-            experimentId: this.experimentId,
-            sessionId: this.sessionId,
-            forceInit: false
-          });
+          await this.ensureClientInitialized();
 
           await withRetry(
             handleGalileoHttpExceptionsForRetry(async () => {
@@ -1958,14 +1975,6 @@ class GalileoLogger implements IGalileoLogger {
       }
     }
 
-    if (
-      this.currentParent() === undefined &&
-      !(finishedStep instanceof Trace)
-    ) {
-      throw new Error(
-        'Finished step is not a trace, but has no parent. Not added to the list of traces.'
-      );
-    }
     return this.currentParent();
   }
 }
