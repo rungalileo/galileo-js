@@ -185,6 +185,10 @@ export class GalileoSingleton {
     if (logger) {
       await logger.terminate();
       this.galileoLoggers.delete(key);
+
+      if (this.lastAvailableLogger === logger) {
+        this.lastAvailableLogger = null;
+      }
     }
   }
 
@@ -198,6 +202,7 @@ export class GalileoSingleton {
     );
     await Promise.all(resetPromises);
     this.galileoLoggers.clear();
+    this.lastAvailableLogger = null;
   }
 
   /**
@@ -245,6 +250,7 @@ export class GalileoSingleton {
     // Store with default key
     const key = GalileoSingleton._getKey();
     this.galileoLoggers.set(key, client);
+    this.lastAvailableLogger = client;
   }
 }
 
