@@ -25,8 +25,8 @@ interface Task {
  * This class provides dependency management and status tracking similar to Python's ThreadPoolTaskHandler.
  */
 export class TaskHandler {
-  private _tasks: Map<string, Task> = new Map();
-  private _retryCounts: Map<string, number> = new Map();
+  private tasks: Map<string, Task> = new Map();
+  private retryCounts: Map<string, number> = new Map();
 
   /**
    * Handle the completion of a task, triggering any dependent child tasks.
@@ -34,7 +34,7 @@ export class TaskHandler {
    */
   private handleTaskCompletion(taskId: string): void {
     // Find all child tasks that depend on this task
-    for (const [, task] of this._tasks.entries()) {
+    for (const [, task] of this.tasks.entries()) {
       if (task.parentTaskId === taskId && task.callback) {
         // Execute the callback which will submit the child task
         // The callback will also resolve the Promise via the resolver
@@ -48,12 +48,12 @@ export class TaskHandler {
    * @param parentTaskId - The ID of the failed parent task.
    */
   private handleTaskFailure(parentTaskId: string, parentError: Error): void {
-    const parentTask = this._tasks.get(parentTaskId);
+    const parentTask = this.tasks.get(parentTaskId);
     if (!parentTask) return;
 
     // Find all child tasks that depend on this failed parent
     const childTasks: Array<{ taskId: string; task: Task }> = [];
-    for (const [taskId, task] of this._tasks.entries()) {
+    for (const [taskId, task] of this.tasks.entries()) {
       if (task.parentTaskId === parentTaskId) {
         childTasks.push({ taskId, task });
       }
@@ -61,33 +61,31 @@ export class TaskHandler {
 
     if (childTasks.length === 0) return;
 
-    // Create error message for child tasks
-    const errorMessage = `Parent task ${parentTaskId} failed: ${parentError.message}`;
-
     // Reject all child task promises and update their status
     for (const { taskId: childTaskId, task } of childTasks) {
-      // Update child task status
-      task.status = 'failed';
-
-      // Reject the promise if resolver exists
-      if (task.resolver) {
-        // Create a rejected promise for the child
-        const rejectedPromise = Promise.reject(
-          new Error(`${errorMessage}. Child task ${childTaskId} skipped.`)
-        );
-        task.resolver(rejectedPromise);
-      }
-
-      // Log that child task is being skipped
-      console.warn(
+      this.failingTask(
+        task,
         `Skipping child task ${childTaskId} because parent task ${parentTaskId} failed.`
       );
     }
 
-    // Log summary
     console.error(
-      `Parent task ${parentTaskId} failed. ${childTasks.length} dependent task(s) skipped.`
+      `Parent task ${parentTaskId} failed: ${parentError.message}. ${childTasks.length} dependent task(s) skipped.`
     );
+  }
+
+  private failingTask<T>(task: Task, errorMessage: string): Promise<T> {
+    task.status = 'failed';
+
+    // Reject the promise if resolver exists
+    if (task.resolver) {
+      // Create a rejected promise for the child
+      const rejectedPromise = Promise.reject(new Error(errorMessage));
+      task.resolver(rejectedPromise);
+    }
+
+    console.warn(errorMessage);
+    return Promise.reject(new Error(errorMessage));
   }
 
   /**
@@ -106,39 +104,43 @@ export class TaskHandler {
     parentTaskId: string | null = null,
     callback: (() => void) | null = null,
     resolver: ((promise: Promise<unknown>) => void) | null = null
-  ): void {
+  ): Task {
     const status: TaskStatus = parentTaskId
       ? 'pending'
       : promise
         ? 'running'
         : 'pending';
 
-    this._tasks.set(taskId, {
+    const newTask: Task = {
       promise,
       startTime,
       parentTaskId,
       callback,
       status,
       resolver
-    });
+    };
+
+    this.tasks.set(taskId, newTask);
 
     // Initialize retry count if not already set
-    if (!this._retryCounts.has(taskId)) {
-      this._retryCounts.set(taskId, 0);
+    if (!this.retryCounts.has(taskId)) {
+      this.retryCounts.set(taskId, 0);
     }
 
     // If promise exists, set up completion handler
     if (promise) {
       promise
         .then(() => {
-          const task = this._tasks.get(taskId);
+          const task = this.tasks.get(taskId);
           if (task) {
             task.status = 'completed';
           }
           this.handleTaskCompletion(taskId);
+          // Clean up completed tasks that are no longer needed
+          this.cleanupTaskRetryMaps();
         })
         .catch((error) => {
-          const task = this._tasks.get(taskId);
+          const task = this.tasks.get(taskId);
           if (task) {
             task.status = 'failed';
           }
@@ -146,41 +148,23 @@ export class TaskHandler {
           const parentError =
             error instanceof Error ? error : new Error(String(error));
           this.handleTaskFailure(taskId, parentError);
+          // Clean up failed tasks that are no longer needed
+          this.cleanupTaskRetryMaps();
         });
     }
-  }
 
-  /**
-   * Submit a task for execution.
-   * @param taskId - The ID of the task.
-   * @param asyncFn - The async function to execute.
-   * @param dependentOnPrev - Whether the task depends on the previous task completing.
-   * @returns A Promise that resolves when the task completes (or rejects if it fails).
-   */
-  /**
-   * Extract the corresponding ingest task ID from an update task ID.
-   * e.g., "trace-update-123" → "trace-ingest-123"
-   *       "span-update-456" → "span-ingest-456"
-   */
-  private getCorrespondingIngestTaskId(taskId: string): string | null {
-    // Match pattern: {type}-update-{id}
-    const updateMatch = taskId.match(/^(trace|span)-update-(.+)$/);
-    if (updateMatch) {
-      const [, type, id] = updateMatch;
-      return `${type}-ingest-${id}`;
-    }
-    return null;
+    return newTask;
   }
 
   async submitTask<T>(
     taskId: string,
     asyncFn: () => Promise<T>,
-    dependentOnPrev: boolean = false
+    parentTaskId?: string
   ): Promise<T> {
     const _submit = (): Promise<T> => {
       const promise = asyncFn();
       // Get existing resolver if task was queued as dependent
-      const existingTask = this._tasks.get(taskId);
+      const existingTask = this.tasks.get(taskId);
       const resolver = existingTask?.resolver || null;
       this.addOrUpdateTask(taskId, promise, Date.now(), null, null, resolver);
 
@@ -192,33 +176,36 @@ export class TaskHandler {
       return promise;
     };
 
-    if (dependentOnPrev) {
-      // For update tasks, find the corresponding ingest task
-      const dependentTaskId = this.getCorrespondingIngestTaskId(taskId);
-
-      if (!dependentTaskId) {
-        // Not an update task pattern - this shouldn't happen with dependentOnPrev=true
-        // but submit immediately as a safety fallback
+    if (parentTaskId) {
+      const parentTaskStatus = this.getStatus(parentTaskId);
+      if (
+        parentTaskStatus === 'completed' ||
+        parentTaskStatus === 'not_found'
+      ) {
+        // Parent task not found, or already completed.
         return _submit();
-      }
+      } else if (parentTaskStatus === 'failed') {
+        const newTask = this.addOrUpdateTask(
+          taskId,
+          null,
+          Date.now(),
+          parentTaskId,
+          null,
+          null
+        );
 
-      // Check if the specific ingest task exists
-      const dependentTask = this._tasks.get(dependentTaskId);
-
-      if (!dependentTask) {
-        // No corresponding ingest task found - might be updating an existing trace/span
-        // or the ingest task hasn't been submitted yet. Submit immediately.
-        return _submit();
-      }
-
-      if (this.getStatus(dependentTaskId) === 'completed') {
-        // Corresponding ingest completed, submit immediately
-        return _submit();
+        return this.failingTask(
+          newTask,
+          `Skipping task ${taskId} because parent task ${parentTaskId} failed.`
+        );
       } else {
         // Wait for the specific ingest task to complete
         return new Promise<T>((resolve, reject) => {
           const resolver = (promise: Promise<unknown>): void => {
-            (promise as Promise<T>).then(resolve).catch(reject);
+            promise.then(
+              (value) => resolve(value as T),
+              (error) => reject(error)
+            );
           };
           const callback = (): void => {
             _submit();
@@ -227,7 +214,7 @@ export class TaskHandler {
             taskId,
             null,
             null,
-            dependentTaskId,
+            parentTaskId,
             callback,
             resolver
           );
@@ -246,7 +233,7 @@ export class TaskHandler {
    */
   getChildren(parentTaskId: string): Array<{ taskId: string; task: Task }> {
     const children: Array<{ taskId: string; task: Task }> = [];
-    for (const [taskId, task] of this._tasks.entries()) {
+    for (const [taskId, task] of this.tasks.entries()) {
       if (task.parentTaskId === parentTaskId) {
         children.push({ taskId, task });
       }
@@ -259,8 +246,8 @@ export class TaskHandler {
    * @param taskId - The ID of the task.
    */
   incrementRetry(taskId: string): void {
-    const currentCount = this._retryCounts.get(taskId) || 0;
-    this._retryCounts.set(taskId, currentCount + 1);
+    const currentCount = this.retryCounts.get(taskId) || 0;
+    this.retryCounts.set(taskId, currentCount + 1);
   }
 
   /**
@@ -269,23 +256,8 @@ export class TaskHandler {
    * @returns The status of the task.
    */
   getStatus(taskId: string): TaskStatus {
-    const task = this._tasks.get(taskId);
-    if (!task) {
-      return 'not_found';
-    }
-
-    // If task has a parent and hasn't been submitted yet, it's pending
-    if (task.parentTaskId && !task.promise) {
-      return 'pending';
-    }
-
-    // If no promise exists, task hasn't started
-    if (!task.promise) {
-      return 'not_found';
-    }
-
-    // Return the current status (updated by promise handlers)
-    return task.status;
+    const task = this.tasks.get(taskId);
+    return task ? task.status : 'not_found';
   }
 
   /**
@@ -295,7 +267,7 @@ export class TaskHandler {
    * @throws Error if task not found or not completed.
    */
   async getResult(taskId: string): Promise<unknown> {
-    const task = this._tasks.get(taskId);
+    const task = this.tasks.get(taskId);
     if (!task || !task.promise) {
       throw new Error(`Task ${taskId} not found`);
     }
@@ -308,7 +280,7 @@ export class TaskHandler {
    * @returns The retry count.
    */
   getRetryCount(taskId: string): number {
-    return this._retryCounts.get(taskId) || 0;
+    return this.retryCounts.get(taskId) || 0;
   }
 
   /**
@@ -316,7 +288,7 @@ export class TaskHandler {
    * @returns True if all tasks are completed or failed, False otherwise.
    */
   allTasksCompleted(): boolean {
-    for (const taskId of this._tasks.keys()) {
+    for (const taskId of this.tasks.keys()) {
       const status = this.getStatus(taskId);
       if (status === 'running' || status === 'pending') {
         return false;
@@ -326,12 +298,55 @@ export class TaskHandler {
   }
 
   /**
+   * Clean up completed and failed tasks that are no longer needed.
+   * Removes tasks that:
+   * - Are completed or failed
+   * - Have no dependent children
+   */
+  private cleanupTaskRetryMaps(): void {
+    const tasksToRemove: string[] = [];
+
+    // Build children map
+    const childrenMap = new Map<string, number>();
+    for (const task of this.tasks.values()) {
+      if (task.parentTaskId) {
+        childrenMap.set(
+          task.parentTaskId,
+          (childrenMap.get(task.parentTaskId) || 0) + 1
+        );
+      }
+    }
+
+    // Check tasks
+    for (const [taskId, task] of this.tasks.entries()) {
+      if (
+        (task.status === 'completed' || task.status === 'failed') &&
+        !childrenMap.has(taskId)
+      ) {
+        tasksToRemove.push(taskId);
+      }
+    }
+
+    // Remove tasks
+    for (const taskId of tasksToRemove) {
+      this.tasks.delete(taskId);
+      this.retryCounts.delete(taskId);
+    }
+
+    if (tasksToRemove.length > 0) {
+      console.debug(
+        `TaskHandler: Cleaned up ${tasksToRemove.length} completed/failed task(s)`
+      );
+    }
+  }
+
+  /**
    * Terminate the task handler and clean up resources.
    * In Node.js, this is mainly for cleanup and doesn't need to stop a thread pool.
    */
   terminate(): void {
     // Clear all tasks and retry counts
-    this._tasks.clear();
-    this._retryCounts.clear();
+    this.tasks.clear();
+    this.retryCounts.clear();
   }
 }

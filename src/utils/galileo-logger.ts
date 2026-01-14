@@ -42,6 +42,8 @@ import type {
   IGalileoLogger
 } from '../types/logging/logger.types';
 
+const NUM_RETRIES = 3;
+
 /**
  * Higher-order function that wraps a method to skip execution if logging is disabled
  * @param fn The original method
@@ -1660,37 +1662,33 @@ class GalileoLogger implements IGalileoLogger {
 
     // Submit task with retry logic wrapped inside (fire-and-forget)
     this.taskHandler
-      .submitTask(
-        taskId,
-        async () => {
-          await this.client.init({
-            projectName: this.projectName,
-            projectId: this.projectId,
-            logStreamName: this.logStreamName,
-            logStreamId: this.logStreamId,
-            experimentId: this.experimentId,
-            sessionId: this.sessionId,
-            forceInit: false
-          });
+      .submitTask(taskId, async () => {
+        await this.client.init({
+          projectName: this.projectName,
+          projectId: this.projectId,
+          logStreamName: this.logStreamName,
+          logStreamId: this.logStreamId,
+          experimentId: this.experimentId,
+          sessionId: this.sessionId,
+          forceInit: false
+        });
 
-          await withRetry(
-            handleGalileoHttpExceptionsForRetry(async () => {
-              await this.client.ingestTraces(tracesIngestRequest);
-            }),
-            taskId,
-            3,
-            (error) => {
-              // Increment retry count on each retry attempt
-              this.taskHandler?.incrementRetry(taskId);
-              const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              console.info(
-                `Retry #${retryCount} for task ${taskId}: ${error.message}`
-              );
-            }
-          );
-        },
-        false // Not dependent on previous task
-      )
+        await withRetry(
+          handleGalileoHttpExceptionsForRetry(async () => {
+            await this.client.ingestTraces(tracesIngestRequest);
+          }),
+          taskId,
+          NUM_RETRIES,
+          (error) => {
+            // Increment retry count on each retry attempt
+            this.taskHandler?.incrementRetry(taskId);
+            const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
+            console.info(
+              `Retry #${retryCount} for task ${taskId}: ${error.message}`
+            );
+          }
+        );
+      })
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
@@ -1739,37 +1737,33 @@ class GalileoLogger implements IGalileoLogger {
 
     // Submit task with retry logic wrapped inside (fire-and-forget)
     this.taskHandler
-      .submitTask(
-        taskId,
-        async () => {
-          await this.client.init({
-            projectName: this.projectName,
-            projectId: this.projectId,
-            logStreamName: this.logStreamName,
-            logStreamId: this.logStreamId,
-            experimentId: this.experimentId,
-            sessionId: this.sessionId,
-            forceInit: false
-          });
+      .submitTask(taskId, async () => {
+        await this.client.init({
+          projectName: this.projectName,
+          projectId: this.projectId,
+          logStreamName: this.logStreamName,
+          logStreamId: this.logStreamId,
+          experimentId: this.experimentId,
+          sessionId: this.sessionId,
+          forceInit: false
+        });
 
-          await withRetry(
-            handleGalileoHttpExceptionsForRetry(async () => {
-              await this.client.ingestSpans(spansIngestRequest);
-            }),
-            taskId,
-            3,
-            (error) => {
-              // Increment retry count on each retry attempt
-              this.taskHandler?.incrementRetry(taskId);
-              const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              console.info(
-                `Retry #${retryCount} for task ${taskId}: ${error.message}`
-              );
-            }
-          );
-        },
-        false // Not dependent on previous task
-      )
+        await withRetry(
+          handleGalileoHttpExceptionsForRetry(async () => {
+            await this.client.ingestSpans(spansIngestRequest);
+          }),
+          taskId,
+          NUM_RETRIES,
+          (error) => {
+            // Increment retry count on each retry attempt
+            this.taskHandler?.incrementRetry(taskId);
+            const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
+            console.info(
+              `Retry #${retryCount} for task ${taskId}: ${error.message}`
+            );
+          }
+        );
+      })
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
@@ -1826,7 +1820,7 @@ class GalileoLogger implements IGalileoLogger {
               await this.client.updateTrace(traceUpdateRequest);
             }),
             taskId,
-            3,
+            NUM_RETRIES,
             (error) => {
               // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
@@ -1837,7 +1831,7 @@ class GalileoLogger implements IGalileoLogger {
             }
           );
         },
-        true // Dependent on previous task
+        `trace-ingest-${trace.id}` // Dependent on previous task
       )
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
@@ -1900,7 +1894,7 @@ class GalileoLogger implements IGalileoLogger {
               await this.client.updateSpan(spanUpdateRequest);
             }),
             taskId,
-            3,
+            NUM_RETRIES,
             (error) => {
               // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
@@ -1911,7 +1905,7 @@ class GalileoLogger implements IGalileoLogger {
             }
           );
         },
-        true // Dependent on previous task
+        `span-ingest-${span.id}` // Dependent on previous task
       )
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
