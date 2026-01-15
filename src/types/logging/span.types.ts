@@ -377,7 +377,7 @@ export interface RetrieverSpanOptions extends BaseSpanOptions {
 }
 
 export interface SerializedRetrieverSpan extends Omit<
-  SerializedStep, 
+  SerializedStep,
   'output'
 > {
   output: JsonArray;
