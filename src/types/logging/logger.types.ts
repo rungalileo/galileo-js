@@ -434,7 +434,7 @@ export interface IGalileoLoggerBatch {
  * This is the main interface that the GalileoLogger class implements.
  */
 export interface IGalileoLogger
-  extends 
+  extends
     IGalileoLoggerCore,
     IGalileoLoggerSession,
     IGalileoLoggerTrace,
