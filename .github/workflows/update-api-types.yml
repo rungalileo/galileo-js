@@ -60,13 +60,13 @@ jobs:
           npm run lint-fix
           npm run format
           git add .
-          git commit -m "Update API Types"
+          git commit -m "chore(types): Update API Types"
           git push --force origin $BRANCH_NAME --no-verify
         env:
           BRANCH_NAME: chore/galileo-automation/update-api-types-${{ steps.date.outputs.date }}
 
       - name: create pull request
-        run: gh pr create -B main -H $BRANCH_NAME --label 'dependencies' --title 'Update API Types' --body 'Fix any breaking changes if this pull request fails to deploy'
+        run: gh pr create -B main -H $BRANCH_NAME --label 'dependencies' --title 'chore(types):Update API Types' --body 'Fix any breaking changes if this pull request fails to deploy'
         env:
           BRANCH_NAME: chore/galileo-automation/update-api-types-${{ steps.date.outputs.date }}
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
