@@ -376,11 +376,6 @@ describe('Singleton utility functions', () => {
     });
   });
 
-  // ============================================
-  // NEW TEST SUITES - Added for comprehensive coverage
-  // All tests below are isolated and independent
-  // ============================================
-
   describe('AsyncLocalStorage Context (experimentContext)', () => {
     let originalEnv: Record<string, string | undefined>;
 
