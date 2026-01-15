@@ -27,12 +27,15 @@ interface Task {
 export class TaskHandler {
   private tasks: Map<string, Task> = new Map();
   private retryCounts: Map<string, number> = new Map();
+  private isTerminated: boolean = false;
+  private terminationTime: number = 0;
 
   /**
    * Handle the completion of a task, triggering any dependent child tasks.
    * @param taskId - The ID of the completed task.
    */
   private handleTaskCompletion(taskId: string): void {
+    if (this.isTerminated) return; // Don't process if terminated
     // Find all child tasks that depend on this task
     for (const [, task] of this.tasks.entries()) {
       if (task.parentTaskId === taskId && task.callback) {
@@ -48,6 +51,7 @@ export class TaskHandler {
    * @param parentTaskId - The ID of the failed parent task.
    */
   private handleTaskFailure(parentTaskId: string, parentError: Error): void {
+    if (this.isTerminated) return; // Don't process if terminated
     const parentTask = this.tasks.get(parentTaskId);
     if (!parentTask) return;
 
@@ -63,10 +67,16 @@ export class TaskHandler {
 
     // Reject all child task promises and update their status
     for (const { taskId: childTaskId, task } of childTasks) {
+      // failingTask() returns a rejected promise, but we don't need to await it here
+      // The resolver (if present) will handle the rejection for the caller
+      // We catch the rejection to prevent unhandled promise rejections
       this.failingTask(
         task,
         `Skipping child task ${childTaskId} because parent task ${parentTaskId} failed.`
-      );
+      ).catch(() => {
+        // Silently catch the rejection - it's already handled via the resolver
+        // This prevents unhandled promise rejection warnings
+      });
     }
 
     console.error(
@@ -129,8 +139,11 @@ export class TaskHandler {
 
     // If promise exists, set up completion handler
     if (promise) {
+      const taskStartTime = startTime || Date.now();
       promise
         .then(() => {
+          // Don't process if this task was created before termination
+          if (this.isTerminated && taskStartTime < this.terminationTime) return;
           const task = this.tasks.get(taskId);
           if (task) {
             task.status = 'completed';
@@ -140,6 +153,8 @@ export class TaskHandler {
           this.cleanupTaskRetryMaps();
         })
         .catch((error) => {
+          // Don't process if this task was created before termination
+          if (this.isTerminated && taskStartTime < this.terminationTime) return;
           const task = this.tasks.get(taskId);
           if (task) {
             task.status = 'failed';
@@ -343,8 +358,12 @@ export class TaskHandler {
   /**
    * Terminate the task handler and clean up resources.
    * In Node.js, this is mainly for cleanup and doesn't need to stop a thread pool.
+   * After termination, new tasks can still be submitted, but old promise handlers won't execute.
    */
   terminate(): void {
+    // Record termination time to distinguish old vs new tasks
+    this.terminationTime = Date.now();
+    this.isTerminated = true;
     // Clear all tasks and retry counts
     this.tasks.clear();
     this.retryCounts.clear();
