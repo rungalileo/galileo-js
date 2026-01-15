@@ -193,7 +193,9 @@ describe('GalileoLogger', () => {
           mode: 'streaming',
           ingestionHook
         });
-      }).toThrow('ingestionHook can only be used in batch mode');
+      }).toThrow(
+        'ingestionHook is intended for batch mode; using it with a non-batch mode may lead to unexpected behavior.'
+      );
     });
 
     it('should not accept traceId in constructor (only via create() factory)', () => {
