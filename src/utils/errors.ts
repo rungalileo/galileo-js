@@ -1,3 +1,99 @@
+import { AxiosError } from 'axios';
+
+/**
+ * Standardized error information
+ */
+export interface ErrorInfo {
+  statusCode: number;
+  message: string;
+}
+
+/**
+ * Manages error mapping and retry logic for various error types
+ */
+export class ErrorManager {
+  /**
+   * Map an error to standardized format
+   * @param error The error to map
+   * @returns Standardized error information
+   */
+  mapError(error: unknown): ErrorInfo {
+    // Handle Axios errors (HTTP errors)
+    if (error instanceof AxiosError) {
+      return {
+        statusCode: error.response?.status || 500,
+        message: error.message
+      };
+    }
+
+    // Handle standard Error objects
+    if (error instanceof Error) {
+      // Map common error patterns to appropriate status codes
+      const message = error.message.toLowerCase();
+
+      if (message.includes('timeout') || message.includes('timed out')) {
+        return { statusCode: 408, message: error.message };
+      }
+
+      if (
+        message.includes('network') ||
+        message.includes('connection') ||
+        message.includes('econnrefused') ||
+        message.includes('enotfound')
+      ) {
+        return { statusCode: 503, message: error.message };
+      }
+
+      if (
+        message.includes('unauthorized') ||
+        message.includes('authentication')
+      ) {
+        return { statusCode: 401, message: error.message };
+      }
+
+      if (message.includes('forbidden')) {
+        return { statusCode: 403, message: error.message };
+      }
+
+      if (message.includes('not found')) {
+        return { statusCode: 404, message: error.message };
+      }
+
+      if (
+        message.includes('rate limit') ||
+        message.includes('too many requests')
+      ) {
+        return { statusCode: 429, message: error.message };
+      }
+
+      // Default to 500 for unknown errors
+      return { statusCode: 500, message: error.message };
+    }
+
+    // Handle string errors
+    if (typeof error === 'string') {
+      return { statusCode: 500, message: error };
+    }
+
+    // Fallback for unknown error types
+    return {
+      statusCode: 500,
+      message: String(error)
+    };
+  }
+
+  /**
+   * Check if an error is retryable based on status code
+   * @param error The error to check
+   * @returns True if the error is retryable
+   */
+  isRetryable(error: unknown): boolean {
+    const errorInfo = this.mapError(error);
+    const retryableStatusCodes = [408, 429, 500, 502, 503, 504];
+    return retryableStatusCodes.includes(errorInfo.statusCode);
+  }
+}
+
 /**
  * Base exception class for all API errors.
  * Attempts to parse error messages from API responses, extracting the "detail" field
