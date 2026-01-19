@@ -12,7 +12,10 @@ export { StreamingMetrics } from './metrics';
 export { StreamingFinalizer } from './finalizer';
 export { BaseStreamingAdapter } from './base-streaming-adapter';
 export { ErrorManager, ErrorInfo } from '../errors';
-export type { TokenUsage, StreamingMetricsResult } from '../../types/streaming-adapter.types';
+export type {
+  TokenUsage,
+  StreamingMetricsResult
+} from '../../types/streaming-adapter.types';
 export type { StreamingFinalizerConfig } from './finalizer';
 export type {
   BaseStreamingAdapterConfig,

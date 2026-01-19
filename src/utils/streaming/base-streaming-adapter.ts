@@ -2,7 +2,10 @@ import { GalileoLogger } from '../galileo-logger';
 import { ErrorManager } from '../errors';
 import { StreamingMetrics } from './metrics';
 import { StreamingFinalizer, StreamingFinalizerConfig } from './finalizer';
-import { TokenUsage, StreamingMetricsResult } from '../../types/streaming-adapter.types';
+import {
+  TokenUsage,
+  StreamingMetricsResult
+} from '../../types/streaming-adapter.types';
 import {
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType

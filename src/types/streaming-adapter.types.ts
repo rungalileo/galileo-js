@@ -15,4 +15,3 @@ export interface StreamingMetricsResult {
   durationNs: number;
   tokenUsage: TokenUsage | null;
 }
-

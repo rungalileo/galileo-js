@@ -482,7 +482,12 @@ export class ToolSpan extends BaseStep {
 }
 
 // Type for all span types
-export type Span = WorkflowSpan | LlmSpan | RetrieverSpan | ToolSpan;
+export type Span =
+  | WorkflowSpan
+  | AgentSpan
+  | LlmSpan
+  | RetrieverSpan
+  | ToolSpan;
 
 /**
  * Type guard to validate if a value is a valid AgentType

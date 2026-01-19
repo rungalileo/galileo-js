@@ -1,4 +1,7 @@
-import type { TokenUsage, StreamingMetricsResult } from '../../types/streaming-adapter.types';
+import type {
+  TokenUsage,
+  StreamingMetricsResult
+} from '../../types/streaming-adapter.types';
 
 /**
  * Tracks streaming metrics including TTFT, duration, and token usage
@@ -77,4 +80,3 @@ export class StreamingMetrics {
     this.tokenUsage = null;
   }
 }
-

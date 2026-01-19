@@ -1,25 +1,12 @@
-import { GalileoLogger } from '../galileo-logger';
-import { StreamingMetrics } from './metrics';
-import {
+import type { GalileoLogger } from '../galileo-logger';
+import type { StreamingMetrics } from './metrics';
+import type {
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType
 } from '../../types/logging/step.types';
-import { Span } from '../../types/logging/span.types';
+import type { Span } from '../../types/logging/span.types';
 import { Trace } from '../../types/logging/trace.types';
 import type { ToolDefinition } from './base-streaming-adapter';
-
-/**
- * Extended logger interface with streaming update methods
- * These methods are mocked and will be replaced when streaming mode PR is merged
- */
-export interface GalileoLoggerWithStreaming extends GalileoLogger {
-  _updateSpanStreaming?(span: Span, output: LlmSpanAllowedOutputType): void;
-  _updateTraceStreaming?(
-    trace: Trace,
-    output: LlmSpanAllowedOutputType,
-    isComplete?: boolean
-  ): void;
-}
 
 /**
  * Configuration for streaming finalization
@@ -114,21 +101,13 @@ export class StreamingFinalizer {
       return;
     }
 
-    // Type guard to check if logger has streaming methods
-    const loggerWithStreaming = this.logger as GalileoLoggerWithStreaming;
-
-    // TO-DO: After logger PR merged, substitute for actual implementation.
+    // Call streaming update methods (mock implementations in GalileoLogger)
     if (currentParent instanceof Trace) {
-      // Mock implementation - assumes _updateTraceStreaming exists in another branch/PR
-      loggerWithStreaming._updateTraceStreaming?.(
-        currentParent,
-        output,
-        false
-      );
+      // Update trace with partial output during streaming
+      this.logger._updateTraceStreaming(currentParent, output, false);
     } else {
-      // Mock implementation - assumes _updateSpanStreaming exists in another branch/PR
-      // currentParent is a Span (WorkflowSpan, AgentSpan, etc.)
-      loggerWithStreaming._updateSpanStreaming?.(currentParent as Span, output);
+      // currentParent is a Span (WorkflowSpan, AgentSpan, LlmSpan, etc.)
+      this.logger._updateSpanStreaming(currentParent as Span, output);
     }
   }
 }
