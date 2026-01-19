@@ -7,7 +7,7 @@ import type {
 } from '../types/experiment.types';
 import { Experiments } from '../entities/experiments';
 import { getProjectWithEnvFallbacks } from './projects';
-import type { GalileoScorers, Metric } from '../types/metrics.types';
+import type { GalileoMetrics, Metric } from '../types/metrics.types';
 
 // Re-export types for backward compatibility
 export type { RunExperimentParams, RunExperimentOutput };
@@ -38,7 +38,7 @@ export async function createExperiment(
   name: string,
   projectName: string,
   dataset?: ExperimentDatasetRequest | null,
-  metrics?: (GalileoScorers | Metric | string)[]
+  metrics?: (GalileoMetrics | Metric | string)[]
 ): Promise<ExperimentResponseType> {
   const experiment = new Experiments();
   return await experiment.createExperiment({

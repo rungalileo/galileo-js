@@ -39,6 +39,7 @@
     "jsonwebtoken": "^9.0.2",
     "openapi-fetch": "^0.13.3",
     "openapi-typescript-helpers": "^0.0.15",
+    "p-retry": "^4.6.2",
     "set-cookie-parser": "^2.7.2",
     "ts-case-convert": "^2.1.0"
   },

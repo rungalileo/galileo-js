@@ -282,6 +282,7 @@ describe('step.types', () => {
       it('should include all fields in JSON output', () => {
         const customDate = new Date('2023-01-01T12:00:00.000Z');
         const step = new BaseStep(StepType.agent, {
+          id: 'step-123',
           input: 'test input',
           redactedInput: 'redacted input',
           output: 'test output',
@@ -303,21 +304,22 @@ describe('step.types', () => {
 
         expect(json).toEqual({
           type: 'agent',
+          id: 'step-123',
           input: 'test input',
           redactedInput: 'redacted input',
           output: 'test output',
           redactedOutput: 'redacted output',
           name: 'test step',
-          created_at: '2023-01-01T12:00:00.000Z',
-          user_metadata: { key: 'value' },
+          createdAt: new Date('2023-01-01T12:00:00.000Z').toISOString(),
+          userMetadata: { key: 'value' },
           tags: ['tag1'],
-          status_code: 200,
-          metrics: { duration_ns: 1000 },
-          external_id: 'ext-123',
-          step_number: 3,
-          dataset_input: 'dataset-input',
-          dataset_output: 'dataset-output',
-          dataset_metadata: { dataset: 'test' }
+          statusCode: 200,
+          metrics: new Metrics({ durationNs: 1000 }),
+          externalId: 'ext-123',
+          stepNumber: 3,
+          datasetInput: 'dataset-input',
+          datasetOutput: 'dataset-output',
+          datasetMetadata: { dataset: 'test' }
         });
       });
 

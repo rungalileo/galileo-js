@@ -603,7 +603,7 @@ describe('metrics utils', () => {
       );
     });
 
-    it('should pass requiredMetrics as GalileoMetrics values to validation', async () => {
+    it('should pass requiredMetrics as GalileoMetrics enum values to validation', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
         codePath: validCodeFile,

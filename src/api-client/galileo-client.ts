@@ -129,6 +129,7 @@ export class GalileoApiClientParams {
   public experimentId?: string = undefined;
   public sessionId?: string = undefined;
   public projectScoped: boolean = true;
+  public forceInit: boolean = true;
 }
 
 export class GalileoApiClient extends BaseClient {
@@ -174,8 +175,13 @@ export class GalileoApiClient extends BaseClient {
       datasetId = defaultParams.datasetId,
       experimentId = defaultParams.experimentId,
       sessionId = defaultParams.sessionId,
-      projectScoped = defaultParams.projectScoped
+      projectScoped = defaultParams.projectScoped,
+      forceInit = defaultParams.forceInit
     } = params;
+
+    if (this._isClientInitialized(params) && !forceInit) {
+      return;
+    }
 
     this.projectType = projectType;
 
@@ -329,6 +335,51 @@ export class GalileoApiClient extends BaseClient {
         );
       }
     }
+  }
+
+  /**
+   * Utility function to ensure the Galileo client is initialized.
+   * Checks if the client is already initialized before calling init() to avoid redundant initialization.
+   * A client is considered initialized if it has:
+   * - A projectId (non-empty string) OR is not projectScoped
+   * - Either logStreamId or experimentId set (non-empty string)
+   *
+   * @param client - The GalileoApiClient instance to initialize
+   * @param params - Parameters for client initialization
+   * @returns Promise that resolves when client is initialized
+   */
+  private _isClientInitialized(params: {
+    projectName?: string;
+    projectId?: string;
+    logStreamName?: string;
+    logStreamId?: string;
+    experimentId?: string;
+    sessionId?: string;
+  }): boolean {
+    // Check if client is already initialized
+    // Client is initialized if:
+    // 1. It has a projectId (non-empty string) OR is not projectScoped
+    // 2. It has either logStreamId or experimentId set (non-empty string)
+    // Note: We check client properties first, then fall back to params if needed
+    const hasProject =
+      (this.projectId && this.projectId.trim() !== '') ||
+      !this.projectScoped ||
+      (params.projectId && params.projectId.trim() !== '');
+
+    const hasLogStreamOrExperiment =
+      (this.logStreamId && this.logStreamId.trim() !== '') ||
+      (this.experimentId && this.experimentId.trim() !== '') ||
+      (params.logStreamId && params.logStreamId.trim() !== '') ||
+      (params.experimentId && params.experimentId.trim() !== '');
+
+    // If both conditions are met, client is likely initialized
+    // However, if params provide IDs that differ from client's current state, we should re-init
+    const needsReinit =
+      (params.projectId && params.projectId !== this.projectId) ||
+      (params.logStreamId && params.logStreamId !== this.logStreamId) ||
+      (params.experimentId && params.experimentId !== this.experimentId);
+
+    return Boolean(hasProject && hasLogStreamOrExperiment && !needsReinit);
   }
 
   static getTimestampRecord(): Date {
@@ -790,20 +841,20 @@ export class GalileoApiClient extends BaseClient {
     limit: number = 100
   ): Promise<ListDatasetProjectsResponse> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.listDatasetProjects(datasetId, limit);
+    return this.datasetService.listDatasetProjects(datasetId, limit);
   }
 
   // Trace methods - delegate to TraceService
   public async ingestTracesLegacy(traces: Trace[]) {
     this.ensureService(this.traceService);
-    return this.traceService!.ingestTracesLegacy(traces);
+    return this.traceService.ingestTracesLegacy(traces);
   }
 
   public async ingestTraces(
     options: LogTracesIngestRequest
   ): Promise<LogTracesIngestResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.ingestTraces(options);
+    return this.traceService.ingestTraces(options);
   }
 
   public async createSessionLegacy({
@@ -816,7 +867,7 @@ export class GalileoApiClient extends BaseClient {
     externalId?: string;
   }): Promise<SessionCreateResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.createSessionLegacy({
+    return this.traceService.createSessionLegacy({
       name,
       previousSessionId,
       externalId
@@ -842,7 +893,7 @@ export class GalileoApiClient extends BaseClient {
     request: LogRecordsQueryRequest
   ): Promise<LogRecordsQueryResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.searchSessions(request);
+    return this.traceService.searchSessions(request);
   }
 
   /**
@@ -855,7 +906,7 @@ export class GalileoApiClient extends BaseClient {
     sessionId: string
   ): Promise<ExtendedSessionRecordWithChildren> {
     this.ensureService(this.traceService);
-    return this.traceService!.getSession(sessionId);
+    return this.traceService.getSession(sessionId);
   }
 
   /**
@@ -873,7 +924,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogRecordsDeleteRequest
   ): Promise<LogRecordsDeleteResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.deleteSessions(options);
+    return this.traceService.deleteSessions(options);
   }
 
   /**
@@ -886,7 +937,7 @@ export class GalileoApiClient extends BaseClient {
     traceId: string
   ): Promise<ExtendedTraceRecordWithChildren> {
     this.ensureService(this.traceService);
-    return this.traceService!.getTrace(traceId);
+    return this.traceService.getTrace(traceId);
   }
 
   /**
@@ -910,7 +961,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogTraceUpdateRequest
   ): Promise<LogTraceUpdateResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.updateTrace(options);
+    return this.traceService.updateTrace(options);
   }
 
   /**
@@ -928,7 +979,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogRecordsDeleteRequest
   ): Promise<LogRecordsDeleteResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.deleteTraces(options);
+    return this.traceService.deleteTraces(options);
   }
 
   /**
@@ -950,7 +1001,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogSpansIngestRequest
   ): Promise<LogSpansIngestResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.ingestSpans(options);
+    return this.traceService.ingestSpans(options);
   }
 
   /**
@@ -961,7 +1012,7 @@ export class GalileoApiClient extends BaseClient {
    */
   public async getSpan(spanId: string): Promise<ExtendedSpanRecord> {
     this.ensureService(this.traceService);
-    return this.traceService!.getSpan(spanId);
+    return this.traceService.getSpan(spanId);
   }
 
   /**
@@ -985,7 +1036,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogSpanUpdateRequest
   ): Promise<LogSpanUpdateResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.updateSpan(options);
+    return this.traceService.updateSpan(options);
   }
 
   /**
@@ -1003,7 +1054,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogRecordsDeleteRequest
   ): Promise<LogRecordsDeleteResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.deleteSpans(options);
+    return this.traceService.deleteSpans(options);
   }
 
   /**
@@ -1021,7 +1072,7 @@ export class GalileoApiClient extends BaseClient {
     options: LogRecordsQueryCountRequest
   ): Promise<LogRecordsQueryCountResponse> {
     this.ensureService(this.traceService);
-    return this.traceService!.countTraces(options);
+    return this.traceService.countTraces(options);
   }
 
   /**

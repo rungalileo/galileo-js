@@ -131,12 +131,32 @@ export async function getLogStream(options: {
 }
 
 /**
- * Enables metrics for a log stream.
- * @param options - The options for enabling metrics.
- * @param options.logStreamName - (Optional) The name of the log stream.
- * @param options.projectName - (Optional) The name of the project.
- * @param options.metrics - List of metrics to enable. Can include GalileoMetrics const object values, string names, Metric objects, or LocalMetricConfig objects with scorerFn for client-side scoring.
- * @returns A promise that resolves to the list of local metric configurations that need client-side processing.
+ * Enable metrics for a log stream.
+ *
+ * Supports explicit parameters or environment variables (GALILEO_PROJECT/GALILEO_LOG_STREAM).
+ *
+ * @param options - Configuration options
+ * @param options.logStreamName - Log stream name (overrides env var)
+ * @param options.projectName - Project name (overrides env var)
+ * @param options.metrics - Metrics to enable. Accepts:
+ *   - GalileoMetrics const object values (e.g., GalileoMetrics.correctness)
+ *   - String names (e.g., 'toxicity')
+ *   - Metric objects (e.g., { name: 'custom', version: 2 })
+ *   - LocalMetricConfig objects with scorerFn for client-side scoring
+ *
+ * @returns LocalMetricConfig[] - Client-side metrics that need local processing.
+ *          Server-side metrics are automatically registered.
+ *
+ * @throws Error if project/log stream not found or metrics don't exist
+ *
+ * @example
+ * ```typescript
+ * const localMetrics = await enableMetrics({
+ *   projectName: 'My Project',
+ *   logStreamName: 'Production',
+ *   metrics: [GalileoMetrics.correctness, 'toxicity']
+ * });
+ * ```
  */
 export const enableMetrics = async (options: {
   logStreamName?: string;

@@ -115,6 +115,7 @@ export class TraceService extends BaseClient {
     if (!this.projectId) {
       throw new Error('Project not initialized');
     }
+    options.logStreamId ??= this.logStreamId;
 
     this.validateLogstreamAndExperiment<typeof options>(options);
     const request = this.convertToSnakeCase<
@@ -174,6 +175,8 @@ export class TraceService extends BaseClient {
     }
 
     this.validateLogstreamAndExperiment<typeof options>(options);
+    options.sessionId ??= this.sessionId;
+
     const request = this.convertToSnakeCase<
       typeof options,
       LogTracesIngestRequestOpenAPI

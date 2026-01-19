@@ -1,9 +1,8 @@
 import { AsyncLocalStorage } from 'async_hooks';
+import { GalileoLogger } from './utils/galileo-logger';
+import type { GalileoLoggerConfig } from './types/logging/logger.types';
 import type { LocalMetricConfig } from './types/metrics.types';
-import {
-  GalileoLogger,
-  type GalileoLoggerConfig
-} from './utils/galileo-logger';
+import { StepWithChildSpans } from './types/logging/span.types';
 
 /**
  * Context information that is automatically propagated through async execution chains.
@@ -13,12 +12,37 @@ export interface ExperimentContext {
   experimentId?: string;
   /** (Optional) The project name for the current experiment */
   projectName?: string;
+  /** The parent stack for nested spans (trace, workflow, agent spans) */
+  parentStack?: StepWithChildSpans[];
+  /** The session ID for the current logger context */
+  sessionId?: string;
+  /** The log stream name for the current logger context */
+  logStreamName?: string;
 }
 
 /**
  * AsyncLocalStorage instance for propagating experiment context through async execution chains.
  */
 export const experimentContext = new AsyncLocalStorage<ExperimentContext>();
+
+/**
+ * Logger context information that is automatically propagated through async execution chains.
+ * This allows logger state (parent stack, session) to be available across async boundaries.
+ */
+export interface LoggerContext {
+  /** The parent stack for nested spans (trace, workflow, agent spans) */
+  parentStack?: StepWithChildSpans[];
+  /** The session ID for the current logger context */
+  sessionId?: string;
+  /** The log stream name for the current logger context */
+  logStreamName?: string;
+}
+
+/**
+ * AsyncLocalStorage instance for propagating logger context through async execution chains.
+ * This ensures that parent stack and session information are available across async boundaries.
+ */
+export const loggerContext = new AsyncLocalStorage<LoggerContext>();
 
 /**
  * Options for identifying a logger by its key (project, logstream/experimentId, mode).

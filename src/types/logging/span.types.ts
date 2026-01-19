@@ -1,23 +1,168 @@
-import type { components } from '../api.types';
-import {
-  BaseStep,
+import type {
   BaseStepOptions,
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType,
-  Metrics,
   MetricsOptions,
   RetrieverSpanAllowedOutputType,
+  SerializedStep,
   StepAllowedInputType,
-  StepType
+  StepAllowedOutputType
 } from './step.types';
-import { Message, MessageRole } from '../message.types';
+import { BaseStep, Metrics, StepType } from './step.types';
+import type { SerializedMetrics } from './step.types';
+import type { Message } from '../message.types';
+import { MessageRole } from '../message.types';
 import {
   convertLlmInput,
   convertLlmOutput,
   convertRetrieverOutput
 } from '../../utils/span';
-import { Document } from '../document.types';
-import { MetricValueType } from '../metrics.types';
+import type { Document } from '../document.types';
+import type { MetricValueType } from '../metrics.types';
+import { AgentType } from '../new-api.types';
+
+/**
+ * JSON-serializable value type.
+ * Represents any value that can be serialized to JSON.
+ */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/**
+ * JSON-serializable object type.
+ * Allows undefined values which will be omitted during JSON serialization.
+ */
+export type JsonObject = { [key: string]: JsonValue | undefined };
+
+/**
+ * JSON-serializable array type.
+ */
+export type JsonArray = JsonValue[];
+
+/**
+ * Types of events that can appear in reasoning/multi-turn model outputs.
+ */
+export enum EventType {
+  message = 'message',
+  reasoning = 'reasoning',
+  internal_tool_call = 'internal_tool_call',
+  image_generation = 'image_generation',
+  mcp_call = 'mcp_call',
+  mcp_list_tools = 'mcp_list_tools',
+  mcp_approval_request = 'mcp_approval_request'
+}
+
+/**
+ * Common status values for events.
+ */
+export enum EventStatus {
+  in_progress = 'in_progress',
+  completed = 'completed',
+  failed = 'failed',
+  cancelled = 'cancelled',
+  incomplete = 'incomplete'
+}
+
+/**
+ * Base interface for all event types with common fields.
+ */
+export interface BaseEvent {
+  type: EventType;
+  id?: string;
+  status?: EventStatus;
+  metadata?: JsonObject;
+  errorMessage?: string;
+}
+
+/**
+ * An output message from the model.
+ */
+export interface MessageEvent extends BaseEvent {
+  type: EventType.message;
+  role: MessageRole;
+  content?: string;
+  contentParts?: JsonArray;
+}
+
+/**
+ * Internal reasoning/thinking from the model (e.g., OpenAI o1/o3 reasoning tokens).
+ */
+export interface ReasoningEvent extends BaseEvent {
+  type: EventType.reasoning;
+  content?: string;
+  summary?: string;
+}
+
+/**
+ * A tool call executed internally by the model during reasoning.
+ * This represents internal tools like web search, code execution, file search, etc.
+ * that the model invokes (not user-defined functions or MCP tools).
+ */
+export interface InternalToolCall extends BaseEvent {
+  type: EventType.internal_tool_call;
+  name: string;
+  input?: JsonObject;
+  output?: JsonObject;
+}
+
+/**
+ * An image generation event from the model.
+ */
+export interface ImageGenerationEvent extends BaseEvent {
+  type: EventType.image_generation;
+  prompt?: string;
+  images?: JsonArray;
+  model?: string;
+}
+
+/**
+ * A Model Context Protocol (MCP) tool call.
+ * MCP is a protocol for connecting LLMs to external tools/data sources.
+ * This is distinct from internal tools because it involves external integrations.
+ */
+export interface MCPCallEvent extends BaseEvent {
+  type: EventType.mcp_call;
+  toolName?: string;
+  serverName?: string;
+  arguments?: JsonObject;
+  result?: JsonObject;
+}
+
+/**
+ * MCP list tools event - when the model queries available MCP tools.
+ */
+export interface MCPListToolsEvent extends BaseEvent {
+  type: EventType.mcp_list_tools;
+  serverName?: string;
+  tools?: JsonArray;
+}
+
+/**
+ * MCP approval request - when human approval is needed for an MCP tool call.
+ */
+export interface MCPApprovalRequestEvent extends BaseEvent {
+  type: EventType.mcp_approval_request;
+  toolName?: string;
+  toolInvocation?: JsonObject;
+  approved?: boolean;
+}
+
+/**
+ * Union of all event types.
+ */
+export type Event =
+  | MessageEvent
+  | ReasoningEvent
+  | InternalToolCall
+  | ImageGenerationEvent
+  | MCPCallEvent
+  | MCPListToolsEvent
+  | MCPApprovalRequestEvent;
 
 export interface BaseSpanOptions extends BaseStepOptions {
   input: StepAllowedInputType;
@@ -39,6 +184,10 @@ export interface StepWithChildSpansOptions extends BaseSpanOptions {
   spans?: Span[];
 }
 
+export interface SerializedStepWithChildSpans extends SerializedStep {
+  spans?: JsonArray;
+}
+
 export class StepWithChildSpans extends BaseSpan {
   spans: Span[] = [];
 
@@ -47,11 +196,10 @@ export class StepWithChildSpans extends BaseSpan {
     this.spans = data.spans || [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toJSON(): Record<string, any> {
+  toJSON(): SerializedStepWithChildSpans {
     return {
       ...super.toJSON(),
-      spans: this.spans.map((span) => span.toJSON())
+      spans: this.spans.map((span) => span.toJSON()) as JsonArray
     };
   }
 
@@ -78,23 +226,14 @@ export class WorkflowSpan extends StepWithChildSpans {
   }
 }
 
-// Use API type as source of truth
-export type AgentType = components['schemas']['AgentType'];
-
-// Convert enum to const object with compile-time validation
-export const AgentType = {
-  default: 'default',
-  planner: 'planner',
-  react: 'react',
-  reflection: 'reflection',
-  router: 'router',
-  classifier: 'classifier',
-  supervisor: 'supervisor',
-  judge: 'judge'
-} as const satisfies Record<AgentType, AgentType>;
+export { AgentType };
 
 export interface AgentSpanOptions extends StepWithChildSpansOptions {
   agentType?: AgentType;
+}
+
+export interface SerializedAgentSpan extends SerializedStepWithChildSpans {
+  agentType: AgentType;
 }
 
 export class AgentSpan extends StepWithChildSpans {
@@ -103,19 +242,25 @@ export class AgentSpan extends StepWithChildSpans {
 
   constructor(data: AgentSpanOptions) {
     super(StepType.agent, data);
-    this.agentType = data.agentType || AgentType.default;
+    this.agentType = data.agentType || AgentType.DEFAULT;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toJSON(): Record<string, any> {
+  toJSON(): SerializedAgentSpan {
     return {
       ...super.toJSON(),
-      agent_type: this.agentType
+      agentType: this.agentType
     };
   }
 }
 
 export interface LlmMetricsOptions extends MetricsOptions {
+  numInputTokens?: number;
+  numOutputTokens?: number;
+  numTotalTokens?: number;
+  timeToFirstTokenNs?: number;
+}
+
+export interface SerializedLlmMetrics extends SerializedMetrics {
   numInputTokens?: number;
   numOutputTokens?: number;
   numTotalTokens?: number;
@@ -132,20 +277,14 @@ export class LlmMetrics extends Metrics {
     super(options);
   }
 
-  toJSON(): Record<string, MetricValueType | undefined> {
-    const json = super.toJSON();
-    for (const [oldKey, newKey] of Object.entries({
-      numInputTokens: 'num_input_tokens',
-      numOutputTokens: 'num_output_tokens',
-      numTotalTokens: 'num_total_tokens',
-      timeToFirstTokenNs: 'time_to_first_token_ns'
-    })) {
-      if (oldKey in json) {
-        json[newKey] = json[oldKey];
-        delete json[oldKey];
+  toJSON(): SerializedLlmMetrics {
+    return Object.keys(this).reduce((result, key) => {
+      const value = this[key];
+      if (typeof value !== 'function') {
+        result[key] = value;
       }
-    }
-    return json;
+      return result;
+    }, {} as SerializedLlmMetrics);
   }
 }
 
@@ -155,11 +294,27 @@ export interface LlmSpanOptions extends BaseSpanOptions {
   output: LlmSpanAllowedOutputType;
   redactedOutput?: LlmSpanAllowedOutputType;
   metrics?: LlmMetrics;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tools?: Record<string, any>[];
+  tools?: JsonObject[];
   model?: string;
   temperature?: number;
   finishReason?: string;
+  events?: Event[];
+}
+
+export interface SerializedLlmSpan extends SerializedStep {
+  metrics?: {
+    numInputTokens?: number;
+    numOutputTokens?: number;
+    numTotalTokens?: number;
+    timeToFirstTokenNs?: number;
+    durationNs?: number;
+  };
+  [key: string]:
+    | MetricValueType
+    | JsonArray
+    | StepAllowedInputType
+    | StepAllowedOutputType
+    | undefined;
 }
 
 export class LlmSpan extends BaseSpan {
@@ -169,11 +324,11 @@ export class LlmSpan extends BaseSpan {
   output: Message;
   redactedOutput?: Message;
   metrics: LlmMetrics = new LlmMetrics({});
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tools?: Record<string, any>[];
+  tools?: JsonObject[];
   model?: string;
   temperature?: number;
   finishReason?: string;
+  events?: Event[];
 
   constructor(data: LlmSpanOptions) {
     super(StepType.llm, data);
@@ -196,17 +351,21 @@ export class LlmSpan extends BaseSpan {
     this.model = data.model;
     this.temperature = data.temperature;
     this.finishReason = data.finishReason;
+    this.events = data.events;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toJSON(): Record<string, any> {
+  toJSON(): SerializedLlmSpan {
+    const baseJson = super.toJSON();
+
     return {
-      ...super.toJSON(),
-      tools: this.tools,
+      ...baseJson,
+      metrics: this.metrics.toJSON(),
+      tools: this.tools as JsonArray | undefined,
       model: this.model,
       temperature: this.temperature,
-      finish_reason: this.finishReason
-    };
+      finishReason: this.finishReason,
+      events: this.events as JsonArray | undefined
+    } as SerializedLlmSpan;
   }
 }
 
@@ -215,6 +374,13 @@ export interface RetrieverSpanOptions extends BaseSpanOptions {
   redactedInput?: string;
   output?: RetrieverSpanAllowedOutputType;
   redactedOutput?: RetrieverSpanAllowedOutputType;
+}
+
+export interface SerializedRetrieverSpan extends Omit<
+  SerializedStep,
+  'output'
+> {
+  output: JsonArray;
 }
 
 export class RetrieverSpan extends BaseStep {
@@ -234,24 +400,22 @@ export class RetrieverSpan extends BaseStep {
       : undefined;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toJSON(): Record<string, any> {
+  toJSON(): SerializedRetrieverSpan {
     return {
       ...super.toJSON(),
-      output: this.output.map((doc) => doc.toJSON())
-    };
+      output: this.output.map((doc) => doc.toJSON() as JsonObject) as JsonArray
+    } as SerializedRetrieverSpan;
   }
 }
 
-export interface ToolSpanOptions extends BaseSpanOptions {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  input: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  redactedInput?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  output?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  redactedOutput?: any;
+export interface ToolSpanOptions extends Omit<
+  BaseSpanOptions,
+  'input' | 'redactedInput' | 'output' | 'redactedOutput'
+> {
+  input: JsonValue;
+  redactedInput?: JsonValue;
+  output?: JsonValue;
+  redactedOutput?: JsonValue;
   toolCallId?: string;
 }
 
@@ -264,30 +428,56 @@ export class ToolSpan extends BaseStep {
   toolCallId?: string;
 
   constructor(data: ToolSpanOptions) {
-    super(StepType.tool, data);
+    // Convert JsonValue input to string for BaseStepOptions compatibility
+    super(StepType.tool, {
+      ...data,
+      input:
+        typeof data.input === 'string'
+          ? data.input
+          : JSON.stringify(data.input),
+      redactedInput: data.redactedInput
+        ? typeof data.redactedInput === 'string'
+          ? data.redactedInput
+          : JSON.stringify(data.redactedInput)
+        : undefined,
+      output:
+        typeof data.output === 'string'
+          ? data.output
+          : JSON.stringify(data.output),
+      redactedOutput: data.redactedOutput
+        ? typeof data.redactedOutput === 'string'
+          ? data.redactedOutput
+          : JSON.stringify(data.redactedOutput)
+        : undefined
+    });
+
+    // Convert JsonValue to string for storage
     this.input =
       typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
     this.redactedInput =
       typeof data.redactedInput === 'string'
         ? data.redactedInput
-        : JSON.stringify(data.redactedInput);
+        : data.redactedInput !== undefined
+          ? JSON.stringify(data.redactedInput)
+          : undefined;
     this.output =
       typeof data.output === 'string'
-        ? (data.output ?? '')
+        ? data.output
         : JSON.stringify(data.output);
     this.redactedOutput =
       typeof data.redactedOutput === 'string'
         ? (data.redactedOutput ?? '')
-        : JSON.stringify(data.redactedOutput);
+        : data.redactedOutput !== undefined
+          ? JSON.stringify(data.redactedOutput)
+          : undefined;
     this.toolCallId = data.toolCallId;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  toJSON(): Record<string, any> {
+  toJSON(): SerializedStep {
     return {
       ...super.toJSON(),
       toolCallId: this.toolCallId
-    };
+    } as SerializedStep;
   }
 }
 
