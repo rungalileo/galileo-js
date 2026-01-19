@@ -77,7 +77,7 @@ export class StreamingFinalizer {
       numOutputTokens: metrics.tokenUsage?.completionTokens,
       totalTokens: metrics.tokenUsage?.totalTokens,
       durationNs: metrics.durationNs,
-      timeToFirstTokenNs: metrics.ttftNs,
+      timeToFirstTokenNs: metrics.ttftNs ?? undefined,
       statusCode,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       tools: this.requestData.tools,
@@ -98,7 +98,6 @@ export class StreamingFinalizer {
 
   /**
    * Update span incrementally during streaming (for real-time updates)
-   * This uses mocked logger methods that will be replaced when streaming mode PR is merged
    * @param output Current output state (can be partial)
    * @param spanId Optional span ID if available (currently unused, reserved for future use)
    */
@@ -118,18 +117,18 @@ export class StreamingFinalizer {
     // Type guard to check if logger has streaming methods
     const loggerWithStreaming = this.logger as GalileoLoggerWithStreaming;
 
-    // Use mocked logger method for incremental updates
-    // This will be replaced with actual implementation when streaming mode PR is merged
-    if (currentParent.type === 'span') {
-      // Mock implementation - assumes _updateSpanStreaming exists in another branch/PR
-      loggerWithStreaming._updateSpanStreaming?.(currentParent as Span, output);
-    } else if (currentParent.type === 'trace') {
+    // TO-DO: After logger PR merged, substitute for actual implementation.
+    if (currentParent instanceof Trace) {
       // Mock implementation - assumes _updateTraceStreaming exists in another branch/PR
       loggerWithStreaming._updateTraceStreaming?.(
-        currentParent as Trace,
+        currentParent,
         output,
         false
       );
+    } else {
+      // Mock implementation - assumes _updateSpanStreaming exists in another branch/PR
+      // currentParent is a Span (WorkflowSpan, AgentSpan, etc.)
+      loggerWithStreaming._updateSpanStreaming?.(currentParent as Span, output);
     }
   }
 }
