@@ -10,6 +10,7 @@ import {
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType
 } from '../../types/logging/step.types';
+import { JsonObject } from '../../types/base.types';
 
 /**
  * Tool definition type (matches LlmSpan tools type)
@@ -26,7 +27,7 @@ export interface BaseStreamingAdapterConfig {
     model?: string;
     metadata?: Record<string, string>;
     name?: string;
-    tools?: ToolDefinition[];
+    tools?: JsonObject[];
     temperature?: number;
   };
   shouldCompleteTrace: boolean;
@@ -105,15 +106,6 @@ export abstract class BaseStreamingAdapter {
     statusCode: number = 200
   ): void {
     this.finalizer.finalize(output, statusCode);
-  }
-
-  /**
-   * Update span incrementally during streaming (for real-time updates)
-   * Delegates to finalizer which uses mocked logger methods
-   * @param output Current output state (can be partial)
-   */
-  protected updateSpanIncremental(output: LlmSpanAllowedOutputType): void {
-    this.finalizer.updateSpanIncremental(output);
   }
 
   /**

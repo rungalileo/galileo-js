@@ -3,7 +3,7 @@ import type { components } from '../api.types';
 import { Document } from '../document.types';
 import { isMessage, type Message } from '../message.types';
 import type { MetricValueType } from '../metrics.types';
-import type { JsonArray } from './span.types';
+import type { JsonArray } from '../base.types';
 
 export type StepAllowedInputType =
   | string
@@ -111,10 +111,11 @@ export interface BaseStepOptions {
   id?: string;
 }
 
-export interface SerializedStep extends Omit<
-  BaseStepOptions,
-  'metrics' | 'createdAt' | 'output' | 'redactedOutput'
-> {
+export interface SerializedStep
+  extends Omit<
+    BaseStepOptions,
+    'metrics' | 'createdAt' | 'output' | 'redactedOutput'
+  > {
   metrics?: SerializedMetrics;
   type: StepType;
   createdAt: string;

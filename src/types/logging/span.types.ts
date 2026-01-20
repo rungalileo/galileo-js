@@ -20,29 +20,7 @@ import {
 import type { Document } from '../document.types';
 import type { MetricValueType } from '../metrics.types';
 import { AgentType } from '../new-api.types';
-
-/**
- * JSON-serializable value type.
- * Represents any value that can be serialized to JSON.
- */
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
-/**
- * JSON-serializable object type.
- * Allows undefined values which will be omitted during JSON serialization.
- */
-export type JsonObject = { [key: string]: JsonValue | undefined };
-
-/**
- * JSON-serializable array type.
- */
-export type JsonArray = JsonValue[];
+import type { JsonValue, JsonObject, JsonArray } from '../base.types';
 
 /**
  * Types of events that can appear in reasoning/multi-turn model outputs.
@@ -376,10 +354,8 @@ export interface RetrieverSpanOptions extends BaseSpanOptions {
   redactedOutput?: RetrieverSpanAllowedOutputType;
 }
 
-export interface SerializedRetrieverSpan extends Omit<
-  SerializedStep,
-  'output'
-> {
+export interface SerializedRetrieverSpan
+  extends Omit<SerializedStep, 'output'> {
   output: JsonArray;
 }
 
@@ -408,10 +384,11 @@ export class RetrieverSpan extends BaseStep {
   }
 }
 
-export interface ToolSpanOptions extends Omit<
-  BaseSpanOptions,
-  'input' | 'redactedInput' | 'output' | 'redactedOutput'
-> {
+export interface ToolSpanOptions
+  extends Omit<
+    BaseSpanOptions,
+    'input' | 'redactedInput' | 'output' | 'redactedOutput'
+  > {
   input: JsonValue;
   redactedInput?: JsonValue;
   output?: JsonValue;

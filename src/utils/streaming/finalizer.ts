@@ -4,9 +4,7 @@ import type {
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType
 } from '../../types/logging/step.types';
-import type { Span } from '../../types/logging/span.types';
-import { Trace } from '../../types/logging/trace.types';
-import type { ToolDefinition } from './base-streaming-adapter';
+import type { JsonObject } from '../../types/base.types';
 
 /**
  * Configuration for streaming finalization
@@ -19,7 +17,7 @@ export interface StreamingFinalizerConfig {
     model?: string;
     metadata?: Record<string, string>;
     name?: string;
-    tools?: ToolDefinition[];
+    tools?: JsonObject[];
     temperature?: number;
   };
   shouldCompleteTrace: boolean;
@@ -80,34 +78,6 @@ export class StreamingFinalizer {
         output: outputString,
         durationNs: metrics.durationNs
       });
-    }
-  }
-
-  /**
-   * Update span incrementally during streaming (for real-time updates)
-   * @param output Current output state (can be partial)
-   * @param spanId Optional span ID if available (currently unused, reserved for future use)
-   */
-  updateSpanIncremental(
-    output: LlmSpanAllowedOutputType,
-    spanId?: string
-  ): void {
-    void spanId;
-    // Get current parent span or trace
-    const currentParent = this.logger.currentParent();
-
-    if (!currentParent) {
-      // No active span/trace, skip incremental update
-      return;
-    }
-
-    // Call streaming update methods (mock implementations in GalileoLogger)
-    if (currentParent instanceof Trace) {
-      // Update trace with partial output during streaming
-      this.logger._updateTraceStreaming(currentParent, output, false);
-    } else {
-      // currentParent is a Span (WorkflowSpan, AgentSpan, LlmSpan, etc.)
-      this.logger._updateSpanStreaming(currentParent as Span, output);
     }
   }
 }
