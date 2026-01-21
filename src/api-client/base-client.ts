@@ -12,7 +12,7 @@ import {
   ObjectToSnake,
   ObjectToCamel
 } from 'ts-case-convert';
-import { HTTPValidationError } from '../types/errors.types';
+import { HTTPValidationError, GalileoAPIError } from '../types/errors.types';
 
 // Type guards for snake_case and camelCase conversion
 type ValidatedSnakeCase<T extends object, TTarget> =
@@ -31,15 +31,21 @@ export enum RequestMethod {
 export const GENERIC_ERROR_MESSAGE =
   'This error has been automatically tracked. Please try again.';
 
-export const parseApiErrorMessage = (error: any) => {
-  const errorMessage =
-    typeof error?.detail === 'string'
-      ? error?.detail
-      : typeof error?.detail?.[0].msg === 'string'
-        ? error?.detail?.[0].msg
-        : GENERIC_ERROR_MESSAGE;
+export const parseApiErrorMessage = (error: any): GalileoAPIError | string => {
+  if (error?.standard_error) {
+    return new GalileoAPIError(error.standard_error);
+  } else if (error?.detail) {
+    const errorMessage =
+      typeof error?.detail === 'string'
+        ? error?.detail
+        : typeof error?.detail?.[0].msg === 'string'
+          ? error?.detail?.[0].msg
+          : GENERIC_ERROR_MESSAGE;
 
-  return errorMessage;
+    return errorMessage;
+  } else {
+    return GENERIC_ERROR_MESSAGE;
+  }
 };
 
 export class BaseClient {
