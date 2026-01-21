@@ -387,8 +387,8 @@ export class RetrieverSpan extends BaseStep {
 }
 
 export interface ToolSpanOptions extends Omit<
-    BaseSpanOptions,
-    'input' | 'redactedInput' | 'output' | 'redactedOutput'
+  BaseSpanOptions,
+  'input' | 'redactedInput' | 'output' | 'redactedOutput'
 > {
   input: JsonValue;
   redactedInput?: JsonValue;
