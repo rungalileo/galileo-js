@@ -510,4 +510,3 @@ describe('StreamingFinalizer', () => {
     });
   });
 });
-
