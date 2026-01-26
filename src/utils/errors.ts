@@ -5,6 +5,7 @@ import { AxiosError } from 'axios';
  */
 export interface ErrorInfo {
   statusCode: number;
+  statusMessage?: string;
   message: string;
 }
 
@@ -22,6 +23,7 @@ export class ErrorManager {
     if (error instanceof AxiosError) {
       return {
         statusCode: error.response?.status || 500,
+        statusMessage: error.response?.statusText,
         message: error.message
       };
     }

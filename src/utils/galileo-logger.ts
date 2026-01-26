@@ -107,7 +107,7 @@ class GalileoLogger implements IGalileoLogger {
    *
    * @param config - Logger configuration
    * @returns Promise that resolves to a fully initialized logger
-   * @throws Error if trace or span initialization fails
+   * @throws Error if config validation fails or trace/span initialization fails
    */
   static async create(
     config: GalileoLoggerConfigExtended = {}
