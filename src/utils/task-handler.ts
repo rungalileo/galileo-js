@@ -171,6 +171,13 @@ export class TaskHandler {
     return newTask;
   }
 
+  /**
+   * Submits a task for execution with optional parent dependency tracking.
+   * @param taskId - The unique identifier for the task.
+   * @param asyncFn - The async function to execute. Use async/await syntax to ensure synchronous errors are converted to rejected promises.
+   * @param parentTaskId - (Optional) The ID of a parent task this task depends on. If provided, this task waits for parent completion.
+   * @returns A promise that resolves to the task result or rejects if the task or its parent fails.
+   */
   async submitTask<T>(
     taskId: string,
     asyncFn: () => Promise<T>,

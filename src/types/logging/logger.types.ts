@@ -9,8 +9,7 @@ import type {
   ToolSpan,
   WorkflowSpan,
   AgentSpan,
-  Event,
-  JsonObject
+  Event
 } from './span.types';
 import type {
   LlmSpanAllowedInputType,
@@ -18,7 +17,7 @@ import type {
   RetrieverSpanAllowedOutputType
 } from './step.types';
 import type { AgentType, Payload, ProtectResponse } from '../new-api.types';
-
+import type { JsonObject } from '../base.types';
 export interface GalileoLoggerConfig {
   projectName?: string;
   logStreamName?: string;

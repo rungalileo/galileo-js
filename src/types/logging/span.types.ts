@@ -20,29 +20,7 @@ import {
 import type { Document } from '../document.types';
 import type { MetricValueType } from '../metrics.types';
 import { AgentType } from '../new-api.types';
-
-/**
- * JSON-serializable value type.
- * Represents any value that can be serialized to JSON.
- */
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
-/**
- * JSON-serializable object type.
- * Allows undefined values which will be omitted during JSON serialization.
- */
-export type JsonObject = { [key: string]: JsonValue | undefined };
-
-/**
- * JSON-serializable array type.
- */
-export type JsonArray = JsonValue[];
+import type { JsonValue, JsonObject, JsonArray } from '../base.types';
 
 /**
  * Types of events that can appear in reasoning/multi-turn model outputs.
@@ -482,7 +460,12 @@ export class ToolSpan extends BaseStep {
 }
 
 // Type for all span types
-export type Span = WorkflowSpan | LlmSpan | RetrieverSpan | ToolSpan;
+export type Span =
+  | WorkflowSpan
+  | AgentSpan
+  | LlmSpan
+  | RetrieverSpan
+  | ToolSpan;
 
 /**
  * Type guard to validate if a value is a valid AgentType

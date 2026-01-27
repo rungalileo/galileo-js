@@ -10,9 +10,9 @@ import {
   type Span,
   StepWithChildSpans,
   ToolSpan,
-  WorkflowSpan,
-  type JsonObject
+  WorkflowSpan
 } from '../types/logging/span.types';
+import type { JsonObject } from '../types/base.types';
 import { type SpanSchema, Trace } from '../types/logging/trace.types';
 import {
   type RetrieverSpanAllowedOutputType,
@@ -107,7 +107,7 @@ class GalileoLogger implements IGalileoLogger {
    *
    * @param config - Logger configuration
    * @returns Promise that resolves to a fully initialized logger
-   * @throws Error if trace or span initialization fails
+   * @throws Error if config validation fails or trace/span initialization fails
    */
   static async create(
     config: GalileoLoggerConfigExtended = {}
@@ -126,6 +126,8 @@ class GalileoLogger implements IGalileoLogger {
       if (config.spanId) {
         await logger.initSpan(config.spanId);
       }
+    } else if (config.traceId || config.spanId) {
+      throw new Error('traceId and spanId can only be used in streaming mode.');
     }
 
     return logger;
@@ -1207,6 +1209,13 @@ class GalileoLogger implements IGalileoLogger {
    */
   async flush(): Promise<Trace[]> {
     try {
+      if (this.mode === 'streaming') {
+        console.warn(
+          'Flushing in streaming mode is not supported. Traces are automatically ingested as they are created.'
+        );
+        return [];
+      }
+
       if (!this.traces.length) {
         console.warn('No traces to flush.');
         return [];
