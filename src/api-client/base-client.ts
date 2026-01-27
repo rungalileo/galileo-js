@@ -15,7 +15,6 @@ import {
 import {
   HTTPValidationError,
   GalileoAPIError,
-  GalileoAPIStandardErrorData,
   isGalileoAPIStandardErrorData
 } from '../types/errors.types';
 
