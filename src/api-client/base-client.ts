@@ -13,7 +13,6 @@ import {
   ObjectToCamel
 } from 'ts-case-convert';
 import {
-  HTTPValidationError,
   GalileoAPIError,
   isGalileoAPIStandardErrorData
 } from '../types/errors.types';

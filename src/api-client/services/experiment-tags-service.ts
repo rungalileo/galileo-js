@@ -1,7 +1,6 @@
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
 import type { RunTagDB, RunTagDBOpenAPI } from '../../types/experiment.types';
-import { ExperimentTagsAPIException } from '../../utils/errors';
 
 export class ExperimentTagsService extends BaseClient {
   private projectId: string;
