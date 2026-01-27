@@ -19,32 +19,19 @@ export class ExperimentTagsService extends BaseClient {
    * @returns A promise that resolves to an array of experiment tags.
    */
   public async getExperimentTags(experimentId: string): Promise<RunTagDB[]> {
-    try {
-      const response = await this.makeRequest<RunTagDBOpenAPI[]>(
-        RequestMethod.GET,
-        Routes.experimentTags,
-        null,
-        {
-          project_id: this.projectId,
-          experiment_id: experimentId
-        }
-      );
-
-      return response.map((item) =>
-        this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(item)
-      );
-    } catch (error) {
-      // Check if it's an HTTPValidationError
-      if (this.isHTTPValidationError(error)) {
-        throw new ExperimentTagsAPIException(
-          `Failed to get experiment tags: ${this.extractErrorDetail(error)}`
-        );
+    const response = await this.makeRequest<RunTagDBOpenAPI[]>(
+      RequestMethod.GET,
+      Routes.experimentTags,
+      null,
+      {
+        project_id: this.projectId,
+        experiment_id: experimentId
       }
-      // Re-throw as typed exception
-      throw new ExperimentTagsAPIException(
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    );
+
+    return response.map((item) =>
+      this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(item)
+    );
   }
 
   /**
@@ -63,64 +50,45 @@ export class ExperimentTagsService extends BaseClient {
     value: string,
     tagType: string = 'generic'
   ): Promise<RunTagDB> {
-    try {
-      // First, check if a tag with this key already exists
-      const existingTags = await this.getExperimentTags(experimentId);
-      const existingTag = existingTags.find((tag) => tag.key === key);
+    // First, check if a tag with this key already exists
+    const existingTags = await this.getExperimentTags(experimentId);
+    const existingTag = existingTags.find((tag) => tag.key === key);
 
-      if (existingTag) {
-        // Tag exists - use PUT to update it
-        const response = await this.makeRequest<RunTagDBOpenAPI>(
-          RequestMethod.PUT,
-          Routes.experimentTag,
-          {
-            key,
-            value,
-            tag_type: tagType
-          },
-          {
-            project_id: this.projectId,
-            experiment_id: experimentId,
-            tag_id: existingTag.id
-          }
-        );
-        if (!response) {
-          throw new ExperimentTagsAPIException('No response received from API');
+    if (existingTag) {
+      // Tag exists - use PUT to update it
+      const response = await this.makeRequest<RunTagDBOpenAPI>(
+        RequestMethod.PUT,
+        Routes.experimentTag,
+        {
+          key,
+          value,
+          tag_type: tagType
+        },
+        {
+          project_id: this.projectId,
+          experiment_id: experimentId,
+          tag_id: existingTag.id
         }
-
-        return this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(response);
-      } else {
-        // Tag doesn't exist - use POST to create it
-        const response = await this.makeRequest<RunTagDBOpenAPI>(
-          RequestMethod.POST,
-          Routes.experimentTags,
-          {
-            key,
-            value,
-            tag_type: tagType
-          },
-          {
-            project_id: this.projectId,
-            experiment_id: experimentId
-          }
-        );
-        if (!response) {
-          throw new ExperimentTagsAPIException('No response received from API');
-        }
-        return this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(response);
-      }
-    } catch (error) {
-      if (error instanceof ExperimentTagsAPIException) {
-        throw error;
-      }
-      if (this.isHTTPValidationError(error)) {
-        throw new ExperimentTagsAPIException(
-          `Failed to upsert experiment tag: ${this.extractErrorDetail(error)}`
-        );
-      }
-      throw new ExperimentTagsAPIException(
-        error instanceof Error ? error.message : String(error)
       );
+
+      return this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(response);
+    } else {
+      // Tag doesn't exist - use POST to create it
+      const response = await this.makeRequest<RunTagDBOpenAPI>(
+        RequestMethod.POST,
+        Routes.experimentTags,
+        {
+          key,
+          value,
+          tag_type: tagType
+        },
+        {
+          project_id: this.projectId,
+          experiment_id: experimentId
+        }
+      );
+
+      return this.convertToCamelCase<RunTagDBOpenAPI, RunTagDB>(response);
     }
   }
 
@@ -134,26 +102,15 @@ export class ExperimentTagsService extends BaseClient {
     experimentId: string,
     tagId: string
   ): Promise<void> {
-    try {
-      await this.makeRequest<void>(
-        RequestMethod.DELETE,
-        Routes.experimentTag,
-        null,
-        {
-          project_id: this.projectId,
-          experiment_id: experimentId,
-          tag_id: tagId
-        }
-      );
-    } catch (error) {
-      if (this.isHTTPValidationError(error)) {
-        throw new ExperimentTagsAPIException(
-          `Failed to delete experiment tag: ${this.extractErrorDetail(error)}`
-        );
+    await this.makeRequest<void>(
+      RequestMethod.DELETE,
+      Routes.experimentTag,
+      null,
+      {
+        project_id: this.projectId,
+        experiment_id: experimentId,
+        tag_id: tagId
       }
-      throw new ExperimentTagsAPIException(
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    );
   }
 }

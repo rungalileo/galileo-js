@@ -1,3 +1,5 @@
+import { Readable } from 'stream';
+import axios from 'axios';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import {
@@ -22,9 +24,17 @@ class TestClient extends BaseClient {
   public async testRequest() {
     return this.makeRequest(RequestMethod.GET, Routes.healthCheck);
   }
+
+  public setTokenForTest(t: string): void {
+    this.token = t;
+  }
 }
 
 let capturedHeaders: Record<string, string> = {};
+
+const getProjectHandler = jest
+  .fn()
+  .mockImplementation(() => HttpResponse.json({ id: 'p-1' }));
 
 const server = setupServer(
   http.get('http://localhost:8088/healthcheck', ({ request }) => {
@@ -33,7 +43,8 @@ const server = setupServer(
       capturedHeaders[key] = value;
     });
     return HttpResponse.json({ status: 'ok' });
-  })
+  }),
+  http.get('http://localhost:8088/projects/p-1', () => getProjectHandler())
 );
 
 beforeAll(() => server.listen());
@@ -326,5 +337,141 @@ describe('BaseClient API error handling', () => {
     const client = new TestClient();
 
     await expect(client.testRequest()).rejects.toThrow(GENERIC_ERROR_MESSAGE);
+  });
+
+  test('test makeRequest throws with GENERIC_ERROR_MESSAGE when detail is array but first element has no msg', async () => {
+    server.use(
+      http.get('http://localhost:8088/healthcheck', () =>
+        HttpResponse.json(
+          {
+            detail: [{ loc: ['body', 'x'], type: 'value_error' }]
+          },
+          { status: 422 }
+        )
+      )
+    );
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.toThrow(
+      /non-ok status code 422 with output: This error has been automatically tracked/
+    );
+  });
+});
+
+describe('BaseClient path parameter substitution', () => {
+  test('test makeRequest substitutes project_id in route and hits correct URL', async () => {
+    const client = new TestClient();
+    getProjectHandler.mockClear();
+
+    const result = await client.makeRequest<{ id: string }>(
+      RequestMethod.GET,
+      Routes.project,
+      null,
+      { project_id: 'p-1' }
+    );
+
+    expect(getProjectHandler).toHaveBeenCalled();
+    expect(result).toEqual({ id: 'p-1' });
+  });
+});
+
+describe('BaseClient makeStreamingRequest', () => {
+  test('test makeStreamingRequest returns Readable and can be consumed', async () => {
+    const client = new TestClient();
+
+    const stream = await client.makeStreamingRequest(
+      RequestMethod.GET,
+      Routes.healthCheck
+    );
+
+    expect(stream).toBeDefined();
+    expect(stream instanceof Readable).toBe(true);
+    const data = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk: Buffer) =>
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      );
+      stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+      stream.on('error', reject);
+    });
+    expect(data.length).toBeGreaterThan(0);
+    expect(JSON.parse(data)).toEqual({ status: 'ok' });
+  });
+
+  test('test makeStreamingRequest on 4xx with JSON stream body throws GalileoAPIError', async () => {
+    const body = JSON.stringify({
+      standard_error: VALID_STANDARD_ERROR
+    });
+    const streamBody = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(body));
+        controller.close();
+      }
+    });
+    server.use(
+      http.get(
+        'http://localhost:8088/healthcheck',
+        () =>
+          new HttpResponse(streamBody, {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          })
+      )
+    );
+    const client = new TestClient();
+
+    let err: unknown;
+    try {
+      await client.makeStreamingRequest(RequestMethod.GET, Routes.healthCheck);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(GalileoAPIError);
+    expect((err as GalileoAPIError).message).toBe(VALID_STANDARD_ERROR.message);
+  });
+
+  test('test makeStreamingRequest on 4xx with non-JSON stream body throws with detail', async () => {
+    const streamBody = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('not valid json'));
+        controller.close();
+      }
+    });
+    server.use(
+      http.get(
+        'http://localhost:8088/healthcheck',
+        () => new HttpResponse(streamBody, { status: 400 })
+      )
+    );
+    const client = new TestClient();
+
+    await expect(
+      client.makeStreamingRequest(RequestMethod.GET, Routes.healthCheck)
+    ).rejects.toThrow(/non-ok status code 400 with output: not valid json/);
+  });
+});
+
+describe('BaseClient validateError', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  test('test validateError throws Request failed when Axios error has no response', async () => {
+    const networkError = Object.assign(new Error('Network Error'), {
+      isAxiosError: true
+    });
+    jest.spyOn(axios, 'request').mockRejectedValue(networkError);
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.toThrow(
+      'Request failed: Network Error'
+    );
+  });
+
+  test('test validateError rethrows non-Axios error', async () => {
+    jest.spyOn(axios, 'request').mockRejectedValue(new Error('custom'));
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.toThrow('custom');
   });
 });

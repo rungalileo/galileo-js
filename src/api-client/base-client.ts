@@ -190,7 +190,7 @@ export class BaseClient {
       this.validateAxiosResponse(response);
       return response.data;
     } catch (error) {
-      this.validateError(error);
+      return await this.validateError(error);
     }
   }
 
@@ -267,7 +267,7 @@ export class BaseClient {
       this.validateAxiosResponse(response);
       return response.data;
     } catch (error) {
-      this.validateError(error);
+      return await this.validateError(error);
     }
   }
 
@@ -358,37 +358,35 @@ export class BaseClient {
     }
   }
 
-  protected isHTTPValidationError(
-    error: unknown
-  ): error is HTTPValidationError {
-    return typeof error === 'object' && error !== null && 'detail' in error;
+  private readStreamToString(stream: Readable): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk: Buffer | string) =>
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      );
+      stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+      stream.on('error', reject);
+    });
   }
 
-  protected extractErrorDetail(error: unknown): string {
-    if (this.isHTTPValidationError(error)) {
-      const httpError = error as HTTPValidationError;
-      if (typeof httpError.detail === 'string') {
-        return httpError.detail;
-      }
-      // Handle array of validation errors
-      if (Array.isArray(httpError.detail)) {
-        return httpError.detail
-          .map((err) => {
-            const loc = err.loc ? err.loc.join('.') : 'unknown';
-            const msg = err.msg || 'validation error';
-            return `${loc}: ${msg}`;
-          })
-          .join('; ');
-      }
-      return JSON.stringify(httpError.detail);
-    }
-    return error instanceof Error ? error.message : String(error);
-  }
-
-  private validateError(error: unknown): never {
+  private async validateError(error: unknown): Promise<never> {
     if (axios.isAxiosError(error)) {
       if (error.response) {
-        this.validateAxiosResponse(error.response);
+        let data: unknown = error.response.data;
+        if (data instanceof Readable) {
+          const raw = await this.readStreamToString(data);
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            data = { detail: raw };
+          }
+          this.validateAxiosResponse({
+            ...error.response,
+            data
+          } as AxiosResponse);
+        } else {
+          this.validateAxiosResponse(error.response);
+        }
       }
 
       const errorMessage = error.message || GENERIC_ERROR_MESSAGE;
