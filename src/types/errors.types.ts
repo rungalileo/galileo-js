@@ -23,7 +23,7 @@ export interface GalileoAPIStandardErrorData {
   /** Human-readable error message */
   message: string;
   /** Suggested action for the user to resolve the error */
-  user_action: string;
+  user_action?: string;
   /** Optional link to documentation about this error */
   documentation_link?: string | null;
   /** Whether the error is retriable (client can retry the request) */
@@ -31,9 +31,53 @@ export interface GalileoAPIStandardErrorData {
   /** Whether the error is blocking (requires user intervention) */
   blocking: boolean;
   /** HTTP status code associated with this error */
-  http_status_code: number;
+  http_status_code?: number;
+  /** Internal identifier of the service emitting the error (api, runners, ui) */
+  source_service?: string | null;
   /** Optional context information (e.g., exception_type, exception_message) */
   context?: Record<string, unknown> | null;
+}
+
+/**
+ * Type guard to validate if an object matches the GalileoAPIStandardErrorData interface.
+ * @param value - The value to validate
+ * @returns True if the value matches the interface shape, false otherwise
+ */
+export function isGalileoAPIStandardErrorData(
+  value: unknown
+): value is GalileoAPIStandardErrorData {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  return (
+    typeof obj.error_code === 'number' &&
+    typeof obj.error_type === 'string' &&
+    typeof obj.error_group === 'string' &&
+    typeof obj.severity === 'string' &&
+    typeof obj.message === 'string' &&
+    typeof obj.retriable === 'boolean' &&
+    typeof obj.blocking === 'boolean' &&
+    (obj.user_action === undefined ||
+      obj.user_action === null ||
+      typeof obj.user_action === 'string') &&
+    (obj.documentation_link === undefined ||
+      obj.documentation_link === null ||
+      typeof obj.documentation_link === 'string') &&
+    (obj.http_status_code === undefined ||
+      obj.http_status_code === null ||
+      typeof obj.http_status_code === 'number') &&
+    (obj.source_service === undefined ||
+      obj.source_service === null ||
+      typeof obj.source_service === 'string') &&
+    (obj.context === undefined ||
+      obj.context === null ||
+      (typeof obj.context === 'object' &&
+        obj.context !== null &&
+        !Array.isArray(obj.context)))
+  );
 }
 
 /**
@@ -48,11 +92,12 @@ export class GalileoAPIError extends Error {
   readonly errorType: string;
   readonly errorGroup: string;
   readonly severity: string;
-  readonly userAction: string;
+  readonly userAction?: string;
   readonly documentationLink?: string | null;
   readonly retriable: boolean;
   readonly blocking: boolean;
-  readonly httpStatusCode: number;
+  readonly httpStatusCode?: number;
+  readonly sourceService?: string | null;
   readonly context?: Record<string, unknown> | null;
 
   constructor(data: GalileoAPIStandardErrorData) {
@@ -67,6 +112,7 @@ export class GalileoAPIError extends Error {
     this.retriable = data.retriable;
     this.blocking = data.blocking;
     this.httpStatusCode = data.http_status_code;
+    this.sourceService = data.source_service ?? null;
     this.context = data.context ?? null;
   }
 
@@ -87,6 +133,7 @@ export class GalileoAPIError extends Error {
       retriable: this.retriable,
       blocking: this.blocking,
       httpStatusCode: this.httpStatusCode,
+      sourceService: this.sourceService,
       context: this.context,
       stack: this.stack
     };

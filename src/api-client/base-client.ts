@@ -12,7 +12,12 @@ import {
   ObjectToSnake,
   ObjectToCamel
 } from 'ts-case-convert';
-import { HTTPValidationError, GalileoAPIError } from '../types/errors.types';
+import {
+  HTTPValidationError,
+  GalileoAPIError,
+  GalileoAPIStandardErrorData,
+  isGalileoAPIStandardErrorData
+} from '../types/errors.types';
 
 // Type guards for snake_case and camelCase conversion
 type ValidatedSnakeCase<T extends object, TTarget> =
@@ -30,23 +35,6 @@ export enum RequestMethod {
 
 export const GENERIC_ERROR_MESSAGE =
   'This error has been automatically tracked. Please try again.';
-
-export const parseApiErrorMessage = (error: any): GalileoAPIError | string => {
-  if (error?.standard_error) {
-    return new GalileoAPIError(error.standard_error);
-  } else if (error?.detail) {
-    const errorMessage =
-      typeof error?.detail === 'string'
-        ? error?.detail
-        : typeof error?.detail?.[0].msg === 'string'
-          ? error?.detail?.[0].msg
-          : GENERIC_ERROR_MESSAGE;
-
-    return errorMessage;
-  } else {
-    return GENERIC_ERROR_MESSAGE;
-  }
-};
 
 export class BaseClient {
   protected apiUrl: string = '';
@@ -155,7 +143,6 @@ export class BaseClient {
     };
 
     const response = await axios.request<T>(config);
-    this.validateResponse(response);
     return response;
   }
 
@@ -200,20 +187,11 @@ export class BaseClient {
         params,
         extraHeaders
       );
+
+      this.validateAxiosResponse(response);
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          this.validateResponse(error.response);
-        }
-
-        // Throw if validateResponse doesn't identify status code
-        const errorMessage = error.message || GENERIC_ERROR_MESSAGE;
-        throw new Error(`Request failed: ${errorMessage}`);
-      }
-
-      // Re-throw non-axios errors
-      throw error;
+      this.validateError(error);
     }
   }
 
@@ -277,21 +255,21 @@ export class BaseClient {
         params && 'group_id' in params ? (params.group_id as string) : ''
       )}`;
 
-    const response = await axios.request<Readable>({
-      method: request_method,
-      url: endpointPath,
-      params,
-      headers,
-      data,
-      responseType: 'stream'
-    });
+    try {
+      const response = await axios.request<Readable>({
+        method: request_method,
+        url: endpointPath,
+        params,
+        headers,
+        data,
+        responseType: 'stream'
+      });
 
-    if (response.status >= 300) {
-      const errorMessage = `Streaming request failed with status ${response.status}`;
-      throw new Error(errorMessage);
+      this.validateAxiosResponse(response);
+      return response.data;
+    } catch (error) {
+      this.validateError(error);
     }
-
-    return response.data;
   }
 
   public convertToSnakeCase<T extends object, TTarget>(
@@ -352,59 +330,13 @@ export class BaseClient {
     );
   }
 
-  protected processResponse<T>(
-    data: T | undefined,
-    error: object | unknown
-  ): T {
-    if (error) {
-      let statusCode: number | undefined;
-      let errorData: any = error;
-
-      if (typeof error === 'object' && error !== null) {
-        if ('status' in error && typeof error.status === 'number') {
-          statusCode = error.status;
-        }
-
-        if ('data' in error) {
-          errorData = error.data;
-        } else if ('response' in error && typeof error.response === 'object') {
-          const response = error.response as any;
-          if (response?.status) {
-            statusCode = response.status;
-          }
-          if (response?.data) {
-            errorData = response.data;
-          }
-        }
-      }
-
-      // Use parseApiErrorMessage for consistent error message formatting
-      const errorMessage = parseApiErrorMessage(errorData);
-
-      // Format error message similar to validateResponse
-      if (statusCode) {
-        const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`;
-        throw new Error(msg);
-      }
-
-      throw new Error(`Request failed: ${errorMessage}`);
-    }
-
-    if (data) {
-      return data;
-    }
-    throw new Error('Request failed: No data received from API');
-  }
-
   protected getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
 
-  protected validateResponse(response: AxiosResponse): void {
+  protected validateAxiosResponse(response: AxiosResponse): void {
     if (response.status >= 300) {
-      const errorMessage = parseApiErrorMessage(response.data);
-      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${errorMessage}`;
-      throw new Error(msg);
+      this.generateApiError(response.data, response.status);
     }
   }
 
@@ -452,5 +384,54 @@ export class BaseClient {
       return JSON.stringify(httpError.detail);
     }
     return error instanceof Error ? error.message : String(error);
+  }
+
+  private validateError(error: unknown): never {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        this.validateAxiosResponse(error.response);
+      }
+
+      const errorMessage = error.message || GENERIC_ERROR_MESSAGE;
+      throw new Error(`Request failed: ${errorMessage}`);
+    }
+
+    throw error;
+  }
+
+  private generateApiError(error: unknown, statusCode?: number): never {
+    if (error && typeof error === 'object') {
+      if ('standard_error' in error) {
+        if (isGalileoAPIStandardErrorData(error.standard_error)) {
+          throw new GalileoAPIError(error.standard_error);
+        } else {
+          throw new Error(
+            `❗ Something didn't go quite right. The API returned an error, but the details could not be parsed.`
+          );
+        }
+      } else if ('detail' in error) {
+        const errorMessage =
+          typeof error.detail === 'string'
+            ? error.detail
+            : Array.isArray(error.detail) &&
+                typeof error.detail[0]?.msg === 'string'
+              ? error.detail?.[0]?.msg
+              : GENERIC_ERROR_MESSAGE;
+
+        if (statusCode) {
+          throw new Error(
+            `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`
+          );
+        } else {
+          throw new Error(
+            `❗ Something didn't go quite right. ${errorMessage}`
+          );
+        }
+      } else {
+        throw new Error(GENERIC_ERROR_MESSAGE);
+      }
+    } else {
+      throw new Error(GENERIC_ERROR_MESSAGE);
+    }
   }
 }
