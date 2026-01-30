@@ -3,6 +3,12 @@
     "declaration": true,
     "target": "es2020",
     "module": "commonjs",
+    "baseUrl": ".",
+    "paths": {
+      "galileo-generated/lib/*": [
+        "node_modules/galileo-generated/dist/esm/lib/*"
+      ]
+    },
     "rootDir": "./src",
     "resolveJsonModule": true,
     "sourceMap": true,
