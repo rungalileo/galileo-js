@@ -280,7 +280,6 @@ export type {
 export {
   APIException,
   ExperimentAPIException,
-  ExperimentTagsAPIException,
   DatasetAPIException,
   ProjectAPIException
 } from './utils/errors';

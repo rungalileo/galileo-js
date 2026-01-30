@@ -1518,7 +1518,7 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      throw error;
+      console.error(error);
     }
   }
 
@@ -1638,13 +1638,9 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      throw error;
+      console.error(error);
     }
   }
-
-  // ============================================
-  // Private Implementation Methods
-  // ============================================
 
   /**
    * Ensures the Galileo API client is initialized with the current logger's configuration.
@@ -1730,9 +1726,7 @@ class GalileoLogger implements IGalileoLogger {
             // Increment retry count on each retry attempt
             this.taskHandler?.incrementRetry(taskId);
             const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            console.info(
-              `Retry #${retryCount} for task ${taskId}: ${error.message}`
-            );
+            console.warn(`Retry #${retryCount} for task ${taskId}: `, error);
           }
         );
       })
@@ -1754,7 +1748,8 @@ class GalileoLogger implements IGalileoLogger {
 
     const currentParent = this.currentParent();
     if (!currentParent) {
-      throw new Error('A trace needs to be created in order to add a span.');
+      console.error('A trace needs to be created in order to add a span.');
+      return;
     }
 
     // For workflow/agent spans, use previous parent
@@ -1764,7 +1759,8 @@ class GalileoLogger implements IGalileoLogger {
         : currentParent;
 
     if (!parentStep) {
-      throw new Error('A trace needs to be created in order to add a span.');
+      console.error('A trace needs to be created in order to add a span.');
+      return;
     }
 
     // Use traceId from constructor if provided, otherwise use first trace's id
@@ -1797,9 +1793,7 @@ class GalileoLogger implements IGalileoLogger {
             // Increment retry count on each retry attempt
             this.taskHandler?.incrementRetry(taskId);
             const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            console.info(
-              `Retry #${retryCount} for task ${taskId}: ${error.message}`
-            );
+            console.warn(`Retry #${retryCount} for task ${taskId}: `, error);
           }
         );
       })
@@ -1856,7 +1850,7 @@ class GalileoLogger implements IGalileoLogger {
               // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
               const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              console.info(
+              console.warn(
                 `Retry #${retryCount} for task ${taskId}: ${error.message}`
               );
             }
@@ -1922,9 +1916,7 @@ class GalileoLogger implements IGalileoLogger {
               // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
               const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              console.info(
-                `Retry #${retryCount} for task ${taskId}: ${error.message}`
-              );
+              console.warn(`Retry #${retryCount} for task ${taskId}: `, error);
             }
           );
         },
@@ -1960,7 +1952,12 @@ class GalileoLogger implements IGalileoLogger {
   }): StepWithChildSpans | undefined {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
-      throw new Error('No existing workflow to conclude.');
+      if (this.mode === 'streaming') {
+        console.error('No existing workflow to conclude.');
+        return;
+      } else {
+        throw new Error('No existing workflow to conclude.');
+      }
     }
 
     currentParent.output = output || currentParent.output;
