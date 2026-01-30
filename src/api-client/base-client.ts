@@ -1,21 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
-import { Readable } from 'stream';
-import createClient, { Client } from 'openapi-fetch';
+import axios from 'axios';
+import type { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
+import type { Readable } from 'stream';
+import createClient from 'openapi-fetch';
+import type { Client } from 'openapi-fetch';
 import { decode } from 'jsonwebtoken';
 import type { paths } from '../types/api.types';
 import { Routes } from '../types/routes.types';
 import { getSdkIdentifier } from '../utils/version';
-import {
-  objectToCamel,
-  objectToSnake,
-  ObjectToSnake,
-  ObjectToCamel
-} from 'ts-case-convert';
-import {
-  GalileoAPIError,
-  isGalileoAPIStandardErrorData
-} from '../types/errors.types';
+import { objectToCamel, objectToSnake } from 'ts-case-convert';
+import type { ObjectToSnake, ObjectToCamel } from 'ts-case-convert';
+import type { HTTPValidationError } from '../types/errors.types';
 
 // Type guards for snake_case and camelCase conversion
 type ValidatedSnakeCase<T extends object, TTarget> =

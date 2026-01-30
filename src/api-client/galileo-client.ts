@@ -115,6 +115,7 @@ import {
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
 import { SegmentFilter, RunScorerSettingsResponse } from '../types/runs.types';
+import { GalileoConfig } from 'galileo-generated/lib/galileo-config';
 
 const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
 
@@ -193,11 +194,13 @@ export class GalileoApiClient extends BaseClient {
       this.datasetId = datasetId;
     }
 
-    this.apiUrl = this.getApiUrl(this.projectType);
+    const config = GalileoConfig.get();
+    this.apiUrl = config.getApiUrl(this.projectType);
 
     if (await this.healthCheck()) {
-      // Initialize auth service and get token
+      // Initialize auth service and get token from config credentials
       this.authService = new AuthService(this.apiUrl);
+      this.authService.setCredentials(config.getAuthCredentials());
       this.token = await this.authService.getToken();
 
       // Initialize the client in base class

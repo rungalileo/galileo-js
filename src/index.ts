@@ -5,6 +5,10 @@ import GalileoObserveCallback from './observe/callback';
 import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
 import {
+  GalileoConfig,
+  type GalileoConfigInput
+} from 'galileo-generated/lib/galileo-config';
+import {
   GalileoMetrics,
   GalileoScorers,
   LocalMetricConfig,
@@ -146,6 +150,8 @@ export {
   GalileoEvaluateWorkflow,
   // Galileo 2.0 client and methods
   GalileoApiClient,
+  GalileoConfig,
+  type GalileoConfigInput,
   GalileoLogger,
   GalileoCallback,
   GalileoMetrics,
