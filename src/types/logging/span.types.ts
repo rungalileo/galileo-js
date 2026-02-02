@@ -354,10 +354,8 @@ export interface RetrieverSpanOptions extends BaseSpanOptions {
   redactedOutput?: RetrieverSpanAllowedOutputType;
 }
 
-export interface SerializedRetrieverSpan extends Omit<
-  SerializedStep,
-  'output'
-> {
+export interface SerializedRetrieverSpan
+  extends Omit<SerializedStep, 'output'> {
   output: JsonArray;
 }
 
@@ -386,10 +384,11 @@ export class RetrieverSpan extends BaseStep {
   }
 }
 
-export interface ToolSpanOptions extends Omit<
-  BaseSpanOptions,
-  'input' | 'redactedInput' | 'output' | 'redactedOutput'
-> {
+export interface ToolSpanOptions
+  extends Omit<
+    BaseSpanOptions,
+    'input' | 'redactedInput' | 'output' | 'redactedOutput'
+  > {
   input: JsonValue;
   redactedInput?: JsonValue;
   output?: JsonValue;
