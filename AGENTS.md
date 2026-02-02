@@ -1,191 +1,180 @@
-# AGENTS.md
-
-This file provides guidance to AI coding agents when working with code in this repository.
-
 ## Project Overview
 
-This is the galileo-js package - a TypeScript/JavaScript client library for the Galileo observability and experimentation platform. It provides logging, tracing, and evaluation capabilities for LLM applications.
+This is the galileo-js package—a TypeScript/JavaScript client library for the Galileo observability and experimentation platform. It provides logging, tracing, and evaluation capabilities for LLM applications. For installation, usage examples, and API overview, see [README.md](README.md).
 
-For installation, usage examples, and API overview, see [README.md](README.md).
-
-## Project Structure
-
-galileo-js/
-├── src/ # TypeScript source (index, singleton, utils, api-client, types, wrappers)
-├── tests/ # Jest tests (\*.test.ts), mirroring src/
-├── examples/ # Example scripts (logger, openai, datasets, experiments, etc.)
-├── scripts/ # Build/transform scripts
-└── dist/ # Compiled output (from npm run build)
-
-## Build & Development Commands
-
-### Building
+## Common Commands
 
 ```bash
-npm run build          # Format, lint, and compile TypeScript
-npm run format         # Format source files with Prettier
-npm run lint           # Run ESLint
-npm run lint-fix       # Auto-fix ESLint issues
-```
+# Build
+npm run build              # Format (Prettier), lint (ESLint), compile TypeScript → dist/
+npm run format             # Prettier on src/**/*.ts
+npm run lint               # ESLint
+npm run lint-fix            # ESLint with auto-fix
 
-The build process:
+# Testing
+npm run test                   # Jest (tests in tests/, mirroring src/)
+npx jest tests/path/to/test.test.ts   # Run single test
 
-1. Runs Prettier formatting on `src/**/*.ts`
-2. Runs ESLint
-3. Compiles TypeScript from `src/` to `dist/`
-
-### Testing
-
-```bash
-npm test               # Run all tests with Jest
-```
-
-Tests are in the `tests/` directory and use Jest with ts-jest preset. Test files mirror the `src/` structure.
-
-### Running Examples
-
-Examples are in the `examples/` directory. To run them:
-
-```bash
-# From root directory
+# Examples (from repo root)
 npm i && npm link
-
-# From examples directory
-cd examples
-npm i && npm link galileo
-
-# Run an example
-node examples/logger/workflow.js
+cd examples && npm i && npm link galileo
+node examples/logger/workflow.js     # Run an example
 ```
 
 ## Architecture
 
-### Core Components
+### Logger and Singleton
 
-**1. GalileoLogger (`src/utils/galileo-logger.ts`)**
+- **GalileoLogger** (`src/utils/galileo-logger.ts`): Primary logging class. Two modes—**batch** (collect in memory, upload on `flush()`) and **streaming** (ingest via TaskHandler as spans are created). Hierarchical spans: Trace → Workflow/Agent (can have children) → Leaf (LLM, Tool, Retriever). Uses `parentStack` for nesting.
+- **GalileoSingleton** (`src/singleton.ts`): Manages loggers keyed by (project, logstream/experimentId, mode). Global helpers: `init()`, `getLogger()`, `flush()`, `flushAll()`, `reset()`, `resetAll()`. Uses `AsyncLocalStorage` (`experimentContext`, `loggerContext`) for context across async boundaries.
 
-- The primary logging class for capturing traces and spans
-- Supports two modes:
-  - **Batch mode** (default): Collects traces in memory, uploads on `flush()`. Use when you can call `flush()` at the end (e.g. scripts, batch jobs).
-  - **Streaming mode**: Sends traces/spans immediately as they're created via TaskHandler. Use when you need traces sent as they happen (e.g. long-running or serverless).
-- Hierarchical span model: Trace → Workflow/Agent spans (can contain children) → Leaf spans (LLM, Tool, Retriever)
-- Uses `parentStack` to track nesting context
+### API Client and Services
 
-**2. Singleton Management (`src/singleton.ts`)**
+- **GalileoApiClient** (`src/api-client/galileo-client.ts`): Main API client. Call `init({ projectName })` or `init({ projectId })` before using project-scoped methods. Services: AuthService, ProjectService, LogStreamService, TraceService, DatasetService, ExperimentService, ScorerService, and others in `src/api-client/services/`. Shared HTTP via `BaseClient` (axios).
 
-- `GalileoSingleton`: Manages multiple logger instances keyed by (project, logstream/experimentId, mode)
-- Provides global functions: `init()`, `getLogger()`, `flush()`, `reset()`, etc.
-- Uses `AsyncLocalStorage` for context propagation across async boundaries
-- Two contexts: `experimentContext` and `loggerContext`
+### Wrappers and Types
 
-**3. API Client (`src/api-client/`)**
-
-- `GalileoApiClient` (`galileo-client.ts`): Main client for API interactions
-- Service-oriented architecture with separate service classes:
-  - `AuthService`: Authentication
-  - `ProjectService`, `LogStreamService`: Project/stream management
-  - `TraceService`: Trace ingestion and querying
-  - `DatasetService`: Dataset CRUD operations
-  - `ExperimentService`: Experiment management
-  - `ScorerService`: Custom metrics/scorers
-  - And more in `services/`
-- `BaseClient`: Shared HTTP client using axios
-
-**4. Wrappers (`src/wrappers.ts`, `src/openai.ts`)**
-
-- `log()`: Function decorator that automatically logs execution as spans
-- `wrapOpenAI()`: Proxy-based wrapper for OpenAI client that auto-logs LLM calls
-- Both integrate with the singleton to get/create loggers automatically
-
-**5. Type System (`src/types/`)**
-
-- Extensive TypeScript types mirroring API schemas
-- Key types:
-  - `logging/trace.types.ts`: Trace, TraceSchema
-  - `logging/span.types.ts`: Span types (LlmSpan, ToolSpan, WorkflowSpan, etc.)
-  - `logging/step.types.ts`: Metrics, allowed input/output types
-  - `dataset.types.ts`, `experiment.types.ts`, etc.
+- **log()** (`src/wrappers.ts`): Wraps a function to log its execution as a span; integrates with singleton.
+- **wrapOpenAI()** (`src/openai.ts`): Wraps an OpenAI client to auto-log LLM calls.
+- **Types** (`src/types/`): Trace/span/step types (`logging/trace.types.ts`, `logging/span.types.ts`, `logging/step.types.ts`), dataset/experiment types, etc.
 
 ### Data Flow
 
-**Batch Mode:**
+- **Batch:** `startTrace()` → `addLlmSpan()` / `addWorkflowSpan()` / etc. → `conclude()` → `flush()` uploads via API.
+- **Streaming:** `startTrace()` / `addLlmSpan()` etc. ingest immediately via TaskHandler; `conclude()` updates trace/span; retry with exponential backoff.
 
-1. User calls `logger.startTrace()` → creates Trace, pushes to parentStack
-2. User calls `logger.addLlmSpan()` → creates span, adds to current parent
-3. User calls `logger.conclude()` → pops from parentStack
-4. User calls `logger.flush()` → uploads all traces via API client
+### Key Directories
 
-**Streaming Mode:**
+- `src/utils/` – GalileoLogger, serialization, retry, errors
+- `src/singleton.ts` – GalileoSingleton and global init/getLogger/flush
+- `src/api-client/` – GalileoApiClient, services, BaseClient
+- `src/wrappers.ts`, `src/openai.ts` – log(), wrapOpenAI()
+- `src/types/` – TypeScript types for logging, datasets, experiments, etc.
+- `src/entities/` – High-level entities (experiments, datasets, scorers, …)
+- `tests/` – Jest tests (\*.test.ts), `tests/common.ts` (MSW handlers, TEST_HOST, mockProject)
+- `examples/` – Example scripts
+- `scripts/` – Build/transform scripts
 
-1. User calls `logger.startTrace()` → creates Trace, immediately ingests via `ingestTraceStreaming()`
-2. User calls `logger.addLlmSpan()` → creates span, immediately ingests via `ingestSpanStreaming()`
-3. TaskHandler manages async ingestion with retry logic
-4. User calls `logger.conclude()` → updates trace/span via `updateTraceStreaming()/updateSpanStreaming()`
+### Key Patterns (conceptual)
 
-### Key Patterns
+- **Span hierarchy:** Trace → Workflow/Agent (nested ok) → Leaf (LLM, Tool, Retriever; no children). Use `addWorkflowSpan()` / `addAgentSpan()` for parents, `conclude()` to pop.
+- **Context:** AsyncLocalStorage in singleton propagates context; logger obtained via `experimentContext.getStore()` / `getLogger()`.
+- **Errors:** API errors via `APIException`, `ExperimentAPIException`, etc. (`src/utils/errors.ts`). Streaming uses retry (exponential backoff) in `src/utils/retry-utils.ts`.
 
-**Span Hierarchy:**
+## Key Patterns
 
-- Trace (root) can contain Workflow/Agent spans
-- Workflow/Agent spans can contain other Workflow/Agent spans (nested) and leaf spans
-- Leaf spans (LLM, Tool, Retriever) cannot contain children
-- Use `addWorkflowSpan()` or `addAgentSpan()` for parent spans, `conclude()` to exit nesting
+### Init and Get Logger
 
-**Context Propagation:**
+```typescript
+import { init, getLogger, flush } from 'galileo';
 
-- `AsyncLocalStorage` in `singleton.ts` maintains context across async operations
-- Logger retrieves context automatically via `experimentContext.getStore()`
-- Allows implicit logger lookup without passing references
-
-**Error Handling:**
-
-- API errors wrapped in custom exceptions: `APIException`, `ExperimentAPIException`, etc. (`src/utils/errors.ts`)
-- Streaming mode uses retry logic with exponential backoff (`src/utils/retry-utils.ts`)
-- TaskHandler tracks failed tasks and retry counts
-
-## Environment Variables
-
-```bash
-GALILEO_API_KEY           # Required: API authentication
-GALILEO_PROJECT           # Optional: Default project name
-GALILEO_LOG_STREAM        # Optional: Default log stream name
-GALILEO_CONSOLE_URL       # Optional: Override API endpoint (default: app.galileo.ai)
-GALILEO_DISABLE_LOGGING   # Optional: Disable logging (set to any non-empty value except '0' or 'false')
+await init({ projectName: 'my-project', logstream: 'default' });
+const logger = getLogger({ projectName: 'my-project' });
+// ... use logger
+await flush();
 ```
 
-## Code Conventions
+### Logging a Function as a Span
 
-- Use TypeScript strict mode
-- Do not use `any` types anywhere; use proper types
-- Do not use `require()` for implementation; use ES module `import`
-- ESLint enforces: no-unused-vars, prefer-const, no-undef
-- Console warnings for no-console (but used extensively for logging)
-- Prettier for code formatting
-- Export all public APIs through `src/index.ts`
-- Avoid over-engineering: functions should be simple and focused
-- Keep backward compatibility for legacy clients (GalileoObserve*, GalileoEvaluate*)
+```typescript
+import { log, getLogger } from 'galileo';
 
-## Testing Notes
+const myFn = log(
+  { spanType: 'tool', name: 'myTool' },
+  async (input: string) => {
+    const logger = getLogger();
+    // ...
+    return result;
+  }
+);
+```
 
-- Tests use Jest with ts-jest
-- **HTTP mocking**: MSW (Mock Service Worker) 2.x. Use `import { http, HttpResponse } from 'msw'`, `import { setupServer } from 'msw/node'`, and shared `commonHandlers`, `TEST_HOST`, `mockProject` from `tests/common.ts`
-- Test file naming: `*.test.ts` in `tests/` directory
-- Run single test: `npx jest tests/path/to/test.test.ts`
+### Wrapping OpenAI
 
-### Test file structure and patterns
+```typescript
+import { wrapOpenAI } from 'galileo';
+import OpenAI from 'openai';
 
-- **Order**: Imports (MSW, source under test, types, common) → example data constants → mock handlers → `handlers = [...commonHandlers, ...]` → `setupServer(...handlers)` with `beforeAll` (set `GALILEO_CONSOLE_URL`, `GALILEO_API_KEY`, `server.listen()`), `afterEach(server.resetHandlers)`, `afterAll(server.close())` → test cases
-- **Naming**: Tests as `test('test [action] [resource] [condition]', ...)`. Handlers as `[action][Resource]Handler` (e.g. `createPromptTemplateHandler`). Example constants as `EXAMPLE_[RESOURCE]` with variants like `EXAMPLE_[RESOURCE]_[VARIANT]`
-- **Example data**: Use realistic UUIDs and ISO 8601 dates; match TypeScript types. Handlers use `jest.fn().mockImplementation(() => HttpResponse.json(mockData))`
-- **Error tests**: `await expect(fn(...)).rejects.toThrow('message')`; use type assertions for invalid inputs. No `any`; use proper types; avoid `require`
-- **Reference**: `tests/utils/prompt-templates.test.ts` is the canonical example. See also [Test Generation Prompt Template](../AI%20analysis/Prompts/Test%20Generation%20Prompt%20Template.md) for the full template
+const openai = wrapOpenAI(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
+// LLM calls are auto-logged
+const completion = await openai.chat.completions.create({ ... });
+```
 
-## Semantic Release
+### Trace and Span Flow (batch)
 
-This project uses semantic-release for versioning. Commit message format determines version bumps:
+```typescript
+const logger = getLogger();
+await logger.startTrace({ name: 'my-trace' });
+logger.addWorkflowSpan({ name: 'workflow-1' });
+logger.addLlmSpan({ name: 'llm-call', input: '...', output: '...' });
+logger.conclude();
+await logger.flush();
+```
 
-- `fix:`, `perf:`, `chore:`, `docs:`, `style:`, `refactor:` → patch
-- `feat:` → minor
-- `BREAKING CHANGE:` → major
+### Exception Handling
 
-When making PRs, ensure commit messages follow this convention.
+```typescript
+import { APIException, ExperimentAPIException } from 'galileo'; // or from src/utils/errors
+
+try {
+  await apiClient.someMethod();
+} catch (err) {
+  if (err instanceof APIException) {
+    // statusCode, message, etc.
+  }
+}
+```
+
+## Testing
+
+- Jest with ts-jest. Tests in `tests/`, file naming `*.test.ts`. Run single test: `npx jest tests/path/to/test.test.ts`.
+- **HTTP mocking:** MSW 2.x. Use `http`, `HttpResponse` from `msw`, `setupServer` from `msw/node`. Shared `commonHandlers`, `TEST_HOST`, `mockProject` from `tests/common.ts`.
+- **Structure:** Imports → example constants (e.g. `EXAMPLE_PROMPT_TEMPLATE`) → handlers → `handlers = [...commonHandlers, ...]` → `setupServer(...handlers)` with `beforeAll` (set `GALILEO_CONSOLE_URL`, `GALILEO_API_KEY`, `server.listen()`), `afterEach(server.resetHandlers)`, `afterAll(server.close())` → test cases.
+- **Naming:** Tests as `test('test [action] [resource] [condition]', ...)`. Handlers like `createPromptTemplateHandler`. Example constants `EXAMPLE_[RESOURCE]`.
+- **Reference:** `tests/utils/prompt-templates.test.ts` is the canonical example.
+
+### Key Fixtures / MSW Setup
+
+```typescript
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { commonHandlers, TEST_HOST, mockProject } from '../common';
+
+const createPromptTemplateHandler = jest
+  .fn()
+  .mockImplementation(() => HttpResponse.json(EXAMPLE_PROMPT_TEMPLATE));
+const handlers = [
+  ...commonHandlers,
+  http.post(
+    `${TEST_HOST}/projects/${mockProject.id}/prompt_templates`,
+    createPromptTemplateHandler
+  )
+];
+const server = setupServer(...handlers);
+beforeAll(() => {
+  process.env.GALILEO_CONSOLE_URL = TEST_HOST;
+  process.env.GALILEO_API_KEY = 'test-key';
+  server.listen();
+});
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable                  | Purpose                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `GALILEO_API_KEY`         | Required: API authentication                                              |
+| `GALILEO_PROJECT`         | Optional: Default project name                                            |
+| `GALILEO_LOG_STREAM`      | Optional: Default log stream name                                         |
+| `GALILEO_CONSOLE_URL`     | Optional: Override API endpoint (default: app.galileo.ai)                 |
+| `GALILEO_DISABLE_LOGGING` | Optional: Disable logging (any non-empty value except `'0'` or `'false'`) |
+
+### Required Practices
+
+- Use TypeScript strict mode. No `any`; use proper types. Use ES module `import`, not `require()` for implementation.
+- ESLint: no-unused-vars, prefer-const, no-undef. Prettier for formatting. Export public API via `src/index.ts`.
+- Keep backward compatibility for legacy clients (GalileoObserve*, GalileoEvaluate*). Prefer simple, focused functions.
+- **Semantic release:** Commit format drives version—`fix:`, `feat:`, etc. → patch/minor; `BREAKING CHANGE:` → major. Follow convention for PRs.
