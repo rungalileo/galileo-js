@@ -28,7 +28,41 @@ comment:
 ignore:
   - 'tests/**/*'
   - 'examples/**/*'
-  - 'src/types/**/*'
-  - '**/*.types.ts'
   - '**/*.d.ts'
   - 'dist/**/*'
+  # Large generated OpenAPI type files (no runtime logic)
+  - 'src/types/api.types.ts'
+  - 'src/types/openapi.types.ts'
+  - 'src/types/new-api.types.ts'
+  # Pure type definition files (no runtime logic)
+  - 'src/types/auth.types.ts'
+  - 'src/types/base.types.ts'
+  - 'src/types/dataset.types.ts'
+  - 'src/types/export.types.ts'
+  - 'src/types/index.ts'
+  - 'src/types/log-stream.types.ts'
+  - 'src/types/node.types.ts'
+  - 'src/types/prompt-template.types.ts'
+  - 'src/types/runs.types.ts'
+  - 'src/types/search.types.ts'
+  - 'src/types/shared.types.ts'
+  - 'src/types/streaming-adapter.types.ts'
+  - 'src/types/tag.types.ts'
+  - 'src/types/transaction.types.ts'
+  - 'src/types/logging/logger.types.ts'
+  - 'src/types/logging/session.types.ts'
+  - 'src/types/logging/trace.types.ts'
+  # Runtime logic files are NOT ignored (will be tracked by coverage):
+  # - src/types/routes.types.ts (Routes enum)
+  # - src/types/project.types.ts (ProjectTypes const)
+  # - src/types/models.types.ts (Models enum)
+  # - src/types/errors.types.ts (GalileoAPIError class)
+  # - src/types/metrics.types.ts (GalileoMetrics const)
+  # - src/types/message.types.ts (MessageRole const)
+  # - src/types/experiment.types.ts (DEFAULT_PROMPT_RUN_SETTINGS)
+  # - src/types/job.types.ts (enums and consts)
+  # - src/types/scorer.types.ts (enums)
+  # - src/types/document.types.ts (Document class)
+  # - src/types/legacy-step.types.ts (classes and enums)
+  # - src/types/logging/step.types.ts (runtime classes and consts)
+  # - src/types/logging/span.types.ts (runtime classes and enums)
