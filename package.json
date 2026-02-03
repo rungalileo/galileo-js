@@ -31,7 +31,6 @@
   "license": "Apache-2.0",
   "homepage": "https://www.galileo.ai/",
   "dependencies": {
-    "galileo-generated": "file:../galileo-ts-generated",
     "@langchain/core": "^0.3.13",
     "@types/cli-progress": "^3.11.6",
     "axios": "^1.12.2",
