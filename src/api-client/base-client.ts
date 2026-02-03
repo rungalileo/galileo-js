@@ -12,7 +12,10 @@ import {
   ObjectToSnake,
   ObjectToCamel
 } from 'ts-case-convert';
-import { HTTPValidationError } from '../types/errors.types';
+import {
+  GalileoAPIError,
+  isGalileoAPIStandardErrorData
+} from '../types/errors.types';
 
 // Type guards for snake_case and camelCase conversion
 type ValidatedSnakeCase<T extends object, TTarget> =
@@ -30,17 +33,6 @@ export enum RequestMethod {
 
 export const GENERIC_ERROR_MESSAGE =
   'This error has been automatically tracked. Please try again.';
-
-export const parseApiErrorMessage = (error: any) => {
-  const errorMessage =
-    typeof error?.detail === 'string'
-      ? error?.detail
-      : typeof error?.detail?.[0].msg === 'string'
-        ? error?.detail?.[0].msg
-        : GENERIC_ERROR_MESSAGE;
-
-  return errorMessage;
-};
 
 export class BaseClient {
   protected apiUrl: string = '';
@@ -149,7 +141,6 @@ export class BaseClient {
     };
 
     const response = await axios.request<T>(config);
-    this.validateResponse(response);
     return response;
   }
 
@@ -194,20 +185,11 @@ export class BaseClient {
         params,
         extraHeaders
       );
+
+      this.validateAxiosResponse(response);
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response) {
-          this.validateResponse(error.response);
-        }
-
-        // Throw if validateResponse doesn't identify status code
-        const errorMessage = error.message || GENERIC_ERROR_MESSAGE;
-        throw new Error(`Request failed: ${errorMessage}`);
-      }
-
-      // Re-throw non-axios errors
-      throw error;
+      return await this.validateError(error);
     }
   }
 
@@ -271,21 +253,21 @@ export class BaseClient {
         params && 'group_id' in params ? (params.group_id as string) : ''
       )}`;
 
-    const response = await axios.request<Readable>({
-      method: request_method,
-      url: endpointPath,
-      params,
-      headers,
-      data,
-      responseType: 'stream'
-    });
+    try {
+      const response = await axios.request<Readable>({
+        method: request_method,
+        url: endpointPath,
+        params,
+        headers,
+        data,
+        responseType: 'stream'
+      });
 
-    if (response.status >= 300) {
-      const errorMessage = `Streaming request failed with status ${response.status}`;
-      throw new Error(errorMessage);
+      this.validateAxiosResponse(response);
+      return response.data;
+    } catch (error) {
+      return await this.validateError(error);
     }
-
-    return response.data;
   }
 
   public convertToSnakeCase<T extends object, TTarget>(
@@ -346,59 +328,13 @@ export class BaseClient {
     );
   }
 
-  protected processResponse<T>(
-    data: T | undefined,
-    error: object | unknown
-  ): T {
-    if (error) {
-      let statusCode: number | undefined;
-      let errorData: any = error;
-
-      if (typeof error === 'object' && error !== null) {
-        if ('status' in error && typeof error.status === 'number') {
-          statusCode = error.status;
-        }
-
-        if ('data' in error) {
-          errorData = error.data;
-        } else if ('response' in error && typeof error.response === 'object') {
-          const response = error.response as any;
-          if (response?.status) {
-            statusCode = response.status;
-          }
-          if (response?.data) {
-            errorData = response.data;
-          }
-        }
-      }
-
-      // Use parseApiErrorMessage for consistent error message formatting
-      const errorMessage = parseApiErrorMessage(errorData);
-
-      // Format error message similar to validateResponse
-      if (statusCode) {
-        const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`;
-        throw new Error(msg);
-      }
-
-      throw new Error(`Request failed: ${errorMessage}`);
-    }
-
-    if (data) {
-      return data;
-    }
-    throw new Error('Request failed: No data received from API');
-  }
-
   protected getAuthHeader(token: string): { Authorization: string } {
     return { Authorization: `Bearer ${token}` };
   }
 
-  protected validateResponse(response: AxiosResponse): void {
+  protected validateAxiosResponse(response: AxiosResponse): void {
     if (response.status >= 300) {
-      const errorMessage = parseApiErrorMessage(response.data);
-      const msg = `❗ Something didn't go quite right. The API returned a non-ok status code ${response.status} with output: ${errorMessage}`;
-      throw new Error(msg);
+      this.generateApiError(response.data, response.status);
     }
   }
 
@@ -421,30 +357,77 @@ export class BaseClient {
     }
   }
 
-  protected isHTTPValidationError(
-    error: unknown
-  ): error is HTTPValidationError {
-    return typeof error === 'object' && error !== null && 'detail' in error;
+  private readStreamToString(stream: Readable): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk: Buffer | string) =>
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      );
+      stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+      stream.on('error', reject);
+    });
   }
 
-  protected extractErrorDetail(error: unknown): string {
-    if (this.isHTTPValidationError(error)) {
-      const httpError = error as HTTPValidationError;
-      if (typeof httpError.detail === 'string') {
-        return httpError.detail;
+  private async validateError(error: unknown): Promise<never> {
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        let data: unknown = error.response.data;
+        if (data instanceof Readable) {
+          const raw = await this.readStreamToString(data);
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            data = { detail: raw };
+          }
+          this.validateAxiosResponse({
+            ...error.response,
+            data
+          } as AxiosResponse);
+        } else {
+          this.validateAxiosResponse(error.response);
+        }
       }
-      // Handle array of validation errors
-      if (Array.isArray(httpError.detail)) {
-        return httpError.detail
-          .map((err) => {
-            const loc = err.loc ? err.loc.join('.') : 'unknown';
-            const msg = err.msg || 'validation error';
-            return `${loc}: ${msg}`;
-          })
-          .join('; ');
-      }
-      return JSON.stringify(httpError.detail);
+
+      const errorMessage = error.message || GENERIC_ERROR_MESSAGE;
+      throw new Error(`Request failed: ${errorMessage}`);
     }
-    return error instanceof Error ? error.message : String(error);
+
+    throw error;
+  }
+
+  private generateApiError(error: unknown, statusCode?: number): never {
+    if (error && typeof error === 'object') {
+      if ('standard_error' in error) {
+        if (isGalileoAPIStandardErrorData(error.standard_error)) {
+          throw new GalileoAPIError(error.standard_error);
+        } else {
+          throw new Error(
+            `❗ Something didn't go quite right. The API returned an error, but the details could not be parsed.`
+          );
+        }
+      } else if ('detail' in error) {
+        const errorMessage =
+          typeof error.detail === 'string'
+            ? error.detail
+            : Array.isArray(error.detail) &&
+                typeof error.detail[0]?.msg === 'string'
+              ? error.detail?.[0]?.msg
+              : GENERIC_ERROR_MESSAGE;
+
+        if (statusCode) {
+          throw new Error(
+            `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`
+          );
+        } else {
+          throw new Error(
+            `❗ Something didn't go quite right. ${errorMessage}`
+          );
+        }
+      } else {
+        throw new Error(GENERIC_ERROR_MESSAGE);
+      }
+    } else {
+      throw new Error(GENERIC_ERROR_MESSAGE);
+    }
   }
 }
