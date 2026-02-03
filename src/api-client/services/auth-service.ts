@@ -284,7 +284,7 @@ export class AuthService extends BaseClient {
    * @throws {Error} If both refresh and credential-based token fetch fail
    */
   private async refreshTokenWithFallback() {
-    if (this.refreshPromise) {
+    if (!this.refreshPromise) {
       this.refreshPromise = (async () => {
         try {
           if (this.refreshToken) {
@@ -344,7 +344,7 @@ export class AuthService extends BaseClient {
         // Token is invalid if it has expired
         return expirationTime <= currentTime + fiveMinutes;
       } else {
-        // Tolen invalidated due to missing expiration time
+        // Token invalidated due to missing expiration time
         return true;
       }
     } catch {
