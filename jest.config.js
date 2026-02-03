@@ -11,9 +11,5 @@ module.exports = {
     '!src/types/**/*',
     '!src/**/*.types.ts'
   ],
-  coveragePathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-    '/tests/'
-  ]
+  coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/tests/']
 };

@@ -6,7 +6,7 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "70...100"
+  range: '70...100'
 
   status:
     project:
@@ -21,14 +21,14 @@ coverage:
         informational: false
 
 comment:
-  layout: "reach,diff,flags,tree,files"
+  layout: 'reach,diff,flags,tree,files'
   behavior: default
   require_changes: false
 
 ignore:
-  - "tests/**/*"
-  - "examples/**/*"
-  - "src/types/**/*"
-  - "**/*.types.ts"
-  - "**/*.d.ts"
-  - "dist/**/*"
+  - 'tests/**/*'
+  - 'examples/**/*'
+  - 'src/types/**/*'
+  - '**/*.types.ts'
+  - '**/*.d.ts'
+  - 'dist/**/*'
