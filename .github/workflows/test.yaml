@@ -15,7 +15,7 @@ jobs:
             18,
             20,
             22, #LTS
-            24
+            24,
           ]
       fail-fast: false
 
@@ -38,6 +38,6 @@ jobs:
         run: npm test
 
       - name: Upload coverage reports to Codecov
-          uses: codecov/codecov-action@v5
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
