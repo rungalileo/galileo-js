@@ -115,7 +115,7 @@ import {
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
 import { SegmentFilter, RunScorerSettingsResponse } from '../types/runs.types';
-import { GalileoConfig } from 'galileo-generated/lib/galileo-config';
+import { GalileoConfig } from 'galileo-generated';
 
 const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
 
