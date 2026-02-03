@@ -64,7 +64,7 @@
     "msw": "^2.7.0",
     "openai": "^4.85.2",
     "openapi-typescript": "^7.4.4",
-    "prettier": "^3.2.5",
+    "prettier": "4.0.0-alpha.8",
     "ts-jest": "^29.2.6",
     "typedoc": "^0.28.5",
     "typedoc-plugin-markdown": "^4.6.4",
