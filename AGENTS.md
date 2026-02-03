@@ -1,6 +1,6 @@
 ## Project Overview
 
-This is the galileo-js package—a TypeScript/JavaScript client library for the Galileo observability and experimentation platform. It provides logging, tracing, and evaluation capabilities for LLM applications. For installation, usage examples, and API overview, see [README.md](README.md).
+This is the galileo-js package — a TypeScript/JavaScript client library for the Galileo observability and experimentation platform. It provides logging, tracing, and evaluation capabilities for LLM applications. For installation, usage examples, and API overview, see [README.md](README.md).
 
 ## Common Commands
 
