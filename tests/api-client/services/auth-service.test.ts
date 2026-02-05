@@ -1,3 +1,4 @@
+import querystring from 'querystring';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { AuthService } from '../../../src/api-client/services/auth-service';
@@ -507,6 +508,596 @@ describe('AuthService - SSO Login', () => {
 
       // Should not throw "Token expired" error
       await expect(authService.getToken()).resolves.toBe('token');
+    });
+  });
+});
+
+describe('AuthService - Injected Credentials', () => {
+  const ACCEPTABLE_API_KEYS = new Set<string>([
+    'injected-api-key',
+    'key-1',
+    'key-2',
+    'injected-key',
+    'env-key'
+  ]);
+  const ACCEPTABLE_USER_PASSWORD_PAIRS = new Set<string>([
+    'injected-user:injected-pass',
+    'env-user:env-pass'
+  ]);
+  const INJECTED_SSO_ID_TOKEN =
+    'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpbmplY3RlZCIsIm5hbWUiOiJJbmplY3RlZCIsImlhdCI6MTUxNjIzOTAyMn0.dummy';
+  const ACCEPTABLE_SSO_ID_TOKENS = new Set<string>([
+    mockOktaIdToken,
+    INJECTED_SSO_ID_TOKEN
+  ]);
+
+  const unauthorizedResponse = (): HttpResponse =>
+    HttpResponse.json({ detail: 'Invalid or unauthorized' }, { status: 401 });
+
+  const API_KEY_TO_TOKEN: Record<string, string> = {
+    'injected-api-key': 'injected-api-key-token',
+    'key-1': 'token-1',
+    'key-2': 'token-2',
+    'injected-key': 'injected-api-key-token',
+    'env-key': 'env-api-key-token'
+  };
+  const USER_PASS_TO_TOKEN: Record<string, string> = {
+    'injected-user:injected-pass': 'injected-username-password-token',
+    'env-user:env-pass': 'env-username-password-token'
+  };
+  const SSO_ID_TO_TOKEN: Record<string, string> = {
+    [INJECTED_SSO_ID_TOKEN]: 'injected-sso-token',
+    [mockOktaIdToken]: 'injected-sso-token'
+  };
+
+  beforeEach(() => {
+    server.use(
+      http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, async ({ request }) => {
+        const body = (await request.json()) as { api_key: string };
+        if (!ACCEPTABLE_API_KEYS.has(body.api_key)) {
+          return unauthorizedResponse();
+        }
+        return HttpResponse.json({
+          access_token: API_KEY_TO_TOKEN[body.api_key]
+        });
+      }),
+      http.post(`${TEST_HOST}/${Routes.login}`, async ({ request }) => {
+        const body = await request.text();
+        const parsed = querystring.parse(body) as {
+          username?: string;
+          password?: string;
+        };
+        const pair = `${parsed.username ?? ''}:${parsed.password ?? ''}`;
+        if (!ACCEPTABLE_USER_PASSWORD_PAIRS.has(pair)) {
+          return unauthorizedResponse();
+        }
+        return HttpResponse.json({
+          access_token: USER_PASS_TO_TOKEN[pair]
+        });
+      }),
+      http.post(`${TEST_HOST}/${Routes.socialLogin}`, async ({ request }) => {
+        const body = (await request.json()) as {
+          id_token: string;
+          provider: string;
+        };
+        if (!ACCEPTABLE_SSO_ID_TOKENS.has(body.id_token)) {
+          return unauthorizedResponse();
+        }
+        return HttpResponse.json({
+          access_token: SSO_ID_TO_TOKEN[body.id_token]
+        });
+      })
+    );
+  });
+
+  describe('setCredentials() Method', () => {
+    it('should set API key credentials via setCredentials()', async () => {
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'injected-api-key' });
+      const token = await authService.getToken();
+
+      expect(token).toBe('injected-api-key-token');
+    });
+
+    it('should set username/password credentials via setCredentials()', async () => {
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({
+        username: 'injected-user',
+        password: 'injected-pass'
+      });
+      const token = await authService.getToken();
+
+      expect(token).toBe('injected-username-password-token');
+    });
+
+    it('should set SSO credentials via setCredentials()', async () => {
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({
+        ssoIdToken: mockOktaIdToken,
+        ssoProvider: 'okta'
+      });
+      const token = await authService.getToken();
+
+      expect(token).toBe('injected-sso-token');
+    });
+
+    it('should create a copy of credentials (not reference)', async () => {
+      const authService = new AuthService(TEST_HOST);
+      const credentialsObject = { apiKey: 'key-1' };
+
+      authService.setCredentials(credentialsObject);
+      const token1 = await authService.getToken();
+      expect(token1).toBe('token-1');
+
+      // Modify the original object
+      credentialsObject.apiKey = 'key-2';
+
+      // Should still use the copied credentials
+      const token2 = await authService.getToken();
+      expect(token2).toBe('token-1');
+    });
+
+    it('should update credentials with multiple calls to setCredentials()', async () => {
+      const authService = new AuthService(TEST_HOST);
+
+      // First credentials
+      authService.setCredentials({ apiKey: 'key-1' });
+      const token1 = await authService.getToken();
+      expect(token1).toBe('token-1');
+
+      // Update credentials
+      authService.setCredentials({ apiKey: 'key-2' });
+      const token2 = await authService.getToken();
+      expect(token2).toBe('token-2');
+    });
+  });
+
+  describe('Credentials Priority - Injected vs Environment', () => {
+    it('should use injected API key over environment variable API key', async () => {
+      process.env.GALILEO_API_KEY = 'env-key';
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'injected-key' });
+
+      const token = await authService.getToken();
+      expect(token).toBe('injected-api-key-token');
+    });
+
+    it('should use injected username/password over environment variables', async () => {
+      process.env.GALILEO_USERNAME = 'env-user';
+      process.env.GALILEO_PASSWORD = 'env-pass';
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({
+        username: 'injected-user',
+        password: 'injected-pass'
+      });
+
+      const token = await authService.getToken();
+      expect(token).toBe('injected-username-password-token');
+    });
+
+    it('should use injected SSO over environment variables', async () => {
+      setSSOEnvVars(mockOktaIdToken, 'okta');
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({
+        ssoIdToken: INJECTED_SSO_ID_TOKEN,
+        ssoProvider: 'google'
+      });
+
+      const token = await authService.getToken();
+      expect(token).toBe('injected-sso-token');
+    });
+
+    it('should fall back to environment variables when no credentials injected', async () => {
+      process.env.GALILEO_API_KEY = 'env-key';
+      const authService = new AuthService(TEST_HOST);
+      // Don't call setCredentials()
+
+      const token = await authService.getToken();
+      expect(token).toBe('env-api-key-token');
+    });
+
+    it('should update and use new injected credentials', async () => {
+      const authService = new AuthService(TEST_HOST);
+
+      // Set first credentials
+      authService.setCredentials({ apiKey: 'key-1' });
+      const firstToken = await authService.getToken();
+      expect(firstToken).toBe('token-1');
+
+      // Update to new credentials
+      authService.setCredentials({ apiKey: 'key-2' });
+      const secondToken = await authService.getToken();
+      expect(secondToken).toBe('token-2');
+    });
+  });
+
+  describe('Invalid credentials - error response', () => {
+    it('should reject when API key is not in acceptable list', async () => {
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'invalid-api-key' });
+
+      await expect(authService.getToken()).rejects.toThrow();
+    });
+
+    it('should reject when username/password pair is not in acceptable list', async () => {
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({
+        username: 'wrong-user',
+        password: 'wrong-pass'
+      });
+
+      await expect(authService.getToken()).rejects.toThrow();
+    });
+
+    it('should reject when SSO id_token is not in acceptable list', async () => {
+      const invalidIdToken =
+        'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpbnZhbGlkIn0.dummy';
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({
+        ssoIdToken: invalidIdToken,
+        ssoProvider: 'okta'
+      });
+
+      await expect(authService.getToken()).rejects.toThrow();
+    });
+  });
+});
+
+describe('AuthService - Public Methods', () => {
+  describe('getApiUrl() Method', () => {
+    it('should return the API URL', () => {
+      const authService = new AuthService(TEST_HOST);
+      expect(authService.getApiUrl()).toBe(TEST_HOST);
+    });
+
+    it('should return correct URL for different hosts', () => {
+      const customHost = 'https://custom.galileo.ai';
+      const authService = new AuthService(customHost);
+      expect(authService.getApiUrl()).toBe(customHost);
+    });
+  });
+
+  describe('ensureValidToken() Method', () => {
+    it('should return valid token when token is not expired', async () => {
+      // Create a token that expires in the future (1 hour from now)
+      const futureExp = Math.floor(Date.now() / 1000) + 3600;
+      const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: futureExp })
+      ).toString('base64')}.dummy`;
+
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, () =>
+          HttpResponse.json({ access_token: validToken })
+        )
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      const token = await authService.ensureValidToken(
+        Routes.projects as Routes
+      );
+      expect(token).toBe(validToken);
+    });
+
+    it('should trigger refresh when token is expired', async () => {
+      const refreshedToken = 'refreshed-token';
+      // Create a token that has already expired
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let callCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, () => {
+          callCount++;
+          if (callCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          }
+          return HttpResponse.json({ access_token: refreshedToken });
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      const token = await authService.ensureValidToken(
+        Routes.projects as Routes
+      );
+      expect(token).toBe(refreshedToken);
+      expect(callCount).toBe(2);
+    });
+
+    it('should not trigger refresh for auth endpoints', async () => {
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let callCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, () => {
+          callCount++;
+          return HttpResponse.json({ access_token: expiredToken });
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // Should not trigger refresh for auth endpoints
+      const token = await authService.ensureValidToken(Routes.apiKeyLogin);
+      expect(token).toBe(expiredToken);
+      expect(callCount).toBe(1); // Only the initial getToken() call
+    });
+
+    it('should handle concurrent calls to ensureValidToken', async () => {
+      const refreshedToken = 'refreshed-token';
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let callCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, async () => {
+          callCount++;
+          if (callCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          }
+          // Add delay to simulate slow refresh
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return HttpResponse.json({ access_token: refreshedToken });
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // Make multiple concurrent calls
+      const promises = [
+        authService.ensureValidToken(Routes.projects as Routes),
+        authService.ensureValidToken(Routes.projects as Routes),
+        authService.ensureValidToken(Routes.projects as Routes)
+      ];
+
+      const tokens = await Promise.all(promises);
+
+      // All should return the same refreshed token
+      expect(tokens[0]).toBe(refreshedToken);
+      expect(tokens[1]).toBe(refreshedToken);
+      expect(tokens[2]).toBe(refreshedToken);
+
+      // Should only refresh once, not three times
+      expect(callCount).toBe(2); // Initial getToken() + one refresh
+    });
+  });
+});
+
+describe('AuthService - Concurrent Refresh Bug Fix', () => {
+  describe('refreshTokenWithFallback() Concurrency', () => {
+    it('should use same promise for concurrent token refresh requests', async () => {
+      const refreshedToken = 'refreshed-token-concurrent';
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let refreshCallCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, async () => {
+          refreshCallCount++;
+          if (refreshCallCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          }
+          // Add delay to simulate slow refresh
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return HttpResponse.json({ access_token: refreshedToken });
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // Make multiple concurrent calls that trigger refresh
+      const promises = [
+        authService.ensureValidToken(Routes.projects as Routes),
+        authService.ensureValidToken(Routes.logStreams as Routes),
+        authService.ensureValidToken(Routes.datasets as Routes)
+      ];
+
+      const tokens = await Promise.all(promises);
+
+      // All should return the same refreshed token
+      tokens.forEach((token) => {
+        expect(token).toBe(refreshedToken);
+      });
+
+      // Should only call refresh once (plus initial getToken)
+      expect(refreshCallCount).toBe(2);
+    });
+
+    it('should not create multiple refreshes for simultaneous expired token requests', async () => {
+      const refreshedToken = 'single-refresh-token';
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let apiCallCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, async () => {
+          apiCallCount++;
+          if (apiCallCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          }
+          // Simulate slow refresh
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          return HttpResponse.json({ access_token: refreshedToken });
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // Launch 5 concurrent requests that all detect expired token
+      const promises = Array(5)
+        .fill(null)
+        .map(() => authService.ensureValidToken(Routes.projects as Routes));
+
+      const results = await Promise.all(promises);
+
+      // All should get the same refreshed token
+      results.forEach((token) => {
+        expect(token).toBe(refreshedToken);
+      });
+
+      // Should only refresh once (apiCallCount = 2: initial + 1 refresh)
+      expect(apiCallCount).toBe(2);
+    });
+
+    it('should clear refresh promise after successful completion', async () => {
+      const refreshedToken1 = 'refreshed-token-1';
+      const refreshedToken2 = 'refreshed-token-2';
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let apiCallCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, async () => {
+          apiCallCount++;
+          if (apiCallCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          } else if (apiCallCount === 2) {
+            return HttpResponse.json({ access_token: refreshedToken1 });
+          } else {
+            // Second refresh should also work (token expired again)
+            return HttpResponse.json({ access_token: refreshedToken2 });
+          }
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // First refresh
+      const token1 = await authService.ensureValidToken(
+        Routes.projects as Routes
+      );
+      expect(token1).toBe(refreshedToken1);
+
+      // Wait a bit to ensure first refresh completes
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Second refresh should be able to happen (promise was cleared)
+      const token2 = await authService.ensureValidToken(
+        Routes.projects as Routes
+      );
+      expect(token2).toBe(refreshedToken2);
+
+      expect(apiCallCount).toBe(3); // Initial + 2 refreshes
+    });
+
+    it('should clear refresh promise after failure', async () => {
+      const successToken = 'success-token';
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let apiCallCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, () => {
+          apiCallCount++;
+          if (apiCallCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          } else if (apiCallCount === 2) {
+            // First refresh fails
+            return HttpResponse.json(
+              { detail: 'Refresh failed' },
+              { status: 401 }
+            );
+          } else {
+            // Second attempt succeeds
+            return HttpResponse.json({ access_token: successToken });
+          }
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // First refresh attempt fails
+      await expect(
+        authService.ensureValidToken(Routes.projects as Routes)
+      ).rejects.toThrow();
+
+      // Wait a bit
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Second refresh attempt should succeed (promise was cleared after failure)
+      const token = await authService.ensureValidToken(
+        Routes.projects as Routes
+      );
+      expect(token).toBe(successToken);
+
+      expect(apiCallCount).toBe(3); // Initial + failed refresh + successful refresh
+    });
+
+    it('should handle race condition with rapid sequential refreshes', async () => {
+      const tokens = ['token-1', 'token-2', 'token-3'];
+      // Create an expired token
+      const pastExp = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(
+        JSON.stringify({ exp: pastExp })
+      ).toString('base64')}.dummy`;
+
+      let apiCallCount = 0;
+      server.use(
+        http.post(`${TEST_HOST}/${Routes.apiKeyLogin}`, async () => {
+          apiCallCount++;
+          if (apiCallCount === 1) {
+            return HttpResponse.json({ access_token: expiredToken });
+          }
+          const tokenIndex = Math.min(apiCallCount - 2, tokens.length - 1);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          return HttpResponse.json({ access_token: tokens[tokenIndex] });
+        })
+      );
+
+      const authService = new AuthService(TEST_HOST);
+      authService.setCredentials({ apiKey: 'test-key' });
+      await authService.getToken();
+
+      // Fire off multiple refresh attempts in rapid succession
+      const promise1 = authService.ensureValidToken(Routes.projects as Routes);
+      const promise2 = authService.ensureValidToken(Routes.projects as Routes);
+
+      const [result1, result2] = await Promise.all([promise1, promise2]);
+
+      // Both should get the same token (same refresh promise)
+      expect(result1).toBe(result2);
+      expect(apiCallCount).toBe(2); // Initial + 1 refresh (not 2 refreshes)
     });
   });
 });
