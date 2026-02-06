@@ -361,7 +361,7 @@ describe('AuthService - SSO Login', () => {
     });
   });
 
-  describe('Refresh "Token Handling', () => {
+  describe('Refresh Token Handling', () => {
     it('should extract refresh token from Set-Cookie header with multiple cookies', async () => {
       const mockRefreshToken =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZWZyZXNoLXRva2VuLW11bHRpcGxlIiwidHlwIjoicmVmcmVzaCIsImlhdCI6MTUxNjIzOTAyMn0.dummy_signature_for_testing_purposes_only';
