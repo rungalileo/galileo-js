@@ -1,17 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
+import axios from 'axios';
+import type { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 import { Readable } from 'stream';
-import createClient, { Client } from 'openapi-fetch';
+import createClient from 'openapi-fetch';
+import type { Client } from 'openapi-fetch';
 import { decode } from 'jsonwebtoken';
 import type { paths } from '../types/api.types';
 import { Routes } from '../types/routes.types';
 import { getSdkIdentifier } from '../utils/version';
-import {
-  objectToCamel,
-  objectToSnake,
-  ObjectToSnake,
-  ObjectToCamel
-} from 'ts-case-convert';
+import { objectToCamel, objectToSnake } from 'ts-case-convert';
+import type { ObjectToSnake, ObjectToCamel } from 'ts-case-convert';
 import {
   GalileoAPIError,
   isGalileoAPIStandardErrorData

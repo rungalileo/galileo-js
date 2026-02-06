@@ -1,14 +1,20 @@
 import querystring from 'querystring';
-import { AxiosResponse } from 'axios';
-import { decode, JwtPayload } from 'jsonwebtoken';
+import type { AxiosResponse } from 'axios';
+import { decode } from 'jsonwebtoken';
+import type { JwtPayload } from 'jsonwebtoken';
 import * as setCookieParser from 'set-cookie-parser';
 import { BaseClient, RequestMethod } from '../base-client';
 import { Routes } from '../../types/routes.types';
-import {
-  SSOProvider,
-  AccessTokenResponse,
-  SSOProviders
-} from '../../types/auth.types';
+import { SSOProviders } from '../../types/auth.types';
+import type { SSOProvider, AccessTokenResponse } from '../../types/auth.types';
+
+export type AuthCredentials = {
+  apiKey?: string;
+  username?: string;
+  password?: string;
+  ssoIdToken?: string;
+  ssoProvider?: string;
+};
 
 export class AuthService extends BaseClient {
   private refreshToken: string | null = null;
@@ -18,6 +24,7 @@ export class AuthService extends BaseClient {
     | { type: 'sso'; ssoIdToken: string; ssoProvider: SSOProvider };
 
   private refreshPromise: Promise<void> | null = null;
+  private credentials?: AuthCredentials;
 
   /**
    * Creates a new AuthService instance.
@@ -30,6 +37,14 @@ export class AuthService extends BaseClient {
     this.apiUrl = apiUrl;
     this.token = token;
     this.initializeClient();
+  }
+
+  public getApiUrl(): string {
+    return this.apiUrl;
+  }
+
+  public setCredentials(credentials: AuthCredentials): void {
+    this.credentials = { ...credentials };
   }
 
   /**
@@ -47,12 +62,14 @@ export class AuthService extends BaseClient {
    * @throws {Error} If SSO provider is invalid (not in supported list)
    */
   public async getToken(): Promise<string> {
-    const apiKey = process.env.GALILEO_API_KEY;
-    const username = process.env.GALILEO_USERNAME;
-    const password = process.env.GALILEO_PASSWORD;
-    const ssoIdToken = process.env.GALILEO_SSO_ID_TOKEN;
+    const apiKey = this.credentials?.apiKey ?? process.env.GALILEO_API_KEY;
+    const username = this.credentials?.username ?? process.env.GALILEO_USERNAME;
+    const password = this.credentials?.password ?? process.env.GALILEO_PASSWORD;
+    const ssoIdToken =
+      this.credentials?.ssoIdToken ?? process.env.GALILEO_SSO_ID_TOKEN;
     const ssoProvider = (
-      process.env.GALILEO_SSO_PROVIDER || ''
+      (this.credentials?.ssoProvider ?? process.env.GALILEO_SSO_PROVIDER) ||
+      ''
     ).toLowerCase() as SSOProvider;
 
     if (apiKey) {
@@ -97,7 +114,7 @@ export class AuthService extends BaseClient {
       }
 
       return payload;
-    } catch (error) {
+    } catch {
       throw new Error(`SSO token invalid or malformed.`);
     }
   }
@@ -219,6 +236,17 @@ export class AuthService extends BaseClient {
   }
 
   /**
+   * Ensures the current access token is valid, refreshing it if expired or soon to expire.
+   *
+   * @param endpoint - The API route being called; used to skip refresh for auth endpoints (e.g. login, refresh)
+   * @returns Promise resolving to a valid access token string
+   */
+  public async ensureValidToken(endpoint: Routes): Promise<string> {
+    await this.refreshTokenIfNeeded(endpoint);
+    return this.token;
+  }
+
+  /**
    * Refresh the access token using the stored refresh token.
    *
    * @returns Promise resolving to a new access token string
@@ -262,13 +290,13 @@ export class AuthService extends BaseClient {
    * @throws {Error} If both refresh and credential-based token fetch fail
    */
   private async refreshTokenWithFallback() {
-    if (this.refreshPromise) {
+    if (!this.refreshPromise) {
       this.refreshPromise = (async () => {
         try {
           if (this.refreshToken) {
             try {
               await this.refreshAccessToken();
-            } catch (error) {
+            } catch {
               await this.fetchNewToken();
             }
           } else {
@@ -322,10 +350,10 @@ export class AuthService extends BaseClient {
         // Token is invalid if it has expired
         return expirationTime <= currentTime + fiveMinutes;
       } else {
-        // Tolen invalidated due to missing expiration time
+        // Token invalidated due to missing expiration time
         return true;
       }
-    } catch (error) {
+    } catch {
       // Token invalidated due to decoding error
       return true;
     }
