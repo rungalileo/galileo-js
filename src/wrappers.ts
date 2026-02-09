@@ -4,7 +4,7 @@ import {
   GalileoSingleton,
   loggerContext
 } from './singleton';
-import { safeStringify, serializeToStr } from './entities/serialization';
+import { serializeToStr } from './entities/serialization';
 import {
   argsToDict,
   convertToStringDict,
@@ -169,18 +169,10 @@ export function log<T extends unknown[], R>(
       let skipFinalize = false;
 
       let argsJson: Record<string, unknown> = argsToDict(paramsInfo, args);
-      console.log(
-        '[DEBUG] argsJson after argsToDict:',
-        safeStringify(argsJson, 2)
-      );
 
       if (!('input' in argsJson)) {
         argsJson = { input: argsJson };
       }
-      console.log(
-        '[DEBUG] argsJson after input check:',
-        safeStringify(argsJson, 2)
-      );
 
       const input: unknown = argsJson['input'];
       const inputString: string = toStringValue(input);
@@ -210,11 +202,6 @@ export function log<T extends unknown[], R>(
           spanParams[key] = value;
         }
       }
-      console.log(
-        '[DEBUG] spanParams after extraction:',
-        safeStringify(spanParams, 2)
-      );
-
       if (options.metadata !== undefined) {
         spanParams.metadata = options.metadata;
       }
@@ -236,16 +223,18 @@ export function log<T extends unknown[], R>(
         if (!logger || concludeCount === 0) {
           return;
         }
-        try {
-          logger.conclude({
-            output: toStringValue(result),
-            durationNs: durationNs
-          });
-        } catch (error) {
-          console.error(error);
+        const output = toStringValue(result);
+        while (concludeCount > 0) {
+          try {
+            logger.conclude({
+              output,
+              durationNs: durationNs
+            });
+          } catch (error) {
+            console.error(error);
+          }
+          concludeCount = concludeCount - 1;
         }
-        concludeCount = concludeCount - 1;
-        conclude(result, durationNs);
       };
 
       try {
@@ -264,7 +253,6 @@ export function log<T extends unknown[], R>(
         const hasExpData =
           exp && (exp.projectName || exp.experimentId || exp.logStreamName);
 
-        console.log('logStore: ', logStore);
         if (hasLogStoreData) {
           // Use loggerContext data if available
           logger = GalileoSingleton.getInstance().getLogger({

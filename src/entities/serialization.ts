@@ -4,7 +4,7 @@
  * Custom JSON encoder to assist in the serialization of a wide range of objects.
  */
 export class EventSerializer {
-  private seen: Set<object> = new Set();
+  private seen: WeakSet<object> = new WeakSet();
 
   /**
    * Serialize a value to its JSON-compatible representation.
@@ -135,7 +135,7 @@ export class EventSerializer {
    */
   public encode(obj: any): string {
     // Create a new WeakSet for each encode call to track circular references
-    this.seen = new Set();
+    this.seen = new WeakSet();
     try {
       const processed = this.default(obj);
       return JSON.stringify(processed);
