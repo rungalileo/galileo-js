@@ -235,11 +235,6 @@ export class AuthService extends BaseClient {
     return this.refreshToken;
   }
 
-  public async ensureValidToken(endpoint: Routes): Promise<string> {
-    await this.refreshTokenIfNeeded(endpoint);
-    return this.token;
-  }
-
   /**
    * Ensures the current access token is valid, refreshing it if expired or soon to expire.
    *
