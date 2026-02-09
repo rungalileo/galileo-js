@@ -8,6 +8,8 @@ import { StepWithChildSpans } from './types/logging/span.types';
  * Context information that is automatically propagated through async execution chains.
  */
 export interface ExperimentContext {
+  /** (Optional) The project ID */
+  projectId?: string;
   /** (Optional) The experiment ID currently being executed */
   experimentId?: string;
   /** (Optional) The project name for the current experiment */
@@ -50,6 +52,8 @@ export const loggerContext = new AsyncLocalStorage<LoggerContext>();
 export interface LoggerKeyOptions {
   /** (Optional) The project name */
   projectName?: string;
+  /** (Optional) The project ID */
+  projectId?: string;
   /** (Optional) The log stream name (used when experimentId is not provided) */
   logstream?: string;
   /** (Optional) The experiment ID (takes precedence over logstream) */
@@ -163,8 +167,16 @@ export class GalileoSingleton {
     // Create new logger
     // Prepare initialization arguments, using context as fallback if not provided
     const config: GalileoLoggerConfig = {
-      projectName: options.projectName ?? context?.projectName,
-      logStreamName: options.logstream,
+      projectName:
+        options.projectName ??
+        context?.projectName ??
+        process.env.GALILEO_PROJECT ??
+        process.env.GALILEO_PROJECT_NAME,
+      projectId: options.projectId ?? context?.projectId,
+      logStreamName:
+        options.logstream ??
+        process.env.GALILEO_LOG_STREAM ??
+        process.env.GALILEO_LOG_STREAM_NAME,
       experimentId: options.experimentId ?? context?.experimentId,
       localMetrics: options.localMetrics,
       mode: options.mode
@@ -335,6 +347,59 @@ export const getLogger = (options: GetLoggerOptions = {}) => {
 };
 
 /**
+ * Returns the logger for the current async context (experimentContext + loggerContext).
+ * Used by session helpers and the log() wrapper so they target the same logger.
+ */
+const getLoggerFromContext = (): GalileoLogger => {
+  const exp = experimentContext.getStore();
+  const logStore = loggerContext.getStore();
+  return GalileoSingleton.getInstance().getLogger({
+    projectName: exp?.projectName,
+    experimentId: exp?.experimentId,
+    logstream: logStore?.logStreamName ?? exp?.logStreamName
+  });
+};
+
+/**
+ * Starts a new session on the logger for the current context.
+ *
+ * @param options - (Optional) Session options.
+ * @param options.name - (Optional) The session name.
+ * @param options.previousSessionId - (Optional) The previous session ID to link to.
+ * @param options.externalId - (Optional) External ID for the session.
+ * @returns A promise that resolves to the session ID.
+ */
+export const startSession = async (options?: {
+  name?: string;
+  previousSessionId?: string;
+  externalId?: string;
+}): Promise<string> => {
+  const logger = getLoggerFromContext();
+  return logger.startSession(options);
+};
+
+/**
+ * Sets the session ID on the logger for the current context.
+ * Traces created via log() are associated with this session.
+ *
+ * @param sessionId - The session ID to set.
+ * @returns Nothing.
+ */
+export const setSession = (sessionId: string): void => {
+  getLoggerFromContext().setSessionId(sessionId);
+};
+
+/**
+ * Clears the current session ID on the logger for the current context.
+ * Subsequent traces are not associated with a session until startSession or setSession is called.
+ *
+ * @returns Nothing.
+ */
+export const clearSession = (): void => {
+  getLoggerFromContext().clearSession();
+};
+
+/**
  * Retrieves a shallow copy of the map containing all active loggers.
  * @returns A map of keys to GalileoLogger instances
  */
@@ -382,4 +447,19 @@ export const flush = async (options: LoggerKeyOptions = {}) => {
  */
 export const flushAll = async () => {
   await GalileoSingleton.getInstance().flushAll();
+};
+
+/**
+ * Lifecycle and context API for Galileo logging.
+ * Groups init, flush, reset, and session methods for ergonomic use.
+ */
+export const galileoContext = {
+  init,
+  flush,
+  flushAll,
+  reset,
+  resetAll,
+  startSession,
+  setSession,
+  clearSession
 };

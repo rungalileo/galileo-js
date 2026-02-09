@@ -186,6 +186,8 @@ export class StepWithChildSpans extends BaseSpan {
       //   span.parent = this;
       this.spans.push(span);
     }
+
+    console.log('[DEBUG] Adding child span to parent:', this.spans);
   }
 }
 

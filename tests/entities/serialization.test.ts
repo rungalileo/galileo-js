@@ -2,6 +2,7 @@ import {
   EventSerializer,
   serializeToStr
 } from '../../src/entities/serialization';
+import { convertToStringDict } from '../../src/utils/serialization';
 
 describe('EventSerializer', () => {
   let serializer: EventSerializer;
@@ -587,6 +588,253 @@ describe('EventSerializer', () => {
       obj.key = 'value';
       const result = serializer.default(obj);
       expect(result).toEqual({ key: 'value' });
+    });
+  });
+
+  describe('convertToStringDict', () => {
+    it('should use serializeToStr for object values', () => {
+      const input = {
+        metadata: { nested: { value: 'test' } }
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.metadata).toBe('string');
+      expect(result.metadata).toContain('test');
+      expect(result.metadata).toContain('nested');
+    });
+
+    it('should handle circular references in metadata', () => {
+      const obj: Record<string, unknown> = { key: 'value' };
+      obj.circular = obj;
+
+      expect(() => convertToStringDict({ meta: obj })).not.toThrow();
+
+      const result = convertToStringDict({ meta: obj });
+      expect(typeof result.meta).toBe('string');
+      expect(result.meta).toContain('key');
+    });
+
+    it('should convert primitive values to strings', () => {
+      const input = {
+        str: 'hello',
+        num: 42,
+        bool: true
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(result.str).toBe('hello');
+      expect(result.num).toBe('42');
+      expect(result.bool).toBe('true');
+    });
+
+    it('should handle null and undefined values as empty strings', () => {
+      const input = {
+        nullValue: null,
+        undefinedValue: undefined
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(result.nullValue).toBe('');
+      expect(result.undefinedValue).toBe('');
+    });
+
+    it('should handle nested arrays', () => {
+      const input = {
+        items: [1, 2, [3, 4]]
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.items).toBe('string');
+      expect(result.items).toContain('1');
+      expect(result.items).toContain('2');
+      expect(result.items).toContain('3');
+      expect(result.items).toContain('4');
+    });
+
+    it('should handle empty objects', () => {
+      const input = {
+        empty: {}
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.empty).toBe('string');
+      expect(result.empty).toBe('{}');
+    });
+
+    it('should handle complex nested structures', () => {
+      const input = {
+        user: {
+          id: 123,
+          profile: {
+            name: 'John',
+            tags: ['admin', 'user']
+          }
+        }
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.user).toBe('string');
+      expect(result.user).toContain('John');
+      expect(result.user).toContain('admin');
+      expect(result.user).toContain('123');
+    });
+
+    it('should handle multiple circular references', () => {
+      const obj1: Record<string, unknown> = { name: 'obj1' };
+      const obj2: Record<string, unknown> = { name: 'obj2' };
+
+      obj1.ref = obj2;
+      obj2.ref = obj1;
+
+      expect(() =>
+        convertToStringDict({
+          first: obj1,
+          second: obj2
+        })
+      ).not.toThrow();
+
+      const result = convertToStringDict({
+        first: obj1,
+        second: obj2
+      });
+
+      expect(typeof result.first).toBe('string');
+      expect(typeof result.second).toBe('string');
+      expect(result.first).toContain('obj1');
+      expect(result.second).toContain('obj2');
+    });
+
+    it('should handle Date objects in metadata', () => {
+      const input = {
+        timestamp: new Date('2024-01-01T12:00:00Z')
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.timestamp).toBe('string');
+      expect(result.timestamp).toContain('2024-01-01');
+    });
+
+    it('should handle Error objects in metadata', () => {
+      const input = {
+        error: new Error('Test error')
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.error).toBe('string');
+      expect(result.error).toContain('Error');
+      expect(result.error).toContain('Test error');
+    });
+
+    it('should handle Set objects in metadata', () => {
+      const input = {
+        tags: new Set(['tag1', 'tag2', 'tag3'])
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.tags).toBe('string');
+      expect(result.tags).toContain('tag1');
+      expect(result.tags).toContain('tag2');
+      expect(result.tags).toContain('tag3');
+    });
+
+    it('should handle Map objects in metadata', () => {
+      const input = {
+        config: new Map([
+          ['key1', 'value1'],
+          ['key2', 'value2']
+        ])
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(typeof result.config).toBe('string');
+      expect(result.config).toContain('key1');
+      expect(result.config).toContain('value1');
+      expect(result.config).toContain('key2');
+      expect(result.config).toContain('value2');
+    });
+
+    it('should handle deeply nested circular structures', () => {
+      const obj: Record<string, unknown> = { level: 1 };
+      const child: Record<string, unknown> = { level: 2 };
+      const grandchild: Record<string, unknown> = { level: 3 };
+
+      obj.child = child;
+      child.grandchild = grandchild;
+      grandchild.root = obj; // Circular reference
+
+      expect(() =>
+        convertToStringDict({
+          tree: obj
+        })
+      ).not.toThrow();
+
+      const result = convertToStringDict({
+        tree: obj
+      });
+
+      expect(typeof result.tree).toBe('string');
+      expect(result.tree).toContain('level');
+    });
+
+    it('should handle mixed complex metadata', () => {
+      const input = {
+        string: 'value',
+        number: 42,
+        boolean: true,
+        nullValue: null,
+        date: new Date('2024-01-01T00:00:00Z'),
+        error: new Error('test error'),
+        array: [1, 'two', true],
+        set: new Set([1, 2, 3]),
+        map: new Map([['key', 'value']]),
+        nested: {
+          deep: {
+            value: 'deep'
+          }
+        }
+      };
+
+      const result = convertToStringDict(input);
+
+      // All values should be strings
+      Object.values(result).forEach((value) => {
+        expect(typeof value).toBe('string');
+      });
+
+      // Check specific values
+      expect(result.string).toBe('value');
+      expect(result.number).toBe('42');
+      expect(result.boolean).toBe('true');
+      expect(result.nullValue).toBe('');
+      expect(result.date).toContain('2024-01-01');
+      expect(result.array).toContain('two');
+    });
+
+    it('should handle empty input object', () => {
+      const result = convertToStringDict({});
+      expect(result).toEqual({});
+    });
+
+    it('should preserve all keys', () => {
+      const input = {
+        key1: 'value1',
+        key2: 'value2',
+        key3: 'value3'
+      };
+
+      const result = convertToStringDict(input);
+
+      expect(Object.keys(result)).toEqual(['key1', 'key2', 'key3']);
     });
   });
 });

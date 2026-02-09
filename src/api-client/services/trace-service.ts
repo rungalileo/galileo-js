@@ -167,8 +167,16 @@ export class TraceService extends BaseClient {
     );
   }
 
+  /**
+   * Ingests trace data for the current project (and optionally a specific project).
+   * @param options - The trace ingest request (traces, sessionId, etc.)
+   * @param projectId - (Optional) Project ID to ingest into; defaults to the service's current project.
+   * @returns A promise that resolves to the ingest response.
+   * @throws Error if the service is not initialized with a project.
+   */
   public async ingestTraces(
-    options: LogTracesIngestRequest
+    options: LogTracesIngestRequest,
+    projectId?: string
   ): Promise<LogTracesIngestResponse> {
     if (!this.projectId) {
       throw new Error('Project not initialized');
@@ -186,7 +194,7 @@ export class TraceService extends BaseClient {
       RequestMethod.POST,
       Routes.traces,
       request,
-      { project_id: this.projectId }
+      { project_id: projectId ?? this.projectId }
     );
 
     return this.convertToCamelCase<

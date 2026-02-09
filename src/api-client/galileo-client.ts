@@ -294,9 +294,7 @@ export class GalileoApiClient extends BaseClient {
           }
         }
 
-        if (sessionId) {
-          this.sessionId = sessionId;
-        }
+        this.sessionId = sessionId;
 
         this.traceService = new TraceService(
           this.apiUrl,
@@ -380,6 +378,7 @@ export class GalileoApiClient extends BaseClient {
     const needsReinit =
       (params.projectId && params.projectId !== this.projectId) ||
       (params.logStreamId && params.logStreamId !== this.logStreamId) ||
+      (params.sessionId && params.sessionId !== this.sessionId) ||
       (params.experimentId && params.experimentId !== this.experimentId);
 
     return Boolean(hasProject && hasLogStreamOrExperiment && !needsReinit);

@@ -2168,7 +2168,7 @@ describe('GalileoLogger', () => {
           columnId: 'external_id',
           operator: 'eq' as const,
           value: 'test-external-id',
-          type: 'id' as const
+          type: 'text' as const
         }
       ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
@@ -2199,7 +2199,7 @@ describe('GalileoLogger', () => {
           columnId: 'external_id',
           operator: 'eq' as const,
           value: 'nonexistant-external-id',
-          type: 'id' as const
+          type: 'text' as const
         }
       ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
@@ -2226,7 +2226,7 @@ describe('GalileoLogger', () => {
           columnId: 'external_id',
           operator: 'eq' as const,
           value: 'error-external-id',
-          type: 'id' as const
+          type: 'text' as const
         }
       ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({

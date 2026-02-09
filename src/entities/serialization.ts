@@ -4,7 +4,7 @@
  * Custom JSON encoder to assist in the serialization of a wide range of objects.
  */
 export class EventSerializer {
-  private seen: WeakSet<object> = new WeakSet();
+  private seen: Set<object> = new Set();
 
   /**
    * Serialize a value to its JSON-compatible representation.
@@ -113,8 +113,10 @@ export class EventSerializer {
           }
           // Note: WeakSet doesn't have delete, but entries are automatically garbage collected
           // We can't manually remove, but that's fine for our use case
+          this.seen.delete(obj);
           return result;
         } catch {
+          this.seen.delete(obj);
           return `<${obj.constructor?.name || 'Object'}>`;
         }
       }
@@ -133,7 +135,7 @@ export class EventSerializer {
    */
   public encode(obj: any): string {
     // Create a new WeakSet for each encode call to track circular references
-    this.seen = new WeakSet();
+    this.seen = new Set();
     try {
       const processed = this.default(obj);
       return JSON.stringify(processed);
@@ -191,5 +193,23 @@ export function serializeToStr(inputData: unknown): string {
     return serializer.encode(inputData);
   } catch {
     return '';
+  }
+}
+
+/**
+ * Safely stringifies data to JSON, handling circular references by replacing
+ * cycles with a placeholder string.
+ *
+ * @param obj - The data to stringify.
+ * @param space - (Optional) Number of spaces for pretty-printing (same as JSON.stringify).
+ * @returns A JSON string representation, or a fallback string on failure.
+ */
+export function safeStringify(obj: unknown, space?: number): string {
+  try {
+    const serializer = new EventSerializer();
+    const processed = serializer.default(obj);
+    return JSON.stringify(processed, null, space);
+  } catch {
+    return `"<not serializable object of type: ${(obj as object)?.constructor?.name ?? typeof obj}>"`;
   }
 }

@@ -261,7 +261,7 @@ class GalileoLogger implements IGalileoLogger {
               columnId: 'external_id',
               operator: 'eq',
               value: options.externalId,
-              type: 'id'
+              type: 'text'
             }
           ],
           limit: 1
@@ -1643,6 +1643,21 @@ class GalileoLogger implements IGalileoLogger {
   }
 
   /**
+   * Continues an existing trace (and optionally a parent span) for distributed tracing.
+   * Fetches the trace (and span if parentId is provided) from the API and sets them as current context.
+   *
+   * @param traceId - The ID of the trace to continue.
+   * @param parentId - (Optional) The ID of the parent span to continue under.
+   * @returns A promise that resolves when the trace (and optional span) context is set.
+   */
+  async continueTrace(traceId: string, parentId?: string): Promise<void> {
+    await this.initTrace(traceId);
+    if (parentId) {
+      await this.initSpan(parentId);
+    }
+  }
+
+  /**
    * Ensures the Galileo API client is initialized with the current logger's configuration.
    *
    * This method initializes the client with the logger's project, log stream, experiment,
@@ -1661,6 +1676,12 @@ class GalileoLogger implements IGalileoLogger {
       sessionId: this.sessionId,
       forceInit: false
     });
+
+    // Logger's projectId and logStreamId are updated to benefit from
+    // client initialization creating/retrieving project and logstreams based
+    // only on provided names. Important for flush resolution down the line.
+    this.projectId ??= this.client.projectId;
+    this.logStreamId ??= this.client.logStreamId;
   }
 
   /**
