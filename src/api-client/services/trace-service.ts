@@ -39,9 +39,7 @@ import {
   AggregatedTraceViewResponse,
   AggregatedTraceViewResponseOpenAPI,
   LogTracesIngestRequest,
-  LogTracesIngestRequestOpenAPI,
-  LogTracesIngestResponse,
-  LogTracesIngestResponseOpenAPI
+  LogTracesIngestResponse
 } from '../../types/logging/trace.types';
 import {
   SessionCreateRequest,
@@ -61,6 +59,9 @@ import {
   LogRecordsQueryResponse,
   LogRecordsQueryResponseOpenAPI
 } from '../../types/shared.types';
+
+import { GalileoGenerated } from 'galileo-generated';
+const galileoGenerated = new GalileoGenerated();
 
 export class TraceService extends BaseClient {
   private projectId: string;
@@ -168,11 +169,12 @@ export class TraceService extends BaseClient {
   }
 
   /**
-   * Ingests trace data for the current project (and optionally a specific project).
-   * @param options - The trace ingest request (traces, sessionId, etc.)
-   * @param projectId - (Optional) Project ID to ingest into; defaults to the service's current project.
-   * @returns A promise that resolves to the ingest response.
-   * @throws Error if the service is not initialized with a project.
+   * Ingests trace data for the current project (or a specific project when given).
+   *
+   * @param options - Trace ingest payload (traces, logstream/experiment, etc.). `sessionId` is defaulted from the service when omitted.
+   * @param projectId - Optional project ID to ingest into; defaults to the service's current project.
+   * @returns Promise resolving to the ingest response ({@link LogTracesIngestResponse}).
+   * @throws {Error} If the service has no project initialized.
    */
   public async ingestTraces(
     options: LogTracesIngestRequest,
@@ -185,22 +187,16 @@ export class TraceService extends BaseClient {
     this.validateLogstreamAndExperiment<typeof options>(options);
     options.sessionId ??= this.sessionId;
 
-    const request = this.convertToSnakeCase<
-      typeof options,
-      LogTracesIngestRequestOpenAPI
-    >(options);
+    const response =
+      await galileoGenerated.trace.logTracesProjectsProjectIdTracesPost(
+        {},
+        {
+          projectId: projectId ?? this.projectId,
+          body: options
+        }
+      );
 
-    const response = await this.makeRequest<LogTracesIngestResponseOpenAPI>(
-      RequestMethod.POST,
-      Routes.traces,
-      request,
-      { project_id: projectId ?? this.projectId }
-    );
-
-    return this.convertToCamelCase<
-      LogTracesIngestResponseOpenAPI,
-      LogTracesIngestResponse
-    >(response);
+    return response;
   }
 
   public async searchSessions(

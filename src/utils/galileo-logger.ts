@@ -29,8 +29,7 @@ import type {
   LogTracesIngestRequest,
   LogSpansIngestRequest,
   LogTraceUpdateRequest,
-  LogSpanUpdateRequest,
-  TraceSchema
+  LogSpanUpdateRequest
 } from '../types/logging/trace.types';
 import { populateLocalMetrics } from '../utils/metrics';
 import type { Payload, ProtectResponse } from '../types/new-api.types';
@@ -1254,7 +1253,7 @@ class GalileoLogger implements IGalileoLogger {
 
       // Create TracesIngestRequest - convert traces to JSON format.
       const tracesIngestRequest = {
-        traces: loggedTraces.map((trace) => trace.toJSON() as TraceSchema),
+        traces: loggedTraces.map((trace) => trace.toJSON()),
         sessionId: this.sessionId || null,
         experimentId: this.experimentId || null,
         logStreamId: this.logStreamId || this.client.logStreamId || null,
@@ -1721,7 +1720,7 @@ class GalileoLogger implements IGalileoLogger {
       return;
     }
 
-    const traceJson = trace.toJSON() as TraceSchema;
+    const traceJson = trace.toJSON();
     const tracesIngestRequest = {
       traces: [traceJson],
       sessionId: this.sessionId || null,
