@@ -8630,8 +8630,10 @@ export interface components {
       /** Created By */
       created_by?: string | null;
       created_by_user?: components['schemas']['UserInfo'] | null;
-      /** Num Samples */
-      num_samples?: number | null;
+      /** Num Spans */
+      num_spans?: number | null;
+      /** Num Traces */
+      num_traces?: number | null;
       task_type: components['schemas']['TaskType'];
       dataset?: components['schemas']['ExperimentDataset'] | null;
       /** Aggregate Metrics */
@@ -13650,6 +13652,11 @@ export interface components {
       project_id: string;
       /** Created By */
       created_by?: string | null;
+      created_by_user?: components['schemas']['UserInfo'] | null;
+      /** Num Spans */
+      num_spans?: number | null;
+      /** Num Traces */
+      num_traces?: number | null;
       /**
        * Has User Created Sessions
        * @default false
@@ -20625,7 +20632,9 @@ export interface operations {
   };
   list_log_streams_projects__project_id__log_streams_get: {
     parameters: {
-      query?: never;
+      query?: {
+        include_counts?: boolean;
+      };
       header?: never;
       path: {
         project_id: string;
@@ -20692,6 +20701,7 @@ export interface operations {
   list_log_streams_paginated_projects__project_id__log_streams_paginated_get: {
     parameters: {
       query?: {
+        include_counts?: boolean;
         starting_token?: number;
         limit?: number;
       };
@@ -21696,7 +21706,9 @@ export interface operations {
   };
   list_experiments_projects__project_id__experiments_get: {
     parameters: {
-      query?: never;
+      query?: {
+        include_counts?: boolean;
+      };
       header?: never;
       path: {
         project_id: string;
@@ -21763,6 +21775,7 @@ export interface operations {
   list_experiments_paginated_projects__project_id__experiments_paginated_get: {
     parameters: {
       query?: {
+        include_counts?: boolean;
         starting_token?: number;
         limit?: number;
       };
