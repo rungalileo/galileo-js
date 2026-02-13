@@ -89,6 +89,7 @@ export interface IGalileoLoggerSession {
     name?: string;
     previousSessionId?: string;
     externalId?: string;
+    metadata?: Record<string, string>;
   }): Promise<string>;
 
   /**

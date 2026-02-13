@@ -244,6 +244,7 @@ class GalileoLogger implements IGalileoLogger {
       name?: string;
       previousSessionId?: string;
       externalId?: string;
+      metadata?: Record<string, string>;
     } = {}
   ): Promise<string> {
     await this.client.init({
@@ -285,7 +286,8 @@ class GalileoLogger implements IGalileoLogger {
     const session = await this.client.createSessionLegacy({
       name: options.name,
       previousSessionId: options.previousSessionId,
-      externalId: options.externalId
+      externalId: options.externalId,
+      metadata: options.metadata
     });
 
     this.sessionId = session.id;

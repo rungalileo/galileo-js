@@ -291,6 +291,7 @@ export class GalileoSingleton {
  * @param options.sessionName - (Optional) The name of the session
  * @param options.previousSessionId - (Optional) The ID of a previous session to link to
  * @param options.externalId - (Optional) An external identifier for the session
+ * @param options.metadata - (Optional) User metadata for the session
  * @returns A promise that resolves when initialization is complete
  */
 export const init = async (
@@ -300,6 +301,7 @@ export const init = async (
     sessionName?: string;
     previousSessionId?: string;
     externalId?: string;
+    metadata?: Record<string, string>;
   } = {}
 ) => {
   const singleton = GalileoSingleton.getInstance();
@@ -315,7 +317,8 @@ export const init = async (
     await logger.startSession({
       name: options.sessionName,
       previousSessionId: options.previousSessionId,
-      externalId: options.externalId
+      externalId: options.externalId,
+      metadata: options.metadata
     });
   }
 };
