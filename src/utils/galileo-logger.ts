@@ -236,6 +236,7 @@ class GalileoLogger implements IGalileoLogger {
    * @param options.name - (Optional) The name of the session.
    * @param options.previousSessionId - (Optional) The ID of a previous session to link to.
    * @param options.externalId - (Optional) An external identifier for the session. If a session with this external ID already exists, it will be reused instead of creating a new session.
+   * @param options.metadata - (Optional) User metadata for the session as key-value string pairs.
    * @returns A promise that resolves to the ID of the session (either newly created or existing).
    */
   async startSession(
