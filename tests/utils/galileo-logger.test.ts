@@ -72,6 +72,7 @@ type MockGalileoApiClient = {
       name?: string;
       previousSessionId?: string;
       externalId?: string;
+      metadata?: Record<string, string>;
     }) => Promise<{
       id: string;
       name: string;
@@ -2119,7 +2120,8 @@ describe('GalileoLogger', () => {
       expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: 'test-session',
         previousSessionId: undefined,
-        externalId: undefined
+        externalId: undefined,
+        metadata: undefined
       });
       expect(mockClient.searchSessions).not.toHaveBeenCalled();
       expect(sessionId).toBe(mockSessionId);
@@ -2209,7 +2211,8 @@ describe('GalileoLogger', () => {
       expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
-        externalId: 'nonexistant-external-id'
+        externalId: 'nonexistant-external-id',
+        metadata: undefined
       });
       expect(sessionId).toBe(mockSessionId);
     });
@@ -2236,7 +2239,8 @@ describe('GalileoLogger', () => {
       expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
-        externalId: 'error-external-id'
+        externalId: 'error-external-id',
+        metadata: undefined
       });
       expect(sessionId).toBe(mockSessionId);
     });
@@ -2250,7 +2254,24 @@ describe('GalileoLogger', () => {
       expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
         name: undefined,
         previousSessionId: undefined,
-        externalId: '   '
+        externalId: '   ',
+        metadata: undefined
+      });
+      expect(sessionId).toBe(mockSessionId);
+    });
+
+    it('should pass metadata to createSessionLegacy', async () => {
+      const testMetadata = { brand_id: 'test-brand-123', env: 'production' };
+      const sessionId = await logger.startSession({
+        name: 'test-session-with-metadata',
+        metadata: testMetadata
+      });
+
+      expect(mockClient.createSessionLegacy).toHaveBeenCalledWith({
+        name: 'test-session-with-metadata',
+        previousSessionId: undefined,
+        externalId: undefined,
+        metadata: testMetadata
       });
       expect(sessionId).toBe(mockSessionId);
     });

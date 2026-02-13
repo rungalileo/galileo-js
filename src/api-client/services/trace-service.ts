@@ -91,11 +91,13 @@ export class TraceService extends BaseClient {
   public async createSessionLegacy({
     name,
     previousSessionId,
-    externalId
+    externalId,
+    metadata
   }: {
     name?: string;
     previousSessionId?: string;
     externalId?: string;
+    metadata?: Record<string, string>;
   }): Promise<SessionCreateResponse> {
     return await this.makeRequest<SessionCreateResponse>(
       RequestMethod.POST,
@@ -104,7 +106,8 @@ export class TraceService extends BaseClient {
         log_stream_id: this.logStreamId,
         name,
         previous_session_id: previousSessionId,
-        external_id: externalId
+        external_id: externalId,
+        user_metadata: metadata
       },
       { project_id: this.projectId }
     );
