@@ -9,7 +9,7 @@ import {
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
-import { AgentSpan, TraceSchema } from '../../src/types';
+import { AgentSpan } from '../../src/types';
 import { LogRecordsQueryFilter } from '../../src/types/search.types';
 import {
   LogRecordsQueryRequest,
@@ -879,7 +879,7 @@ describe('GalileoLogger', () => {
         isComplete: true,
         logStreamId: null,
         sessionId: null,
-        traces: [trace].map((trace) => trace.toJSON() as TraceSchema)
+        traces: [trace].map((trace) => trace.toJSON())
       });
       expect(flushedTraces.length).toBe(1);
       expect(logger['traces'].length).toBe(0);
@@ -2170,7 +2170,7 @@ describe('GalileoLogger', () => {
           columnId: 'external_id',
           operator: 'eq' as const,
           value: 'test-external-id',
-          type: 'id' as const
+          type: 'text' as const
         }
       ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
@@ -2201,7 +2201,7 @@ describe('GalileoLogger', () => {
           columnId: 'external_id',
           operator: 'eq' as const,
           value: 'nonexistant-external-id',
-          type: 'id' as const
+          type: 'text' as const
         }
       ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({
@@ -2229,7 +2229,7 @@ describe('GalileoLogger', () => {
           columnId: 'external_id',
           operator: 'eq' as const,
           value: 'error-external-id',
-          type: 'id' as const
+          type: 'text' as const
         }
       ];
       expect(mockClient.searchSessions).toHaveBeenCalledWith({

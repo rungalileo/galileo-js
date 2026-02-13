@@ -12,10 +12,14 @@ export const toStringValue = (value: unknown): string => {
 };
 
 /**
- * Extracts parameter names and their default values from a function
+ * Extracts parameter names and their default values from a function by parsing its source.
+ * Supports both synchronous and async functions (returning R or Promise<R>).
+ *
+ * @param fn - The function to inspect (sync or async).
+ * @returns An array of parameter descriptors with name and optional default value.
  */
 export const extractParamsInfo = <T extends unknown[], R>(
-  fn: (...args: T) => Promise<R>
+  fn: (...args: T) => R | Promise<R>
 ): { name: string; defaultValue?: unknown }[] => {
   const fnStr = fn.toString();
 
@@ -123,13 +127,8 @@ export const convertToStringDict = (
     if (value === null || value === undefined) {
       stringValue = '';
     } else if (typeof value === 'object') {
-      // For complex types, use JSON serialization
-      try {
-        stringValue = JSON.stringify(value);
-      } catch (error) {
-        // Fallback if serialization fails
-        stringValue = String(value);
-      }
+      // For complex types, use circular-safe serialization
+      stringValue = serializeToStr(value);
     } else {
       // For primitive types, convert directly to string
       stringValue = String(value);

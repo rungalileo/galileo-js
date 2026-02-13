@@ -7,6 +7,7 @@ import type { JsonArray } from '../base.types';
 
 export type StepAllowedInputType =
   | string
+  | Date
   | string[]
   | Record<string, string>
   | Record<string, string>[]
@@ -14,6 +15,7 @@ export type StepAllowedInputType =
   | Message[];
 export type StepAllowedOutputType =
   | string
+  | Date
   | string[]
   | Record<string, string>
   | Record<string, string>[]
@@ -22,6 +24,7 @@ export type StepAllowedOutputType =
   | Document[];
 export type LlmSpanAllowedInputType =
   | string
+  | Date
   | string[]
   | Record<string, string>
   | Record<string, string>[]
@@ -117,7 +120,7 @@ export interface SerializedStep extends Omit<
 > {
   metrics?: SerializedMetrics;
   type: StepType;
-  createdAt: string;
+  createdAt: Date;
   userMetadata: Record<string, string>;
   datasetMetadata?: Record<string, string>;
   output?: StepAllowedOutputType | JsonArray;
@@ -191,7 +194,7 @@ export class BaseStep {
       output: this.output,
       redactedOutput: this.redactedOutput,
       name: this.name,
-      createdAt: this.createdAt.toISOString(),
+      createdAt: this.createdAt,
       userMetadata: this.userMetadata,
       tags: this.tags,
       statusCode: this.statusCode,
