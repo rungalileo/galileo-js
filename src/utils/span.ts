@@ -10,7 +10,7 @@ import {
  * Attempt to convert an object to a Message, or return null if not possible
  */
 export const convertToMessage = (
-  obj: string | Record<string, string> | Message,
+  obj: string | Date | Record<string, string> | Message,
   defaultRole: MessageRole = MessageRole.user
 ): Message => {
   try {

@@ -310,7 +310,7 @@ describe('step.types', () => {
           output: 'test output',
           redactedOutput: 'redacted output',
           name: 'test step',
-          createdAt: new Date('2023-01-01T12:00:00.000Z').toISOString(),
+          createdAt: new Date('2023-01-01T12:00:00.000Z'),
           userMetadata: { key: 'value' },
           tags: ['tag1'],
           statusCode: 200,

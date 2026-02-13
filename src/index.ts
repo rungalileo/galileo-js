@@ -132,7 +132,11 @@ import {
   getAllLoggers,
   getLogger,
   reset,
-  resetAll
+  resetAll,
+  startSession,
+  setSession,
+  clearSession,
+  galileoContext
 } from './singleton';
 import { log } from './wrappers';
 import { wrapOpenAI } from './openai';
@@ -224,6 +228,10 @@ export {
   reset,
   resetAll,
   flushAll,
+  startSession,
+  setSession,
+  clearSession,
+  galileoContext,
   // Metrics
   createCustomLlmMetric,
   createCustomCodeMetric,

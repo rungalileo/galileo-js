@@ -30,7 +30,7 @@ import type {
   ExtendedLlmSpanRecord,
   ExtendedToolSpanRecordWithChildren,
   ExtendedRetrieverSpanRecordWithChildren
-} from '../new-api.types';
+} from 'galileo-generated';
 
 export type {
   Trace as TraceSchema,
@@ -50,10 +50,13 @@ export type {
   RecomputeLogRecordsMetricsRequest,
   ExtendedSessionRecordWithChildren,
   AggregatedTraceViewRequest,
-  AggregatedTraceViewResponse,
+  AggregatedTraceViewResponse
+} from '../new-api.types';
+
+export type {
   LogTracesIngestRequest,
   LogTracesIngestResponse
-} from '../new-api.types';
+} from 'galileo-generated';
 
 export type ExtendedSpanRecord =
   | ExtendedAgentSpanRecordWithChildren

@@ -7,7 +7,11 @@ import {
   getLogger,
   init,
   experimentContext,
-  GalileoSingleton
+  GalileoSingleton,
+  startSession,
+  setSession,
+  clearSession,
+  galileoContext
 } from '../src/singleton';
 import { GalileoLogger } from '../src/utils/galileo-logger';
 import type { LocalMetricConfig } from '../src/types/metrics.types';
@@ -26,7 +30,9 @@ jest.mock('../src/utils/galileo-logger', () => {
         mode: config?.mode,
         flush: jest.fn().mockResolvedValue([]),
         terminate: jest.fn().mockResolvedValue(undefined),
-        startSession: jest.fn().mockResolvedValue('session-id')
+        startSession: jest.fn().mockResolvedValue('session-id'),
+        setSessionId: jest.fn(),
+        clearSession: jest.fn()
       };
       return mockLogger;
     })
@@ -373,6 +379,46 @@ describe('Singleton utility functions', () => {
 
       expect(logger1.terminate).toHaveBeenCalled();
       expect(logger2.terminate).toHaveBeenCalled();
+    });
+  });
+
+  describe('Session management (1.2.1)', () => {
+    it('startSession should call logger.startSession and return session id', async () => {
+      const logger = getLogger();
+      const id = await startSession({
+        name: 'chat-session',
+        externalId: 'user-1'
+      });
+      expect(id).toBe('session-id');
+      expect(logger.startSession).toHaveBeenCalledWith({
+        name: 'chat-session',
+        externalId: 'user-1'
+      });
+    });
+
+    it('setSession should call logger.setSessionId', () => {
+      const logger = getLogger();
+      setSession('session-123');
+      expect(logger.setSessionId).toHaveBeenCalledWith('session-123');
+    });
+
+    it('clearSession should call logger.clearSession', () => {
+      const logger = getLogger();
+      clearSession();
+      expect(logger.clearSession).toHaveBeenCalled();
+    });
+  });
+
+  describe('galileoContext lifecycle (1.2.2)', () => {
+    it('should expose init, flush, flushAll, reset, resetAll, startSession, setSession, clearSession', () => {
+      expect(galileoContext.init).toBe(init);
+      expect(galileoContext.flush).toBe(flush);
+      expect(galileoContext.flushAll).toBe(flushAll);
+      expect(galileoContext.reset).toBe(reset);
+      expect(galileoContext.resetAll).toBe(resetAll);
+      expect(galileoContext.startSession).toBe(startSession);
+      expect(galileoContext.setSession).toBe(setSession);
+      expect(galileoContext.clearSession).toBe(clearSession);
     });
   });
 
@@ -1242,6 +1288,205 @@ describe('Singleton utility functions', () => {
         expect(newClient).not.toBe(logger2);
         expect(newClient).not.toBe(logger1);
       });
+    });
+  });
+
+  describe('projectId support', () => {
+    beforeEach(() => {
+      resetAll();
+      delete process.env.GALILEO_PROJECT;
+      delete process.env.GALILEO_PROJECT_NAME;
+      jest.clearAllMocks();
+    });
+
+    it('should accept projectId in getLogger options', () => {
+      const logger = getLogger({
+        projectId: 'proj-123',
+        logstream: 'test-stream'
+      });
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: 'proj-123',
+          logStreamName: 'test-stream'
+        })
+      );
+    });
+
+    it('should use projectId from context', async () => {
+      await experimentContext.run({ projectId: 'proj-456' }, async () => {
+        const logger = getLogger();
+        expect(logger).toBeDefined();
+        expect(GalileoLogger).toHaveBeenCalledWith(
+          expect.objectContaining({
+            projectId: 'proj-456'
+          })
+        );
+      });
+    });
+
+    it('should prefer explicit projectId over context', async () => {
+      await experimentContext.run({ projectId: 'proj-context' }, async () => {
+        const logger = getLogger({ projectId: 'proj-explicit' });
+        expect(logger).toBeDefined();
+        expect(GalileoLogger).toHaveBeenCalledWith(
+          expect.objectContaining({
+            projectId: 'proj-explicit'
+          })
+        );
+      });
+    });
+
+    it('should use projectName when projectId not provided', () => {
+      const logger = getLogger({
+        projectName: 'my-project',
+        logstream: 'stream'
+      });
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectName: 'my-project',
+          logStreamName: 'stream'
+        })
+      );
+    });
+
+    it('should work with both projectId and projectName', () => {
+      const logger = getLogger({
+        projectId: 'proj-789',
+        projectName: 'my-project',
+        logstream: 'stream'
+      });
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: 'proj-789',
+          projectName: 'my-project',
+          logStreamName: 'stream'
+        })
+      );
+    });
+
+    it('should work with projectId and experimentId', () => {
+      const logger = getLogger({
+        projectId: 'proj-abc',
+        experimentId: 'exp-123'
+      });
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: 'proj-abc',
+          experimentId: 'exp-123'
+        })
+      );
+    });
+  });
+
+  describe('Environment variable fallbacks', () => {
+    beforeEach(() => {
+      resetAll();
+      delete process.env.GALILEO_PROJECT;
+      delete process.env.GALILEO_PROJECT_NAME;
+      delete process.env.GALILEO_LOG_STREAM;
+      delete process.env.GALILEO_LOG_STREAM_NAME;
+      jest.clearAllMocks();
+    });
+
+    afterEach(() => {
+      delete process.env.GALILEO_LOG_STREAM;
+      delete process.env.GALILEO_LOG_STREAM_NAME;
+    });
+
+    it('should use GALILEO_LOG_STREAM when no logstream provided', () => {
+      process.env.GALILEO_LOG_STREAM = 'env-stream';
+
+      const logger = getLogger();
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamName: 'env-stream'
+        })
+      );
+    });
+
+    it('should prefer options.logstream over GALILEO_LOG_STREAM', () => {
+      process.env.GALILEO_LOG_STREAM = 'env-stream';
+
+      const logger = getLogger({ logstream: 'explicit-stream' });
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamName: 'explicit-stream'
+        })
+      );
+    });
+
+    it('should use GALILEO_LOG_STREAM with context projectName', async () => {
+      process.env.GALILEO_LOG_STREAM = 'env-stream';
+
+      await experimentContext.run(
+        { projectName: 'context-project' },
+        async () => {
+          const logger = getLogger();
+
+          expect(logger).toBeDefined();
+          expect(GalileoLogger).toHaveBeenCalledWith(
+            expect.objectContaining({
+              projectName: 'context-project',
+              logStreamName: 'env-stream'
+            })
+          );
+        }
+      );
+    });
+
+    it('should combine GALILEO_PROJECT with explicit logstream', () => {
+      process.env.GALILEO_PROJECT = 'env-project';
+
+      const logger = getLogger({ logstream: 'explicit-stream' });
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectName: 'env-project',
+          logStreamName: 'explicit-stream'
+        })
+      );
+    });
+
+    it('should use both GALILEO_PROJECT and GALILEO_LOG_STREAM when no options', () => {
+      process.env.GALILEO_PROJECT = 'env-project';
+      process.env.GALILEO_LOG_STREAM = 'env-stream';
+
+      const logger = getLogger();
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectName: 'env-project',
+          logStreamName: 'env-stream'
+        })
+      );
+    });
+
+    it('should prefer GALILEO_LOG_STREAM over GALILEO_LOG_STREAM_NAME', () => {
+      process.env.GALILEO_LOG_STREAM = 'primary-var';
+      process.env.GALILEO_LOG_STREAM_NAME = 'fallback-var';
+
+      const logger = getLogger();
+
+      expect(logger).toBeDefined();
+      expect(GalileoLogger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          logStreamName: 'primary-var'
+        })
+      );
     });
   });
 });
