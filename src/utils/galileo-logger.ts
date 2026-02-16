@@ -232,10 +232,16 @@ class GalileoLogger implements IGalileoLogger {
 
   /**
    * Starts a session in the active logger instance. If an externalId is provided, searches for an existing session with that external ID and reuses it if found.
+   *
+   * Note: When an existing session is found via externalId, it is returned as-is. All other options
+   * (name, previousSessionId, metadata) are ignored - they only apply when creating a new session.
+   * To update an existing session, use an explicit update method.
+   *
    * @param options - Configuration for the session.
-   * @param options.name - (Optional) The name of the session.
-   * @param options.previousSessionId - (Optional) The ID of a previous session to link to.
+   * @param options.name - (Optional) The name of the session. Only applied when creating a new session.
+   * @param options.previousSessionId - (Optional) The ID of a previous session to link to. Creates a reference to the previous session but does not inherit its metadata. Only applied when creating a new session.
    * @param options.externalId - (Optional) An external identifier for the session. If a session with this external ID already exists, it will be reused instead of creating a new session.
+   * @param options.metadata - (Optional) User metadata for the session as key-value string pairs. Only applied when creating a new session.
    * @returns A promise that resolves to the ID of the session (either newly created or existing).
    */
   async startSession(
@@ -243,6 +249,7 @@ class GalileoLogger implements IGalileoLogger {
       name?: string;
       previousSessionId?: string;
       externalId?: string;
+      metadata?: Record<string, string>;
     } = {}
   ): Promise<string> {
     await this.client.init({
@@ -284,7 +291,8 @@ class GalileoLogger implements IGalileoLogger {
     const session = await this.client.createSessionLegacy({
       name: options.name,
       previousSessionId: options.previousSessionId,
-      externalId: options.externalId
+      externalId: options.externalId,
+      metadata: options.metadata
     });
 
     this.sessionId = session.id;

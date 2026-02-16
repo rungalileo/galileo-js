@@ -862,17 +862,20 @@ export class GalileoApiClient extends BaseClient {
   public async createSessionLegacy({
     name,
     previousSessionId,
-    externalId
+    externalId,
+    metadata
   }: {
     name?: string;
     previousSessionId?: string;
     externalId?: string;
+    metadata?: Record<string, string>;
   }): Promise<SessionCreateResponse> {
     this.ensureService(this.traceService);
     return this.traceService.createSessionLegacy({
       name,
       previousSessionId,
-      externalId
+      externalId,
+      metadata
     });
   }
 
