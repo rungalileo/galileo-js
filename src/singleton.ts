@@ -292,6 +292,11 @@ export class GalileoSingleton {
 
 /**
  * Gets or creates a logger and optionally initializes a session.
+ *
+ * Note: When startNewSession is true and an existing session is found via externalId, it is returned as-is.
+ * All other session options (sessionName, previousSessionId, metadata) are ignored in that case -
+ * they only apply when creating a new session. To update an existing session, use an explicit update method.
+ *
  * @param options - Configuration options to initialize the logger
  * @param options.projectName - (Optional) The project name
  * @param options.logstream - (Optional) The log stream name
@@ -300,10 +305,10 @@ export class GalileoSingleton {
  * @param options.localMetrics - (Optional) Local metrics to run on traces/spans (only used when initializing a new logger)
  * @param options.sessionId - (Optional) The session ID
  * @param options.startNewSession - (Optional) Whether to start a new session
- * @param options.sessionName - (Optional) The name of the session
- * @param options.previousSessionId - (Optional) The ID of a previous session to link to
- * @param options.externalId - (Optional) An external identifier for the session
- * @param options.metadata - (Optional) User metadata for the session
+ * @param options.sessionName - (Optional) The name of the session. Only applied when creating a new session.
+ * @param options.previousSessionId - (Optional) The ID of a previous session to link to. Creates a reference only; does not inherit metadata. Only applied when creating a new session.
+ * @param options.externalId - (Optional) An external identifier for the session. If a session with this external ID already exists, it will be reused.
+ * @param options.metadata - (Optional) User metadata for the session. Only applied when creating a new session.
  * @returns A promise that resolves when initialization is complete
  */
 export const init = async (
