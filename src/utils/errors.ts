@@ -10,6 +10,28 @@ export interface ErrorInfo {
 }
 
 /**
+ * Extracts HTTP status code from OpenAI SDK errors.
+ * OpenAI APIError (and subclasses) expose a `status` property.
+ */
+
+/**
+ * Extract HTTP status code from an error, if available.
+ * OpenAI APIError has a `status` property. Connection/timeout errors may have undefined status.
+ * @returns The status code (e.g. 400, 401, 429, 500) or undefined if not available
+ */
+export function extractStatusFromError(error: unknown): number | undefined {
+  if (
+    !!error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    typeof error.status === 'number'
+  ) {
+    return error.status;
+  }
+  return undefined;
+}
+
+/**
  * Manages error mapping and retry logic for various error types
  */
 export class ErrorManager {

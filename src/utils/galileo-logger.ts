@@ -871,6 +871,8 @@ class GalileoLogger implements IGalileoLogger {
     numInputTokens?: number;
     numOutputTokens?: number;
     totalTokens?: number;
+    numReasoningTokens?: number;
+    numCachedInputTokens?: number;
     timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
@@ -893,6 +895,8 @@ class GalileoLogger implements IGalileoLogger {
         numInputTokens: options.numInputTokens,
         numOutputTokens: options.numOutputTokens,
         numTotalTokens: options.totalTokens,
+        numReasoningTokens: options.numReasoningTokens,
+        numCachedInputTokens: options.numCachedInputTokens,
         timeToFirstTokenNs: options.timeToFirstTokenNs
       }),
       temperature: options.temperature,
@@ -1239,6 +1243,17 @@ class GalileoLogger implements IGalileoLogger {
         });
       }
 
+      console.log(
+        '########################## [flush] client being initialized',
+        {
+          projectName: this.projectName,
+          projectId: this.projectId,
+          logStreamName: this.logStreamName,
+          logStreamId: this.logStreamId,
+          experimentId: this.experimentId,
+          sessionId: this.sessionId
+        }
+      );
       await this.client.init({
         projectName: this.projectName,
         projectId: this.projectId,

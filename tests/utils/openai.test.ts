@@ -93,6 +93,7 @@ describe('OpenAI Wrapper', () => {
         args.createdAt = GalileoApiClient.getTimestampRecord();
       }
     }),
+    addToolSpan: jest.fn(), // Features 1, 2, 3: Support tool span creation
     conclude: jest.fn()
   };
 
@@ -150,9 +151,14 @@ describe('OpenAI Wrapper', () => {
       model: 'gpt-4o',
       numInputTokens: 10,
       numOutputTokens: 5,
+      totalTokens: 15,
+      numReasoningTokens: 0,
+      numCachedInputTokens: 0,
       durationNs: 1_000_000,
       metadata: {},
-      statusCode: 200
+      statusCode: 200,
+      temperature: undefined,
+      tools: undefined
     });
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: JSON.stringify([mockResponse.choices[0].message]),
@@ -557,5 +563,667 @@ describe('OpenAI Wrapper', () => {
         metadata: { requestId: '123', userId: 'user-456' }
       })
     );
+  });
+
+  describe('Feature 2: Input Item Processing (processFunctionCallOutputs)', () => {
+    test('should create tool spans for matching function_call and function_call_output', () => {
+      const inputItems = [
+        {
+          type: 'function_call',
+          call_id: 'call_123',
+          name: 'get_weather',
+          arguments: '{"location": "San Francisco"}'
+        },
+        {
+          type: 'function_call_output',
+          call_id: 'call_123',
+          output: { temperature: 72, conditions: 'sunny' }
+        }
+      ];
+
+      const mockLogger = {
+        addToolSpan: jest.fn()
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        processFunctionCallOutputs
+      } = require('../../src/openai/output-items');
+      processFunctionCallOutputs(inputItems, mockLogger);
+
+      expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
+      expect(mockLogger.addToolSpan).toHaveBeenCalledWith({
+        input: JSON.stringify(
+          {
+            name: 'get_weather',
+            arguments: '{"location": "San Francisco"}',
+            call_id: 'call_123'
+          },
+          null,
+          2
+        ),
+        output: JSON.stringify(
+          { temperature: 72, conditions: 'sunny' },
+          null,
+          2
+        ),
+        name: 'get_weather',
+        metadata: {
+          tool_id: 'call_123',
+          tool_type: 'function_call'
+        }
+      });
+    });
+
+    test('should handle function_call_output without matching function_call', () => {
+      const inputItems = [
+        {
+          type: 'function_call_output',
+          call_id: 'call_456',
+          output: { result: 'success' }
+        }
+      ];
+
+      const mockLogger = {
+        addToolSpan: jest.fn()
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        processFunctionCallOutputs
+      } = require('../../src/openai/output-items');
+      processFunctionCallOutputs(inputItems, mockLogger);
+
+      expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
+      expect(mockLogger.addToolSpan).toHaveBeenCalledWith({
+        input: JSON.stringify(
+          {
+            name: 'function',
+            arguments: '',
+            call_id: 'call_456'
+          },
+          null,
+          2
+        ),
+        output: JSON.stringify({ result: 'success' }, null, 2),
+        name: 'function_call',
+        metadata: {
+          tool_id: 'call_456',
+          tool_type: 'function_call'
+        }
+      });
+    });
+
+    test('should not create tool spans for function_call without matching function_call_output', () => {
+      const inputItems = [
+        {
+          type: 'function_call',
+          call_id: 'call_789',
+          name: 'calculate',
+          arguments: '{"x": 10, "y": 20}'
+        }
+      ];
+
+      const mockLogger = {
+        addToolSpan: jest.fn()
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        processFunctionCallOutputs
+      } = require('../../src/openai/output-items');
+      processFunctionCallOutputs(inputItems, mockLogger);
+
+      expect(mockLogger.addToolSpan).not.toHaveBeenCalled();
+    });
+
+    test('should handle empty input array', () => {
+      const inputItems: any[] = [];
+
+      const mockLogger = {
+        addToolSpan: jest.fn()
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        processFunctionCallOutputs
+      } = require('../../src/openai/output-items');
+      processFunctionCallOutputs(inputItems, mockLogger);
+
+      expect(mockLogger.addToolSpan).not.toHaveBeenCalled();
+    });
+
+    test('should handle multiple function_call/function_call_output pairs', () => {
+      const inputItems = [
+        {
+          type: 'function_call',
+          call_id: 'call_1',
+          name: 'get_weather',
+          arguments: '{"location": "SF"}'
+        },
+        {
+          type: 'function_call',
+          call_id: 'call_2',
+          name: 'get_time',
+          arguments: '{"timezone": "PST"}'
+        },
+        {
+          type: 'function_call_output',
+          call_id: 'call_1',
+          output: { temp: 70 }
+        },
+        {
+          type: 'function_call_output',
+          call_id: 'call_2',
+          output: { time: '10:00 AM' }
+        }
+      ];
+
+      const mockLogger = {
+        addToolSpan: jest.fn()
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        processFunctionCallOutputs
+      } = require('../../src/openai/output-items');
+      processFunctionCallOutputs(inputItems, mockLogger);
+
+      expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(2);
+
+      // Verify both tool spans were created with correct data
+      const calls = mockLogger.addToolSpan.mock.calls;
+      expect(calls[0][0].name).toBe('get_weather');
+      expect(calls[0][0].metadata.tool_id).toBe('call_1');
+      expect(calls[1][0].name).toBe('get_time');
+      expect(calls[1][0].metadata.tool_id).toBe('call_2');
+    });
+  });
+
+  describe('Feature 3: Pending Function Call Detection (hasPendingFunctionCalls)', () => {
+    test('should return true when function_call exists without function_call_output', () => {
+      const outputItems = [
+        {
+          type: 'function_call',
+          call_id: 'call_123',
+          name: 'get_weather',
+          arguments: '{"location": "SF"}'
+        }
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        hasPendingFunctionCalls
+      } = require('../../src/openai/output-items');
+      const result = hasPendingFunctionCalls(outputItems);
+
+      expect(result).toBe(true);
+    });
+
+    test('should return false when all function_calls have matching function_call_outputs', () => {
+      const outputItems = [
+        {
+          type: 'function_call',
+          call_id: 'call_123',
+          name: 'get_weather',
+          arguments: '{"location": "SF"}'
+        },
+        {
+          type: 'function_call_output',
+          call_id: 'call_123',
+          output: { temperature: 72 }
+        }
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        hasPendingFunctionCalls
+      } = require('../../src/openai/output-items');
+      const result = hasPendingFunctionCalls(outputItems);
+
+      expect(result).toBe(false);
+    });
+
+    test('should return false when there are no function_calls', () => {
+      const outputItems = [
+        {
+          type: 'message',
+          content: 'Hello world'
+        },
+        {
+          type: 'reasoning',
+          summary: [{ text: 'Thinking...' }]
+        }
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        hasPendingFunctionCalls
+      } = require('../../src/openai/output-items');
+      const result = hasPendingFunctionCalls(outputItems);
+
+      expect(result).toBe(false);
+    });
+
+    test('should return false for empty output items', () => {
+      const outputItems: any[] = [];
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        hasPendingFunctionCalls
+      } = require('../../src/openai/output-items');
+      const result = hasPendingFunctionCalls(outputItems);
+
+      expect(result).toBe(false);
+    });
+
+    test('should return true when some function_calls are pending in multi-call scenario', () => {
+      const outputItems = [
+        {
+          type: 'function_call',
+          call_id: 'call_1',
+          name: 'get_weather',
+          arguments: '{}'
+        },
+        {
+          type: 'function_call',
+          call_id: 'call_2',
+          name: 'get_time',
+          arguments: '{}'
+        },
+        {
+          type: 'function_call_output',
+          call_id: 'call_1',
+          output: { temp: 70 }
+        }
+        // call_2 has no output - pending!
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        hasPendingFunctionCalls
+      } = require('../../src/openai/output-items');
+      const result = hasPendingFunctionCalls(outputItems);
+
+      expect(result).toBe(true);
+    });
+
+    test('should handle function_call_output without matching function_call', () => {
+      const outputItems = [
+        {
+          type: 'function_call_output',
+          call_id: 'call_orphan',
+          output: { result: 'data' }
+        }
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const {
+        hasPendingFunctionCalls
+      } = require('../../src/openai/output-items');
+      const result = hasPendingFunctionCalls(outputItems);
+
+      // No function_call, so nothing is pending
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('Feature 1: Streaming Responses API', () => {
+    test('should handle Responses API streaming format', async () => {
+      // Setup mock Date.now
+      const times = [1000, 1100, 1200];
+      Date.now = jest
+        .fn()
+        .mockReturnValueOnce(times[0])
+        .mockReturnValueOnce(times[1])
+        .mockReturnValueOnce(times[2]);
+
+      // Create Responses API streaming chunks
+      const mockResponsesApiChunks = [
+        {
+          output: [
+            {
+              type: 'message',
+              content: 'Hello'
+            }
+          ]
+        },
+        {
+          output: [
+            {
+              type: 'message',
+              content: ' world!'
+            }
+          ]
+        }
+      ];
+
+      // Create async iterable from chunks
+      async function* generateChunks() {
+        for (const chunk of mockResponsesApiChunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreateMethod.mockReturnValueOnce(generateChunks());
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        input: [{ type: 'message', content: 'Say hello', role: 'user' }],
+        stream: true
+      };
+
+      // Execute streaming
+      const stream = await wrappedOpenAI.chat.completions.create(requestData);
+      const chunks = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+
+      // Verify chunks were streamed correctly
+      expect(chunks).toEqual(mockResponsesApiChunks);
+
+      // Verify processOutputItems was called (via addLlmSpan)
+      expect(mockLogger.addLlmSpan).toHaveBeenCalled();
+      const addLlmSpanCall = mockLogger.addLlmSpan.mock.calls[0][0];
+      expect(addLlmSpanCall.name).toBe('openai-responses-generation');
+    });
+
+    test('should accumulate output items from multiple chunks', async () => {
+      const times = [1000, 1100, 1200, 1300];
+      Date.now = jest
+        .fn()
+        .mockReturnValueOnce(times[0])
+        .mockReturnValueOnce(times[1])
+        .mockReturnValueOnce(times[2])
+        .mockReturnValueOnce(times[3]);
+
+      const mockChunks = [
+        {
+          output: [
+            {
+              type: 'reasoning',
+              summary: [{ text: 'Thinking...' }]
+            }
+          ]
+        },
+        {
+          output: [
+            {
+              type: 'message',
+              content: 'The answer is 42'
+            }
+          ]
+        },
+        {
+          output: [
+            {
+              type: 'function_call',
+              call_id: 'call_123',
+              name: 'calculate',
+              arguments: '{"x": 10}'
+            }
+          ]
+        }
+      ];
+
+      async function* generateChunks() {
+        for (const chunk of mockChunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreateMethod.mockReturnValueOnce(generateChunks());
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        input: [{ type: 'message', content: 'Calculate', role: 'user' }],
+        stream: true
+      };
+
+      const stream = await wrappedOpenAI.chat.completions.create(requestData);
+      const chunks = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks.length).toBe(3);
+      expect(mockLogger.addLlmSpan).toHaveBeenCalled();
+    });
+
+    test('should call processFunctionCallOutputs for input items during streaming', async () => {
+      const times = [1000, 1100];
+      Date.now = jest
+        .fn()
+        .mockReturnValueOnce(times[0])
+        .mockReturnValueOnce(times[1]);
+
+      const mockChunks = [
+        {
+          output: [
+            {
+              type: 'message',
+              content: 'Done'
+            }
+          ]
+        }
+      ];
+
+      async function* generateChunks() {
+        for (const chunk of mockChunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreateMethod.mockReturnValueOnce(generateChunks());
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        input: [
+          {
+            type: 'function_call',
+            call_id: 'call_prev',
+            name: 'get_weather',
+            arguments: '{}'
+          },
+          {
+            type: 'function_call_output',
+            call_id: 'call_prev',
+            output: { temp: 70 }
+          },
+          {
+            type: 'message',
+            content: 'What is the weather?',
+            role: 'user'
+          }
+        ],
+        stream: true
+      };
+
+      const stream = await wrappedOpenAI.chat.completions.create(requestData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const chunk of stream) {
+        // Consume stream
+      }
+
+      // Verify addToolSpan was called for the function_call_output from input
+      expect(mockLogger.addToolSpan).toHaveBeenCalled();
+      const toolSpanCall = mockLogger.addToolSpan.mock.calls[0][0];
+      expect(toolSpanCall.name).toBe('get_weather');
+    });
+
+    test('should not conclude trace when pending function calls exist', async () => {
+      const times = [1000, 1100];
+      Date.now = jest
+        .fn()
+        .mockReturnValueOnce(times[0])
+        .mockReturnValueOnce(times[1]);
+
+      const mockChunks = [
+        {
+          output: [
+            {
+              type: 'function_call',
+              call_id: 'call_pending',
+              name: 'get_time',
+              arguments: '{}'
+            }
+          ]
+        }
+      ];
+
+      async function* generateChunks() {
+        for (const chunk of mockChunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreateMethod.mockReturnValueOnce(generateChunks());
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        input: [{ type: 'message', content: 'Get time', role: 'user' }],
+        stream: true
+      };
+
+      const stream = await wrappedOpenAI.chat.completions.create(requestData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const chunk of stream) {
+        // Consume stream
+      }
+
+      // Trace should NOT be concluded because function_call is pending
+      expect(mockLogger.conclude).not.toHaveBeenCalled();
+    });
+
+    test('should conclude trace when all function calls have outputs', async () => {
+      const times = [1000, 1100, 1200];
+      Date.now = jest
+        .fn()
+        .mockReturnValueOnce(times[0])
+        .mockReturnValueOnce(times[1])
+        .mockReturnValueOnce(times[2]);
+
+      const mockChunks = [
+        {
+          output: [
+            {
+              type: 'function_call',
+              call_id: 'call_complete',
+              name: 'get_weather',
+              arguments: '{}'
+            }
+          ]
+        },
+        {
+          output: [
+            {
+              type: 'function_call_output',
+              call_id: 'call_complete',
+              output: { temp: 72 }
+            }
+          ]
+        },
+        {
+          output: [
+            {
+              type: 'message',
+              content: 'The temperature is 72'
+            }
+          ]
+        }
+      ];
+
+      async function* generateChunks() {
+        for (const chunk of mockChunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreateMethod.mockReturnValueOnce(generateChunks());
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        input: [{ type: 'message', content: 'Get weather', role: 'user' }],
+        stream: true
+      };
+
+      const stream = await wrappedOpenAI.chat.completions.create(requestData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const chunk of stream) {
+        // Consume stream
+      }
+
+      // Trace SHOULD be concluded because all function calls have outputs
+      expect(mockLogger.conclude).toHaveBeenCalled();
+    });
+
+    test('should handle tool span creation from streamed output items', async () => {
+      const times = [1000, 1100, 1200];
+      Date.now = jest
+        .fn()
+        .mockReturnValueOnce(times[0])
+        .mockReturnValueOnce(times[1])
+        .mockReturnValueOnce(times[2]);
+
+      const mockChunks = [
+        {
+          output: [
+            {
+              type: 'code_interpreter_call',
+              id: 'code_1',
+              name: 'python_exec',
+              code_input: 'print("hello")',
+              code_output: 'hello'
+            }
+          ]
+        },
+        {
+          output: [
+            {
+              type: 'message',
+              content: 'Code executed'
+            }
+          ]
+        }
+      ];
+
+      async function* generateChunks() {
+        for (const chunk of mockChunks) {
+          yield chunk;
+        }
+      }
+
+      mockCreateMethod.mockReturnValueOnce(generateChunks());
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        input: [{ type: 'message', content: 'Run code', role: 'user' }],
+        stream: true
+      };
+
+      const stream = await wrappedOpenAI.chat.completions.create(requestData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const chunk of stream) {
+        // Consume stream
+      }
+
+      // Verify tool span was created for code_interpreter_call
+      expect(mockLogger.addToolSpan).toHaveBeenCalled();
+      const toolSpanCalls = mockLogger.addToolSpan.mock.calls;
+      // Tool span name comes from the item.name field, not the type
+      const codeInterpreterCall = toolSpanCalls.find(
+        (call: any) =>
+          call[0].name === 'python_exec' ||
+          call[0].metadata?.tool_type === 'code_interpreter_call'
+      );
+      expect(codeInterpreterCall).toBeDefined();
+    });
   });
 });

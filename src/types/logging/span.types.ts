@@ -235,6 +235,8 @@ export interface LlmMetricsOptions extends MetricsOptions {
   numInputTokens?: number;
   numOutputTokens?: number;
   numTotalTokens?: number;
+  numReasoningTokens?: number;
+  numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
 }
 
@@ -242,6 +244,8 @@ export interface SerializedLlmMetrics extends SerializedMetrics {
   numInputTokens?: number;
   numOutputTokens?: number;
   numTotalTokens?: number;
+  numReasoningTokens?: number;
+  numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
 }
 
@@ -249,6 +253,8 @@ export class LlmMetrics extends Metrics {
   numInputTokens?: number;
   numOutputTokens?: number;
   numTotalTokens?: number;
+  numReasoningTokens?: number;
+  numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
 
   constructor(options: LlmMetricsOptions) {
@@ -284,6 +290,8 @@ export interface SerializedLlmSpan extends SerializedStep {
     numInputTokens?: number;
     numOutputTokens?: number;
     numTotalTokens?: number;
+    numReasoningTokens?: number;
+    numCachedInputTokens?: number;
     timeToFirstTokenNs?: number;
     durationNs?: number;
   };
