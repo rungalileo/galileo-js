@@ -1,7 +1,7 @@
 import { parseUsage } from '../../src/openai/usage';
 
 describe('parseUsage', () => {
-  it('returns zeros for null/undefined', () => {
+  test('returns zeros for null/undefined', () => {
     expect(parseUsage(null)).toEqual({
       inputTokens: 0,
       outputTokens: 0,
@@ -20,7 +20,7 @@ describe('parseUsage', () => {
     });
   });
 
-  it('parses Chat Completions format (prompt_tokens/completion_tokens)', () => {
+  test('parses Chat Completions format (prompt_tokens/completion_tokens)', () => {
     const result = parseUsage({
       prompt_tokens: 100,
       completion_tokens: 50,
@@ -31,7 +31,7 @@ describe('parseUsage', () => {
     expect(result.totalTokens).toBe(150);
   });
 
-  it('parses Responses API format (input_tokens/output_tokens)', () => {
+  test('parses Responses API format (input_tokens/output_tokens)', () => {
     const result = parseUsage({
       input_tokens: 80,
       output_tokens: 40,
@@ -42,7 +42,7 @@ describe('parseUsage', () => {
     expect(result.totalTokens).toBe(120);
   });
 
-  it('computes total_tokens when missing', () => {
+  test('computes total_tokens when missing', () => {
     const result = parseUsage({
       prompt_tokens: 10,
       completion_tokens: 5
@@ -50,7 +50,7 @@ describe('parseUsage', () => {
     expect(result.totalTokens).toBe(15);
   });
 
-  it('extracts reasoning_tokens from output_tokens_details', () => {
+  test('extracts reasoning_tokens from output_tokens_details', () => {
     const result = parseUsage({
       input_tokens: 50,
       output_tokens: 100,
@@ -62,7 +62,7 @@ describe('parseUsage', () => {
     expect(result.reasoningTokens).toBe(30);
   });
 
-  it('extracts reasoning_tokens from completion_tokens_details (Chat Completions)', () => {
+  test('extracts reasoning_tokens from completion_tokens_details (Chat Completions)', () => {
     const result = parseUsage({
       prompt_tokens: 20,
       completion_tokens: 200,
@@ -74,7 +74,7 @@ describe('parseUsage', () => {
     expect(result.reasoningTokens).toBe(150);
   });
 
-  it('extracts cached_tokens from input_tokens_details', () => {
+  test('extracts cached_tokens from input_tokens_details', () => {
     const result = parseUsage({
       input_tokens: 100,
       output_tokens: 50,
@@ -86,7 +86,7 @@ describe('parseUsage', () => {
     expect(result.cachedTokens).toBe(20);
   });
 
-  it('extracts top-level reasoning_tokens and cached_tokens when present', () => {
+  test('extracts top-level reasoning_tokens and cached_tokens when present', () => {
     const result = parseUsage({
       prompt_tokens: 50,
       completion_tokens: 80,
@@ -97,7 +97,7 @@ describe('parseUsage', () => {
     expect(result.cachedTokens).toBe(10);
   });
 
-  it('extracts rejected_prediction_tokens from output_tokens_details', () => {
+  test('extracts rejected_prediction_tokens from output_tokens_details', () => {
     const result = parseUsage({
       input_tokens: 50,
       output_tokens: 100,
@@ -108,7 +108,7 @@ describe('parseUsage', () => {
     expect(result.rejectedPredictionTokens).toBe(15);
   });
 
-  it('handles objects with model_dump method (Pydantic-like)', () => {
+  test('handles objects with model_dump method (Pydantic-like)', () => {
     const result = parseUsage({
       model_dump: () => ({
         input_tokens: 60,
