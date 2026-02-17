@@ -14,8 +14,6 @@ export interface ExperimentContext {
   experimentId?: string;
   /** (Optional) The project name for the current experiment */
   projectName?: string;
-  /** (Optional) The project ID */
-  projectId?: string;
   /** The parent stack for nested spans (trace, workflow, agent spans) */
   parentStack?: StepWithChildSpans[];
   /** The session ID for the current logger context */
