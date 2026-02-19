@@ -13,6 +13,7 @@ import { Document, DocumentInterface } from '@langchain/core/documents';
 import { GalileoSingleton } from '../singleton';
 import { GalileoLogger } from '../utils/galileo-logger';
 import { toStringValue, convertToStringDict } from '../utils/serialization';
+import { getSdkLogger } from 'galileo-generated';
 import { Serialized } from '@langchain/core/load/serializable.js';
 
 type LANGCHAIN_NODE_TYPE =
@@ -87,19 +88,21 @@ export class GalileoCallback
    */
   private async _commit(): Promise<void> {
     if (Object.keys(this._nodes).length === 0) {
-      console.warn('No nodes to commit');
+      getSdkLogger().warn('No nodes to commit');
       return;
     }
 
     const root = rootNodeContext.get();
     if (root === null) {
-      console.warn('Unable to add nodes to trace: Root node not set');
+      getSdkLogger().warn('Unable to add nodes to trace: Root node not set');
       return;
     }
 
     const rootNode = this._nodes[root.runId];
     if (rootNode === undefined) {
-      console.warn('Unable to add nodes to trace: Root node does not exist');
+      getSdkLogger().warn(
+        'Unable to add nodes to trace: Root node does not exist'
+      );
       return;
     }
 
@@ -152,7 +155,10 @@ export class GalileoCallback
           node.spanParams.metadata as Record<string, any>
         );
       } catch (e) {
-        console.warn('Unable to convert metadata to a string dictionary', e);
+        getSdkLogger().warn(
+          'Unable to convert metadata to a string dictionary',
+          e
+        );
       }
     }
 
@@ -164,13 +170,13 @@ export class GalileoCallback
         try {
           stepNumber = parseInt(langgraphStep, 10);
           if (isNaN(stepNumber)) {
-            console.warn(
+            getSdkLogger().warn(
               `Invalid step number: ${langgraphStep}, not a valid integer`
             );
             stepNumber = undefined;
           }
         } catch (e) {
-          console.warn(
+          getSdkLogger().warn(
             `Invalid step number: ${langgraphStep}, exception raised ${e}`
           );
           stepNumber = undefined;
@@ -224,7 +230,7 @@ export class GalileoCallback
         stepNumber
       });
     } else {
-      console.warn(`Unknown node type: ${node.nodeType}`);
+      getSdkLogger().warn(`Unknown node type: ${node.nodeType}`);
     }
 
     // Process all child nodes
@@ -235,7 +241,7 @@ export class GalileoCallback
         this._logNodeTree(childNode);
         lastChild = childNode;
       } else {
-        console.debug(`Child node ${childId} not found`);
+        getSdkLogger().debug(`Child node ${childId} not found`);
       }
     }
 
@@ -262,7 +268,9 @@ export class GalileoCallback
     const parentNodeId = parentRunId;
 
     if (this._nodes[nodeId]) {
-      console.debug(`Node already exists for run_id ${runId}, overwriting...`);
+      getSdkLogger().debug(
+        `Node already exists for run_id ${runId}, overwriting...`
+      );
     }
 
     // Create new node
@@ -271,7 +279,7 @@ export class GalileoCallback
 
     // Set as root node if needed
     if (!rootNodeContext.get()) {
-      console.debug(`Setting root node to ${nodeId}`);
+      getSdkLogger().debug(`Setting root node to ${nodeId}`);
       rootNodeContext.set(node);
     }
 
@@ -281,7 +289,9 @@ export class GalileoCallback
       if (parent) {
         parent.children.push(nodeId);
       } else {
-        console.debug(`Parent node ${parentNodeId} not found for ${nodeId}`);
+        getSdkLogger().debug(
+          `Parent node ${parentNodeId} not found for ${nodeId}`
+        );
       }
     }
 
@@ -299,7 +309,7 @@ export class GalileoCallback
     const node = this._nodes[nodeId];
 
     if (!node) {
-      console.warn(`No node exists for run_id ${nodeId}`);
+      getSdkLogger().warn(`No node exists for run_id ${nodeId}`);
       return;
     }
 
@@ -488,7 +498,7 @@ export class GalileoCallback
       }));
       serializedMessages = flattenedMessages;
     } catch (e) {
-      console.warn(`Failed to serialize chat messages: ${e}`);
+      getSdkLogger().warn(`Failed to serialize chat messages: ${e}`);
       serializedMessages = String(messages);
     }
 
@@ -519,7 +529,7 @@ export class GalileoCallback
       }));
       serializedOutput = flattenedOutput[0];
     } catch (e) {
-      console.warn(`Failed to serialize LLM output: ${e}`);
+      getSdkLogger().warn(`Failed to serialize LLM output: ${e}`);
       serializedOutput = String(output.generations);
     }
 
@@ -607,7 +617,7 @@ export class GalileoCallback
         metadata: doc.metadata
       }));
     } catch (e) {
-      console.warn(`Failed to serialize retriever output: ${e}`);
+      getSdkLogger().warn(`Failed to serialize retriever output: ${e}`);
       serializedResponse = String(documents);
     }
 

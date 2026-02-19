@@ -3,6 +3,7 @@ import {
   handleGalileoHttpExceptionsForRetry,
   STREAMING_MAX_RETRIES
 } from '../../src/utils/retry-utils';
+import { enableLogging, disableLogging } from 'galileo-generated';
 
 // Helper function to create error with status code
 function createErrorWithStatus(
@@ -44,11 +45,13 @@ function createErrorWithStatus(
 describe('retry-utils', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    enableLogging('debug');
   });
 
   afterEach(() => {
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
+    disableLogging();
   });
 
   describe('withRetry()', () => {

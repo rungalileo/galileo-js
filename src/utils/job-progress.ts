@@ -1,11 +1,11 @@
 import cliProgress from 'cli-progress';
 import { GalileoApiClient } from '../api-client';
 import { JobDbType, JobStatus, RequestData, Scorers } from '../types/job.types';
+import { getSdkLogger, type GalileoSdkLogger } from 'galileo-generated';
 
-export interface JobProgressLogger {
-  info?: (message: string) => void;
-  debug?: (message: string) => void;
-}
+export interface JobProgressLogger extends Partial<
+  Pick<GalileoSdkLogger, 'info' | 'debug'>
+> {}
 
 export interface PollJobOptions {
   timeout?: number;
@@ -103,7 +103,10 @@ export async function logScorerJobsStatus(
   runId: string,
   logger: JobProgressLogger = {}
 ): Promise<void> {
-  const { info = console.log, debug = console.debug } = logger;
+  const {
+    info = getSdkLogger().info.bind(getSdkLogger()),
+    debug = getSdkLogger().debug.bind(getSdkLogger())
+  } = logger;
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId });
 
@@ -246,7 +249,10 @@ export async function getJobProgress(
   }
 
   // Log debug message
-  const { debug = console.debug, info = console.log } = options.logger || {};
+  const {
+    debug = getSdkLogger().debug.bind(getSdkLogger()),
+    info = getSdkLogger().info.bind(getSdkLogger())
+  } = options.logger || {};
   debug(`Job ${jobId} status: ${job.status}.`);
 
   // Log scorer jobs status
@@ -310,7 +316,7 @@ export const getScorerJobsStatus = async (
     }
 
     if (!scorerName) {
-      console.debug(`Scorer job ${job.id} has no scorer name.`);
+      getSdkLogger().debug(`Scorer job ${job.id} has no scorer name.`);
       continue;
     }
 
@@ -318,11 +324,13 @@ export const getScorerJobsStatus = async (
     const cleanName = canonicalScorerName.replace(/^_+/, '');
 
     if (isJobIncomplete(job.status)) {
-      console.log(`${cleanName}: Computing 🚧`);
+      getSdkLogger().info(`${cleanName}: Computing 🚧`);
     } else if (isJobFailed(job.status)) {
-      console.log(`${cleanName}: Failed ❌, error was: ${job.errorMessage}`);
+      getSdkLogger().info(
+        `${cleanName}: Failed ❌, error was: ${job.errorMessage}`
+      );
     } else {
-      console.log(`${cleanName}: Done ✅`);
+      getSdkLogger().info(`${cleanName}: Done ✅`);
     }
   }
 };

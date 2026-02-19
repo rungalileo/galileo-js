@@ -1,4 +1,5 @@
 import pRetry from 'p-retry';
+import { getSdkLogger } from 'galileo-generated';
 
 /**
  * Maximum number of retries for streaming operations.
@@ -75,15 +76,17 @@ export function handleGalileoHttpExceptionsForRetry<
     } catch (error) {
       const statusCode = getStatusCodeFromError(error);
       if (statusCode === 404) {
-        console.info('Trace not found, retrying...');
+        getSdkLogger().info('Trace not found, retrying...');
       } else if (statusCode === 408) {
-        console.info('Request timed out, retrying...');
+        getSdkLogger().info('Request timed out, retrying...');
       } else if (statusCode === 429) {
-        console.info('Rate limited, retrying...');
+        getSdkLogger().info('Rate limited, retrying...');
       } else if (statusCode !== undefined && statusCode >= 500) {
-        console.info('Server error, retrying...');
+        getSdkLogger().info('Server error, retrying...');
       } else {
-        console.error(`Unrecoverable failure or unrecognized error: ${error}`);
+        getSdkLogger().error(
+          `Unrecoverable failure or unrecognized error: ${error}`
+        );
       }
 
       throw error;
@@ -112,7 +115,7 @@ export async function withRetry<T>(
     async () => {
       attemptNumber++;
       if (taskId) {
-        console.info(`Retry #${attemptNumber} for task ${taskId}`);
+        getSdkLogger().info(`Retry #${attemptNumber} for task ${taskId}`);
       }
       return await fn();
     },
@@ -130,7 +133,7 @@ export async function withRetry<T>(
         if (onRetry && attemptNumber <= maxRetries) {
           onRetry(error);
         } else if (taskId) {
-          console.error(
+          getSdkLogger().error(
             `Task ${taskId} failed after ${maxRetries} attempts: ${error.message}`
           );
         }

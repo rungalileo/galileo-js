@@ -7,6 +7,7 @@ import {
 } from '../types/legacy-step.types';
 import GalileoWorkflow from '../workflow';
 import GalileoEvaluateApiClient from './api-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Node } from '../types/node.types';
 import { RunTag } from '../types/tag.types';
 import {
@@ -116,10 +117,8 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    // eslint-disable-next-line no-console
-    console.log('🚀 Workflows uploaded!');
-    // eslint-disable-next-line no-console
-    console.log(loggedWorkflows);
+    getSdkLogger().info('🚀 Workflows uploaded!');
+    getSdkLogger().info(JSON.stringify(loggedWorkflows));
 
     return loggedWorkflows;
   }

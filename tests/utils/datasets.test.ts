@@ -192,7 +192,6 @@ beforeAll(() => {
   process.env.GALILEO_API_KEY = 'placeholder';
   server.listen();
   jest.useFakeTimers();
-  jest.spyOn(console, 'log').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -204,7 +203,6 @@ afterEach(() => {
 afterAll(() => {
   server.close();
   jest.useRealTimers();
-  jest.mocked(console.log).mockRestore();
 });
 
 const createDatasetCases: DatasetType[] = [

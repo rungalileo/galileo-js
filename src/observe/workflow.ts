@@ -13,6 +13,7 @@ import {
 import GalileoWorkflow from '../workflow';
 import { version } from '../../package.json';
 import GalileoObserveApiClient from './api-client';
+import { getSdkLogger } from 'galileo-generated';
 
 /**
  * @deprecated This class is no longer actively maintained. Please use `GalileoLogger` instead.
@@ -96,10 +97,8 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    // eslint-disable-next-line no-console
-    console.log('🚀 Workflows uploaded!');
-    // eslint-disable-next-line no-console
-    console.log(loggedWorkflows);
+    getSdkLogger().info('🚀 Workflows uploaded!');
+    getSdkLogger().info(JSON.stringify(loggedWorkflows));
 
     return loggedWorkflows;
   }

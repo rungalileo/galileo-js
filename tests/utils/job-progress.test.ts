@@ -12,6 +12,7 @@ import {
   JobName,
   RequestData
 } from '../../src/types/job.types';
+import { enableLogging, disableLogging } from 'galileo-generated';
 
 // Create mock functions that will be accessible
 const mockInit = jest.fn<
@@ -207,8 +208,9 @@ describe('Job Progress Utilities', () => {
       const jobs = [createScorerJob('completeness_nli', JobStatus.completed)];
       mockGetRunScorerJobs.mockResolvedValue(jobs);
 
+      enableLogging('info');
       const consoleSpy = {
-        log: jest.spyOn(console, 'log').mockImplementation(() => {
+        info: jest.spyOn(console, 'info').mockImplementation(() => {
           // Mock implementation
         }),
         debug: jest.spyOn(console, 'debug').mockImplementation(() => {
@@ -218,9 +220,10 @@ describe('Job Progress Utilities', () => {
 
       await logScorerJobsStatus(projectId, runId);
 
-      expect(consoleSpy.log).toHaveBeenCalled();
-      consoleSpy.log.mockRestore();
+      expect(consoleSpy.info).toHaveBeenCalled();
+      consoleSpy.info.mockRestore();
       consoleSpy.debug.mockRestore();
+      disableLogging();
     });
 
     it('should normalize scorer names correctly', async () => {
@@ -418,8 +421,9 @@ describe('Job Progress Utilities', () => {
       ];
       mockGetJobsForProjectRun.mockResolvedValue(jobs);
 
+      enableLogging('info');
       const consoleSpy = {
-        log: jest.spyOn(console, 'log').mockImplementation(() => {
+        info: jest.spyOn(console, 'info').mockImplementation(() => {
           // Mock implementation
         }),
         debug: jest.spyOn(console, 'debug').mockImplementation(() => {
@@ -429,9 +433,10 @@ describe('Job Progress Utilities', () => {
 
       await getScorerJobsStatus(projectId, runId);
 
-      expect(consoleSpy.log).toHaveBeenCalled();
-      consoleSpy.log.mockRestore();
+      expect(consoleSpy.info).toHaveBeenCalled();
+      consoleSpy.info.mockRestore();
       consoleSpy.debug.mockRestore();
+      disableLogging();
     });
   });
 });

@@ -6,6 +6,7 @@ import {
   Trace,
   WorkflowSpan
 } from '../../src/utils/galileo-logger';
+import { enableLogging, disableLogging } from 'galileo-generated';
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
@@ -2387,6 +2388,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2401,9 +2403,10 @@ describe('GalileoLogger', () => {
         expect(createdLogger['traceId']).toBeUndefined();
         expect(createdLogger.traces.length).toBe(0);
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: `Trace ${mockTraceId} not found` })
+          `Trace ${mockTraceId} not found`
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should log and return when spanId not found', async () => {
@@ -2413,6 +2416,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2426,9 +2430,10 @@ describe('GalileoLogger', () => {
         expect(mockInstance.getSpan).toHaveBeenCalledWith(mockSpanId);
         expect(createdLogger['spanId']).toBeUndefined();
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Span undefined not found' })
+          'Span undefined not found'
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should log and return when span does not belong to trace', async () => {
@@ -2473,6 +2478,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2490,11 +2496,10 @@ describe('GalileoLogger', () => {
         expect(createdLogger['spanId']).toBeUndefined();
         expect(createdLogger.traces.length).toBe(1);
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: `Span undefined does not belong to trace ${mockTraceId}`
-          })
+          `Span undefined does not belong to trace ${mockTraceId}`
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should log and return when span type is not workflow or agent', async () => {
@@ -2539,6 +2544,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2553,12 +2559,10 @@ describe('GalileoLogger', () => {
         expect(createdLogger['spanId']).toBeUndefined();
         expect(createdLogger.traces.length).toBe(0);
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message:
-              "Only 'workflow' and 'agent' span types can be initialized, got llm"
-          })
+          "Only 'workflow' and 'agent' span types can be initialized, got llm"
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
     });
 
@@ -2603,6 +2607,7 @@ describe('GalileoLogger', () => {
           .fn()
           .mockRejectedValue(new Error('API error'));
         mockClient.init = jest.fn().mockResolvedValue(undefined);
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2611,10 +2616,9 @@ describe('GalileoLogger', () => {
 
         expect(logger['traceId']).toBe(originalTraceId);
         expect(logger.traces.length).toBe(0);
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'API error' })
-        );
+        expect(consoleErrorSpy).toHaveBeenCalledWith('API error');
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should not add to parent stack when addToParentStack is false', async () => {
@@ -2737,6 +2741,7 @@ describe('GalileoLogger', () => {
         mockClient.getSpan = jest
           .fn()
           .mockRejectedValue(new Error('API error'));
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2744,10 +2749,9 @@ describe('GalileoLogger', () => {
         await logger['initSpan'](mockSpanId);
 
         expect(logger['spanId']).toBe(originalSpanId);
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'API error' })
-        );
+        expect(consoleErrorSpy).toHaveBeenCalledWith('API error');
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
     });
 

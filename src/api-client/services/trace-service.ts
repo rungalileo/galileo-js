@@ -1,4 +1,5 @@
 import { BaseClient, RequestMethod } from '../base-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Routes } from '../../types/routes.types';
 import {
   Trace,
@@ -165,8 +166,7 @@ export class TraceService extends BaseClient {
       },
       { project_id: this.projectId }
     );
-    // eslint-disable-next-line no-console
-    console.log(
+    getSdkLogger().info(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
     );
   }

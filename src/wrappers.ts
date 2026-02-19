@@ -20,6 +20,7 @@ import { isValidAgentType } from './types/logging/span.types';
 import type { DatasetRecord } from './types';
 import type { JsonObject } from './types/base.types';
 import { calculateDurationNs } from './utils/utils';
+import { getSdkLogger } from 'galileo-generated';
 
 export type SpanType = 'llm' | 'retriever' | 'tool' | 'workflow' | 'agent';
 
@@ -231,7 +232,7 @@ export function log<T extends unknown[], R>(
               durationNs: durationNs
             });
           } catch (error) {
-            console.error(error);
+            getSdkLogger().error(String(error));
           }
           concludeCount = concludeCount - 1;
         }
@@ -272,7 +273,7 @@ export function log<T extends unknown[], R>(
           logger = GalileoSingleton.getInstance().getClient();
         }
       } catch (error) {
-        console.error(error);
+        getSdkLogger().error(String(error));
       }
 
       const runRest = (): R | Promise<R> | Generator<R> | AsyncGenerator<R> => {
@@ -431,7 +432,7 @@ export function log<T extends unknown[], R>(
               yield item;
             }
           } catch (error) {
-            console.warn('Error while iterating generator:', error);
+            getSdkLogger().warn('Error while iterating generator:', error);
           } finally {
             const output =
               items.length === 0
@@ -454,7 +455,10 @@ export function log<T extends unknown[], R>(
               yield item;
             }
           } catch (error) {
-            console.warn('Error while iterating async generator:', error);
+            getSdkLogger().warn(
+              'Error while iterating async generator:',
+              error
+            );
           } finally {
             const output =
               items.length === 0
@@ -485,7 +489,7 @@ export function log<T extends unknown[], R>(
             return (fnResult as Promise<R>)
               .then((resolved) => handleResult(resolved))
               .catch((error) => {
-                console.warn('Error while executing function:', error);
+                getSdkLogger().warn('Error while executing function:', error);
                 throw error;
               })
               .finally(() => {
@@ -496,7 +500,7 @@ export function log<T extends unknown[], R>(
           handleResult(fnResult as R);
           return fnResult as R;
         } catch (error) {
-          console.warn('Error while executing function:', error);
+          getSdkLogger().warn('Error while executing function:', error);
           throw error;
         } finally {
           if (!isPromiseResult && !skipFinalize) {
