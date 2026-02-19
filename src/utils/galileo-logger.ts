@@ -1243,17 +1243,6 @@ class GalileoLogger implements IGalileoLogger {
         });
       }
 
-      console.log(
-        '########################## [flush] client being initialized',
-        {
-          projectName: this.projectName,
-          projectId: this.projectId,
-          logStreamName: this.logStreamName,
-          logStreamId: this.logStreamId,
-          experimentId: this.experimentId,
-          sessionId: this.sessionId
-        }
-      );
       await this.client.init({
         projectName: this.projectName,
         projectId: this.projectId,

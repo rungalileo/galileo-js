@@ -4,6 +4,41 @@
  * extensible for future parameters.
  */
 
+/**
+ * OpenAI scalar parameters to extract from requests for observability metadata.
+ * These parameters are logged to Galileo for tracking model behavior and configuration.
+ * Reference: https://platform.openai.com/docs/api-reference/chat/create
+ */
+const OPENAI_SCALAR_PARAMETERS = [
+  /** Maximum number of tokens to generate in the completion. Model-dependent, no universal default. */
+  'max_tokens',
+  /** Nucleus sampling: only tokens with top_p probability mass considered. Range: 0-1. Default: 1 */
+  'top_p',
+  /** Reduces repetition by penalizing tokens based on frequency. Range: -2.0 to 2.0. Default: 0 */
+  'frequency_penalty',
+  /** Reduces repetition by penalizing tokens that already appear. Range: -2.0 to 2.0. Default: 0 */
+  'presence_penalty',
+  /** Random seed for deterministic sampling. When set, attempts to return same result for same input. */
+  'seed',
+  /** Number of completion choices to generate per input. Note: billed for all tokens across all choices. Default: 1 */
+  'n',
+  /** Sampling temperature controlling randomness. Range: 0 (deterministic) to 2 (very random). Default: 1 */
+  'temperature'
+] as const;
+
+/**
+ * Default values for OpenAI API parameters according to OpenAI documentation.
+ * Used to skip logging parameters when they match defaults (reduces noise).
+ * Reference: https://platform.openai.com/docs/api-reference/chat/create
+ */
+const OPENAI_PARAMETER_DEFAULTS: Record<string, number | null> = {
+  n: 1,
+  temperature: 1,
+  top_p: 1,
+  frequency_penalty: 0,
+  presence_penalty: 0
+} as const;
+
 export interface ExtractedParameters {
   /** Merged with request metadata; all values stringified for Galileo metadata */
   metadata: Record<string, string>;
@@ -21,25 +56,19 @@ export function extractRequestParameters(
 ): ExtractedParameters {
   const metadata: Record<string, string> = {};
 
-  // Scalars
-  const scalars = [
-    'max_tokens',
-    'top_p',
-    'frequency_penalty',
-    'presence_penalty',
-    'seed',
-    'n',
-    'temperature'
-  ] as const;
-  for (const key of scalars) {
+  for (const key of OPENAI_SCALAR_PARAMETERS) {
     const v = request[key];
     if (v !== undefined && v !== null) {
+      if (
+        key in OPENAI_PARAMETER_DEFAULTS &&
+        v === OPENAI_PARAMETER_DEFAULTS[key]
+      ) {
+        continue;
+      }
       metadata[key] = String(v);
     }
   }
 
-  // Reasoning (o1/o3/o4) – Python parity: keys reasoning_effort, reasoning_verbosity, reasoning_generate_summary
-  // Chat Completions: top-level reasoning_effort (e.g. { model: 'o3', reasoning_effort: 'high' })
   const topLevelEffort = request.reasoning_effort;
   if (topLevelEffort !== undefined && topLevelEffort !== null) {
     metadata['reasoning_effort'] = String(topLevelEffort);

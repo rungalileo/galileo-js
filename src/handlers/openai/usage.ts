@@ -34,26 +34,13 @@ export function parseUsage(usageData: unknown): ParsedUsage {
     return result;
   }
 
-  let usage: Record<string, unknown>;
-  if (typeof usageData === 'object' && usageData !== null) {
-    if (
-      'model_dump' in usageData &&
-      typeof (usageData as { model_dump?: () => Record<string, unknown> })
-        .model_dump === 'function'
-    ) {
-      try {
-        usage = (
-          usageData as { model_dump: () => Record<string, unknown> }
-        ).model_dump();
-      } catch {
-        usage = usageData as Record<string, unknown>;
-      }
-    } else {
-      usage = usageData as Record<string, unknown>;
-    }
-  } else {
+  // In JavaScript, OpenAI SDK returns plain objects, not Pydantic models
+  // Simply cast to Record if it's an object
+  if (typeof usageData !== 'object' || usageData === null) {
     return result;
   }
+
+  const usage = usageData as Record<string, unknown>;
 
   // Input/output tokens (support both naming conventions)
   const inputRaw = usage.input_tokens ?? usage.prompt_tokens;

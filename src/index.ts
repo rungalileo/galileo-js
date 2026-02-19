@@ -139,7 +139,7 @@ import {
   galileoContext
 } from './singleton';
 import { log } from './wrappers';
-import { wrapOpenAI, wrapAzureOpenAI } from './openai';
+import { wrapOpenAI, wrapAzureOpenAI } from './handlers/openai';
 import { GalileoCallback } from './handlers/langchain';
 import { getSessions, getSpans, getTraces, RecordType } from './utils/search';
 export {

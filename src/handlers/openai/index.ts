@@ -1,19 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { GalileoLogger } from './utils/galileo-logger';
-import { GalileoSingleton } from './singleton';
-import { calculateDurationNs } from './utils/utils';
-import { parseUsage } from './openai/usage';
-import { extractStatusFromError } from './utils/errors';
+import { GalileoLogger } from '../../utils/galileo-logger';
+import { GalileoSingleton } from '../../singleton';
+import { calculateDurationNs } from '../../utils/utils';
+import { parseUsage } from './usage';
+import { extractStatusFromError } from '../../utils/errors';
 import {
   extractRequestParameters,
   mergeWithRequestMetadata
-} from './openai/parameters';
+} from './parameters';
 import {
   processOutputItems,
   processFunctionCallOutputs,
-  hasPendingFunctionCalls,
-  isResponsesApiResponse
-} from './openai/output-items';
+  hasPendingFunctionCalls
+} from './output-items';
 
 try {
   require.resolve('openai');
@@ -209,7 +208,6 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   );
                 }
 
-                // temperature is a dedicated span field (galileo-python parity); top_p, seed, etc. stay in metadata
                 const temperature =
                   typeof requestData.temperature === 'number'
                     ? requestData.temperature
@@ -339,11 +337,11 @@ function generateResponseApiProxy<T extends OpenAIType>(
             );
           }
 
-          if (!isResponsesApiResponse(response)) {
-            return response;
-          }
+          // Safely extract output items with fallback for invalid/unexpected response formats
+          // Implemented graceful degradation, instead of failing processing immediately
+          const outputItems =
+            response && Array.isArray(response.output) ? response.output : [];
 
-          const outputItems = response.output || [];
           const extracted = extractRequestParameters(
             requestData as Record<string, unknown>
           );
@@ -360,10 +358,10 @@ function generateResponseApiProxy<T extends OpenAIType>(
           const consolidatedOutput = processOutputItems({
             outputItems,
             logger,
-            model: response.model || requestData.model,
+            model: response?.model || requestData.model,
             originalInput: requestData.input,
             tools: extracted.tools,
-            usage: response.usage,
+            usage: response?.usage,
             statusCode: 200,
             metadata
           });
@@ -371,7 +369,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
           // Only conclude trace if there are no pending function calls
           // Pending calls indicate multi-turn conversation continues
           const hasPending = hasPendingFunctionCalls(outputItems);
-          if (isParentTraceValid && !hasPending) {
+          if (!isParentTraceValid && !hasPending) {
             logger!.conclude({
               output: JSON.stringify(consolidatedOutput),
               durationNs: calculateDurationNs(startTime)
@@ -387,17 +385,54 @@ function generateResponseApiProxy<T extends OpenAIType>(
 }
 
 /**
- * Wraps an Azure OpenAI instance with logging.
- * Alias for wrapOpenAI - AzureOpenAI extends OpenAI and has the same API surface (chat, responses).
- * @param azureOpenAIClient The AzureOpenAI instance to wrap.
- * @param logger The logger to use. Defaults to a new GalileoLogger instance.
- * @returns The wrapped Azure OpenAI instance.
+ * Wraps an Azure OpenAI instance with Galileo logging and observability.
+ *
+ * Alias for wrapOpenAI - AzureOpenAI extends OpenAI and has the same API surface.
+ *
+ * @param azureOpenAIClient The AzureOpenAI instance to wrap
+ * @param logger Optional GalileoLogger instance. If not provided, uses the singleton instance.
+ * @returns The wrapped Azure OpenAI instance
+ *
  */
 export const wrapAzureOpenAI = wrapOpenAI;
 
 /**
- * StreamWrapper class to handle streaming responses from OpenAI.
- * Collects all chunks and logs the complete response at the end.
+ * StreamWrapper class for handling OpenAI streaming responses.
+ *
+ * Supports two streaming modes:
+ * 1. Chat Completions API: Processes chunks incrementally to build the complete response
+ * 2. Responses API: Collects chunks and extracts output from the final completion event
+ *
+ * ## Responses API Streaming Approach
+ *
+ * - Intermediate events (response.output_text.delta, etc.) are progress indicators only
+ * - The `response.completed` or `response.done` event contains the authoritative data
+ * - We don't attempt to incrementally build output from deltas/intermediate events
+ * - Instead, we wait for the completion event and extract its `response.output` array
+ *
+ * This approach is simpler and more reliable than trying to merge incremental updates,
+ * and ensures we have the complete, consistent output array for processing.
+ *
+ * ## Why Not Process Intermediate Events?
+ *
+ * The OpenAI Responses API streaming events are structured as:
+ * - `response.created` - Initial event with metadata
+ * - `response.output_text.delta` - Partial text chunks (progress only)
+ * - `response.output_item.added` - Items being added (progress only)
+ * - `response.completed` - Final event with complete `response.output` array
+ *
+ * The completion event's `output` array is the single source of truth and includes:
+ * - All message content (complete, not deltas)
+ * - All function_call items with full arguments
+ * - All tool call items (file_search, code_interpreter, etc.)
+ * - All reasoning items
+ *
+ * Attempting to merge deltas from intermediate events risks:
+ * - Data inconsistency (partial arguments, incomplete reasoning)
+ * - Duplicate items (if intermediate events overlap with final output)
+ * - Lost data (if replacement logic discards collected deltas)
+ *
+ * By waiting for the authoritative completion event, we ensure correctness.
  */
 class StreamWrapper implements AsyncIterable<any> {
   private chunks: any[] = [];
@@ -410,7 +445,8 @@ class StreamWrapper implements AsyncIterable<any> {
   private hasToolCalls: boolean = false;
   private iterator: AsyncIterator<any>;
   private isResponsesApi: boolean = false;
-  private outputItems: any[] = [];
+  private completedResponse: any = null;
+  private finalized = false;
 
   constructor(
     private stream: AsyncIterable<any>,
@@ -450,13 +486,11 @@ class StreamWrapper implements AsyncIterable<any> {
             return result;
           }
         } catch (error) {
-          // Handle any errors during streaming
           console.error('Error in stream processing:', error);
           this.finalize();
           throw error;
         }
       },
-      // Optionally implement return and throw methods if needed
       return: async (value: any): Promise<IteratorResult<any>> => {
         this.finalize();
         return { done: true, value };
@@ -464,37 +498,46 @@ class StreamWrapper implements AsyncIterable<any> {
       throw: async (error: any): Promise<IteratorResult<any>> => {
         console.error('Error in stream processing:', error);
         this.finalize();
-        return { done: true, value: undefined };
+        throw error;
       }
     };
   }
 
   private processChunk(chunk: any) {
-    const hasOutputArray = chunk?.output != null && Array.isArray(chunk.output);
-    const isResponsesFormat = hasOutputArray && !('choices' in chunk);
+    const isResponsesFormat = this.isResponseStreamEvent(chunk);
 
-    if (isResponsesFormat) {
+    // Detect Responses API on first matching chunk
+    // Can be detected via event type (response.*) or presence of output array
+    if (isResponsesFormat && !this.isResponsesApi) {
       this.isResponsesApi = true;
-      if (typeof chunk?.delta === 'string' && chunk.delta) {
-        this.outputItems.push({
-          type: 'message',
-          content: [{ text: chunk.delta }]
-        });
-      }
-      this.outputItems.push(...chunk.output);
-      return;
     }
+
+    // Handle Responses API streaming
+    //
+    // The streaming events are informational/progress indicators. The final
+    // `response.completed` or `response.done` event contains a `response` object
+    // with a complete `output` array that has all messages, tool calls, and reasoning.
+    //
+    // This is fundamentally different from Chat Completions API where we must
+    // incrementally build the response from deltas because there's no final
+    // consolidated event.
+    //
+    // Approach:
+    // 1. Store all chunks (happens in [Symbol.asyncIterator])
+    // 2. Wait for response.completed/response.done event
+    // 3. Extract response.output array in finalize()
+    // 4. Process output items to create spans
     if (this.isResponsesApi) {
-      // Event-style chunks (e.g. response.output_text.delta) carry content in chunk.delta
-      if (typeof chunk?.delta === 'string' && chunk.delta) {
-        this.outputItems.push({
-          type: 'message',
-          content: [{ text: chunk.delta }]
-        });
+      const chunkType = chunk?.type as string | undefined;
+
+      // Capture the completion event which carries the complete response object
+      // with the authoritative output[] array containing all items
+      if (chunkType === 'response.completed' || chunkType === 'response.done') {
+        this.completedResponse = chunk?.response ?? null;
       }
-      if (hasOutputArray) {
-        this.outputItems.push(...chunk.output);
-      }
+
+      // All other events (response.output_text.delta, response.output_item.added, etc.)
+      // are progress indicators only - we don't process them incrementally
       return;
     }
 
@@ -569,7 +612,50 @@ class StreamWrapper implements AsyncIterable<any> {
     }
   }
 
+  /**
+   * Detects if a chunk is from the Responses API.
+   *
+   * Detection methods:
+   * 1. Event-based format: chunks with 'type' field starting with 'response.'
+   *    - response.created
+   *    - response.output_text.delta
+   *    - response.output_item.added
+   *    - response.completed
+   *    - response.done
+   *
+   * 2. Output-based format: chunks with 'output' array (and no 'choices' field)
+   *    - Some Responses API streams may send chunks with just output arrays
+   *    - Distinct from Chat Completions which have 'choices' arrays
+   *
+   * This is distinct from Chat Completions API chunks which have 'choices' arrays
+   * with 'delta' objects.
+   */
+  private isResponseStreamEvent(chunk: unknown): boolean {
+    if (typeof chunk !== 'object' || chunk === null) {
+      return false;
+    }
+
+    const chunkObj = chunk as any;
+
+    // Method 1: Check for response.* event type
+    const hasResponseEventType =
+      'type' in chunkObj &&
+      typeof chunkObj.type === 'string' &&
+      chunkObj.type.startsWith('response.');
+
+    // Method 2: Check for output array (without choices - to distinguish from Chat Completions)
+    const hasOutputArray =
+      'output' in chunkObj &&
+      Array.isArray(chunkObj.output) &&
+      !('choices' in chunkObj);
+
+    return hasResponseEventType || hasOutputArray;
+  }
+
   private finalize() {
+    if (this.finalized) return;
+    this.finalized = true;
+
     if (this.chunks.length === 0) return;
 
     const endTime = new Date();
@@ -646,7 +732,23 @@ class StreamWrapper implements AsyncIterable<any> {
   }
 
   /**
-   * Mirrors the non-streaming Responses API handler logic
+   * Finalizes Responses API streaming by processing the completed response.
+   * This mirrors the non-streaming Responses API handler logic
+   *
+   * Flow:
+   * 1. Extract output[] array from the completion event's response object
+   * 2. Process function_call_output items from input (previous turn tool executions)
+   * 3. Call processOutputItems() to create consolidated LLM span and tool spans
+   * 4. Conclude trace only if there are no pending function calls
+   *
+   * The output[] array from response.completed contains all items in their final form:
+   * - message items with complete content
+   * - function_call items with full arguments
+   * - reasoning items with complete summaries
+   * - tool call items (file_search, code_interpreter, etc.)
+   *
+   * This is the authoritative source - we don't need to merge with any incrementally
+   * collected data because the API provides everything we need in this final event.
    */
   private finalizeResponsesApi(endTime: Date) {
     const extracted = extractRequestParameters(
@@ -662,22 +764,46 @@ class StreamWrapper implements AsyncIterable<any> {
       processFunctionCallOutputs(this.requestData.input, this.logger);
     }
 
-    // Try to extract usage from the last chunk
-    let usage = null;
-    const lastChunk = this.chunks[this.chunks.length - 1];
-    if (lastChunk?.usage) {
-      usage = lastChunk.usage;
+    // Extract output items from the completed response event
+    let outputItems: any[] = [];
+    if (
+      this.completedResponse?.output &&
+      Array.isArray(this.completedResponse.output)
+    ) {
+      outputItems = this.completedResponse.output;
+    } else {
+      // If no completed response, try to extract output from chunks directly
+      // This handles cases where chunks themselves have output arrays
+      for (const chunk of this.chunks) {
+        if (chunk && typeof chunk === 'object' && Array.isArray(chunk.output)) {
+          outputItems = outputItems.concat(chunk.output);
+        }
+      }
     }
 
-    // Extract model from chunks or requestData
+    // Try to extract usage from completed response or last chunk
+    let usage = null;
+    if (this.completedResponse?.usage) {
+      usage = this.completedResponse.usage;
+    } else {
+      const lastChunk = this.chunks[this.chunks.length - 1];
+      if (lastChunk?.usage) {
+        usage = lastChunk.usage;
+      }
+    }
+
+    // Extract model from completed response, chunks, or requestData
     let model = this.requestData.model;
+    if (!model && this.completedResponse?.model) {
+      model = this.completedResponse.model;
+    }
     if (!model && this.chunks.length > 0) {
       model = this.chunks[0].model || 'unknown';
     }
 
     // Process output items to create LLM span and tool spans
     const consolidatedOutput = processOutputItems({
-      outputItems: this.outputItems,
+      outputItems,
       logger: this.logger,
       model: model || 'unknown',
       originalInput: this.requestData.input,
@@ -688,7 +814,7 @@ class StreamWrapper implements AsyncIterable<any> {
     });
 
     // Only conclude trace if there are no pending function calls
-    const hasPending = hasPendingFunctionCalls(this.outputItems);
+    const hasPending = hasPendingFunctionCalls(outputItems);
     if (this.shouldCompleteTrace && !hasPending) {
       this.logger.conclude({
         output: JSON.stringify(consolidatedOutput),

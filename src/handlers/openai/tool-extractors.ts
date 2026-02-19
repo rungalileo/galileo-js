@@ -1,7 +1,6 @@
 /**
  * Tool extractors for Responses API output items.
  * Each extractor returns { input, output } for logging as tool spans.
- * Mirrors Python TOOL_EXTRACTORS; designed for extensibility.
  */
 
 export type ToolExtractor = (item: Record<string, unknown>) => {
@@ -83,7 +82,15 @@ export const localShellCall: ToolExtractor = (item) => {
     status: item.status || '',
     action
   };
-  return { input: safeStringify(input), output: String(item.status || '') };
+  return {
+    input: safeStringify(input),
+    output: `Status: ${item.status || ''}`
+  };
+};
+
+export const localShellCallOutput: ToolExtractor = (item) => {
+  const input = { id: item.id || '', status: item.status || '' };
+  return { input: safeStringify(input), output: String(item.output || '') };
 };
 
 export const customToolCall: ToolExtractor = (item) => {
@@ -115,6 +122,7 @@ export const TOOL_EXTRACTORS: Record<string, ToolExtractor> = {
   image_generation_call: imageGenerationCall,
   code_interpreter_call: codeInterpreterCall,
   local_shell_call: localShellCall,
+  local_shell_call_output: localShellCallOutput,
   custom_tool_call: customToolCall,
   function_call_output: functionCallOutput
 };

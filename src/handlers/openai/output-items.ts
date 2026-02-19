@@ -4,15 +4,16 @@
  * to tool extractors for tool span creation.
  */
 
-import type { GalileoLogger } from '../utils/galileo-logger';
-import type { JsonObject } from '../types/base.types';
-import { EventType, type Event } from '../types/logging/span.types';
+import type { GalileoLogger } from '../../utils/galileo-logger';
+import type { JsonObject } from '../../types/base.types';
+import { EventType, type Event } from '../../types/logging/span.types';
 import type {
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType
-} from '../types/logging/step.types';
+} from '../../types/logging/step.types';
 import { getToolExtractor, TOOL_SPAN_TYPES } from './tool-extractors';
 import { parseUsage } from './usage';
+import { Message, MessageRole } from '../../types/message.types';
 
 export interface ProcessOutputItemsOptions {
   outputItems: unknown[];
@@ -27,19 +28,10 @@ export interface ProcessOutputItemsOptions {
 
 function toRecord(item: unknown): Record<string, unknown> | null {
   if (item == null) return null;
-  if (typeof item === 'object' && !Array.isArray(item))
+  // In JavaScript, OpenAI SDK returns plain objects, not Pydantic models
+  // Simply check if it's a non-array object
+  if (typeof item === 'object' && !Array.isArray(item)) {
     return item as Record<string, unknown>;
-  if (
-    typeof (item as { model_dump?: () => Record<string, unknown> })
-      .model_dump === 'function'
-  ) {
-    try {
-      return (
-        item as { model_dump: () => Record<string, unknown> }
-      ).model_dump();
-    } catch {
-      return null;
-    }
   }
   return null;
 }
@@ -63,7 +55,6 @@ function extractMessageContent(item: Record<string, unknown>): string {
 /**
  * Extract reasoning text from a reasoning output item.
  * OpenAI Responses API uses `summary` (array of { text }) for reasoning, not `content`.
- * Matches galileo-python _extract_reasoning_content (extractors.py).
  */
 function extractReasoningContent(item: Record<string, unknown>): string[] {
   const summary = item.summary;
@@ -89,6 +80,74 @@ function extractReasoningContent(item: Record<string, unknown>): string[] {
       .filter((s): s is string => s != null && s !== '');
   }
   return [];
+}
+
+/**
+ * Convert raw Responses API input items to valid Message objects for LLM span logging.
+ *
+ * The Galileo ingestion API validates every element of `input` as a Message
+ * ({ content: string, role: MessageRole }). Raw Responses API items like
+ * `function_call` and `function_call_output` lack those fields and fail Zod validation.
+ *
+ * Mappings:
+ *   type "message"              → { role, content }
+ *   type "function_call"        → { role: "assistant", content: "", tool_calls: [...] }
+ *   type "function_call_output" → { role: "tool", content: String(output), tool_call_id }
+ *   anything else               → { role: "user", content: JSON.stringify(item) }
+ */
+function convertResponsesInputToMessages(originalInput: unknown): Message[] {
+  if (originalInput == null) return [];
+  const items: unknown[] = Array.isArray(originalInput)
+    ? originalInput
+    : [originalInput];
+
+  const messages: Message[] = [];
+  for (const rawItem of items) {
+    const item = toRecord(rawItem);
+    if (!item) continue;
+
+    const type = item.type as string | undefined;
+
+    if (!type || type === 'message') {
+      const role = item.role as string | undefined;
+      const content = extractMessageContent(item);
+      messages.push({
+        role: (role != null && role in MessageRole
+          ? role
+          : MessageRole.user) as MessageRole,
+        content
+      });
+    } else if (type === 'function_call') {
+      const callId = String(item.call_id ?? item.id ?? '');
+      const name = String(item.name ?? '');
+      const args = String(item.arguments ?? '');
+      messages.push({
+        role: MessageRole.assistant,
+        content: '',
+        tool_calls: [{ id: callId, function: { name, arguments: args } }]
+      });
+    } else if (type === 'function_call_output') {
+      const callId = String(item.call_id ?? '');
+      const output = item.output;
+      const content =
+        typeof output === 'string'
+          ? output
+          : output != null
+            ? JSON.stringify(output)
+            : '';
+      messages.push({
+        role: MessageRole.tool,
+        content,
+        tool_call_id: callId || undefined
+      });
+    } else {
+      messages.push({
+        role: MessageRole.user,
+        content: JSON.stringify(item)
+      });
+    }
+  }
+  return messages;
 }
 
 /**
@@ -143,7 +202,7 @@ export function processOutputItems(
     }
   }
 
-  // Second pass: create tool spans for TOOL_SPAN_TYPES (parity with galileo-python: metadata on tool span)
+  // Second pass: create tool spans for TOOL_SPAN_TYPES
   for (const rawItem of outputItems) {
     const item = toRecord(rawItem);
     if (!item) continue;
@@ -178,20 +237,16 @@ export function processOutputItems(
   }
 
   const spanMetadata: Record<string, string> = {
-    ...metadata,
     type: 'consolidated_response',
     includes_reasoning: String(events.length > 0),
     reasoning_count: String(
       events.filter((e) => e.type === EventType.reasoning).length
-    )
+    ),
+    serialized_messages: 'true',
+    ...metadata
   };
 
-  const inputForSpan =
-    originalInput != null
-      ? Array.isArray(originalInput)
-        ? originalInput
-        : [originalInput]
-      : [];
+  const inputForSpan = convertResponsesInputToMessages(originalInput);
 
   logger.addLlmSpan({
     input: inputForSpan as LlmSpanAllowedInputType,
@@ -218,8 +273,6 @@ export function processOutputItems(
  *
  * This is called BEFORE processing output items to log tool executions
  * that were passed in the input (multi-turn conversations).
- *
- * Mirrors galileo-python process_function_call_outputs() from extractors.py lines 480-531.
  */
 export function processFunctionCallOutputs(
   inputItems: unknown[],
@@ -295,7 +348,6 @@ export function processFunctionCallOutputs(
 /**
  * Check if output items contain pending function calls (function_call without matching function_call_output).
  * If pending calls exist, trace should NOT be concluded yet (multi-turn conversation continues).
- * Mirrors galileo-python has_pending_function_calls() from extractors.py lines 715-742.
  */
 export function hasPendingFunctionCalls(outputItems: unknown[]): boolean {
   const functionCallIds = new Set<string>();

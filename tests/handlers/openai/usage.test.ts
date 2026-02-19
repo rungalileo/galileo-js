@@ -1,4 +1,4 @@
-import { parseUsage } from '../../src/openai/usage';
+import { parseUsage } from '../../../src/handlers/openai/usage';
 
 describe('parseUsage', () => {
   test('returns zeros for null/undefined', () => {
@@ -108,13 +108,13 @@ describe('parseUsage', () => {
     expect(result.rejectedPredictionTokens).toBe(15);
   });
 
-  test('handles objects with model_dump method (Pydantic-like)', () => {
+  test('handles plain JavaScript objects from OpenAI SDK', () => {
+    // OpenAI JavaScript SDK returns plain objects, not Pydantic models
+    // This test verifies we correctly handle the actual SDK response format
     const result = parseUsage({
-      model_dump: () => ({
-        input_tokens: 60,
-        output_tokens: 40,
-        total_tokens: 100
-      })
+      input_tokens: 60,
+      output_tokens: 40,
+      total_tokens: 100
     });
     expect(result.inputTokens).toBe(60);
     expect(result.outputTokens).toBe(40);
