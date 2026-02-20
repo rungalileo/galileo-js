@@ -148,7 +148,7 @@ describe('OpenAI Wrapper', () => {
       createdAt: mockDate,
       input: requestData.messages,
       output: [mockResponse.choices[0].message],
-      name: 'openai-client-generation',
+      name: 'openai-completion-generation',
       model: 'gpt-4o',
       numInputTokens: 10,
       numOutputTokens: 5,
@@ -484,6 +484,16 @@ describe('OpenAI Wrapper', () => {
     ).rejects.toThrow('API Error');
 
     expect(mockLogger.startTrace).toHaveBeenCalled();
+    expect(mockLogger.addLlmSpan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: requestData.messages,
+        output: { content: 'Error: API Error' },
+        name: 'openai-completion-generation',
+        statusCode: 500,
+        numInputTokens: 0,
+        numOutputTokens: 0
+      })
+    );
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: 'Error: API Error',
       durationNs: 1_000_000
@@ -563,7 +573,7 @@ describe('OpenAI Wrapper', () => {
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith(
       expect.objectContaining({
         metadata: expect.any(Object),
-        name: 'openai-client-generation',
+        name: 'openai-completion-generation',
         model: 'gpt-4o'
       })
     );
@@ -1037,6 +1047,257 @@ describe('OpenAI Wrapper', () => {
 
       // Verify trace was NOT concluded because of pending function call
       expect(mockLogger.conclude).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Error Handling: Chat Completions vs Responses API Parity', () => {
+    test('Chat Completions error logs Message[] input (not string)', async () => {
+      // Setup
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+      const error = new Error('Rate limit exceeded');
+      mockCreateMethod.mockRejectedValueOnce(error);
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'Test message' }]
+      };
+
+      // Execute
+      await expect(
+        wrappedOpenAI.chat.completions.create(requestData)
+      ).rejects.toThrow('Rate limit exceeded');
+
+      // Assert error span has Message[] input (matching success path)
+      expect(mockLogger.addLlmSpan).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: requestData.messages,  // ← Message[] object (not string)
+          output: { content: 'Error: Rate limit exceeded' },
+          name: 'openai-completion-generation',
+          statusCode: 500, // Default when error status not extracted
+          numInputTokens: 0,
+          numOutputTokens: 0
+        })
+      );
+    });
+
+    test('Responses API error logs Message[] input (not string)', async () => {
+      // Setup
+      const mockResponsesCreateMethod = jest.fn();
+      const mockOpenAIWithResponses = {
+        chat: {
+          completions: {
+            create: jest.fn()
+          }
+        },
+        responses: {
+          create: mockResponsesCreateMethod
+        }
+      };
+
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+
+      const error = new Error('Authentication failed');
+      mockResponsesCreateMethod.mockRejectedValueOnce(error);
+
+      const wrappedOpenAI = wrapOpenAI(
+        mockOpenAIWithResponses as any,
+        mockLogger as any
+      );
+      const requestData = {
+        model: 'gpt-4o',
+        input: [{ type: 'message', content: 'Test input', role: 'user' }]
+      };
+
+      // Execute
+      await expect(
+        wrappedOpenAI.responses!.create(requestData)
+      ).rejects.toThrow('Authentication failed');
+
+      // Assert error span has Message[] input (matching success path)
+      const addLlmSpanCall = mockLogger.addLlmSpan.mock.calls[0][0];
+      expect(addLlmSpanCall).toMatchObject({
+        output: { content: 'Error: Authentication failed' },
+        name: 'openai-responses-generation',
+        statusCode: 500, // Default when error status not extracted
+        numInputTokens: 0,
+        numOutputTokens: 0
+      });
+
+      // Verify input is Message[] (converted from input)
+      expect(Array.isArray(addLlmSpanCall.input)).toBe(true);
+      expect(addLlmSpanCall.input[0]).toHaveProperty('role');
+      expect(addLlmSpanCall.input[0]).toHaveProperty('content');
+    });
+
+    test('Error span input format matches success span for Chat Completions', async () => {
+      // This test verifies the Python parity principle:
+      // Success and error paths should use same input format
+
+      const mockCreateMethod1 = jest.fn();
+      const mockCreateMethod2 = jest.fn();
+
+      const wrappedOpenAI1 = wrapOpenAI(
+        {
+          chat: { completions: { create: mockCreateMethod1 } }
+        } as any,
+        mockLogger as any
+      );
+
+      const wrappedOpenAI2 = wrapOpenAI(
+        {
+          chat: { completions: { create: mockCreateMethod2 } }
+        } as any,
+        mockLogger as any
+      );
+
+      const requestData = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'Hello' }]
+      };
+
+      // Scenario 1: Success
+      mockCreateMethod1.mockResolvedValueOnce({
+        choices: [{ message: { role: 'assistant', content: 'Hi' } }],
+        usage: { prompt_tokens: 5, completion_tokens: 2 }
+      });
+
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+
+      await wrappedOpenAI1.chat.completions.create(requestData);
+      const successCall = mockLogger.addLlmSpan.mock.calls[0][0];
+
+      // Scenario 2: Error
+      jest.clearAllMocks();
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+      mockCreateMethod2.mockRejectedValueOnce(new Error('Failed'));
+
+      await expect(
+        wrappedOpenAI2.chat.completions.create(requestData)
+      ).rejects.toThrow();
+
+      const errorCall = mockLogger.addLlmSpan.mock.calls[0][0];
+
+      // Both should have same input format (Message[])
+      expect(successCall.input).toEqual(errorCall.input);
+      expect(Array.isArray(successCall.input)).toBe(true);
+      expect(Array.isArray(errorCall.input)).toBe(true);
+    });
+
+    test('Error with null messages returns empty array (safe)', async () => {
+      // Edge case: what if .messages is explicitly null?
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+
+      const error = new Error('API Error');
+      mockCreateMethod.mockRejectedValueOnce(error);
+
+      const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
+      const requestData = {
+        model: 'gpt-4o',
+        messages: null as any  // ← Edge case
+      };
+
+      // Execute
+      await expect(
+        wrappedOpenAI.chat.completions.create(requestData)
+      ).rejects.toThrow('API Error');
+
+      // Verify error span was created with safe empty input
+      const errorCall = mockLogger.addLlmSpan.mock.calls[0][0];
+      expect(errorCall.input).toEqual([]);  // ← Safe fallback
+      expect(Array.isArray(errorCall.input)).toBe(true);
+    });
+
+    test('Error with undefined input returns empty array (safe)', async () => {
+      // Edge case: what if input is completely missing?
+      const mockResponsesCreateMethod = jest.fn();
+      const mockOpenAIWithResponses = {
+        chat: { completions: { create: jest.fn() } },
+        responses: {
+          create: mockResponsesCreateMethod
+        }
+      };
+
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+
+      const error = new Error('Error');
+      mockResponsesCreateMethod.mockRejectedValueOnce(error);
+
+      const wrappedOpenAI = wrapOpenAI(
+        mockOpenAIWithResponses as any,
+        mockLogger as any
+      );
+
+      const requestData = {
+        model: 'gpt-4o'
+        // ← No input field
+      };
+
+      // Execute
+      await expect(
+        wrappedOpenAI.responses!.create(requestData)
+      ).rejects.toThrow();
+
+      // Verify error span was created with safe empty input
+      const errorCall = mockLogger.addLlmSpan.mock.calls[0][0];
+      expect(errorCall.input).toEqual([]);  // ← Safe fallback
+      expect(Array.isArray(errorCall.input)).toBe(true);
+    });
+
+    test('Responses API error with function_call input converts to Message[]', async () => {
+      // Verify complex input types are properly converted
+      const mockResponsesCreateMethod = jest.fn();
+      const mockOpenAIWithResponses = {
+        chat: { completions: { create: jest.fn() } },
+        responses: {
+          create: mockResponsesCreateMethod
+        }
+      };
+
+      mockLogger.startTrace = jest.fn(() => {
+        jest.advanceTimersByTime(1);
+      });
+
+      const error = new Error('Processing error');
+      mockResponsesCreateMethod.mockRejectedValueOnce(error);
+
+      const wrappedOpenAI = wrapOpenAI(
+        mockOpenAIWithResponses as any,
+        mockLogger as any
+      );
+
+      const requestData = {
+        model: 'gpt-4o',
+        input: [
+          { type: 'message', content: 'Call the tool', role: 'user' },
+          { type: 'function_call', call_id: 'call_1', name: 'get_data', arguments: '{}' }
+        ]
+      };
+
+      // Execute
+      await expect(
+        wrappedOpenAI.responses!.create(requestData)
+      ).rejects.toThrow();
+
+      // Verify error span input was converted to Message[]
+      const errorCall = mockLogger.addLlmSpan.mock.calls[0][0];
+      expect(Array.isArray(errorCall.input)).toBe(true);
+      expect(errorCall.input.length).toBe(2);
+      expect(errorCall.input[0]).toHaveProperty('role');
+      expect(errorCall.input[0]).toHaveProperty('content');
+      expect(errorCall.input[1]).toHaveProperty('role', 'assistant');  // function_call converted
     });
   });
 

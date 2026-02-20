@@ -95,7 +95,7 @@ function extractReasoningContent(item: Record<string, unknown>): string[] {
  *   type "function_call_output" → { role: "tool", content: String(output), tool_call_id }
  *   anything else               → { role: "user", content: JSON.stringify(item) }
  */
-function convertResponsesInputToMessages(originalInput: unknown): Message[] {
+export function convertInputToMessages(originalInput: unknown): Message[] {
   if (originalInput == null) return [];
   const items: unknown[] = Array.isArray(originalInput)
     ? originalInput
@@ -254,7 +254,7 @@ export function processOutputItems(
     ...metadata
   };
 
-  const inputForSpan = convertResponsesInputToMessages(originalInput);
+  const inputForSpan = convertInputToMessages(originalInput);
 
   logger.addLlmSpan({
     input: inputForSpan as LlmSpanAllowedInputType,

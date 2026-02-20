@@ -8,9 +8,11 @@ import { extractRequestParameters, getOpenAiArgs } from './parameters';
 import {
   processOutputItems,
   processFunctionCallOutputs,
-  hasPendingFunctionCalls
+  hasPendingFunctionCalls,
+  convertInputToMessages
 } from './output-items';
 import { JsonObject } from 'src/types/base.types';
+import { LlmSpanAllowedInputType } from 'src/types';
 
 // Warn if openai package is not available (optional dependency)
 import('openai').catch(() => {
@@ -124,10 +126,14 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   logger = GalileoSingleton.getInstance().getClient();
                 }
 
+                const normalizedInput = convertInputToMessages(
+                  requestData.messages
+                );
+
                 const isParentTraceValid = !!logger.currentParent();
                 if (!isParentTraceValid) {
                   logger!.startTrace({
-                    input: JSON.stringify(requestData.messages),
+                    input: JSON.stringify(normalizedInput),
                     output: undefined,
                     name: 'openai-client-generation'
                   });
@@ -145,10 +151,11 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   if (!isParentTraceValid) {
                     processErrorSpan(
                       error,
-                      logger!,
+                      logger,
                       'openai-completion-generation',
                       requestData as Record<string, unknown>,
-                      startTime
+                      startTime,
+                      normalizedInput
                     );
                   }
                   throw error;
@@ -189,9 +196,9 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                     : undefined;
 
                 logger!.addLlmSpan({
-                  input: JSON.parse(JSON.stringify(requestData.messages)),
+                  input: normalizedInput,
                   output,
-                  name: 'openai-client-generation',
+                  name: 'openai-completion-generation',
                   model: (requestData.model as string) || 'unknown',
                   numInputTokens: usage.inputTokens,
                   numOutputTokens: usage.outputTokens,
@@ -245,18 +252,12 @@ function generateResponseApiProxy<T extends OpenAIType>(
             logger = GalileoSingleton.getInstance().getClient();
           }
 
+          const normalizedInput = convertInputToMessages(requestData.input);
+
           const isParentTraceValid = !!logger.currentParent();
-
-          const normalizedInput =
-            requestData.input != null
-              ? typeof requestData.input === 'string'
-                ? requestData.input
-                : JSON.stringify(requestData.input)
-              : '';
-
           if (!isParentTraceValid) {
             logger!.startTrace({
-              input: normalizedInput,
+              input: JSON.stringify(normalizedInput),
               output: undefined,
               name: 'openai-responses-generation'
             });
@@ -276,7 +277,8 @@ function generateResponseApiProxy<T extends OpenAIType>(
                 logger!,
                 'openai-responses-generation',
                 requestData as Record<string, unknown>,
-                startTime
+                startTime,
+                normalizedInput
               );
             }
             throw error;
@@ -343,7 +345,8 @@ function processErrorSpan(
   logger: GalileoLogger,
   name: string,
   requestData: Record<string, unknown>,
-  startTime: Date
+  startTime: Date,
+  input: LlmSpanAllowedInputType
 ) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const statusCode = extractStatusFromError(error) ?? 500;
@@ -355,8 +358,9 @@ function processErrorSpan(
     typeof requestData.temperature === 'number'
       ? requestData.temperature
       : undefined;
+
   logger.addLlmSpan({
-    input: JSON.parse(JSON.stringify(requestData.messages)),
+    input,
     output: { content: `Error: ${errorMessage}` },
     name,
     model: (requestData.model as string) || 'unknown',
@@ -645,8 +649,6 @@ class StreamWrapper implements AsyncIterable<any> {
     if (this.finalized) return;
     this.finalized = true;
 
-    if (this.chunks.length === 0) return;
-
     const endTime = new Date();
     const startTimeForMetrics = this.completionStartTime || this.startTime;
 
@@ -688,17 +690,23 @@ class StreamWrapper implements AsyncIterable<any> {
 
     // Extract output items from the completed response event
     let outputItems: any[] = [];
-    if (
-      this.completedResponse?.output &&
-      Array.isArray(this.completedResponse.output)
-    ) {
-      outputItems = this.completedResponse.output;
-    } else {
-      // If no completed response, try to extract output from chunks directly
-      // This handles cases where chunks themselves have output arrays
-      for (const chunk of this.chunks) {
-        if (chunk && typeof chunk === 'object' && Array.isArray(chunk.output)) {
-          outputItems = outputItems.concat(chunk.output);
+    if (this.chunks.length > 0) {
+      if (
+        this.completedResponse?.output &&
+        Array.isArray(this.completedResponse.output)
+      ) {
+        outputItems = this.completedResponse.output;
+      } else {
+        // If no completed response, try to extract output from chunks directly
+        // This handles cases where chunks themselves have output arrays
+        for (const chunk of this.chunks) {
+          if (
+            chunk &&
+            typeof chunk === 'object' &&
+            Array.isArray(chunk.output)
+          ) {
+            outputItems = outputItems.concat(chunk.output);
+          }
         }
       }
     }
@@ -746,9 +754,13 @@ class StreamWrapper implements AsyncIterable<any> {
   }
 
   private finalizeChatCompletionApi(startTimeForMetrics: Date, endTime: Date) {
-    // Chat Completions API finalization (existing logic)
-    // Clean up output format for log
-    const finalOutput = { ...this.completeOutput };
+    const finalOutput =
+      this.chunks.length > 0
+        ? { ...this.completeOutput }
+        : {
+            content: null,
+            tool_calls: []
+          };
 
     // If no tool calls were used, remove the property
     if (!this.hasToolCalls || this.completeOutput.tool_calls.length === 0) {
