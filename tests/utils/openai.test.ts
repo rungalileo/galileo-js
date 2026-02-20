@@ -1073,7 +1073,7 @@ describe('OpenAI Wrapper', () => {
       // Assert error span has Message[] input (matching success path)
       expect(mockLogger.addLlmSpan).toHaveBeenCalledWith(
         expect.objectContaining({
-          input: requestData.messages,  // ← Message[] object (not string)
+          input: requestData.messages, // ← Message[] object (not string)
           output: { content: 'Error: Rate limit exceeded' },
           name: 'openai-completion-generation',
           statusCode: 500, // Default when error status not extracted
@@ -1204,7 +1204,7 @@ describe('OpenAI Wrapper', () => {
       const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
       const requestData = {
         model: 'gpt-4o',
-        messages: null as any  // ← Edge case
+        messages: null as any // ← Edge case
       };
 
       // Execute
@@ -1214,7 +1214,7 @@ describe('OpenAI Wrapper', () => {
 
       // Verify error span was created with safe empty input
       const errorCall = mockLogger.addLlmSpan.mock.calls[0][0];
-      expect(errorCall.input).toEqual([]);  // ← Safe fallback
+      expect(errorCall.input).toEqual([]); // ← Safe fallback
       expect(Array.isArray(errorCall.input)).toBe(true);
     });
 
@@ -1252,7 +1252,7 @@ describe('OpenAI Wrapper', () => {
 
       // Verify error span was created with safe empty input
       const errorCall = mockLogger.addLlmSpan.mock.calls[0][0];
-      expect(errorCall.input).toEqual([]);  // ← Safe fallback
+      expect(errorCall.input).toEqual([]); // ← Safe fallback
       expect(Array.isArray(errorCall.input)).toBe(true);
     });
 
@@ -1282,7 +1282,12 @@ describe('OpenAI Wrapper', () => {
         model: 'gpt-4o',
         input: [
           { type: 'message', content: 'Call the tool', role: 'user' },
-          { type: 'function_call', call_id: 'call_1', name: 'get_data', arguments: '{}' }
+          {
+            type: 'function_call',
+            call_id: 'call_1',
+            name: 'get_data',
+            arguments: '{}'
+          }
         ]
       };
 
@@ -1297,7 +1302,7 @@ describe('OpenAI Wrapper', () => {
       expect(errorCall.input.length).toBe(2);
       expect(errorCall.input[0]).toHaveProperty('role');
       expect(errorCall.input[0]).toHaveProperty('content');
-      expect(errorCall.input[1]).toHaveProperty('role', 'assistant');  // function_call converted
+      expect(errorCall.input[1]).toHaveProperty('role', 'assistant'); // function_call converted
     });
   });
 
