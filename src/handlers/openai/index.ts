@@ -10,13 +10,13 @@ import {
   processFunctionCallOutputs,
   hasPendingFunctionCalls
 } from './output-items';
+import { JsonObject } from 'src/types/base.types';
 
-try {
-  require.resolve('openai');
-} catch (e) {
+// Warn if openai package is not available (optional dependency)
+import('openai').catch(() => {
   // eslint-disable-next-line no-console
   console.warn('openai package is not installed. Some features may not work.');
-}
+});
 
 interface BetaType {
   chat?: {
@@ -114,8 +114,11 @@ function generateChatCompletionProxy<T extends OpenAIType>(
               completionsProp === 'create' &&
               typeof completionsTarget[completionsProp] === 'function'
             ) {
-              return async function wrappedCreate(...args: any[]) {
+              return async function wrappedCreate(
+                ...args: Record<string, unknown>[]
+              ) {
                 const [requestData] = args;
+                const OpenAISdkOptions = args.slice(1);
                 const startTime = new Date();
                 if (!logger) {
                   logger = GalileoSingleton.getInstance().getClient();
@@ -133,46 +136,20 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 let response: any;
                 try {
                   // Get OpenAI request with filtered metadata if distillation enabled
-                  const openaiRequest = getOpenAiArgs(
-                    (requestData as Record<string, unknown>).metadata as
-                      | Record<string, unknown>
-                      | undefined,
-                    requestData as Record<string, unknown>
-                  );
-                  const callArgs = [openaiRequest, ...args.slice(1)];
+                  const openaiRequest = getOpenAiArgs(requestData);
+                  const callArgs = [openaiRequest, ...OpenAISdkOptions];
                   response = await completionsTarget[completionsProp](
                     ...callArgs
                   );
                 } catch (error: unknown) {
-                  const errorMessage =
-                    error instanceof Error ? error.message : String(error);
-                  const statusCode = extractStatusFromError(error) ?? 500;
-
                   if (!isParentTraceValid) {
-                    const extracted = extractRequestParameters(
-                      requestData as Record<string, unknown>
+                    processErrorSpan(
+                      error,
+                      logger!,
+                      'openai-completion-generation',
+                      requestData as Record<string, unknown>,
+                      startTime
                     );
-
-                    const temperature =
-                      typeof requestData.temperature === 'number'
-                        ? requestData.temperature
-                        : undefined;
-                    logger!.addLlmSpan({
-                      input: JSON.parse(JSON.stringify(requestData.messages)),
-                      output: { content: `Error: ${errorMessage}` },
-                      name: 'openai-client-generation',
-                      model: requestData.model || 'unknown',
-                      numInputTokens: 0,
-                      numOutputTokens: 0,
-                      durationNs: calculateDurationNs(startTime),
-                      metadata: extracted.metadata,
-                      statusCode,
-                      temperature
-                    });
-                    logger!.conclude({
-                      output: `Error: ${errorMessage}`,
-                      durationNs: calculateDurationNs(startTime)
-                    });
                   }
                   throw error;
                 }
@@ -215,7 +192,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   input: JSON.parse(JSON.stringify(requestData.messages)),
                   output,
                   name: 'openai-client-generation',
-                  model: requestData.model || 'unknown',
+                  model: (requestData.model as string) || 'unknown',
                   numInputTokens: usage.inputTokens,
                   numOutputTokens: usage.outputTokens,
                   totalTokens: usage.totalTokens ?? undefined,
@@ -223,7 +200,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   numCachedInputTokens: usage.cachedTokens,
                   durationNs,
                   metadata: finalMetadata,
-                  tools: extracted.tools as any,
+                  tools: extracted.tools as JsonObject[] | undefined,
                   statusCode: 200,
                   temperature
                 });
@@ -258,7 +235,9 @@ function generateResponseApiProxy<T extends OpenAIType>(
         responsesProp === 'create' &&
         typeof responsesTarget[responsesProp] === 'function'
       ) {
-        return async function wrappedResponsesCreate(...args: any[]) {
+        return async function wrappedResponsesCreate(
+          ...args: Record<string, unknown>[]
+        ) {
           const [requestData] = args;
           const OpenAISdkOptions = args.slice(1);
           const startTime = new Date();
@@ -284,47 +263,21 @@ function generateResponseApiProxy<T extends OpenAIType>(
           }
 
           // Get OpenAI request with filtered metadata if distillation enabled
-          const openaiRequest = getOpenAiArgs(
-            (requestData as Record<string, unknown>).metadata as
-              | Record<string, unknown>
-              | undefined,
-            requestData as Record<string, unknown>
-          );
+          const openaiRequest = getOpenAiArgs(requestData);
 
           let response: any;
           try {
             const callArgs = [openaiRequest, ...OpenAISdkOptions];
             response = await responsesTarget[responsesProp](...callArgs);
           } catch (error: unknown) {
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
-            const statusCode = extractStatusFromError(error) ?? 500;
-
             if (!isParentTraceValid) {
-              const extracted = extractRequestParameters(
-                requestData as Record<string, unknown>
+              processErrorSpan(
+                error,
+                logger!,
+                'openai-responses-generation',
+                requestData as Record<string, unknown>,
+                startTime
               );
-              const temperature =
-                typeof requestData.temperature === 'number'
-                  ? requestData.temperature
-                  : undefined;
-
-              logger!.addLlmSpan({
-                input: normalizedInput,
-                output: { content: `Error: ${errorMessage}` },
-                name: 'openai-responses-generation',
-                model: requestData.model || 'unknown',
-                numInputTokens: 0,
-                numOutputTokens: 0,
-                durationNs: calculateDurationNs(startTime),
-                metadata: extracted.metadata,
-                statusCode,
-                temperature
-              });
-              logger!.conclude({
-                output: `Error: ${errorMessage}`,
-                durationNs: calculateDurationNs(startTime)
-              });
             }
             throw error;
           }
@@ -382,6 +335,41 @@ function generateResponseApiProxy<T extends OpenAIType>(
       }
       return responsesTarget[responsesProp];
     }
+  });
+}
+
+function processErrorSpan(
+  error: unknown,
+  logger: GalileoLogger,
+  name: string,
+  requestData: Record<string, unknown>,
+  startTime: Date
+) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const statusCode = extractStatusFromError(error) ?? 500;
+  const extracted = extractRequestParameters(
+    requestData as Record<string, unknown>
+  );
+
+  const temperature =
+    typeof requestData.temperature === 'number'
+      ? requestData.temperature
+      : undefined;
+  logger.addLlmSpan({
+    input: JSON.parse(JSON.stringify(requestData.messages)),
+    output: { content: `Error: ${errorMessage}` },
+    name,
+    model: (requestData.model as string) || 'unknown',
+    numInputTokens: 0,
+    numOutputTokens: 0,
+    durationNs: calculateDurationNs(startTime),
+    metadata: extracted.metadata,
+    statusCode,
+    temperature
+  });
+  logger.conclude({
+    output: `Error: ${errorMessage}`,
+    durationNs: calculateDurationNs(startTime)
   });
 }
 

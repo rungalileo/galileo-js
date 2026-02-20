@@ -10,7 +10,7 @@ describe('OpenAiArgsExtractor', () => {
         temperature: 0.7
       };
 
-      const result = getOpenAiArgs(undefined, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       // Should return the same options without modification
       expect(result).toEqual(requestOptions);
@@ -23,7 +23,7 @@ describe('OpenAiArgsExtractor', () => {
         store: false
       };
 
-      const result = getOpenAiArgs(undefined, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       // Should return the same options without adding metadata
       expect(result).toEqual(requestOptions);
@@ -39,7 +39,7 @@ describe('OpenAiArgsExtractor', () => {
         store: true
       };
 
-      const result = getOpenAiArgs(undefined, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       // Should have store=true but no empty metadata object
       expect(result.store).toBe(true);
@@ -55,10 +55,11 @@ describe('OpenAiArgsExtractor', () => {
       const requestOptions = {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
-        store: true
+        store: true,
+        metadata: callerMetadata
       };
 
-      const result = getOpenAiArgs(callerMetadata, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       expect(result.store).toBe(true);
       expect(result.metadata).toEqual({
@@ -82,10 +83,11 @@ describe('OpenAiArgsExtractor', () => {
       const requestOptions = {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
-        store: true
+        store: true,
+        metadata: callerMetadata
       };
 
-      const result = getOpenAiArgs(callerMetadata, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       expect(result.metadata).toEqual({
         userId: 'user-123',
@@ -105,10 +107,11 @@ describe('OpenAiArgsExtractor', () => {
       const requestOptions = {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
-        store: true
+        store: true,
+        metadata: callerMetadata
       };
 
-      const result = getOpenAiArgs(callerMetadata, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       // responseFormat and response_format should NOT be in metadata (OpenAI restriction)
       expect(result.metadata).toEqual({
@@ -130,10 +133,11 @@ describe('OpenAiArgsExtractor', () => {
       const requestOptions = {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'What is 2+2?' }],
-        store: true
+        store: true,
+        metadata: callerMetadata
       };
 
-      const result = getOpenAiArgs(callerMetadata, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       // Metadata is passed to OpenAI for training
       expect(result.store).toBe(true);
@@ -153,16 +157,60 @@ describe('OpenAiArgsExtractor', () => {
       const requestOptions = {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
-        store: true
+        store: true,
+        metadata: callerMetadata
       };
 
-      const openaiRequest = getOpenAiArgs(callerMetadata, requestOptions);
+      const openaiRequest = getOpenAiArgs(requestOptions);
 
       // For OpenAI: metadata is included (for training)
       expect(openaiRequest.metadata).toEqual(callerMetadata);
 
       // For Galileo: handler uses extractRequestParameters which excludes caller metadata
       // This separation is enforced at the handler level
+    });
+  });
+
+  describe('metadata validation (parity with galileo-python)', () => {
+    test('throws TypeError when metadata is a string', () => {
+      const requestOptions = { model: 'gpt-4o', messages: [], store: true, metadata: 'invalid' };
+      expect(() => getOpenAiArgs(requestOptions)).toThrow(
+        new TypeError('metadata must be a plain object')
+      );
+    });
+
+    test('throws TypeError when metadata is an array', () => {
+      const requestOptions = { model: 'gpt-4o', messages: [], store: true, metadata: ['invalid'] };
+      expect(() => getOpenAiArgs(requestOptions)).toThrow(
+        new TypeError('metadata must be a plain object')
+      );
+    });
+
+    test('throws TypeError when metadata is a number', () => {
+      const requestOptions = { model: 'gpt-4o', messages: [], store: true, metadata: 42 };
+      expect(() => getOpenAiArgs(requestOptions)).toThrow(
+        new TypeError('metadata must be a plain object')
+      );
+    });
+
+    test('throws TypeError when metadata is a boolean', () => {
+      const requestOptions = { model: 'gpt-4o', messages: [], store: true, metadata: true };
+      expect(() => getOpenAiArgs(requestOptions)).toThrow(
+        new TypeError('metadata must be a plain object')
+      );
+    });
+
+    test('skips metadata when null or undefined (no throw)', () => {
+      const requestOptions = { model: 'gpt-4o', messages: [], store: true };
+      expect(getOpenAiArgs(requestOptions).metadata).toBeUndefined();
+      expect(getOpenAiArgs(requestOptions).metadata).toBeUndefined();
+    });
+
+    test('accepts plain object metadata', () => {
+      const callerMetadata = { key: 'value' };
+      const requestOptions = { model: 'gpt-4o', messages: [], store: true, metadata: callerMetadata };
+      const result = getOpenAiArgs(requestOptions);
+      expect(result.metadata).toEqual({ key: 'value' });
     });
   });
 
@@ -174,7 +222,7 @@ describe('OpenAiArgsExtractor', () => {
         store: true
       };
 
-      const result = getOpenAiArgs({}, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       expect(result.store).toBe(true);
       // Empty metadata is not added to the result
@@ -198,10 +246,11 @@ describe('OpenAiArgsExtractor', () => {
       const requestOptions = {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
-        store: true
+        store: true,
+        metadata: callerMetadata
       };
 
-      const result = getOpenAiArgs(callerMetadata, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       expect(result.metadata).toEqual({
         stringValue: 'hello',
@@ -219,10 +268,11 @@ describe('OpenAiArgsExtractor', () => {
         model: 'gpt-4o',
         messages: [{ role: 'user', content: 'Hello' }],
         store: true,
-        temperature: 0.5
+        temperature: 0.5,
+        metadata: callerMetadata
       };
 
-      const result = getOpenAiArgs(callerMetadata, requestOptions);
+      const result = getOpenAiArgs(requestOptions);
 
       // All request options preserved
       expect(result.model).toBe('gpt-4o');

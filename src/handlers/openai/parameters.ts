@@ -47,25 +47,50 @@ export interface ExtractedParameters {
 }
 
 /**
+ * Returns true if value is a plain object (not array, primitive, or null).
+ * Matches galileo-python's isinstance(metadata, dict) validation so we don't
+ * forward primitives/arrays to filterMetadataForDistillation (which would
+ * produce invalid character/index keys sent to OpenAI).
+ */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.getPrototypeOf(value) === Object.prototype
+  );
+}
+
+/**
  * Get the OpenAI request arguments, including filtered metadata if distillation is enabled.
  *
  * When `store=true` (model distillation enabled):
  * - Includes caller metadata filtered for OpenAI compatibility
  * - Removes fields not allowed in OpenAI metadata (e.g., response_format)
  * - Converts types to OpenAI-compatible format (booleans → strings)
+ * - Validates metadata is a plain object; throws TypeError if not (parity with galileo-python)
  *
  * When `store` is not true or missing:
  * - Returns request options unchanged
  */
 export function getOpenAiArgs(
-  callerMetadata: Record<string, unknown> | undefined,
   requestData: Record<string, unknown>
 ): Record<string, unknown> {
   const result = { ...requestData };
+  const callerMetadata = requestData.metadata as
+    | Record<string, unknown>
+    | undefined;
 
   // Only add metadata if distillation is explicitly enabled
   // Reference: https://platform.openai.com/docs/guides/distillation
-  if (result.store === true && callerMetadata) {
+  if (
+    result.store === true &&
+    callerMetadata !== undefined &&
+    callerMetadata !== null
+  ) {
+    if (!isPlainObject(callerMetadata)) {
+      throw new TypeError('metadata must be a plain object');
+    }
     const filteredMetadata = filterMetadataForDistillation(callerMetadata);
     if (Object.keys(filteredMetadata).length > 0) {
       result.metadata = filteredMetadata;
@@ -248,5 +273,5 @@ export function extractRequestParameters(
     if (hasStrict) metadata['tools_include_strict'] = 'true';
   }
 
-  return { metadata, tools: toolsForSpan };
+  return { metadata, tools: toolsForSpan } as ExtractedParameters;
 }
