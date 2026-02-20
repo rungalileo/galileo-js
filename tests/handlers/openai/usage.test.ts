@@ -20,7 +20,7 @@ describe('parseUsage', () => {
     });
   });
 
-  test('parses Chat Completions format (prompt_tokens/completion_tokens)', () => {
+  test('test if parsing of Chat Completions API data fills expected fields', () => {
     const result = parseUsage({
       prompt_tokens: 100,
       completion_tokens: 50,
@@ -31,7 +31,7 @@ describe('parseUsage', () => {
     expect(result.totalTokens).toBe(150);
   });
 
-  test('parses Responses API format (input_tokens/output_tokens)', () => {
+  test('test if parsing of Response API data fills expected fields', () => {
     const result = parseUsage({
       input_tokens: 80,
       output_tokens: 40,

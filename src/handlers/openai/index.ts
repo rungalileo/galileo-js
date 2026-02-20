@@ -4,10 +4,7 @@ import { GalileoSingleton } from '../../singleton';
 import { calculateDurationNs } from '../../utils/utils';
 import { parseUsage } from './usage';
 import { extractStatusFromError } from '../../utils/errors';
-import {
-  extractRequestParameters,
-  mergeWithRequestMetadata
-} from './parameters';
+import { extractRequestParameters, getOpenAiArgs } from './parameters';
 import {
   processOutputItems,
   processFunctionCallOutputs,
@@ -125,7 +122,6 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 }
 
                 const isParentTraceValid = !!logger.currentParent();
-
                 if (!isParentTraceValid) {
                   logger!.startTrace({
                     input: JSON.stringify(requestData.messages),
@@ -136,7 +132,17 @@ function generateChatCompletionProxy<T extends OpenAIType>(
 
                 let response: any;
                 try {
-                  response = await completionsTarget[completionsProp](...args);
+                  // Get OpenAI request with filtered metadata if distillation enabled
+                  const openaiRequest = getOpenAiArgs(
+                    (requestData as Record<string, unknown>).metadata as
+                      | Record<string, unknown>
+                      | undefined,
+                    requestData as Record<string, unknown>
+                  );
+                  const callArgs = [openaiRequest, ...args.slice(1)];
+                  response = await completionsTarget[completionsProp](
+                    ...callArgs
+                  );
                 } catch (error: unknown) {
                   const errorMessage =
                     error instanceof Error ? error.message : String(error);
@@ -145,10 +151,6 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   if (!isParentTraceValid) {
                     const extracted = extractRequestParameters(
                       requestData as Record<string, unknown>
-                    );
-                    const metadata = mergeWithRequestMetadata(
-                      extracted,
-                      requestData.metadata
                     );
 
                     const temperature =
@@ -163,7 +165,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                       numInputTokens: 0,
                       numOutputTokens: 0,
                       durationNs: calculateDurationNs(startTime),
-                      metadata,
+                      metadata: extracted.metadata,
                       statusCode,
                       temperature
                     });
@@ -196,12 +198,8 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 const extracted = extractRequestParameters(
                   requestData as Record<string, unknown>
                 );
-                const metadata = mergeWithRequestMetadata(
-                  extracted,
-                  requestData.metadata
-                );
 
-                const finalMetadata = { ...metadata };
+                const finalMetadata = { ...extracted.metadata };
                 if (usage.rejectedPredictionTokens > 0) {
                   finalMetadata.rejected_prediction_tokens = String(
                     usage.rejectedPredictionTokens
@@ -262,6 +260,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
       ) {
         return async function wrappedResponsesCreate(...args: any[]) {
           const [requestData] = args;
+          const OpenAISdkOptions = args.slice(1);
           const startTime = new Date();
           if (!logger) {
             logger = GalileoSingleton.getInstance().getClient();
@@ -269,7 +268,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
 
           const isParentTraceValid = !!logger.currentParent();
 
-          const inputForTrace =
+          const normalizedInput =
             requestData.input != null
               ? typeof requestData.input === 'string'
                 ? requestData.input
@@ -278,15 +277,24 @@ function generateResponseApiProxy<T extends OpenAIType>(
 
           if (!isParentTraceValid) {
             logger!.startTrace({
-              input: inputForTrace,
+              input: normalizedInput,
               output: undefined,
               name: 'openai-responses-generation'
             });
           }
 
+          // Get OpenAI request with filtered metadata if distillation enabled
+          const openaiRequest = getOpenAiArgs(
+            (requestData as Record<string, unknown>).metadata as
+              | Record<string, unknown>
+              | undefined,
+            requestData as Record<string, unknown>
+          );
+
           let response: any;
           try {
-            response = await responsesTarget[responsesProp](...args);
+            const callArgs = [openaiRequest, ...OpenAISdkOptions];
+            response = await responsesTarget[responsesProp](...callArgs);
           } catch (error: unknown) {
             const errorMessage =
               error instanceof Error ? error.message : String(error);
@@ -296,23 +304,20 @@ function generateResponseApiProxy<T extends OpenAIType>(
               const extracted = extractRequestParameters(
                 requestData as Record<string, unknown>
               );
-              const metadata = mergeWithRequestMetadata(
-                extracted,
-                requestData.metadata
-              );
               const temperature =
                 typeof requestData.temperature === 'number'
                   ? requestData.temperature
                   : undefined;
+
               logger!.addLlmSpan({
-                input: inputForTrace,
+                input: normalizedInput,
                 output: { content: `Error: ${errorMessage}` },
                 name: 'openai-responses-generation',
                 model: requestData.model || 'unknown',
                 numInputTokens: 0,
                 numOutputTokens: 0,
                 durationNs: calculateDurationNs(startTime),
-                metadata,
+                metadata: extracted.metadata,
                 statusCode,
                 temperature
               });
@@ -335,48 +340,44 @@ function generateResponseApiProxy<T extends OpenAIType>(
               !isParentTraceValid, // Complete trace only if we started it (no parent)
               true // Responses API stream
             );
-          }
+          } else {
+            // Safely extract output items with fallback for invalid/unexpected response formats
+            // Implemented graceful degradation, instead of failing processing immediately
+            const outputItems =
+              response && Array.isArray(response.output) ? response.output : [];
 
-          // Safely extract output items with fallback for invalid/unexpected response formats
-          // Implemented graceful degradation, instead of failing processing immediately
-          const outputItems =
-            response && Array.isArray(response.output) ? response.output : [];
+            const extracted = extractRequestParameters(
+              requestData as Record<string, unknown>
+            );
 
-          const extracted = extractRequestParameters(
-            requestData as Record<string, unknown>
-          );
-          const metadata = mergeWithRequestMetadata(
-            extracted,
-            requestData.metadata
-          );
+            // Process input items first to log tool executions from previous turns
+            if (Array.isArray(requestData.input)) {
+              processFunctionCallOutputs(requestData.input, logger);
+            }
 
-          // Process input items first to log tool executions from previous turns
-          if (Array.isArray(requestData.input)) {
-            processFunctionCallOutputs(requestData.input, logger);
-          }
-
-          const consolidatedOutput = processOutputItems({
-            outputItems,
-            logger,
-            model: response?.model || requestData.model,
-            originalInput: requestData.input,
-            tools: extracted.tools,
-            usage: response?.usage,
-            statusCode: 200,
-            metadata
-          });
-
-          // Only conclude trace if there are no pending function calls
-          // Pending calls indicate multi-turn conversation continues
-          const hasPending = hasPendingFunctionCalls(outputItems);
-          if (!isParentTraceValid && !hasPending) {
-            logger!.conclude({
-              output: JSON.stringify(consolidatedOutput),
-              durationNs: calculateDurationNs(startTime)
+            const consolidatedOutput = processOutputItems({
+              outputItems,
+              logger,
+              model: response?.model || requestData.model,
+              originalInput: requestData.input,
+              tools: extracted.tools,
+              usage: response?.usage,
+              statusCode: 200,
+              metadata: extracted.metadata
             });
-          }
 
-          return response;
+            // Only conclude trace if there are no pending function calls
+            // Pending calls indicate multi-turn conversation continues
+            const hasPending = hasPendingFunctionCalls(outputItems);
+            if (!isParentTraceValid && !hasPending) {
+              logger!.conclude({
+                output: JSON.stringify(consolidatedOutput),
+                durationNs: calculateDurationNs(startTime)
+              });
+            }
+
+            return response;
+          }
         };
       }
       return responsesTarget[responsesProp];
@@ -662,72 +663,9 @@ class StreamWrapper implements AsyncIterable<any> {
     const startTimeForMetrics = this.completionStartTime || this.startTime;
 
     if (this.isResponsesApi) {
-      this.finalizeResponsesApi(endTime);
-      return;
-    }
-
-    // Chat Completions API finalization (existing logic)
-    // Clean up output format for log
-    const finalOutput = { ...this.completeOutput };
-
-    // If no tool calls were used, remove the property
-    if (!this.hasToolCalls || this.completeOutput.tool_calls.length === 0) {
-      delete finalOutput.tool_calls;
+      this.finalizeResponsesApi(startTimeForMetrics, endTime);
     } else {
-      // Filter out any empty slots in the tool_calls array
-      finalOutput.tool_calls = this.completeOutput.tool_calls.filter(Boolean);
-    }
-
-    // Try to extract usage from the last chunk (OpenAI may include it in the final stream message)
-    let usage = {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: null as number | null,
-      reasoningTokens: 0,
-      cachedTokens: 0
-    };
-    const lastChunk = this.chunks[this.chunks.length - 1];
-    if (lastChunk?.usage) {
-      usage = parseUsage(lastChunk.usage);
-    }
-
-    const extracted = extractRequestParameters(
-      this.requestData as Record<string, unknown>
-    );
-    const metadata = mergeWithRequestMetadata(
-      extracted,
-      this.requestData.metadata
-    );
-
-    const temperature =
-      typeof this.requestData.temperature === 'number'
-        ? this.requestData.temperature
-        : undefined;
-
-    // Log the complete interaction
-    this.logger.addLlmSpan({
-      input: JSON.parse(JSON.stringify(this.requestData.messages)),
-      output: finalOutput,
-      name: 'openai-client-generation',
-      model: this.requestData.model || 'unknown',
-      numInputTokens: usage.inputTokens,
-      numOutputTokens: usage.outputTokens,
-      totalTokens: usage.totalTokens ?? undefined,
-      numReasoningTokens: usage.reasoningTokens,
-      numCachedInputTokens: usage.cachedTokens,
-      durationNs: calculateDurationNs(startTimeForMetrics, endTime),
-      metadata,
-      tools: extracted.tools as any,
-      statusCode: 200,
-      temperature
-    });
-
-    // Conclude the trace if this was the top-level call
-    if (this.shouldCompleteTrace) {
-      this.logger.conclude({
-        output: JSON.stringify(finalOutput),
-        durationNs: calculateDurationNs(this.startTime, endTime)
-      });
+      this.finalizeChatCompletionApi(startTimeForMetrics, endTime);
     }
   }
 
@@ -750,13 +688,9 @@ class StreamWrapper implements AsyncIterable<any> {
    * This is the authoritative source - we don't need to merge with any incrementally
    * collected data because the API provides everything we need in this final event.
    */
-  private finalizeResponsesApi(endTime: Date) {
+  private finalizeResponsesApi(startTimeForMetrics: Date, endTime: Date) {
     const extracted = extractRequestParameters(
       this.requestData as Record<string, unknown>
-    );
-    const metadata = mergeWithRequestMetadata(
-      extracted,
-      this.requestData.metadata
     );
 
     // Process input items first
@@ -810,7 +744,7 @@ class StreamWrapper implements AsyncIterable<any> {
       tools: extracted.tools,
       usage,
       statusCode: 200,
-      metadata
+      metadata: extracted.metadata
     });
 
     // Only conclude trace if there are no pending function calls
@@ -818,6 +752,68 @@ class StreamWrapper implements AsyncIterable<any> {
     if (this.shouldCompleteTrace && !hasPending) {
       this.logger.conclude({
         output: JSON.stringify(consolidatedOutput),
+        durationNs: calculateDurationNs(startTimeForMetrics, endTime)
+      });
+    }
+  }
+
+  private finalizeChatCompletionApi(startTimeForMetrics: Date, endTime: Date) {
+    // Chat Completions API finalization (existing logic)
+    // Clean up output format for log
+    const finalOutput = { ...this.completeOutput };
+
+    // If no tool calls were used, remove the property
+    if (!this.hasToolCalls || this.completeOutput.tool_calls.length === 0) {
+      delete finalOutput.tool_calls;
+    } else {
+      // Filter out any empty slots in the tool_calls array
+      finalOutput.tool_calls = this.completeOutput.tool_calls.filter(Boolean);
+    }
+
+    // Try to extract usage from the last chunk (OpenAI may include it in the final stream message)
+    let usage = {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: null as number | null,
+      reasoningTokens: 0,
+      cachedTokens: 0
+    };
+    const lastChunk = this.chunks[this.chunks.length - 1];
+    if (lastChunk?.usage) {
+      usage = parseUsage(lastChunk.usage);
+    }
+
+    const extracted = extractRequestParameters(
+      this.requestData as Record<string, unknown>
+    );
+
+    const temperature =
+      typeof this.requestData.temperature === 'number'
+        ? this.requestData.temperature
+        : undefined;
+
+    // Log the complete interaction
+    this.logger.addLlmSpan({
+      input: JSON.parse(JSON.stringify(this.requestData.messages)),
+      output: finalOutput,
+      name: 'openai-client-generation',
+      model: this.requestData.model || 'unknown',
+      numInputTokens: usage.inputTokens,
+      numOutputTokens: usage.outputTokens,
+      totalTokens: usage.totalTokens ?? undefined,
+      numReasoningTokens: usage.reasoningTokens,
+      numCachedInputTokens: usage.cachedTokens,
+      durationNs: calculateDurationNs(startTimeForMetrics, endTime),
+      metadata: extracted.metadata,
+      tools: extracted.tools as any,
+      statusCode: 200,
+      temperature
+    });
+
+    // Conclude the trace if this was the top-level call
+    if (this.shouldCompleteTrace) {
+      this.logger.conclude({
+        output: JSON.stringify(finalOutput),
         durationNs: calculateDurationNs(this.startTime, endTime)
       });
     }

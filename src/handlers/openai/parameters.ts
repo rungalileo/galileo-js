@@ -40,10 +40,84 @@ const OPENAI_PARAMETER_DEFAULTS: Record<string, number | null> = {
 } as const;
 
 export interface ExtractedParameters {
-  /** Merged with request metadata; all values stringified for Galileo metadata */
+  /** Extracted OpenAI parameters; all values stringified for Galileo metadata */
   metadata: Record<string, string>;
   /** Raw tools definitions for span tools field (if present) */
   tools?: Record<string, unknown>[];
+}
+
+/**
+ * Get the OpenAI request arguments, including filtered metadata if distillation is enabled.
+ *
+ * When `store=true` (model distillation enabled):
+ * - Includes caller metadata filtered for OpenAI compatibility
+ * - Removes fields not allowed in OpenAI metadata (e.g., response_format)
+ * - Converts types to OpenAI-compatible format (booleans → strings)
+ *
+ * When `store` is not true or missing:
+ * - Returns request options unchanged
+ */
+export function getOpenAiArgs(
+  callerMetadata: Record<string, unknown> | undefined,
+  requestData: Record<string, unknown>
+): Record<string, unknown> {
+  const result = { ...requestData };
+
+  // Only add metadata if distillation is explicitly enabled
+  // Reference: https://platform.openai.com/docs/guides/distillation
+  if (result.store === true && callerMetadata) {
+    const filteredMetadata = filterMetadataForDistillation(callerMetadata);
+    if (Object.keys(filteredMetadata).length > 0) {
+      result.metadata = filteredMetadata;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Filter caller metadata for OpenAI distillation compatibility.
+ *
+ * OpenAI restrictions on metadata:
+ * - Only allows string and number types
+ * - Does not support complex types (objects, arrays, functions)
+ * - Does not allow response_format in metadata
+ *
+ * This method ensures metadata meets these requirements.
+ */
+function filterMetadataForDistillation(
+  callerMetadata: Record<string, unknown>
+): Record<string, string | number> {
+  const filtered: Record<string, string | number> = {};
+
+  for (const [key, value] of Object.entries(callerMetadata)) {
+    // OpenAI does not allow response_format in metadata for distillation
+    if (key === 'responseFormat' || key === 'response_format') {
+      continue;
+    }
+
+    // Skip null and undefined values
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    // Accept strings and numbers as-is
+    if (typeof value === 'string' || typeof value === 'number') {
+      filtered[key] = value;
+      continue;
+    }
+
+    // Convert booleans to strings for OpenAI compatibility
+    if (typeof value === 'boolean') {
+      filtered[key] = value ? 'true' : 'false';
+      continue;
+    }
+
+    // Skip complex types: objects, arrays, functions, symbols, etc.
+    // These cannot be serialized safely for OpenAI
+  }
+
+  return filtered;
 }
 
 /**
@@ -103,13 +177,11 @@ export function extractRequestParameters(
         : String(toolChoice);
   }
 
-  // response_format - format for UI: simple type-only → short label; complex → pretty-printed JSON
   const responseFormat = request.response_format;
   if (responseFormat !== undefined && responseFormat !== null) {
     if (typeof responseFormat === 'object' && responseFormat !== null) {
       const rf = responseFormat as Record<string, unknown>;
       const keys = Object.keys(rf);
-      // Simple shape { type: 'json_object' } or { type: 'text' } → show type value for cleaner UI
       if (
         keys.length === 1 &&
         keys[0] === 'type' &&
@@ -177,23 +249,4 @@ export function extractRequestParameters(
   }
 
   return { metadata, tools: toolsForSpan };
-}
-
-/**
- * Merge extracted parameters with request metadata. Request metadata takes precedence
- * for overlapping keys; extracted params fill in missing keys.
- */
-export function mergeWithRequestMetadata(
-  extracted: ExtractedParameters,
-  requestMetadata?: Record<string, unknown> | null
-): Record<string, string> {
-  const result: Record<string, string> = { ...extracted.metadata };
-  if (requestMetadata && typeof requestMetadata === 'object') {
-    for (const [k, v] of Object.entries(requestMetadata)) {
-      if (v !== undefined && v !== null) {
-        result[k] = typeof v === 'string' ? v : JSON.stringify(v);
-      }
-    }
-  }
-  return result;
 }

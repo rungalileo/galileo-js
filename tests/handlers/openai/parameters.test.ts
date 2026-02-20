@@ -1,9 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  extractRequestParameters,
-  mergeWithRequestMetadata,
-  type ExtractedParameters
-} from '../../../src/handlers/openai/parameters';
+import { extractRequestParameters } from '../../../src/handlers/openai/parameters';
 
 describe('Parameters Extraction', () => {
   describe('extractRequestParameters', () => {
@@ -330,135 +326,6 @@ describe('Parameters Extraction', () => {
     });
   });
 
-  describe('mergeWithRequestMetadata', () => {
-    test('returns extracted metadata when request metadata is empty', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8',
-          tools_count: '2'
-        }
-      };
-
-      const result = mergeWithRequestMetadata(extracted, {});
-
-      expect(result).toEqual({
-        temperature: '0.8',
-        tools_count: '2'
-      });
-    });
-
-    test('merges extracted and request metadata', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8',
-          tools_count: '2'
-        }
-      };
-      const requestMetadata = {
-        userId: 'user123',
-        requestId: 'req456'
-      };
-
-      const result = mergeWithRequestMetadata(extracted, requestMetadata);
-
-      expect(result).toEqual({
-        temperature: '0.8',
-        tools_count: '2',
-        userId: 'user123',
-        requestId: 'req456'
-      });
-    });
-
-    test('request metadata takes precedence for overlapping keys', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8'
-        }
-      };
-      const requestMetadata = {
-        temperature: '0.9'
-      };
-
-      const result = mergeWithRequestMetadata(extracted, requestMetadata);
-
-      expect(result.temperature).toBe('0.9');
-    });
-
-    test('stringifies non-string values in request metadata', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {}
-      };
-      const requestMetadata = {
-        userId: 'user123',
-        count: 42,
-        data: { nested: 'value' },
-        flag: true
-      };
-
-      const result = mergeWithRequestMetadata(extracted, requestMetadata);
-
-      expect(result.userId).toBe('user123');
-      expect(result.count).toBe('42');
-      expect(result.data).toBe('{"nested":"value"}');
-      expect(result.flag).toBe('true');
-    });
-
-    test('ignores null and undefined in request metadata', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8'
-        }
-      };
-      const requestMetadata = {
-        userId: 'user123',
-        nullValue: null,
-        undefinedValue: undefined
-      };
-
-      const result = mergeWithRequestMetadata(extracted, requestMetadata);
-
-      expect(result.userId).toBe('user123');
-      expect(result.nullValue).toBeUndefined();
-      expect(result.undefinedValue).toBeUndefined();
-    });
-
-    test('handles null request metadata', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8'
-        }
-      };
-
-      const result = mergeWithRequestMetadata(extracted, null);
-
-      expect(result).toEqual({ temperature: '0.8' });
-    });
-
-    test('handles undefined request metadata', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8'
-        }
-      };
-
-      const result = mergeWithRequestMetadata(extracted, undefined);
-
-      expect(result).toEqual({ temperature: '0.8' });
-    });
-
-    test('handles request metadata that is not an object', () => {
-      const extracted: ExtractedParameters = {
-        metadata: {
-          temperature: '0.8'
-        }
-      };
-
-      const result = mergeWithRequestMetadata(extracted, 'invalid' as any);
-
-      expect(result).toEqual({ temperature: '0.8' });
-    });
-  });
-
   describe('Integration scenarios', () => {
     test('full Chat Completions request processing', () => {
       const request = {
@@ -480,23 +347,18 @@ describe('Parameters Extraction', () => {
         response_format: { type: 'json_object' },
         seed: 123
       };
-      const metadata = {
-        userId: 'user-001',
-        conversationId: 'conv-123'
-      };
 
-      const extracted = extractRequestParameters(request);
-      const result = mergeWithRequestMetadata(extracted, metadata);
+      const result = extractRequestParameters(request);
 
-      expect(result.temperature).toBe('0.7');
-      expect(result.max_tokens).toBe('1000');
-      expect(result.tools_count).toBe('1');
-      expect(result.tools_include_strict).toBe('true');
-      expect(result.tool_choice).toBe('auto');
-      expect(result.response_format).toBe('json_object');
-      expect(result.seed).toBe('123');
-      expect(result.userId).toBe('user-001');
-      expect(result.conversationId).toBe('conv-123');
+      expect(result.metadata['temperature']).toBe('0.7');
+      expect(result.metadata['max_tokens']).toBe('1000');
+      expect(result.metadata['tools_count']).toBe('1');
+      expect(result.metadata['tools_include_strict']).toBe('true');
+      expect(result.metadata['tool_choice']).toBe('auto');
+      expect(result.metadata['response_format']).toBe('json_object');
+      expect(result.metadata['seed']).toBe('123');
+      // Note: Caller metadata is intentionally NOT extracted for security reasons
+      // (to prevent sensitive data from being logged to Galileo)
     });
 
     test('full Responses API request processing', () => {
@@ -513,21 +375,18 @@ describe('Parameters Extraction', () => {
         store: true,
         prediction: { type: 'content' }
       };
-      const metadata = {
-        sessionId: 'session-456'
-      };
 
-      const extracted = extractRequestParameters(request);
-      const result = mergeWithRequestMetadata(extracted, metadata);
+      const result = extractRequestParameters(request);
 
-      expect(result.temperature).toBe('0.5');
-      expect(result.input_type).toBe('array');
-      expect(result.instructions_length).toBe('25');
-      expect(result.tools_count).toBe('2');
-      expect(result.reasoning_effort).toBe('high');
-      expect(result.store).toBe('true');
-      expect(result.prediction_type).toBe('content');
-      expect(result.sessionId).toBe('session-456');
+      expect(result.metadata['temperature']).toBe('0.5');
+      expect(result.metadata['input_type']).toBe('array');
+      expect(result.metadata['instructions_length']).toBe('25');
+      expect(result.metadata['tools_count']).toBe('2');
+      expect(result.metadata['reasoning_effort']).toBe('high');
+      expect(result.metadata['store']).toBe('true');
+      expect(result.metadata['prediction_type']).toBe('content');
+      // Note: Caller metadata is intentionally NOT extracted for security reasons
+      // (to prevent sensitive data from being logged to Galileo)
     });
   });
 });

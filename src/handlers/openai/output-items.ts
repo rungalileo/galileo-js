@@ -104,7 +104,15 @@ function convertResponsesInputToMessages(originalInput: unknown): Message[] {
   const messages: Message[] = [];
   for (const rawItem of items) {
     const item = toRecord(rawItem);
-    if (!item) continue;
+    if (!item) {
+      if (typeof rawItem === 'string' && rawItem) {
+        messages.push({
+          role: MessageRole.user,
+          content: rawItem
+        });
+      }
+      continue;
+    }
 
     const type = item.type as string | undefined;
 
@@ -315,7 +323,7 @@ export function processFunctionCallOutputs(
     const output = item.output;
     const functionCall = functionCalls.get(callId);
 
-    if (!output && !functionCall) continue;
+    if ((output === null || output === undefined) && !functionCall) continue;
 
     // Create tool span joining call + output
     const toolInput = JSON.stringify(
