@@ -876,8 +876,8 @@ describe('OpenAI Wrapper', () => {
               type: 'code_interpreter_call',
               id: 'code_1',
               name: 'python_exec',
-              code_input: 'print("hello")',
-              code_output: 'hello'
+              code: 'print("hello")',
+              outputs: [{ type: 'logs', logs: 'hello' }]
             }
           ]
         },
