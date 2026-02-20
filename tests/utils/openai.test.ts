@@ -545,7 +545,8 @@ describe('OpenAI Wrapper', () => {
   });
 
   test('should handle metadata in the request', async () => {
-    // Setup
+    // Setup: request may include a metadata field (e.g. for distillation or custom tracking).
+    // The wrapper does not forward request.metadata to the span; span metadata is from extracted params only.
     mockCreateMethod.mockResolvedValueOnce(mockResponse);
 
     const wrappedOpenAI = wrapOpenAI(mockOpenAI as any, mockLogger as any);
@@ -558,12 +559,16 @@ describe('OpenAI Wrapper', () => {
     // Execute
     await wrappedOpenAI.chat.completions.create(requestData);
 
-    // Assert metadata was passed correctly
+    // Assert span is created and request metadata does not override extracted span metadata
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith(
       expect.objectContaining({
-        metadata: { requestId: '123', userId: 'user-456' }
+        metadata: expect.any(Object),
+        name: 'openai-client-generation',
+        model: 'gpt-4o'
       })
     );
+    const addLlmSpanCall = mockLogger.addLlmSpan.mock.calls[0][0];
+    expect(addLlmSpanCall.metadata).toEqual({});
   });
 
   describe('Streaming Responses API', () => {
