@@ -787,6 +787,8 @@ class StreamWrapper implements AsyncIterable<any> {
       this.requestData as Record<string, unknown>
     );
 
+    const normalizedInput = convertInputToMessages(this.requestData.messages);
+
     const temperature =
       typeof this.requestData.temperature === 'number'
         ? this.requestData.temperature
@@ -794,7 +796,7 @@ class StreamWrapper implements AsyncIterable<any> {
 
     // Log the complete interaction
     this.logger.addLlmSpan({
-      input: JSON.parse(JSON.stringify(this.requestData.messages)),
+      input: normalizedInput,
       output: finalOutput,
       name: 'openai-client-generation',
       model: this.requestData.model || 'unknown',

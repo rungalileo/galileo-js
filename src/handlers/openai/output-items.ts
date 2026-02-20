@@ -254,10 +254,10 @@ export function processOutputItems(
     ...metadata
   };
 
-  const inputForSpan = convertInputToMessages(originalInput);
+  const normalizedInput = convertInputToMessages(originalInput);
 
   logger.addLlmSpan({
-    input: inputForSpan as LlmSpanAllowedInputType,
+    input: normalizedInput as LlmSpanAllowedInputType,
     output: output as LlmSpanAllowedOutputType,
     model: model || 'unknown',
     name: 'openai-responses-generation',
