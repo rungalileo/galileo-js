@@ -13,6 +13,8 @@ import {
 } from './output-items';
 import { JsonObject } from 'src/types/base.types';
 import { LlmSpanAllowedInputType } from 'src/types';
+import { getSdkLogger } from 'galileo-generated';
+const sdkLogger = getSdkLogger();
 
 // Warn if openai package is not available (optional dependency)
 import('openai').catch(() => {
@@ -473,7 +475,7 @@ class StreamWrapper implements AsyncIterable<any> {
             return result;
           }
         } catch (error) {
-          console.error('Error in stream processing:', error);
+          sdkLogger.error('Error in stream processing:', error);
           this.streamError =
             error instanceof Error ? error : new Error(String(error));
           this.finalize();
@@ -485,7 +487,7 @@ class StreamWrapper implements AsyncIterable<any> {
         return { done: true, value };
       },
       throw: async (error: any): Promise<IteratorResult<any>> => {
-        console.error('Error in stream processing:', error);
+        sdkLogger.error('Error in stream processing:', error);
         this.streamError =
           error instanceof Error ? error : new Error(String(error));
         this.finalize();
