@@ -433,6 +433,7 @@ class StreamWrapper implements AsyncIterable<any> {
   private isResponsesApi: boolean = false;
   private completedResponse: any = null;
   private finalized = false;
+  private streamError: Error | null = null;
 
   constructor(
     private stream: AsyncIterable<any>,
@@ -473,6 +474,8 @@ class StreamWrapper implements AsyncIterable<any> {
           }
         } catch (error) {
           console.error('Error in stream processing:', error);
+          this.streamError =
+            error instanceof Error ? error : new Error(String(error));
           this.finalize();
           throw error;
         }
@@ -483,6 +486,8 @@ class StreamWrapper implements AsyncIterable<any> {
       },
       throw: async (error: any): Promise<IteratorResult<any>> => {
         console.error('Error in stream processing:', error);
+        this.streamError =
+          error instanceof Error ? error : new Error(String(error));
         this.finalize();
         throw error;
       }
@@ -676,106 +681,107 @@ class StreamWrapper implements AsyncIterable<any> {
       this.requestData as Record<string, unknown>
     );
 
-    // Process input items first
-    if (Array.isArray(this.requestData.input)) {
-      processFunctionCallOutputs(this.requestData.input, this.logger);
-    }
+    // Handle streaming error case
+    if (this.streamError) {
+      const statusCode = extractStatusFromError(this.streamError);
+      const errorMessage = this.streamError.message || 'Unknown error';
 
-    // Extract output items from the completed response event
-    let outputItems: any[] = [];
-    if (this.chunks.length > 0) {
-      if (
-        this.completedResponse?.output &&
-        Array.isArray(this.completedResponse.output)
-      ) {
-        outputItems = this.completedResponse.output;
-      } else {
-        // If no completed response, try to extract output from chunks directly
-        // This handles cases where chunks themselves have output arrays
-        for (const chunk of this.chunks) {
-          if (
-            chunk &&
-            typeof chunk === 'object' &&
-            Array.isArray(chunk.output)
-          ) {
-            outputItems = outputItems.concat(chunk.output);
+      this.logger.addLlmSpan({
+        input: convertInputToMessages(this.requestData.input),
+        output: { content: `Error: ${errorMessage}` },
+        name: 'openai-responses-generation',
+        model: this.requestData.model || 'unknown',
+        numInputTokens: 0,
+        numOutputTokens: 0,
+        totalTokens: undefined,
+        numReasoningTokens: 0,
+        numCachedInputTokens: 0,
+        durationNs: calculateDurationNs(startTimeForMetrics, endTime),
+        metadata: extracted.metadata,
+        tools: extracted.tools as JsonObject[],
+        statusCode
+      });
+
+      // Only conclude trace if we should
+      if (this.shouldCompleteTrace) {
+        this.logger.conclude({
+          output: JSON.stringify({ content: `Error: ${errorMessage}` }),
+          durationNs: calculateDurationNs(this.startTime, endTime)
+        });
+      }
+    } else {
+      // Process input items first
+      if (Array.isArray(this.requestData.input)) {
+        processFunctionCallOutputs(this.requestData.input, this.logger);
+      }
+
+      // Extract output items from the completed response event
+      let outputItems: any[] = [];
+      if (this.chunks.length > 0) {
+        if (
+          this.completedResponse?.output &&
+          Array.isArray(this.completedResponse.output)
+        ) {
+          outputItems = this.completedResponse.output;
+        } else {
+          // If no completed response, try to extract output from chunks directly
+          // This handles cases where chunks themselves have output arrays
+          for (const chunk of this.chunks) {
+            if (
+              chunk &&
+              typeof chunk === 'object' &&
+              Array.isArray(chunk.output)
+            ) {
+              outputItems = outputItems.concat(chunk.output);
+            }
           }
         }
       }
-    }
 
-    // Try to extract usage from completed response or last chunk
-    let usage = null;
-    if (this.completedResponse?.usage) {
-      usage = this.completedResponse.usage;
-    } else {
-      const lastChunk = this.chunks[this.chunks.length - 1];
-      if (lastChunk?.usage) {
-        usage = lastChunk.usage;
+      // Try to extract usage from completed response or last chunk
+      let usage = null;
+      if (this.completedResponse?.usage) {
+        usage = this.completedResponse.usage;
+      } else {
+        const lastChunk = this.chunks[this.chunks.length - 1];
+        if (lastChunk?.usage) {
+          usage = lastChunk.usage;
+        }
       }
-    }
 
-    // Extract model from completed response, chunks, or requestData
-    let model = this.requestData.model;
-    if (!model && this.completedResponse?.model) {
-      model = this.completedResponse.model;
-    }
-    if (!model && this.chunks.length > 0) {
-      model = this.chunks[0].model || 'unknown';
-    }
+      // Extract model from completed response, chunks, or requestData
+      let model = this.requestData.model;
+      if (!model && this.completedResponse?.model) {
+        model = this.completedResponse.model;
+      }
+      if (!model && this.chunks.length > 0) {
+        model = this.chunks[0].model || 'unknown';
+      }
 
-    // Process output items to create LLM span and tool spans
-    const consolidatedOutput = processOutputItems({
-      outputItems,
-      logger: this.logger,
-      model: model || 'unknown',
-      originalInput: this.requestData.input,
-      tools: extracted.tools,
-      usage,
-      statusCode: 200,
-      metadata: extracted.metadata
-    });
-
-    // Only conclude trace if there are no pending function calls
-    const hasPending = hasPendingFunctionCalls(outputItems);
-    if (this.shouldCompleteTrace && !hasPending) {
-      this.logger.conclude({
-        output: JSON.stringify(consolidatedOutput),
-        durationNs: calculateDurationNs(startTimeForMetrics, endTime)
+      // Process output items to create LLM span and tool spans
+      const consolidatedOutput = processOutputItems({
+        outputItems,
+        logger: this.logger,
+        model: model || 'unknown',
+        originalInput: this.requestData.input,
+        tools: extracted.tools,
+        usage,
+        statusCode: 200,
+        metadata: extracted.metadata
       });
+
+      // Only conclude trace if there are no pending function calls
+      const hasPending = hasPendingFunctionCalls(outputItems);
+      if (this.shouldCompleteTrace && !hasPending) {
+        this.logger.conclude({
+          output: JSON.stringify(consolidatedOutput),
+          durationNs: calculateDurationNs(startTimeForMetrics, endTime)
+        });
+      }
     }
   }
 
   private finalizeChatCompletionApi(startTimeForMetrics: Date, endTime: Date) {
-    const finalOutput =
-      this.chunks.length > 0
-        ? { ...this.completeOutput }
-        : {
-            content: null,
-            tool_calls: []
-          };
-
-    // If no tool calls were used, remove the property
-    if (!this.hasToolCalls || this.completeOutput.tool_calls.length === 0) {
-      delete finalOutput.tool_calls;
-    } else {
-      // Filter out any empty slots in the tool_calls array
-      finalOutput.tool_calls = this.completeOutput.tool_calls.filter(Boolean);
-    }
-
-    // Try to extract usage from the last chunk (OpenAI may include it in the final stream message)
-    let usage = {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: null as number | null,
-      reasoningTokens: 0,
-      cachedTokens: 0
-    };
-    const lastChunk = this.chunks[this.chunks.length - 1];
-    if (lastChunk?.usage) {
-      usage = parseUsage(lastChunk.usage);
-    }
-
     const extracted = extractRequestParameters(
       this.requestData as Record<string, unknown>
     );
@@ -787,30 +793,90 @@ class StreamWrapper implements AsyncIterable<any> {
         ? this.requestData.temperature
         : undefined;
 
-    // Log the complete interaction
-    this.logger.addLlmSpan({
-      input: normalizedInput,
-      output: finalOutput,
-      name: 'openai-client-generation',
-      model: this.requestData.model || 'unknown',
-      numInputTokens: usage.inputTokens,
-      numOutputTokens: usage.outputTokens,
-      totalTokens: usage.totalTokens ?? undefined,
-      numReasoningTokens: usage.reasoningTokens,
-      numCachedInputTokens: usage.cachedTokens,
-      durationNs: calculateDurationNs(startTimeForMetrics, endTime),
-      metadata: extracted.metadata,
-      tools: extracted.tools as JsonObject[],
-      statusCode: 200,
-      temperature
-    });
+    // Handle streaming error case
+    if (this.streamError) {
+      const statusCode = extractStatusFromError(this.streamError);
+      const errorMessage = this.streamError.message || 'Unknown error';
 
-    // Conclude the trace if this was the top-level call
-    if (this.shouldCompleteTrace) {
-      this.logger.conclude({
-        output: JSON.stringify(finalOutput),
-        durationNs: calculateDurationNs(this.startTime, endTime)
+      this.logger.addLlmSpan({
+        input: normalizedInput,
+        output: { content: `Error: ${errorMessage}` },
+        name: 'openai-client-generation',
+        model: this.requestData.model || 'unknown',
+        numInputTokens: 0,
+        numOutputTokens: 0,
+        totalTokens: undefined,
+        numReasoningTokens: 0,
+        numCachedInputTokens: 0,
+        durationNs: calculateDurationNs(startTimeForMetrics, endTime),
+        metadata: extracted.metadata,
+        tools: extracted.tools as JsonObject[],
+        statusCode,
+        temperature
       });
+
+      // Conclude the trace if this was the top-level call
+      if (this.shouldCompleteTrace) {
+        this.logger.conclude({
+          output: JSON.stringify({ content: `Error: ${errorMessage}` }),
+          durationNs: calculateDurationNs(this.startTime, endTime)
+        });
+      }
+    } else {
+      const finalOutput =
+        this.chunks.length > 0
+          ? { ...this.completeOutput }
+          : {
+              content: null,
+              tool_calls: []
+            };
+
+      // If no tool calls were used, remove the property
+      if (!this.hasToolCalls || this.completeOutput.tool_calls.length === 0) {
+        delete finalOutput.tool_calls;
+      } else {
+        // Filter out any empty slots in the tool_calls array
+        finalOutput.tool_calls = this.completeOutput.tool_calls.filter(Boolean);
+      }
+
+      // Try to extract usage from the last chunk (OpenAI may include it in the final stream message)
+      let usage = {
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: null as number | null,
+        reasoningTokens: 0,
+        cachedTokens: 0
+      };
+      const lastChunk = this.chunks[this.chunks.length - 1];
+      if (lastChunk?.usage) {
+        usage = parseUsage(lastChunk.usage);
+      }
+
+      // Log the complete interaction
+      this.logger.addLlmSpan({
+        input: normalizedInput,
+        output: finalOutput,
+        name: 'openai-client-generation',
+        model: this.requestData.model || 'unknown',
+        numInputTokens: usage.inputTokens,
+        numOutputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens ?? undefined,
+        numReasoningTokens: usage.reasoningTokens,
+        numCachedInputTokens: usage.cachedTokens,
+        durationNs: calculateDurationNs(startTimeForMetrics, endTime),
+        metadata: extracted.metadata,
+        tools: extracted.tools as JsonObject[],
+        statusCode: 200,
+        temperature
+      });
+
+      // Conclude the trace if this was the top-level call
+      if (this.shouldCompleteTrace) {
+        this.logger.conclude({
+          output: JSON.stringify(finalOutput),
+          durationNs: calculateDurationNs(this.startTime, endTime)
+        });
+      }
     }
   }
 }
