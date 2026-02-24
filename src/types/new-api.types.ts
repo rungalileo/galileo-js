@@ -398,6 +398,14 @@ export type AggregatedTraceViewEdge = {
    * Occurrences
    */
   occurrences: number;
+  /**
+   * Trace Count
+   */
+  traceCount: number;
+  /**
+   * Trace Ids
+   */
+  traceIds: Array<string>;
 };
 
 /**
@@ -412,6 +420,10 @@ export type AggregatedTraceViewGraph = {
    * Edges
    */
   edges: Array<AggregatedTraceViewEdge>;
+  /**
+   * Histogram of edge occurrence counts across the graph
+   */
+  edgeOccurrencesHistogram?: Histogram | null;
 };
 
 /**
@@ -434,7 +446,7 @@ export type AggregatedTraceViewNode = {
   /**
    * Parent Id
    */
-  parentId: string | null;
+  parentId?: string | null;
   /**
    * Has Children
    */
@@ -453,6 +465,10 @@ export type AggregatedTraceViewNode = {
    * Weight
    */
   weight: number;
+  /**
+   * Insights
+   */
+  insights?: Array<InsightSummary>;
 };
 
 /**
@@ -530,14 +546,195 @@ export type AggregatedTraceViewResponse = {
 };
 
 /**
- * AndNode
+ * AndNode[Annotated[Union[LogRecordsIDFilter, LogRecordsDateFilter, LogRecordsNumberFilter, LogRecordsBooleanFilter, LogRecordsCollectionFilter, LogRecordsTextFilter], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]
  */
-export type AndNode = {
+export type AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType =
+  {
+    /**
+     * And
+     */
+    and: Array<
+      | FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    >;
+  };
+
+/**
+ * AnnotationAggregate
+ */
+export type AnnotationAggregate = {
   /**
-   * And
+   * Aggregate
    */
-  and: Array<FilterExpression>;
+  aggregate:
+    | ({
+        annotationType: 'like_dislike';
+      } & AnnotationLikeDislikeAggregate)
+    | ({
+        annotationType: 'star';
+      } & AnnotationStarAggregate)
+    | ({
+        annotationType: 'score';
+      } & AnnotationScoreAggregate)
+    | ({
+        annotationType: 'tags';
+      } & AnnotationTagsAggregate)
+    | ({
+        annotationType: 'text';
+      } & AnnotationTextAggregate);
 };
+
+/**
+ * AnnotationLikeDislikeAggregate
+ */
+export type AnnotationLikeDislikeAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotationType?: 'like_dislike';
+  /**
+   * Like Count
+   */
+  likeCount: number;
+  /**
+   * Dislike Count
+   */
+  dislikeCount: number;
+  /**
+   * Unrated Count
+   */
+  unratedCount: number;
+};
+
+/**
+ * AnnotationQueueAction
+ */
+export const AnnotationQueueAction = {
+  UPDATE: 'update',
+  DELETE: 'delete',
+  SHARE: 'share',
+  RECORD_ANNOTATION: 'record_annotation'
+} as const;
+
+/**
+ * AnnotationQueueAction
+ */
+export type AnnotationQueueAction =
+  (typeof AnnotationQueueAction)[keyof typeof AnnotationQueueAction];
+
+/**
+ * AnnotationRatingInfo
+ */
+export type AnnotationRatingInfo = {
+  annotationType: AnnotationType;
+  /**
+   * Value
+   */
+  value: boolean | number | string | Array<string>;
+  /**
+   * Explanation
+   */
+  explanation: string | null;
+};
+
+/**
+ * AnnotationScoreAggregate
+ */
+export type AnnotationScoreAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotationType?: 'score';
+  /**
+   * Average
+   */
+  average: number;
+  /**
+   * Unrated Count
+   */
+  unratedCount: number;
+};
+
+/**
+ * AnnotationStarAggregate
+ */
+export type AnnotationStarAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotationType?: 'star';
+  /**
+   * Average
+   */
+  average: number;
+  /**
+   * Counts
+   */
+  counts: {
+    [key: string]: number;
+  };
+  /**
+   * Unrated Count
+   */
+  unratedCount: number;
+};
+
+/**
+ * AnnotationTagsAggregate
+ */
+export type AnnotationTagsAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotationType?: 'tags';
+  /**
+   * Counts
+   */
+  counts: {
+    [key: string]: number;
+  };
+  /**
+   * Unrated Count
+   */
+  unratedCount: number;
+};
+
+/**
+ * AnnotationTextAggregate
+ */
+export type AnnotationTextAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotationType?: 'text';
+  /**
+   * Count
+   */
+  count: number;
+  /**
+   * Unrated Count
+   */
+  unratedCount: number;
+};
+
+/**
+ * AnnotationType
+ */
+export const AnnotationType = {
+  LIKE_DISLIKE: 'like_dislike',
+  STAR: 'star',
+  SCORE: 'score',
+  TAGS: 'tags',
+  TEXT: 'text'
+} as const;
+
+/**
+ * AnnotationType
+ */
+export type AnnotationType =
+  (typeof AnnotationType)[keyof typeof AnnotationType];
 
 /**
  * AnthropicAuthenticationType
@@ -557,6 +754,10 @@ export type AnthropicAuthenticationType =
  * AnthropicIntegration
  */
 export type AnthropicIntegration = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   authenticationType?: AnthropicAuthenticationType;
   /**
    * Endpoint
@@ -602,6 +803,10 @@ export type AnthropicIntegration = {
  * AnthropicIntegrationCreate
  */
 export type AnthropicIntegrationCreate = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   authenticationType?: AnthropicAuthenticationType;
   /**
    * Endpoint
@@ -662,7 +867,8 @@ export const AuthMethod = {
   GITHUB: 'github',
   OKTA: 'okta',
   AZURE_AD: 'azure-ad',
-  CUSTOM: 'custom'
+  CUSTOM: 'custom',
+  SAML: 'saml'
 } as const;
 
 /**
@@ -684,11 +890,23 @@ export type AvailableIntegrations = {
  * AwsBedrockIntegration
  */
 export type AwsBedrockIntegration = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   credentialType?: AwsCredentialType;
   /**
    * Region
    */
   region?: string;
+  /**
+   * Inference Profiles
+   *
+   * Mapping from model name (Foundation model ID) to inference profile ARN or ID
+   */
+  inferenceProfiles?: {
+    [key: string]: string;
+  };
   /**
    * Id
    */
@@ -729,6 +947,10 @@ export type AwsSageMakerIntegration = {
    */
   region?: string;
   /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
+  /**
    * Models
    */
   models?: Array<Model>;
@@ -753,6 +975,10 @@ export type AwsSageMakerIntegration = {
  */
 export type AwsSageMakerIntegrationCreate = {
   /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
+  /**
    * Models
    */
   models?: Array<Model>;
@@ -761,6 +987,14 @@ export type AwsSageMakerIntegrationCreate = {
    * Region
    */
   region?: string;
+  /**
+   * Inference Profiles
+   *
+   * Mapping from model name (Foundation model ID) to inference profile ARN or ID
+   */
+  inferenceProfiles?: {
+    [key: string]: string;
+  };
   /**
    * Token
    */
@@ -789,6 +1023,10 @@ export type AzureAuthenticationType =
  * AzureIntegration
  */
 export type AzureIntegration = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   /**
    * Proxy
    */
@@ -862,6 +1100,10 @@ export type AzureIntegration = {
  * AzureIntegrationCreate
  */
 export type AzureIntegrationCreate = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   /**
    * Proxy
    */
@@ -943,11 +1185,23 @@ export type AzureModelDeployment = {
  * BaseAwsIntegrationCreate
  */
 export type BaseAwsIntegrationCreate = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   credentialType?: AwsCredentialType;
   /**
    * Region
    */
   region?: string;
+  /**
+   * Inference Profiles
+   *
+   * Mapping from model name (Foundation model ID) to inference profile ARN or ID
+   */
+  inferenceProfiles?: {
+    [key: string]: string;
+  };
   /**
    * Token
    */
@@ -972,6 +1226,10 @@ export type BaseFinetunedScorerDb = {
    * Lora Task Id
    */
   loraTaskId: number;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   /**
    * Prompt
    */
@@ -1016,6 +1274,20 @@ export type BaseGeneratedScorerDb = {
    * User Prompt
    */
   userPrompt?: string | null;
+};
+
+/**
+ * BaseMetricRollUpConfigDB
+ *
+ * Configuration for rolling up metrics to parent/trace/session.
+ */
+export type BaseMetricRollUpConfigDb = {
+  /**
+   * Roll Up Methods
+   *
+   * List of roll up methods to apply to the metric. For numeric scorers we support doing multiple roll up types per metric.
+   */
+  rollUpMethods: Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod>;
 };
 
 /**
@@ -1250,6 +1522,10 @@ export type BaseScorer = {
    */
   numJudges?: number | null;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -1266,6 +1542,14 @@ export type BaseScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -1280,9 +1564,21 @@ export type BaseScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -1291,6 +1587,10 @@ export type BaseScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -1443,6 +1743,12 @@ export type BodyCreateCodeScorerVersionScorersScorerIdVersionCodePost = {
    * File
    */
   file: Blob | File;
+  /**
+   * Validation Result
+   *
+   * Pre-validated result as JSON string to skip validation
+   */
+  validationResult?: string | null;
 };
 
 /**
@@ -1554,23 +1860,75 @@ export type BodyUploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPost
   };
 
 /**
- * BooleanFilter
- *
- * Filters on a boolean field.
+ * Body_validate_code_scorer_log_record_scorers_code_validate_log_record_post
  */
-export type BooleanFilter = {
+export type BodyValidateCodeScorerLogRecordScorersCodeValidateLogRecordPost = {
   /**
-   * Name
+   * File
    */
-  name: string | null;
+  file: Blob | File;
   /**
-   * Operator
+   * Log Stream Id
    */
-  operator: 'eq' | 'ne';
+  logStreamId?: string | null;
   /**
-   * Value
+   * Experiment Id
    */
-  value: boolean;
+  experimentId?: string | null;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Starting Token
+   */
+  startingToken?: number | null;
+  /**
+   * Filters
+   *
+   * JSON string array of LogRecordsQueryFilter
+   */
+  filters?: string | null;
+  /**
+   * Sort
+   *
+   * JSON string of LogRecordsSortClause
+   */
+  sort?: string | null;
+  /**
+   * Required Scorers
+   */
+  requiredScorers?: string | Array<string> | null;
+  /**
+   * Scoreable Node Types
+   */
+  scoreableNodeTypes?: string | Array<string> | null;
+};
+
+/**
+ * Body_validate_code_scorer_scorers_code_validate_post
+ */
+export type BodyValidateCodeScorerScorersCodeValidatePost = {
+  /**
+   * File
+   */
+  file: Blob | File;
+  /**
+   * Test Input
+   */
+  testInput?: string | null;
+  /**
+   * Test Output
+   */
+  testOutput?: string | null;
+  /**
+   * Required Scorers
+   */
+  requiredScorers?: string | Array<string> | null;
+  /**
+   * Scoreable Node Types
+   */
+  scoreableNodeTypes?: string | Array<string> | null;
 };
 
 /**
@@ -1671,6 +2029,39 @@ export type BulkDeletePromptTemplatesResponse = {
    */
   message: string;
 };
+
+/**
+ * CategoricalRollUpMethod
+ *
+ * Roll up methods for aggregating categorical metrics up the session/trace/span hierarchy.
+ */
+export const CategoricalRollUpMethod = {
+  CATEGORY_COUNT: 'category_count'
+} as const;
+
+/**
+ * CategoricalRollUpMethod
+ *
+ * Roll up methods for aggregating categorical metrics up the session/trace/span hierarchy.
+ */
+export type CategoricalRollUpMethod =
+  (typeof CategoricalRollUpMethod)[keyof typeof CategoricalRollUpMethod];
+
+/**
+ * ChainAggregationStrategy
+ */
+export const ChainAggregationStrategy = {
+  SUM: 'sum',
+  AVERAGE: 'average',
+  FIRST: 'first',
+  LAST: 'last'
+} as const;
+
+/**
+ * ChainAggregationStrategy
+ */
+export type ChainAggregationStrategy =
+  (typeof ChainAggregationStrategy)[keyof typeof ChainAggregationStrategy];
 
 /**
  * ChainPollTemplate
@@ -1845,36 +2236,13 @@ export type CollaboratorUpdate = {
 };
 
 /**
- * CollectionFilter
- *
- * Filters for string items in a collection/list.
- */
-export type CollectionFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'contains' | 'not_in';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-  /**
-   * Case Sensitive
-   */
-  caseSensitive?: boolean;
-};
-
-/**
  * ColumnCategory
  */
 export const ColumnCategory = {
   STANDARD: 'standard',
   METRIC: 'metric',
   USER_METADATA: 'user_metadata',
+  METRIC_STATUS: 'metric_status',
   DATASET_METADATA: 'dataset_metadata',
   DATASET: 'dataset',
   FEEDBACK: 'feedback',
@@ -1898,16 +2266,6 @@ export type ColumnInfo = {
    */
   id: string;
   /**
-   * For metric columns only: Scorer config that produced the metric.
-   */
-  scorerConfig?: ScorerConfig | null;
-  /**
-   * Scorer Id
-   *
-   * For metric columns only: Scorer id that produced the metric. This is deprecated and will be removed in future versions.
-   */
-  scorerId?: string | null;
-  /**
    * Label
    *
    * Display label of the column in the UI.
@@ -1930,13 +2288,9 @@ export type ColumnInfo = {
    */
   groupLabel?: string | null;
   /**
-   * Insight type.
-   */
-  insightType?: InsightType | null;
-  /**
    * Data type of the column. This is used to determine how to format the data on the UI.
    */
-  dataType?: DataType | null;
+  dataType: DataType | null;
   /**
    * Data unit of the column (optional).
    */
@@ -1953,10 +2307,6 @@ export type ColumnInfo = {
    * Allowed values for this column.
    */
   allowedValues?: Array<unknown> | null;
-  /**
-   * Thresholds for the column, if this is a metrics column.
-   */
-  threshold?: MetricThreshold | null;
   /**
    * Sortable
    *
@@ -2007,6 +2357,10 @@ export type ColumnMapping = {
    * Output
    */
   output: ColumnMappingConfig | Array<string> | null;
+  /**
+   * Generated Output
+   */
+  generatedOutput: ColumnMappingConfig | Array<string> | null;
   /**
    * Metadata
    */
@@ -2111,6 +2465,29 @@ export type CompletenessTemplate = {
     [key: string]: unknown;
   } | null;
 };
+
+/**
+ * ContentModality
+ *
+ * Classification of content modality
+ */
+export const ContentModality = {
+  TEXT: 'text',
+  DOCUMENT: 'document',
+  IMAGE: 'image',
+  AUDIO: 'audio',
+  VIDEO: 'video',
+  WEBPAGE: 'webpage',
+  UNKNOWN: 'unknown'
+} as const;
+
+/**
+ * ContentModality
+ *
+ * Classification of content modality
+ */
+export type ContentModality =
+  (typeof ContentModality)[keyof typeof ContentModality];
 
 /**
  * ContextAdherenceScorer
@@ -2225,6 +2602,10 @@ export type CreateCustomLunaScorerVersionRequest = {
    * Prompt
    */
   prompt: string;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   /**
    * Executor pipeline. Defaults to finetuned scorer pipeline but can run custom galileo score pipelines.
    */
@@ -2497,6 +2878,10 @@ export type CreateJobRequest = {
    * Log Metric Computing Records
    */
   logMetricComputingRecords?: boolean;
+  /**
+   * Stream Metrics
+   */
+  streamMetrics?: boolean;
 };
 
 /**
@@ -2764,6 +3149,10 @@ export type CreateJobResponse = {
    */
   logMetricComputingRecords?: boolean;
   /**
+   * Stream Metrics
+   */
+  streamMetrics?: boolean;
+  /**
    * Message
    */
   message: string;
@@ -2882,6 +3271,10 @@ export type CreateScorerRequest = {
   tags?: Array<string>;
   defaults?: ScorerDefaults | null;
   scorerType: ScorerTypes;
+  /**
+   * Deprecated
+   */
+  deprecated?: boolean | null;
   modelType?: ModelType | null;
   /**
    * Ground Truth
@@ -2901,6 +3294,10 @@ export type CreateScorerRequest = {
   scoreableNodeTypes?: Array<string> | null;
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
+  /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
   /**
    * Required Scorers
    */
@@ -2968,43 +3365,46 @@ export type CreateUpdateRegisteredScorerResponse = {
 
 /**
  * CustomAuthenticationType
+ *
+ * Authentication types for custom integrations.
+ *
+ * Values:
+ * - none: No authentication required
+ * - oauth2: OAuth2 token-based authentication
+ * - api_key: API key header-based authentication
  */
-export const CustomAuthenticationType = { OAUTH2: 'oauth2' } as const;
+export const CustomAuthenticationType = {
+  API_KEY: 'api_key',
+  NONE: 'none',
+  OAUTH2: 'oauth2'
+} as const;
 
 /**
  * CustomAuthenticationType
+ *
+ * Authentication types for custom integrations.
+ *
+ * Values:
+ * - none: No authentication required
+ * - oauth2: OAuth2 token-based authentication
+ * - api_key: API key header-based authentication
  */
 export type CustomAuthenticationType =
   (typeof CustomAuthenticationType)[keyof typeof CustomAuthenticationType];
 
 /**
- * CustomBooleanFilter
- */
-export type CustomBooleanFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Value
-   */
-  value: boolean;
-};
-
-/**
- * CustomFunctionFilter
- */
-export type CustomFunctionFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-};
-
-/**
  * CustomIntegration
+ *
+ * Read model for custom integrations.
+ *
+ * api_key_value is not stored in extra (it's encrypted in the token column),
+ * so we override the parent validator to skip requiring it on read.
  */
 export type CustomIntegration = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   authenticationType?: CustomAuthenticationType;
   /**
    * Models
@@ -3036,6 +3436,22 @@ export type CustomIntegration = {
    * OAuth2 token URL for custom OAuth2 authentication. If not provided, defaults to the endpoint.
    */
   oauth2TokenUrl?: string | null;
+  /**
+   * Api Key Header
+   *
+   * HTTP header name to use for API key authentication (e.g., 'X-API-Key', 'Authorization').
+   */
+  apiKeyHeader?: string | null;
+  /**
+   * Api Key Value
+   *
+   * API key value to send in the specified header for authentication.
+   */
+  apiKeyValue?: string | null;
+  /**
+   * Optional configuration for a custom LiteLLM handler class. When specified, the handler's acompletion() method is used instead of the default litellm.acompletion().
+   */
+  customLlmConfig?: CustomLlmConfig | null;
   /**
    * Id
    */
@@ -3054,8 +3470,20 @@ export type CustomIntegration = {
 
 /**
  * CustomIntegrationCreate
+ *
+ * Schema for creating custom integrations.
+ *
+ * Inherits api_key field validation from CustomConfig:
+ * - api_key_header and api_key_value are required when authentication_type is api_key
+ *
+ * Token field is only used for oauth2 authentication (contains OAuth2 client credentials).
+ * For api_key auth, the api_key_value field is used instead.
  */
 export type CustomIntegrationCreate = {
+  /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
   authenticationType?: CustomAuthenticationType;
   /**
    * Models
@@ -3088,41 +3516,56 @@ export type CustomIntegrationCreate = {
    */
   oauth2TokenUrl?: string | null;
   /**
+   * Api Key Header
+   *
+   * HTTP header name to use for API key authentication (e.g., 'X-API-Key', 'Authorization').
+   */
+  apiKeyHeader?: string | null;
+  /**
+   * Api Key Value
+   *
+   * API key value to send in the specified header for authentication.
+   */
+  apiKeyValue?: string | null;
+  /**
+   * Optional configuration for a custom LiteLLM handler class. When specified, the handler's acompletion() method is used instead of the default litellm.acompletion().
+   */
+  customLlmConfig?: CustomLlmConfig | null;
+  /**
    * Token
    */
-  token: string;
+  token?: string | null;
 };
 
 /**
- * CustomNumberFilter
+ * CustomLLMConfig
+ *
+ * Configuration for a custom LiteLLM handler class.
+ *
+ * Allows users to specify a custom implementation of litellm.CustomLLM
+ * that handles acompletion() calls with custom request/response transformation.
  */
-export type CustomNumberFilter = {
+export type CustomLlmConfig = {
   /**
-   * Name
+   * File Name
+   *
+   * Python file name containing the CustomLLM class (e.g., 'my_handler.py')
    */
-  name: string | null;
+  fileName: string;
   /**
-   * Operator
+   * Class Name
+   *
+   * Class name within the module (must be a litellm.CustomLLM subclass)
    */
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+  className: string;
   /**
-   * Value
+   * Init Kwargs
+   *
+   * Optional keyword arguments to pass to the CustomLLM constructor
    */
-  value: number | number | Array<number> | Array<number>;
-};
-
-/**
- * CustomUUIDFilter
- */
-export type CustomUuidFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Value
-   */
-  value: string;
+  initKwargs?: {
+    [key: string]: unknown;
+  } | null;
 };
 
 /**
@@ -3194,6 +3637,10 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
   description?: string | null;
   chainpollTemplate?: AgenticSessionSuccessTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3210,6 +3657,14 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3224,9 +3679,21 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3235,6 +3702,10 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -3319,6 +3790,10 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
   description?: string | null;
   chainpollTemplate?: AgenticWorkflowSuccessTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3335,6 +3810,14 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3349,9 +3832,21 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3360,6 +3855,10 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -3444,6 +3943,10 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
   description?: string | null;
   chainpollTemplate?: ChunkAttributionUtilizationTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3460,6 +3963,14 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3474,9 +3985,21 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3485,6 +4008,10 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -3569,6 +4096,10 @@ export type CustomizedCompletenessGptScorer = {
   description?: string | null;
   chainpollTemplate?: CompletenessTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3585,6 +4116,14 @@ export type CustomizedCompletenessGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3599,9 +4138,21 @@ export type CustomizedCompletenessGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3610,6 +4161,10 @@ export type CustomizedCompletenessGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -3694,6 +4249,10 @@ export type CustomizedFactualityGptScorer = {
   description?: string | null;
   chainpollTemplate?: FactualityTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3710,6 +4269,14 @@ export type CustomizedFactualityGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3724,9 +4291,21 @@ export type CustomizedFactualityGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3735,6 +4314,10 @@ export type CustomizedFactualityGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -3823,6 +4406,10 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
   description?: string | null;
   chainpollTemplate?: GroundTruthAdherenceTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3839,6 +4426,14 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3853,9 +4448,21 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3864,6 +4471,10 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -3948,6 +4559,10 @@ export type CustomizedGroundednessGptScorer = {
   description?: string | null;
   chainpollTemplate?: GroundednessTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -3964,6 +4579,14 @@ export type CustomizedGroundednessGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -3978,9 +4601,21 @@ export type CustomizedGroundednessGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3989,6 +4624,10 @@ export type CustomizedGroundednessGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4073,6 +4712,10 @@ export type CustomizedInputSexistGptScorer = {
   description?: string | null;
   chainpollTemplate?: InputSexistTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4089,6 +4732,14 @@ export type CustomizedInputSexistGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4103,9 +4754,21 @@ export type CustomizedInputSexistGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4114,6 +4777,10 @@ export type CustomizedInputSexistGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4198,6 +4865,10 @@ export type CustomizedInputToxicityGptScorer = {
   description?: string | null;
   chainpollTemplate?: InputToxicityTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4214,6 +4885,14 @@ export type CustomizedInputToxicityGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4228,9 +4907,21 @@ export type CustomizedInputToxicityGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4239,6 +4930,10 @@ export type CustomizedInputToxicityGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4323,6 +5018,10 @@ export type CustomizedInstructionAdherenceGptScorer = {
   description?: string | null;
   chainpollTemplate?: InstructionAdherenceTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4339,6 +5038,14 @@ export type CustomizedInstructionAdherenceGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4353,9 +5060,21 @@ export type CustomizedInstructionAdherenceGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4364,6 +5083,10 @@ export type CustomizedInstructionAdherenceGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4452,6 +5175,10 @@ export type CustomizedPromptInjectionGptScorer = {
   description?: string | null;
   chainpollTemplate?: PromptInjectionTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4468,6 +5195,14 @@ export type CustomizedPromptInjectionGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4482,9 +5217,21 @@ export type CustomizedPromptInjectionGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4493,6 +5240,10 @@ export type CustomizedPromptInjectionGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4577,6 +5328,10 @@ export type CustomizedSexistGptScorer = {
   description?: string | null;
   chainpollTemplate?: SexistTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4593,6 +5348,14 @@ export type CustomizedSexistGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4607,9 +5370,21 @@ export type CustomizedSexistGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4618,6 +5393,10 @@ export type CustomizedSexistGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4702,6 +5481,10 @@ export type CustomizedToolErrorRateGptScorer = {
   description?: string | null;
   chainpollTemplate?: ToolErrorRateTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4718,6 +5501,14 @@ export type CustomizedToolErrorRateGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4732,9 +5523,21 @@ export type CustomizedToolErrorRateGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4743,6 +5546,10 @@ export type CustomizedToolErrorRateGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4827,6 +5634,10 @@ export type CustomizedToolSelectionQualityGptScorer = {
   description?: string | null;
   chainpollTemplate?: ToolSelectionQualityTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4843,6 +5654,14 @@ export type CustomizedToolSelectionQualityGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4857,9 +5676,21 @@ export type CustomizedToolSelectionQualityGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4868,6 +5699,10 @@ export type CustomizedToolSelectionQualityGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -4952,6 +5787,10 @@ export type CustomizedToxicityGptScorer = {
   description?: string | null;
   chainpollTemplate?: ToxicityTemplate;
   /**
+   * Default Model Alias
+   */
+  defaultModelAlias?: string | null;
+  /**
    * Ground Truth
    */
   groundTruth?: boolean | null;
@@ -4968,6 +5807,14 @@ export type CustomizedToxicityGptScorer = {
    */
   generatedScorerId?: string | null;
   /**
+   * Scorer Version Id
+   */
+  scorerVersionId?: string | null;
+  /**
+   * User Code
+   */
+  userCode?: string | null;
+  /**
    * Can Copy To Llm
    */
   canCopyToLlm?: boolean | null;
@@ -4982,9 +5829,21 @@ export type CustomizedToxicityGptScorer = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpStrategy?: RollUpStrategy | null;
+  /**
+   * Roll Up Methods
+   */
+  rollUpMethods?:
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4993,6 +5852,10 @@ export type CustomizedToxicityGptScorer = {
    * Lora Task Id
    */
   loraTaskId?: number | null;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   lunaInputType?: LunaInputTypeEnum | null;
   lunaOutputType?: LunaOutputTypeEnum | null;
   /**
@@ -5023,7 +5886,13 @@ export const DataType = {
   DATASET: 'dataset',
   PROMPT: 'prompt',
   PLAYGROUND: 'playground',
-  RANK: 'rank'
+  RANK: 'rank',
+  CATEGORY_COUNTS: 'category_counts',
+  SCORE_RATING_AGGREGATE: 'score_rating_aggregate',
+  STAR_RATING_AGGREGATE: 'star_rating_aggregate',
+  THUMB_RATING_AGGREGATE: 'thumb_rating_aggregate',
+  TAGS_RATING_AGGREGATE: 'tags_rating_aggregate',
+  TEXT_RATING_AGGREGATE: 'text_rating_aggregate'
 } as const;
 
 /**
@@ -5578,6 +6447,7 @@ export type DatasetAppendRow = {
     [key: string]:
       | string
       | number
+      | number
       | {
           [key: string]: string | number | number | null;
         }
@@ -5693,6 +6563,12 @@ export type DatasetCopyRecordData = {
    * A flag to control appending vs prepending
    */
   prepend?: boolean;
+  /**
+   * Use Generated Output Column
+   *
+   * If True, write trace output to generated_output column; if False, write to output column (backward compatible)
+   */
+  useGeneratedOutputColumn?: boolean;
 };
 
 /**
@@ -5799,7 +6675,7 @@ export type DatasetDraftFilter = {
   /**
    * Operator
    */
-  operator: 'eq' | 'ne';
+  operator?: 'eq' | 'ne';
   /**
    * Value
    */
@@ -5852,7 +6728,7 @@ export type DatasetIdFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -5946,6 +6822,7 @@ export type DatasetPrependRow = {
     [key: string]:
       | string
       | number
+      | number
       | {
           [key: string]: string | number | number | null;
         }
@@ -6038,6 +6915,7 @@ export type DatasetRow = {
   values: Array<
     | string
     | number
+    | number
     | {
         [key: string]: string | number | number | null;
       }
@@ -6049,6 +6927,7 @@ export type DatasetRow = {
   valuesDict: {
     [key: string]:
       | string
+      | number
       | number
       | {
           [key: string]: string | number | number | null;
@@ -6118,6 +6997,7 @@ export type DatasetUpdateRow = {
   values: {
     [key: string]:
       | string
+      | number
       | number
       | {
           [key: string]: string | number | number | null;
@@ -6225,26 +7105,6 @@ export type DatasetVersionIndexSort = {
    * Sort Type
    */
   sortType?: 'column';
-};
-
-/**
- * DateFilter
- *
- * Filters on a datetime field.
- */
-export type DateFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
-  /**
-   * Value
-   */
-  value: string;
 };
 
 /**
@@ -6418,24 +7278,63 @@ export type EditSpan = {
 };
 
 /**
- * EnumFilter
+ * ErrorSeverity
  *
- * Filters on a string field, with limited categories.
+ * Error severity levels for catalog entries.
  */
-export type EnumFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'one_of' | 'not_in';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-};
+export const ErrorSeverity = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical'
+} as const;
+
+/**
+ * ErrorSeverity
+ *
+ * Error severity levels for catalog entries.
+ */
+export type ErrorSeverity = (typeof ErrorSeverity)[keyof typeof ErrorSeverity];
+
+/**
+ * ErrorType
+ */
+export const ErrorType = {
+  LLM_API_ERROR: 'llm_api_error',
+  CREDENTIALS_ERROR: 'credentials_error',
+  DATA_VALIDATION_ERROR: 'data_validation_error',
+  CONFIGURATION_ERROR: 'configuration_error',
+  PERMISSION_ERROR: 'permission_error',
+  NOT_FOUND_ERROR: 'not_found_error',
+  WORKFLOW_ERROR: 'workflow_error',
+  SYSTEM_ERROR: 'system_error',
+  UNCATALOGED_ERROR: 'uncataloged_error'
+} as const;
+
+/**
+ * ErrorType
+ */
+export type ErrorType = (typeof ErrorType)[keyof typeof ErrorType];
+
+/**
+ * EventStatus
+ *
+ * Common status values for events.
+ */
+export const EventStatus = {
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled',
+  INCOMPLETE: 'incomplete'
+} as const;
+
+/**
+ * EventStatus
+ *
+ * Common status values for events.
+ */
+export type EventStatus = (typeof EventStatus)[keyof typeof EventStatus];
 
 /**
  * ExecutionStatus
@@ -6497,6 +7396,60 @@ export type ExperimentCreateRequest = {
 };
 
 /**
+ * RunCreatedAtFilter
+ */
+export type ExperimentCreatedAtFilter = {
+  /**
+   * Name
+   */
+  name?: 'created_at';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * RunCreatedAtSort
+ */
+export type ExperimentCreatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'created_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sortType?: 'column';
+};
+
+/**
+ * RunCreatedByFilter
+ */
+export type ExperimentCreatedByFilter = {
+  /**
+   * Name
+   */
+  name?: 'created_by';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  /**
+   * Value
+   */
+  value: string | Array<string | string>;
+};
+
+/**
  * ExperimentDataset
  */
 export type ExperimentDataset = {
@@ -6526,6 +7479,24 @@ export type ExperimentDatasetRequest = {
    * Version Index
    */
   versionIndex: number;
+};
+
+/**
+ * RunIDFilter
+ */
+export type ExperimentIdFilter = {
+  /**
+   * Name
+   */
+  name?: 'id';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  /**
+   * Value
+   */
+  value: string | Array<string | string>;
 };
 
 /**
@@ -6567,6 +7538,46 @@ export type ExperimentMetricsResponse = {
    * List of metrics for the experiment, including categorical and quartile metrics.
    */
   metrics?: Array<BucketedMetric>;
+};
+
+/**
+ * RunNameFilter
+ */
+export type ExperimentNameFilter = {
+  /**
+   * Name
+   */
+  name?: 'name';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  caseSensitive?: boolean;
+};
+
+/**
+ * RunNameSort
+ */
+export type ExperimentNameSort = {
+  /**
+   * Name
+   */
+  name?: 'name';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sortType?: 'column';
 };
 
 /**
@@ -6657,9 +7668,13 @@ export type ExperimentResponse = {
   createdBy?: string | null;
   createdByUser?: UserInfo | null;
   /**
-   * Num Samples
+   * Num Spans
    */
-  numSamples?: number | null;
+  numSpans?: number | null;
+  /**
+   * Num Traces
+   */
+  numTraces?: number | null;
   taskType: TaskType;
   dataset?: ExperimentDataset | null;
   /**
@@ -6671,10 +7686,22 @@ export type ExperimentResponse = {
   /**
    * Aggregate Feedback
    *
-   * Aggregate feedback information related to the experiment
+   * Aggregate feedback information related to the experiment (traces only)
+   *
+   * @deprecated
    */
   aggregateFeedback?: {
     [key: string]: FeedbackAggregate;
+  };
+  /**
+   * Rating Aggregates
+   *
+   * Annotation aggregates keyed by template ID and root type
+   */
+  ratingAggregates?: {
+    [key: string]: {
+      [key in RootType]?: FeedbackAggregate;
+    };
   };
   /**
    * Ranking Score
@@ -6709,6 +7736,58 @@ export type ExperimentResponse = {
 };
 
 /**
+ * ExperimentSearchRequest
+ */
+export type ExperimentSearchRequest = {
+  /**
+   * Starting Token
+   */
+  startingToken?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Filters
+   */
+  filters?: Array<
+    | ({
+        name: 'id';
+      } & ExperimentIdFilter)
+    | ({
+        name: 'name';
+      } & ExperimentNameFilter)
+    | ({
+        name: 'created_by';
+      } & ExperimentCreatedByFilter)
+    | ({
+        name: 'created_at';
+      } & ExperimentCreatedAtFilter)
+    | ({
+        name: 'updated_at';
+      } & ExperimentUpdatedAtFilter)
+  >;
+  /**
+   * Sort
+   */
+  sort?:
+    | ({
+        name: 'name';
+      } & ExperimentNameSort)
+    | ({
+        name: 'created_at';
+      } & ExperimentCreatedAtSort)
+    | ({
+        name: 'updated_at';
+      } & ExperimentUpdatedAtSort)
+    | null;
+  /**
+   * Include Counts
+   */
+  includeCounts?: boolean;
+};
+
+/**
  * ExperimentStatus
  */
 export type ExperimentStatus = {
@@ -6727,6 +7806,42 @@ export type ExperimentUpdateRequest = {
    * Task Type
    */
   taskType?: 16 | 17;
+};
+
+/**
+ * RunUpdatedAtFilter
+ */
+export type ExperimentUpdatedAtFilter = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * RunUpdatedAtSort
+ */
+export type ExperimentUpdatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sortType?: 'column';
 };
 
 /**
@@ -6898,6 +8013,44 @@ export type ExtendedAgentSpanRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -6924,7 +8077,18 @@ export type ExtendedAgentSpanRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -7129,6 +8293,44 @@ export type ExtendedAgentSpanRecordWithChildren = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -7155,7 +8357,18 @@ export type ExtendedAgentSpanRecordWithChildren = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -7328,6 +8541,44 @@ export type ExtendedLlmSpanRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -7354,7 +8605,18 @@ export type ExtendedLlmSpanRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -7382,6 +8644,37 @@ export type ExtendedLlmSpanRecord = {
   tools?: Array<{
     [key: string]: unknown;
   }> | null;
+  /**
+   * Events
+   *
+   * List of reasoning, internal tool call, or MCP events that occurred during the LLM span.
+   */
+  events?: Array<
+    | ({
+        type: 'message';
+      } & MessageEvent)
+    | ({
+        type: 'reasoning';
+      } & ReasoningEvent)
+    | ({
+        type: 'internal_tool_call';
+      } & InternalToolCall)
+    | ({
+        type: 'web_search_call';
+      } & WebSearchCallEvent)
+    | ({
+        type: 'image_generation';
+      } & ImageGenerationEvent)
+    | ({
+        type: 'mcp_call';
+      } & McpCallEvent)
+    | ({
+        type: 'mcp_list_tools';
+      } & McpListToolsEvent)
+    | ({
+        type: 'mcp_approval_request';
+      } & McpApprovalRequestEvent)
+  > | null;
   /**
    * Model
    *
@@ -7553,6 +8846,44 @@ export type ExtendedRetrieverSpanRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -7579,7 +8910,18 @@ export type ExtendedRetrieverSpanRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -7772,6 +9114,44 @@ export type ExtendedRetrieverSpanRecordWithChildren = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -7798,7 +9178,18 @@ export type ExtendedRetrieverSpanRecordWithChildren = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -7977,6 +9368,44 @@ export type ExtendedSessionRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -8003,12 +9432,27 @@ export type ExtendedSessionRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Previous Session Id
    */
   previousSessionId?: string | null;
+  /**
+   * Num Traces
+   */
+  numTraces?: number | null;
 };
 
 /**
@@ -8172,6 +9616,44 @@ export type ExtendedSessionRecordWithChildren = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -8198,12 +9680,27 @@ export type ExtendedSessionRecordWithChildren = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Previous Session Id
    */
   previousSessionId?: string | null;
+  /**
+   * Num Traces
+   */
+  numTraces?: number | null;
 };
 
 /**
@@ -8357,6 +9854,44 @@ export type ExtendedToolSpanRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -8383,7 +9918,18 @@ export type ExtendedToolSpanRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -8582,6 +10128,44 @@ export type ExtendedToolSpanRecordWithChildren = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -8608,7 +10192,18 @@ export type ExtendedToolSpanRecordWithChildren = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -8787,6 +10382,44 @@ export type ExtendedTraceRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -8813,7 +10446,18 @@ export type ExtendedTraceRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Is Complete
@@ -8822,13 +10466,9 @@ export type ExtendedTraceRecord = {
    */
   isComplete?: boolean;
   /**
-   * Feedback Rating Info
-   *
-   * Feedback information related to the trace
+   * Num Spans
    */
-  feedbackRatingInfo?: {
-    [key: string]: FeedbackRatingInfo;
-  };
+  numSpans?: number | null;
 };
 
 /**
@@ -9002,6 +10642,44 @@ export type ExtendedTraceRecordWithChildren = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -9028,7 +10706,18 @@ export type ExtendedTraceRecordWithChildren = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Is Complete
@@ -9037,13 +10726,9 @@ export type ExtendedTraceRecordWithChildren = {
    */
   isComplete?: boolean;
   /**
-   * Feedback Rating Info
-   *
-   * Feedback information related to the trace
+   * Num Spans
    */
-  feedbackRatingInfo?: {
-    [key: string]: FeedbackRatingInfo;
-  };
+  numSpans?: number | null;
 };
 
 /**
@@ -9205,6 +10890,44 @@ export type ExtendedWorkflowSpanRecord = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -9231,7 +10954,18 @@ export type ExtendedWorkflowSpanRecord = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -9432,6 +11166,44 @@ export type ExtendedWorkflowSpanRecordWithChildren = {
    */
   sessionBatchId?: string | null;
   /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -9458,7 +11230,18 @@ export type ExtendedWorkflowSpanRecordWithChildren = {
         } & MetricError)
       | ({
           statusType: 'failed';
-        } & MetricFailed);
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
   } | null;
   /**
    * Parent ID
@@ -9541,7 +11324,10 @@ export type FeedbackAggregate = {
       } & ScoreAggregate)
     | ({
         feedbackType: 'tags';
-      } & TagsAggregate);
+      } & TagsAggregate)
+    | ({
+        feedbackType: 'text';
+      } & TextAggregate);
 };
 
 /**
@@ -9629,6 +11415,106 @@ export type FewShotExample = {
 };
 
 /**
+ * FileContentPart
+ *
+ * Reference to a file associated with this message.
+ *
+ * The file_id can be resolved via the ``files`` dict returned on
+ * trace/span detail responses, which contains metadata such as
+ * modality, MIME type, and a presigned download URL.
+ */
+export type FileContentPart = {
+  /**
+   * Type
+   */
+  type?: 'file';
+  /**
+   * File Id
+   */
+  fileId: string;
+};
+
+/**
+ * FileMetadata
+ *
+ * Enriched file metadata returned to UI/SDK.
+ *
+ * Contains presigned URLs and properties for displaying multimodal
+ * content in the Galileo console and SDKs.
+ */
+export type FileMetadata = {
+  /**
+   * File Id
+   */
+  fileId: string;
+  modality: ContentModality;
+  /**
+   * Content Type
+   */
+  contentType?: string | null;
+  /**
+   * Url
+   *
+   * Presigned S3 URL or external URL
+   */
+  url?: string | null;
+  /**
+   * Url Expires At
+   *
+   * Expiration time
+   */
+  urlExpiresAt?: string | null;
+  /**
+   * Size Bytes
+   */
+  sizeBytes?: number | null;
+  /**
+   * Filename
+   */
+  filename?: string | null;
+  source: FileSource;
+  status: FileStatus;
+};
+
+/**
+ * FileSource
+ *
+ * Source of the file data.
+ */
+export const FileSource = {
+  DIRECT_UPLOAD: 'direct_upload',
+  EXTERNAL_FILES_API: 'external_files_api',
+  EXTERNAL_URL: 'external_url',
+  ASSEMBLED_STREAM: 'assembled_stream'
+} as const;
+
+/**
+ * FileSource
+ *
+ * Source of the file data.
+ */
+export type FileSource = (typeof FileSource)[keyof typeof FileSource];
+
+/**
+ * FileStatus
+ *
+ * Processing status of the file.
+ */
+export const FileStatus = {
+  COMPLETE: 'complete',
+  FAILED: 'failed',
+  PENDING: 'pending',
+  NOT_UPLOADED: 'not_uploaded'
+} as const;
+
+/**
+ * FileStatus
+ *
+ * Processing status of the file.
+ */
+export type FileStatus = (typeof FileStatus)[keyof typeof FileStatus];
+
+/**
  * FileType
  */
 export const FileType = {
@@ -9644,28 +11530,41 @@ export const FileType = {
  */
 export type FileType = (typeof FileType)[keyof typeof FileType];
 
-export type FilterExpression = FilterLeaf | AndNode | OrNode | NotNode;
+export type FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType =
+
+    | FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    | AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    | OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    | NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType;
 
 /**
- * FilterLeaf
+ * FilterLeaf[Annotated[Union[LogRecordsIDFilter, LogRecordsDateFilter, LogRecordsNumberFilter, LogRecordsBooleanFilter, LogRecordsCollectionFilter, LogRecordsTextFilter], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]
  */
-export type FilterLeaf = {
-  /**
-   * Filter
-   */
-  filter:
-    | CollectionFilter
-    | StringFilter
-    | IdFilter
-    | CustomUuidFilter
-    | DateFilter
-    | BooleanFilter
-    | CustomNumberFilter
-    | EnumFilter
-    | MapFilter
-    | CustomBooleanFilter
-    | CustomFunctionFilter;
-};
+export type FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType =
+  {
+    /**
+     * Filter
+     */
+    filter:
+      | ({
+          type: 'id';
+        } & LogRecordsIdFilter)
+      | ({
+          type: 'date';
+        } & LogRecordsDateFilter)
+      | ({
+          type: 'number';
+        } & LogRecordsNumberFilter)
+      | ({
+          type: 'boolean';
+        } & LogRecordsBooleanFilter)
+      | ({
+          type: 'collection';
+        } & LogRecordsCollectionFilter)
+      | ({
+          type: 'text';
+        } & LogRecordsTextFilter);
+  };
 
 /**
  * FilterParams
@@ -9845,6 +11744,10 @@ export type FineTunedScorerResponse = {
    * Lora Task Id
    */
   loraTaskId: number;
+  /**
+   * Lora Weights Path
+   */
+  loraWeightsPath?: string | null;
   /**
    * Prompt
    */
@@ -10299,23 +12202,59 @@ export type HistogramStrategy =
   (typeof HistogramStrategy)[keyof typeof HistogramStrategy];
 
 /**
- * IDFilter
+ * ImageGenerationEvent
  *
- * Filters on a UUID field.
+ * An image generation event from the model.
  */
-export type IdFilter = {
+export type ImageGenerationEvent = {
   /**
-   * Name
+   * Type
    */
-  name: string | null;
+  type?: 'image_generation';
   /**
-   * Operator
+   * Id
+   *
+   * Unique identifier for the event
    */
-  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  id?: string | null;
   /**
-   * Value
+   * Status of the event
    */
-  value: string | Array<string>;
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Prompt
+   *
+   * The prompt used for image generation
+   */
+  prompt?: string | null;
+  /**
+   * Images
+   *
+   * Generated images with URLs or base64 data
+   */
+  images?: Array<{
+    [key: string]: unknown;
+  }> | null;
+  /**
+   * Model
+   *
+   * Image generation model used
+   */
+  model?: string | null;
 };
 
 /**
@@ -10574,6 +12513,40 @@ export const InputTypeEnum = {
 export type InputTypeEnum = (typeof InputTypeEnum)[keyof typeof InputTypeEnum];
 
 /**
+ * InsightSummary
+ */
+export type InsightSummary = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Observation
+   */
+  observation: string;
+  /**
+   * Details
+   */
+  details: string;
+  /**
+   * Suggested Action
+   */
+  suggestedAction: string;
+  /**
+   * Priority
+   */
+  priority: number;
+  /**
+   * Priority Category
+   */
+  priorityCategory?: 'error' | 'warning' | 'info' | null;
+};
+
+/**
  * InsightType
  */
 export const InsightType = {
@@ -10731,6 +12704,10 @@ export type IntegrationModelsResponse = {
    * Supports Num Judges
    */
   supportsNumJudges?: boolean;
+  /**
+   * Model Properties
+   */
+  modelProperties?: Array<ModelProperties>;
 };
 
 /**
@@ -10757,6 +12734,81 @@ export const IntegrationName = {
  */
 export type IntegrationName =
   (typeof IntegrationName)[keyof typeof IntegrationName];
+
+/**
+ * InternalToolCall
+ *
+ * A tool call executed internally by the model during reasoning.
+ *
+ * This represents internal tools like web search, code execution, file search, etc.
+ * that the model invokes (not user-defined functions or MCP tools).
+ */
+export type InternalToolCall = {
+  /**
+   * Type
+   */
+  type?: 'internal_tool_call';
+  /**
+   * Id
+   *
+   * Unique identifier for the event
+   */
+  id?: string | null;
+  /**
+   * Status of the event
+   */
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Name
+   *
+   * Name of the internal tool (e.g., 'web_search', 'code_interpreter', 'file_search')
+   */
+  name: string;
+  /**
+   * Input
+   *
+   * Input/arguments to the tool call
+   */
+  input?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Output
+   *
+   * Output/results from the tool call
+   */
+  output?: {
+    [key: string]: unknown;
+  } | null;
+};
+
+/**
+ * InvalidResult
+ */
+export type InvalidResult = {
+  /**
+   * Result Type
+   */
+  resultType?: 'invalid';
+  /**
+   * Error Message
+   */
+  errorMessage: string;
+};
 
 /**
  * InvokeResponse
@@ -11768,6 +13820,37 @@ export type LlmSpan = {
     [key: string]: unknown;
   }> | null;
   /**
+   * Events
+   *
+   * List of reasoning, internal tool call, or MCP events that occurred during the LLM span.
+   */
+  events?: Array<
+    | ({
+        type: 'message';
+      } & MessageEvent)
+    | ({
+        type: 'reasoning';
+      } & ReasoningEvent)
+    | ({
+        type: 'internal_tool_call';
+      } & InternalToolCall)
+    | ({
+        type: 'web_search_call';
+      } & WebSearchCallEvent)
+    | ({
+        type: 'image_generation';
+      } & ImageGenerationEvent)
+    | ({
+        type: 'mcp_call';
+      } & McpCallEvent)
+    | ({
+        type: 'mcp_list_tools';
+      } & McpListToolsEvent)
+    | ({
+        type: 'mcp_approval_request';
+      } & McpApprovalRequestEvent)
+  > | null;
+  /**
    * Model
    *
    * Model used for this span.
@@ -11826,7 +13909,7 @@ export type LogRecordsAvailableColumnsResponse = {
   /**
    * Columns
    */
-  columns?: Array<ColumnInfo>;
+  columns?: Array<LogRecordsColumnInfo>;
 };
 
 /**
@@ -11839,6 +13922,10 @@ export type LogRecordsBooleanFilter = {
    * ID of the column to filter.
    */
   columnId: string;
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne';
   /**
    * Value
    */
@@ -11875,6 +13962,124 @@ export type LogRecordsCollectionFilter = {
    * Type
    */
   type?: 'collection';
+};
+
+/**
+ * LogRecordsColumnInfo
+ */
+export type LogRecordsColumnInfo = {
+  /**
+   * Id
+   *
+   * Column id.  Must be universally unique.
+   */
+  id: string;
+  /**
+   * Label
+   *
+   * Display label of the column in the UI.
+   */
+  label?: string | null;
+  /**
+   * Category of the column.
+   */
+  category: ColumnCategory;
+  /**
+   * Description
+   *
+   * Description of the column.
+   */
+  description?: string | null;
+  /**
+   * Group Label
+   *
+   * Display label of the column group.
+   */
+  groupLabel?: string | null;
+  /**
+   * Data type of the column. This is used to determine how to format the data on the UI.
+   */
+  dataType: DataType | null;
+  /**
+   * Data unit of the column (optional).
+   */
+  dataUnit?: DataUnit | null;
+  /**
+   * Multi Valued
+   *
+   * Whether the column is multi-valued.
+   */
+  multiValued?: boolean;
+  /**
+   * Allowed Values
+   *
+   * Allowed values for this column.
+   */
+  allowedValues?: Array<unknown> | null;
+  /**
+   * Sortable
+   *
+   * Whether the column is sortable.
+   */
+  sortable?: boolean;
+  /**
+   * Filterable
+   *
+   * Whether the column is filterable.
+   */
+  filterable?: boolean;
+  /**
+   * Is Empty
+   *
+   * Indicates whether the column is empty and should be hidden.
+   */
+  isEmpty?: boolean;
+  /**
+   * Applicable Types
+   *
+   * List of types applicable for this column.
+   */
+  applicableTypes?: Array<StepType>;
+  /**
+   * Complex
+   *
+   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
+   */
+  complex?: boolean;
+  /**
+   * Is Optional
+   *
+   * Whether the column is optional.
+   */
+  isOptional?: boolean;
+  /**
+   * For metric columns only: Scorer config that produced the metric.
+   */
+  scorerConfig?: ScorerConfig | null;
+  /**
+   * Scorer Id
+   *
+   * For metric columns only: Scorer id that produced the metric. This is deprecated and will be removed in future versions.
+   */
+  scorerId?: string | null;
+  /**
+   * Insight type.
+   */
+  insightType?: InsightType | null;
+  /**
+   * Filter type.
+   */
+  filterType?: LogRecordsFilterType | null;
+  /**
+   * Thresholds for the column, if this is a metrics column.
+   */
+  threshold?: MetricThreshold | null;
+  /**
+   * Label Color
+   *
+   * Type of label color for the column, if this is a multilabel metric column.
+   */
+  labelColor?: 'positive' | 'negative' | null;
 };
 
 /**
@@ -11946,7 +14151,7 @@ export type LogRecordsDeleteRequest = {
         type: 'text';
       } & LogRecordsTextFilter)
   >;
-  filterTree?: FilterExpression | null;
+  filterTree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
 };
 
 /**
@@ -12011,9 +14216,9 @@ export type LogRecordsExportRequest = {
       } & LogRecordsTextFilter)
   >;
   /**
-   * Sort clause for the export
+   * Sort clause for the export.  Defaults to native sort (created_at, id descending).
    */
-  sort?: LogRecordsSortClause;
+  sort?: LogRecordsSortClause | null;
   /**
    * Column Ids
    *
@@ -12031,7 +14236,31 @@ export type LogRecordsExportRequest = {
    * Redact sensitive data
    */
   redact?: boolean;
+  /**
+   * File Name
+   *
+   * Optional filename for the exported file
+   */
+  fileName?: string | null;
 };
+
+/**
+ * LogRecordsFilterType
+ */
+export const LogRecordsFilterType = {
+  ID: 'id',
+  DATE: 'date',
+  NUMBER: 'number',
+  BOOLEAN: 'boolean',
+  TEXT: 'text',
+  COLLECTION: 'collection'
+} as const;
+
+/**
+ * LogRecordsFilterType
+ */
+export type LogRecordsFilterType =
+  (typeof LogRecordsFilterType)[keyof typeof LogRecordsFilterType];
 
 /**
  * LogRecordsIDFilter
@@ -12050,7 +14279,7 @@ export type LogRecordsIdFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
   /**
    * Type
    */
@@ -12144,6 +14373,20 @@ export type LogRecordsMetricsResponse = {
   bucketedMetrics: {
     [key: string]: Array<BucketedMetrics>;
   };
+  /**
+   * Ems Captured Error
+   *
+   * Whether any EMS error codes were encountered in the queried metrics
+   */
+  emsCapturedError?: boolean;
+  /**
+   * Standard Errors
+   *
+   * Structured EMS errors for each error code encountered, keyed by code
+   */
+  standardErrors?: {
+    [key: string]: StandardError;
+  } | null;
 };
 
 /**
@@ -12168,6 +14411,137 @@ export type LogRecordsNumberFilter = {
    * Type
    */
   type?: 'number';
+};
+
+/**
+ * LogRecordsPartialQueryRequest
+ *
+ * Request to query a genai project run (log stream or experiment) with partial results.
+ */
+export type LogRecordsPartialQueryRequest = {
+  /**
+   * Starting Token
+   */
+  startingToken?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Previous Last Row Id
+   */
+  previousLastRowId?: string | null;
+  /**
+   * Log Stream Id
+   *
+   * Log stream id associated with the traces.
+   */
+  logStreamId?: string | null;
+  /**
+   * Experiment Id
+   *
+   * Experiment id associated with the traces.
+   */
+  experimentId?: string | null;
+  /**
+   * Metrics Testing Id
+   *
+   * Metrics testing id associated with the traces.
+   */
+  metricsTestingId?: string | null;
+  /**
+   * Filters
+   */
+  filters?: Array<
+    | ({
+        type: 'id';
+      } & LogRecordsIdFilter)
+    | ({
+        type: 'date';
+      } & LogRecordsDateFilter)
+    | ({
+        type: 'number';
+      } & LogRecordsNumberFilter)
+    | ({
+        type: 'boolean';
+      } & LogRecordsBooleanFilter)
+    | ({
+        type: 'collection';
+      } & LogRecordsCollectionFilter)
+    | ({
+        type: 'text';
+      } & LogRecordsTextFilter)
+  >;
+  filterTree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
+  /**
+   * Sort for the query.  Defaults to native sort (created_at, id descending).
+   */
+  sort?: LogRecordsSortClause | null;
+  /**
+   * Truncate Fields
+   */
+  truncateFields?: boolean;
+  /**
+   * Include Counts
+   *
+   * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
+   */
+  includeCounts?: boolean;
+  selectColumns: SelectColumns;
+};
+
+/**
+ * LogRecordsPartialQueryResponse
+ */
+export type LogRecordsPartialQueryResponse = {
+  /**
+   * Starting Token
+   */
+  startingToken?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Paginated
+   */
+  paginated?: boolean;
+  /**
+   * Next Starting Token
+   */
+  nextStartingToken?: number | null;
+  /**
+   * Last Row Id
+   */
+  lastRowId?: string | null;
+  /**
+   * Records
+   *
+   * records matching the query
+   */
+  records?: Array<
+    | ({
+        type: 'trace';
+      } & PartialExtendedTraceRecord)
+    | ({
+        type: 'agent';
+      } & PartialExtendedAgentSpanRecord)
+    | ({
+        type: 'workflow';
+      } & PartialExtendedWorkflowSpanRecord)
+    | ({
+        type: 'llm';
+      } & PartialExtendedLlmSpanRecord)
+    | ({
+        type: 'tool';
+      } & PartialExtendedToolSpanRecord)
+    | ({
+        type: 'retriever';
+      } & PartialExtendedRetrieverSpanRecord)
+    | ({
+        type: 'session';
+      } & PartialExtendedSessionRecord)
+  >;
 };
 
 /**
@@ -12215,7 +14589,7 @@ export type LogRecordsQueryCountRequest = {
         type: 'text';
       } & LogRecordsTextFilter)
   >;
-  filterTree?: FilterExpression | null;
+  filterTree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
 };
 
 /**
@@ -12287,12 +14661,21 @@ export type LogRecordsQueryRequest = {
         type: 'text';
       } & LogRecordsTextFilter)
   >;
-  filterTree?: FilterExpression | null;
-  sort?: LogRecordsSortClause;
+  filterTree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
+  /**
+   * Sort for the query.  Defaults to native sort (created_at, id descending).
+   */
+  sort?: LogRecordsSortClause | null;
   /**
    * Truncate Fields
    */
   truncateFields?: boolean;
+  /**
+   * Include Counts
+   *
+   * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
+   */
+  includeCounts?: boolean;
 };
 
 /**
@@ -12513,7 +14896,7 @@ export type LogSpanUpdateResponse = {
    *
    * Session id associated with the traces.
    */
-  sessionId: string;
+  sessionId?: string | null;
   /**
    * Records Count
    *
@@ -12638,7 +15021,7 @@ export type LogSpansIngestResponse = {
    *
    * Session id associated with the traces.
    */
-  sessionId: string;
+  sessionId?: string | null;
   /**
    * Records Count
    *
@@ -12670,6 +15053,118 @@ export type LogStreamCreateRequest = {
 };
 
 /**
+ * RunCreatedAtFilter
+ */
+export type LogStreamCreatedAtFilter = {
+  /**
+   * Name
+   */
+  name?: 'created_at';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * RunCreatedAtSort
+ */
+export type LogStreamCreatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'created_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sortType?: 'column';
+};
+
+/**
+ * RunCreatedByFilter
+ */
+export type LogStreamCreatedByFilter = {
+  /**
+   * Name
+   */
+  name?: 'created_by';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  /**
+   * Value
+   */
+  value: string | Array<string | string>;
+};
+
+/**
+ * RunIDFilter
+ */
+export type LogStreamIdFilter = {
+  /**
+   * Name
+   */
+  name?: 'id';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  /**
+   * Value
+   */
+  value: string | Array<string | string>;
+};
+
+/**
+ * RunNameFilter
+ */
+export type LogStreamNameFilter = {
+  /**
+   * Name
+   */
+  name?: 'name';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  caseSensitive?: boolean;
+};
+
+/**
+ * RunNameSort
+ */
+export type LogStreamNameSort = {
+  /**
+   * Name
+   */
+  name?: 'name';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sortType?: 'column';
+};
+
+/**
  * LogStreamResponse
  */
 export type LogStreamResponse = {
@@ -12697,10 +15192,71 @@ export type LogStreamResponse = {
    * Created By
    */
   createdBy?: string | null;
+  createdByUser?: UserInfo | null;
+  /**
+   * Num Spans
+   */
+  numSpans?: number | null;
+  /**
+   * Num Traces
+   */
+  numTraces?: number | null;
   /**
    * Has User Created Sessions
    */
   hasUserCreatedSessions?: boolean;
+};
+
+/**
+ * LogStreamSearchRequest
+ */
+export type LogStreamSearchRequest = {
+  /**
+   * Starting Token
+   */
+  startingToken?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Filters
+   */
+  filters?: Array<
+    | ({
+        name: 'id';
+      } & LogStreamIdFilter)
+    | ({
+        name: 'name';
+      } & LogStreamNameFilter)
+    | ({
+        name: 'created_by';
+      } & LogStreamCreatedByFilter)
+    | ({
+        name: 'created_at';
+      } & LogStreamCreatedAtFilter)
+    | ({
+        name: 'updated_at';
+      } & LogStreamUpdatedAtFilter)
+  >;
+  /**
+   * Sort
+   */
+  sort?:
+    | ({
+        name: 'name';
+      } & LogStreamNameSort)
+    | ({
+        name: 'created_at';
+      } & LogStreamCreatedAtSort)
+    | ({
+        name: 'updated_at';
+      } & LogStreamUpdatedAtSort)
+    | null;
+  /**
+   * Include Counts
+   */
+  includeCounts?: boolean;
 };
 
 /**
@@ -12711,6 +15267,42 @@ export type LogStreamUpdateRequest = {
    * Name
    */
   name: string;
+};
+
+/**
+ * RunUpdatedAtFilter
+ */
+export type LogStreamUpdatedAtFilter = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * RunUpdatedAtSort
+ */
+export type LogStreamUpdatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sortType?: 'column';
 };
 
 /**
@@ -12831,7 +15423,7 @@ export type LogTraceUpdateResponse = {
    *
    * Session id associated with the traces.
    */
-  sessionId: string;
+  sessionId?: string | null;
   /**
    * Records Count
    *
@@ -12887,6 +15479,12 @@ export type LogTracesIngestRequest = {
    * Session id associated with the traces.
    */
   sessionId?: string | null;
+  /**
+   * Session External Id
+   *
+   * External id of the session (e.g., OTEL session.id from span attributes).
+   */
+  sessionExternalId?: string | null;
   /**
    * Traces
    *
@@ -12946,7 +15544,7 @@ export type LogTracesIngestResponse = {
    *
    * Session id associated with the traces.
    */
-  sessionId: string;
+  sessionId?: string | null;
   /**
    * Records Count
    *
@@ -13013,27 +15611,230 @@ export type LunaOutputTypeEnum =
   (typeof LunaOutputTypeEnum)[keyof typeof LunaOutputTypeEnum];
 
 /**
- * MapFilter
+ * MCPApprovalRequestEvent
  *
- * Filters for string items in a map / dictionary.
+ * MCP approval request - when human approval is needed for an MCP tool call.
  */
-export type MapFilter = {
+export type McpApprovalRequestEvent = {
   /**
-   * Name
+   * Type
    */
-  name: string | null;
+  type?: 'mcp_approval_request';
   /**
-   * Operator
+   * Id
+   *
+   * Unique identifier for the event
    */
-  operator: 'one_of' | 'not_in' | 'eq' | 'ne';
+  id?: string | null;
   /**
-   * Key
+   * Status of the event
    */
-  key: string;
+  status?: EventStatus | null;
   /**
-   * Value
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
    */
-  value: string | Array<string>;
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Tool Name
+   *
+   * Name of the MCP tool requiring approval
+   */
+  toolName?: string | null;
+  /**
+   * Tool Invocation
+   *
+   * Details of the tool invocation requiring approval
+   */
+  toolInvocation?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Approved
+   *
+   * Whether the request was approved
+   */
+  approved?: boolean | null;
+};
+
+/**
+ * MCPCallEvent
+ *
+ * A Model Context Protocol (MCP) tool call.
+ *
+ * MCP is a protocol for connecting LLMs to external tools/data sources.
+ * This is distinct from internal tools because it involves external integrations.
+ */
+export type McpCallEvent = {
+  /**
+   * Type
+   */
+  type?: 'mcp_call';
+  /**
+   * Id
+   *
+   * Unique identifier for the event
+   */
+  id?: string | null;
+  /**
+   * Status of the event
+   */
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Tool Name
+   *
+   * Name of the MCP tool being called
+   */
+  toolName?: string | null;
+  /**
+   * Server Name
+   *
+   * Name of the MCP server
+   */
+  serverName?: string | null;
+  /**
+   * Arguments
+   *
+   * Arguments for the MCP tool call
+   */
+  arguments?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Result
+   *
+   * Result from the MCP tool call
+   */
+  result?: {
+    [key: string]: unknown;
+  } | null;
+};
+
+/**
+ * MCPListToolsEvent
+ *
+ * MCP list tools event - when the model queries available MCP tools.
+ */
+export type McpListToolsEvent = {
+  /**
+   * Type
+   */
+  type?: 'mcp_list_tools';
+  /**
+   * Id
+   *
+   * Unique identifier for the event
+   */
+  id?: string | null;
+  /**
+   * Status of the event
+   */
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Server Name
+   *
+   * Name of the MCP server
+   */
+  serverName?: string | null;
+  /**
+   * Tools
+   *
+   * List of available MCP tools
+   */
+  tools?: Array<{
+    [key: string]: unknown;
+  }> | null;
+};
+
+/**
+ * MessageEvent
+ *
+ * An output message from the model.
+ */
+export type MessageEvent = {
+  /**
+   * Type
+   */
+  type?: 'message';
+  /**
+   * Id
+   *
+   * Unique identifier for the event
+   */
+  id?: string | null;
+  /**
+   * Status of the event
+   */
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Role of the message sender
+   */
+  role: GalileoCoreSchemasLoggingLlmMessageRole;
+  /**
+   * Content
+   *
+   * Text content of the message
+   */
+  content?: string | null;
+  /**
+   * Content Parts
+   *
+   * Structured content items (text, audio, images, etc.)
+   */
+  contentParts?: Array<{
+    [key: string]: unknown;
+  }> | null;
 };
 
 /**
@@ -13105,6 +15906,7 @@ export type MetricComputation = {
    * Value
    */
   value?:
+    | number
     | number
     | string
     | Array<number | number | string | null>
@@ -13245,6 +16047,16 @@ export type MetricError = {
    * Message
    */
   message?: string | null;
+  /**
+   * Ems Error Code
+   *
+   * EMS error code from errors.yaml catalog for this metric error
+   */
+  emsErrorCode?: number | null;
+  /**
+   * Structured EMS error resolved on-the-fly from errors.yaml catalog
+   */
+  standardError?: StandardError | null;
 };
 
 /**
@@ -13260,6 +16072,16 @@ export type MetricFailed = {
    * Message
    */
   message?: string | null;
+  /**
+   * Ems Error Code
+   *
+   * EMS error code from errors.yaml catalog for this metric failure
+   */
+  emsErrorCode?: number | null;
+  /**
+   * Structured EMS error resolved on-the-fly from errors.yaml catalog
+   */
+  standardError?: StandardError | null;
 };
 
 /**
@@ -13304,6 +16126,94 @@ export type MetricPending = {
 };
 
 /**
+ * MetricRollUp
+ */
+export type MetricRollUp = {
+  /**
+   * Status Type
+   */
+  statusType?: 'roll_up';
+  scorerType?: ScorerType | null;
+  /**
+   * Explanation
+   */
+  explanation?: string | null;
+  /**
+   * Cost
+   */
+  cost?: number | null;
+  /**
+   * Model Alias
+   */
+  modelAlias?: string | null;
+  /**
+   * Num Judges
+   */
+  numJudges?: number | null;
+  /**
+   * Input Tokens
+   */
+  inputTokens?: number | null;
+  /**
+   * Output Tokens
+   */
+  outputTokens?: number | null;
+  /**
+   * Total Tokens
+   */
+  totalTokens?: number | null;
+  critique?: MetricCritiqueColumnar | null;
+  /**
+   * Roll Up Metrics
+   *
+   * Roll up metrics e.g. sum, average, min, max for numeric, and category_count for categorical metrics.
+   */
+  rollUpMetrics?:
+    | {
+        [key: string]: number;
+      }
+    | {
+        [key: string]: {
+          [key: string]: number;
+        };
+      };
+};
+
+/**
+ * MetricSettingsRequest
+ */
+export type MetricSettingsRequest = {
+  /**
+   * Scorers
+   *
+   * List of Galileo scorers to enable.
+   */
+  scorers?: Array<ScorerConfig> | null;
+  /**
+   * Segment Filters
+   *
+   * List of segment filters to apply to the run.
+   */
+  segmentFilters?: Array<SegmentFilter> | null;
+};
+
+/**
+ * MetricSettingsResponse
+ */
+export type MetricSettingsResponse = {
+  /**
+   * Scorers
+   */
+  scorers: Array<ScorerConfig>;
+  /**
+   * Segment Filters
+   *
+   * List of segment filters to apply to the run.
+   */
+  segmentFilters?: Array<SegmentFilter> | null;
+};
+
+/**
  * MetricSuccess
  */
 export type MetricSuccess = {
@@ -13313,10 +16223,40 @@ export type MetricSuccess = {
   statusType?: 'success';
   scorerType?: ScorerType | null;
   /**
+   * Explanation
+   */
+  explanation?: string | null;
+  /**
+   * Cost
+   */
+  cost?: number | null;
+  /**
+   * Model Alias
+   */
+  modelAlias?: string | null;
+  /**
+   * Num Judges
+   */
+  numJudges?: number | null;
+  /**
+   * Input Tokens
+   */
+  inputTokens?: number | null;
+  /**
+   * Output Tokens
+   */
+  outputTokens?: number | null;
+  /**
+   * Total Tokens
+   */
+  totalTokens?: number | null;
+  critique?: MetricCritiqueColumnar | null;
+  /**
    * Value
    */
   value:
     | string
+    | number
     | number
     | boolean
     | Segment
@@ -13327,7 +16267,9 @@ export type MetricSuccess = {
     | Array<
         | string
         | number
+        | number
         | boolean
+        | string
         | string
         | Segment
         | HallucinationSegment
@@ -13340,7 +16282,9 @@ export type MetricSuccess = {
         Array<
           | string
           | number
+          | number
           | boolean
+          | string
           | string
           | Segment
           | HallucinationSegment
@@ -13355,7 +16299,9 @@ export type MetricSuccess = {
           Array<
             | string
             | number
+            | number
             | boolean
+            | string
             | string
             | Segment
             | HallucinationSegment
@@ -13372,30 +16318,18 @@ export type MetricSuccess = {
    */
   displayValue?: string | null;
   /**
-   * Explanation
-   */
-  explanation?: string | null;
-  /**
    * Rationale
    */
   rationale?: string | null;
-  /**
-   * Cost
-   */
-  cost?: number | null;
-  /**
-   * Model Alias
-   */
-  modelAlias?: string | null;
-  /**
-   * Num Judges
-   */
-  numJudges?: number | null;
-  critique?: MetricCritiqueColumnar | null;
 };
 
 /**
  * MetricThreshold
+ *
+ * Threshold configuration for metrics.
+ *
+ * Defines how metric values are bucketed and displayed, including whether
+ * lower or higher values are considered better.
  */
 export type MetricThreshold = {
   /**
@@ -13471,6 +16405,24 @@ export type MetricsTestingAvailableColumnsRequest = {
    * Whether the metrics testing table is using chain of thought (CoT) enabled scorers. If True, the columns will be generated for CoT enabled scorers.
    */
   cotEnabled?: boolean;
+  /**
+   * Metric Key
+   *
+   * The metric key to use for column generation (e.g., 'generated_scorer_validation' or 'registered_scorer_validation').
+   */
+  metricKey?: string;
+  /**
+   * Required Scorers
+   *
+   * List of required scorer names for composite scorers. Columns will be generated for these scorers.
+   */
+  requiredScorers?: Array<string> | null;
+  /**
+   * Score Type
+   *
+   * The score type for registered scorers (e.g., 'bool', 'int', 'float', 'str'). Used to determine the correct data_type for the column. Provided by validation result.
+   */
+  scoreType?: string | null;
 };
 
 /**
@@ -13529,6 +16481,12 @@ export type Model = {
    */
   systemSupported?: boolean;
   /**
+   * Input Modalities
+   *
+   * Input modalities that the model can accept.
+   */
+  inputModalities?: Array<ContentModality>;
+  /**
    * Alternative Names
    *
    * Alternative names for the model, used for matching with various current, versioned or legacy names.
@@ -13575,6 +16533,14 @@ export type Model = {
    * Api Version
    */
   apiVersion?: string | null;
+  /**
+   * Legacy Mistral Prompt Format
+   */
+  legacyMistralPromptFormat?: boolean;
+  /**
+   * Max Top P
+   */
+  maxTopP?: number | null;
   paramsMap?: RunParamsMap;
   outputMap?: OutputMap | null;
   inputMap?: InputMap | null;
@@ -13594,6 +16560,24 @@ export const ModelCostBy = {
 export type ModelCostBy = (typeof ModelCostBy)[keyof typeof ModelCostBy];
 
 /**
+ * ModelProperties
+ */
+export type ModelProperties = {
+  /**
+   * Alias
+   */
+  alias: string;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Input Modalities
+   */
+  inputModalities: Array<ContentModality>;
+};
+
+/**
  * ModelType
  */
 export const ModelType = {
@@ -13606,6 +16590,40 @@ export const ModelType = {
  * ModelType
  */
 export type ModelType = (typeof ModelType)[keyof typeof ModelType];
+
+/**
+ * MultiModalModelIntegrationConfig
+ *
+ * Configuration for multi-modal capabilities (file uploads).
+ */
+export type MultiModalModelIntegrationConfig = {
+  /**
+   * Max Files
+   *
+   * Maximum number of files allowed per request. None means no limit.
+   */
+  maxFiles?: number | null;
+  /**
+   * Max File Size Bytes
+   *
+   * Maximum file size in bytes per file. None means no limit.
+   */
+  maxFileSizeBytes?: number | null;
+};
+
+/**
+ * MultimodalCapability
+ */
+export const MultimodalCapability = {
+  VISION: 'vision',
+  AUDIO: 'audio'
+} as const;
+
+/**
+ * MultimodalCapability
+ */
+export type MultimodalCapability =
+  (typeof MultimodalCapability)[keyof typeof MultimodalCapability];
 
 /**
  * Name
@@ -13672,11 +16690,39 @@ export const NodeType = {
 export type NodeType = (typeof NodeType)[keyof typeof NodeType];
 
 /**
- * NotNode
+ * NotNode[Annotated[Union[LogRecordsIDFilter, LogRecordsDateFilter, LogRecordsNumberFilter, LogRecordsBooleanFilter, LogRecordsCollectionFilter, LogRecordsTextFilter], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]
  */
-export type NotNode = {
-  not: FilterExpression;
-};
+export type NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType =
+  {
+    /**
+     * Not
+     */
+    not:
+      | FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType;
+  };
+
+/**
+ * NumericRollUpMethod
+ *
+ * Roll up methods for aggregating numeric metrics up the session/trace/span hierarchy.
+ */
+export const NumericRollUpMethod = {
+  AVERAGE: 'average',
+  SUM: 'sum',
+  MAX: 'max',
+  MIN: 'min'
+} as const;
+
+/**
+ * NumericRollUpMethod
+ *
+ * Roll up methods for aggregating numeric metrics up the session/trace/span hierarchy.
+ */
+export type NumericRollUpMethod =
+  (typeof NumericRollUpMethod)[keyof typeof NumericRollUpMethod];
 
 /**
  * NvidiaIntegration
@@ -13772,21 +16818,30 @@ export type OpenAiToolChoice = {
 };
 
 /**
- * OrNode
+ * OrNode[Annotated[Union[LogRecordsIDFilter, LogRecordsDateFilter, LogRecordsNumberFilter, LogRecordsBooleanFilter, LogRecordsCollectionFilter, LogRecordsTextFilter], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]
  */
-export type OrNode = {
-  /**
-   * Or
-   */
-  or: Array<FilterExpression>;
-};
+export type OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType =
+  {
+    /**
+     * Or
+     */
+    or: Array<
+      | FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+      | NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    >;
+  };
 
 /**
  * OrganizationAction
  */
 export const OrganizationAction = {
   RENAME: 'rename',
-  DELETE: 'delete'
+  DELETE: 'delete',
+  DELETE_LOG_DATA: 'delete_log_data',
+  READ_SETTINGS: 'read_settings',
+  UPDATE_SETTINGS: 'update_settings'
 } as const;
 
 /**
@@ -13957,7 +17012,9 @@ export const OutputTypeEnum = {
   DISCRETE: 'discrete',
   FREEFORM: 'freeform',
   PERCENTAGE: 'percentage',
-  MULTILABEL: 'multilabel'
+  MULTILABEL: 'multilabel',
+  RETRIEVED_CHUNK_LIST_BOOLEAN: 'retrieved_chunk_list_boolean',
+  BOOLEAN_MULTILABEL: 'boolean_multilabel'
 } as const;
 
 /**
@@ -13988,6 +17045,1801 @@ export type OverrideAction = {
    * List of choices to override the response with. If there are multiple choices, one will be chosen at random when applying this action.
    */
   choices: Array<string>;
+};
+
+/**
+ * PartialExtendedAgentSpanRecord
+ */
+export type PartialExtendedAgentSpanRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'agent';
+  /**
+   * Input
+   *
+   * Input to the trace or span.
+   */
+  input?: string | Array<GalileoCoreSchemasLoggingLlmMessage>;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: string | Array<GalileoCoreSchemasLoggingLlmMessage> | null;
+  /**
+   * Output
+   *
+   * Output of the trace or span.
+   */
+  output?:
+    | string
+    | GalileoCoreSchemasLoggingLlmMessage
+    | Array<Document>
+    | null;
+  /**
+   * Redacted Output
+   *
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?:
+    | string
+    | GalileoCoreSchemasLoggingLlmMessage
+    | Array<Document>
+    | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: Metrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the session, trace or span
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace (or the same value as id for a trace)
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Parent ID
+   *
+   * Galileo ID of the parent of this span
+   */
+  parentId?: string | null;
+  /**
+   * Is Complete
+   *
+   * Whether the parent trace is complete or not
+   */
+  isComplete?: boolean;
+  /**
+   * Step Number
+   *
+   * Topological step number of the span.
+   */
+  stepNumber?: number | null;
+  /**
+   * Agent type.
+   */
+  agentType?: AgentType;
+};
+
+/**
+ * PartialExtendedLlmSpanRecord
+ */
+export type PartialExtendedLlmSpanRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'llm';
+  /**
+   * Input
+   *
+   * Input to the trace or span.
+   */
+  input?: Array<GalileoCoreSchemasLoggingLlmMessage>;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: Array<GalileoCoreSchemasLoggingLlmMessage> | null;
+  /**
+   * Output of the trace or span.
+   */
+  output?: GalileoCoreSchemasLoggingLlmMessage;
+  /**
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?: GalileoCoreSchemasLoggingLlmMessage | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: LlmMetrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the session, trace or span
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace (or the same value as id for a trace)
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Parent ID
+   *
+   * Galileo ID of the parent of this span
+   */
+  parentId?: string | null;
+  /**
+   * Is Complete
+   *
+   * Whether the parent trace is complete or not
+   */
+  isComplete?: boolean;
+  /**
+   * Step Number
+   *
+   * Topological step number of the span.
+   */
+  stepNumber?: number | null;
+  /**
+   * Tools
+   *
+   * List of available tools passed to the LLM on invocation.
+   */
+  tools?: Array<{
+    [key: string]: unknown;
+  }> | null;
+  /**
+   * Events
+   *
+   * List of reasoning, internal tool call, or MCP events that occurred during the LLM span.
+   */
+  events?: Array<
+    | ({
+        type: 'message';
+      } & MessageEvent)
+    | ({
+        type: 'reasoning';
+      } & ReasoningEvent)
+    | ({
+        type: 'internal_tool_call';
+      } & InternalToolCall)
+    | ({
+        type: 'web_search_call';
+      } & WebSearchCallEvent)
+    | ({
+        type: 'image_generation';
+      } & ImageGenerationEvent)
+    | ({
+        type: 'mcp_call';
+      } & McpCallEvent)
+    | ({
+        type: 'mcp_list_tools';
+      } & McpListToolsEvent)
+    | ({
+        type: 'mcp_approval_request';
+      } & McpApprovalRequestEvent)
+  > | null;
+  /**
+   * Model
+   *
+   * Model used for this span.
+   */
+  model?: string | null;
+  /**
+   * Temperature
+   *
+   * Temperature used for generation.
+   */
+  temperature?: number | null;
+  /**
+   * Finish Reason
+   *
+   * Reason for finishing.
+   */
+  finishReason?: string | null;
+};
+
+/**
+ * PartialExtendedRetrieverSpanRecord
+ */
+export type PartialExtendedRetrieverSpanRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'retriever';
+  /**
+   * Input
+   *
+   * Input to the trace or span.
+   */
+  input?: string;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: string | null;
+  /**
+   * Output
+   *
+   * Output of the trace or span.
+   */
+  output?: Array<Document>;
+  /**
+   * Redacted Output
+   *
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?: Array<Document> | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: Metrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the session, trace or span
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace (or the same value as id for a trace)
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Parent ID
+   *
+   * Galileo ID of the parent of this span
+   */
+  parentId?: string | null;
+  /**
+   * Is Complete
+   *
+   * Whether the parent trace is complete or not
+   */
+  isComplete?: boolean;
+  /**
+   * Step Number
+   *
+   * Topological step number of the span.
+   */
+  stepNumber?: number | null;
+};
+
+/**
+ * PartialExtendedSessionRecord
+ */
+export type PartialExtendedSessionRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'session';
+  /**
+   * Input
+   */
+  input?: string | Array<GalileoCoreSchemasLoggingLlmMessage>;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: string | Array<GalileoCoreSchemasLoggingLlmMessage> | null;
+  /**
+   * Output
+   *
+   * Output of the trace or span.
+   */
+  output?:
+    | string
+    | GalileoCoreSchemasLoggingLlmMessage
+    | Array<Document>
+    | null;
+  /**
+   * Redacted Output
+   *
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?:
+    | string
+    | GalileoCoreSchemasLoggingLlmMessage
+    | Array<Document>
+    | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: Metrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the session
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace or span or session
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Previous Session Id
+   */
+  previousSessionId?: string | null;
+};
+
+/**
+ * PartialExtendedToolSpanRecord
+ */
+export type PartialExtendedToolSpanRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'tool';
+  /**
+   * Input
+   *
+   * Input to the trace or span.
+   */
+  input?: string;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: string | null;
+  /**
+   * Output
+   *
+   * Output of the trace or span.
+   */
+  output?: string | null;
+  /**
+   * Redacted Output
+   *
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?: string | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: Metrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the session, trace or span
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace (or the same value as id for a trace)
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Parent ID
+   *
+   * Galileo ID of the parent of this span
+   */
+  parentId?: string | null;
+  /**
+   * Is Complete
+   *
+   * Whether the parent trace is complete or not
+   */
+  isComplete?: boolean;
+  /**
+   * Step Number
+   *
+   * Topological step number of the span.
+   */
+  stepNumber?: number | null;
+  /**
+   * Tool Call Id
+   *
+   * ID of the tool call.
+   */
+  toolCallId?: string | null;
+};
+
+/**
+ * PartialExtendedTraceRecord
+ */
+export type PartialExtendedTraceRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'trace';
+  /**
+   * Input
+   *
+   * Input to the trace or span.
+   */
+  input?: string;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: string | null;
+  /**
+   * Output
+   *
+   * Output of the trace or span.
+   */
+  output?: string | null;
+  /**
+   * Redacted Output
+   *
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?: string | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: Metrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the trace
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace (or the same value as id for a trace)
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Is Complete
+   *
+   * Whether the trace is complete or not
+   */
+  isComplete?: boolean;
+};
+
+/**
+ * PartialExtendedWorkflowSpanRecord
+ */
+export type PartialExtendedWorkflowSpanRecord = {
+  /**
+   * Type
+   *
+   * Type of the trace, span or session.
+   */
+  type?: 'workflow';
+  /**
+   * Input
+   *
+   * Input to the trace or span.
+   */
+  input?: string | Array<GalileoCoreSchemasLoggingLlmMessage>;
+  /**
+   * Redacted Input
+   *
+   * Redacted input of the trace or span.
+   */
+  redactedInput?: string | Array<GalileoCoreSchemasLoggingLlmMessage> | null;
+  /**
+   * Output
+   *
+   * Output of the trace or span.
+   */
+  output?:
+    | string
+    | GalileoCoreSchemasLoggingLlmMessage
+    | Array<Document>
+    | null;
+  /**
+   * Redacted Output
+   *
+   * Redacted output of the trace or span.
+   */
+  redactedOutput?:
+    | string
+    | GalileoCoreSchemasLoggingLlmMessage
+    | Array<Document>
+    | null;
+  /**
+   * Name
+   *
+   * Name of the trace, span or session.
+   */
+  name?: string;
+  /**
+   * Created
+   *
+   * Timestamp of the trace or span's creation.
+   */
+  createdAt?: string;
+  /**
+   * User Metadata
+   *
+   * Metadata associated with this trace or span.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * Tags
+   *
+   * Tags associated with this trace or span.
+   */
+  tags?: Array<string>;
+  /**
+   * Status Code
+   *
+   * Status code of the trace or span. Used for logging failure or error states.
+   */
+  statusCode?: number | null;
+  /**
+   * Metrics associated with this trace or span.
+   */
+  metrics?: Metrics;
+  /**
+   * External Id
+   *
+   * A user-provided session, trace or span ID.
+   */
+  externalId?: string | null;
+  /**
+   * Dataset Input
+   *
+   * Input to the dataset associated with this trace
+   */
+  datasetInput?: string | null;
+  /**
+   * Dataset Output
+   *
+   * Output from the dataset associated with this trace
+   */
+  datasetOutput?: string | null;
+  /**
+   * Dataset Metadata
+   *
+   * Metadata from the dataset associated with this trace
+   */
+  datasetMetadata?: {
+    [key: string]: string;
+  };
+  /**
+   * ID
+   *
+   * Galileo ID of the session, trace or span
+   */
+  id?: string | null;
+  /**
+   * Session ID
+   *
+   * Galileo ID of the session containing the trace (or the same value as id for a trace)
+   */
+  sessionId?: string | null;
+  /**
+   * Trace ID
+   *
+   * Galileo ID of the trace containing the span (or the same value as id for a trace)
+   */
+  traceId?: string | null;
+  /**
+   * Project ID
+   *
+   * Galileo ID of the project associated with this trace or span
+   */
+  projectId?: string | null;
+  /**
+   * Run ID
+   *
+   * Galileo ID of the run (log stream or experiment) associated with this trace or span
+   */
+  runId?: string | null;
+  /**
+   * Last Updated
+   *
+   * Timestamp of the session or trace or span's last update
+   */
+  updatedAt?: string | null;
+  /**
+   * Has Children
+   *
+   * Whether or not this trace or span has child spans
+   */
+  hasChildren?: boolean | null;
+  /**
+   * Metrics Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  metricsBatchId?: string | null;
+  /**
+   * Session Batch Id
+   *
+   * Galileo ID of the metrics batch associated with this trace or span
+   */
+  sessionBatchId?: string | null;
+  /**
+   * Feedback Rating Info
+   *
+   * Feedback information related to the record
+   */
+  feedbackRatingInfo?: {
+    [key: string]: FeedbackRatingInfo;
+  };
+  /**
+   * Annotations
+   *
+   * Annotations keyed by template ID and annotator ID
+   */
+  annotations?: {
+    [key: string]: {
+      [key: string]: AnnotationRatingInfo;
+    };
+  };
+  /**
+   * File Ids
+   *
+   * IDs of files associated with this record
+   */
+  fileIds?: Array<string>;
+  /**
+   * File Modalities
+   *
+   * Modalities of files associated with this record
+   */
+  fileModalities?: Array<ContentModality>;
+  /**
+   * Annotation Aggregates
+   *
+   * Annotation aggregate information keyed by template ID
+   */
+  annotationAggregates?: {
+    [key: string]: AnnotationAggregate;
+  };
+  /**
+   * Metric Info
+   *
+   * Detailed information about the metrics associated with this trace or span
+   */
+  metricInfo?: {
+    [key: string]:
+      | ({
+          statusType: 'not_computed';
+        } & MetricNotComputed)
+      | ({
+          statusType: 'pending';
+        } & MetricPending)
+      | ({
+          statusType: 'computing';
+        } & MetricComputing)
+      | ({
+          statusType: 'not_applicable';
+        } & MetricNotApplicable)
+      | ({
+          statusType: 'success';
+        } & MetricSuccess)
+      | ({
+          statusType: 'error';
+        } & MetricError)
+      | ({
+          statusType: 'failed';
+        } & MetricFailed)
+      | ({
+          statusType: 'roll_up';
+        } & MetricRollUp);
+  } | null;
+  /**
+   * Files
+   *
+   * File metadata keyed by file ID for files associated with this record
+   */
+  files?: {
+    [key: string]: FileMetadata;
+  } | null;
+  /**
+   * Parent ID
+   *
+   * Galileo ID of the parent of this span
+   */
+  parentId?: string | null;
+  /**
+   * Is Complete
+   *
+   * Whether the parent trace is complete or not
+   */
+  isComplete?: boolean;
+  /**
+   * Step Number
+   *
+   * Topological step number of the span.
+   */
+  stepNumber?: number | null;
 };
 
 /**
@@ -14042,7 +18894,8 @@ export type Permission = {
     | FineTunedScorerAction
     | DatasetAction
     | IntegrationAction
-    | OrganizationAction;
+    | OrganizationAction
+    | AnnotationQueueAction;
   /**
    * Allowed
    */
@@ -14281,7 +19134,7 @@ export type ProjectCreatorFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -14396,7 +19249,7 @@ export type ProjectIdFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -15003,7 +19856,7 @@ export type PromptTemplateCreatedByFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -15248,6 +20101,59 @@ export type QueryDatasetParams = {
 };
 
 /**
+ * ReasoningEvent
+ *
+ * Internal reasoning/thinking from the model (e.g., OpenAI o1/o3 reasoning tokens).
+ */
+export type ReasoningEvent = {
+  /**
+   * Type
+   */
+  type?: 'reasoning';
+  /**
+   * Id
+   *
+   * Unique identifier for the event
+   */
+  id?: string | null;
+  /**
+   * Status of the event
+   */
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Content
+   *
+   * The reasoning/thinking content
+   */
+  content?: string | null;
+  /**
+   * Summary
+   *
+   * Summary of the reasoning
+   */
+  summary?:
+    | string
+    | Array<{
+        [key: string]: unknown;
+      }>
+    | null;
+};
+
+/**
  * RecomputeLogRecordsMetricsRequest
  *
  * Request to recompute metrics for a genai project run (log stream or experiment).
@@ -15307,12 +20213,21 @@ export type RecomputeLogRecordsMetricsRequest = {
         type: 'text';
       } & LogRecordsTextFilter)
   >;
-  filterTree?: FilterExpression | null;
-  sort?: LogRecordsSortClause;
+  filterTree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
+  /**
+   * Sort for the query.  Defaults to native sort (created_at, id descending).
+   */
+  sort?: LogRecordsSortClause | null;
   /**
    * Truncate Fields
    */
   truncateFields?: boolean;
+  /**
+   * Include Counts
+   *
+   * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
+   */
+  includeCounts?: boolean;
   /**
    * Scorer Ids
    *
@@ -15415,6 +20330,29 @@ export const RegisteredScorerAction = {
  */
 export type RegisteredScorerAction =
   (typeof RegisteredScorerAction)[keyof typeof RegisteredScorerAction];
+
+/**
+ * RegisteredScorerTaskResultResponse
+ */
+export type RegisteredScorerTaskResultResponse = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Created At
+   */
+  createdAt: string;
+  /**
+   * Updated At
+   */
+  updatedAt: string;
+  status: TaskResultStatus;
+  /**
+   * Result
+   */
+  result?: ValidateRegisteredScorerResult | string | null;
+};
 
 /**
  * RenderTemplateRequest
@@ -15619,6 +20557,27 @@ export type RetrieverSpan = {
       } & ToolSpan)
   >;
 };
+
+/**
+ * RollUpStrategy
+ *
+ * Strategies for rolling metrics up the Session/Trace/Span hierarchy.
+ */
+export const RollUpStrategy = {
+  AVG: 'avg',
+  SUM: 'sum',
+  FIRST: 'first',
+  LAST: 'last',
+  NONE: 'none'
+} as const;
+
+/**
+ * RollUpStrategy
+ *
+ * Strategies for rolling metrics up the Session/Trace/Span hierarchy.
+ */
+export type RollUpStrategy =
+  (typeof RollUpStrategy)[keyof typeof RollUpStrategy];
 
 /**
  * RollbackRequest
@@ -16043,12 +21002,6 @@ export type RunParamsMap = {
  */
 export type RunScorerSettingsPatchRequest = {
   /**
-   * Run Id
-   *
-   * ID of the run.
-   */
-  runId: string;
-  /**
    * Scorers
    *
    * List of Galileo scorers to enable.
@@ -16060,18 +21013,18 @@ export type RunScorerSettingsPatchRequest = {
    * List of segment filters to apply to the run.
    */
   segmentFilters?: Array<SegmentFilter> | null;
-};
-
-/**
- * RunScorerSettingsResponse
- */
-export type RunScorerSettingsResponse = {
   /**
    * Run Id
    *
    * ID of the run.
    */
   runId: string;
+};
+
+/**
+ * RunScorerSettingsResponse
+ */
+export type RunScorerSettingsResponse = {
   /**
    * Scorers
    */
@@ -16082,6 +21035,12 @@ export type RunScorerSettingsResponse = {
    * List of segment filters to apply to the run.
    */
   segmentFilters?: Array<SegmentFilter> | null;
+  /**
+   * Run Id
+   *
+   * ID of the run.
+   */
+  runId: string;
 };
 
 /**
@@ -16240,6 +21199,16 @@ export type ScorerConfig = {
    * ScorerVersion to use for this scorer. If not provided, the latest version will be used.
    */
   scorerVersion?: BaseScorerVersionDb | null;
+  /**
+   * Multimodal Capabilities
+   *
+   * Multimodal capabilities which this scorer can utilize in its evaluation.
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
+   * Roll Up Method
+   */
+  rollUpMethod?: string | null;
 };
 
 /**
@@ -16275,7 +21244,7 @@ export type ScorerCreatorFilter = {
   /**
    * Value
    */
-  value: string | Array<string>;
+  value: string | Array<string | string>;
 };
 
 /**
@@ -16455,9 +21424,18 @@ export type ScorerResponse = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  /**
+   * Deprecated
+   */
+  deprecated?: boolean | null;
+  rollUpConfig?: BaseMetricRollUpConfigDb | null;
   /**
    * Label
    */
@@ -16488,6 +21466,7 @@ export type ScorerResponse = {
    * Updated At
    */
   updatedAt?: string | null;
+  rollUpMethod?: NumericRollUpMethod | null;
 };
 
 /**
@@ -16802,6 +21781,24 @@ export type SegmentFilter = {
 };
 
 /**
+ * SelectColumns
+ */
+export type SelectColumns = {
+  /**
+   * Column Ids
+   */
+  columnIds?: Array<string>;
+  /**
+   * Include All Metrics
+   */
+  includeAllMetrics?: boolean;
+  /**
+   * Include All Feedback
+   */
+  includeAllFeedback?: boolean;
+};
+
+/**
  * SessionCreateRequest
  */
 export type SessionCreateRequest = {
@@ -16823,6 +21820,17 @@ export type SessionCreateRequest = {
    * Metrics testing id associated with the traces.
    */
   metricsTestingId?: string | null;
+  loggingMethod?: LoggingMethod;
+  /**
+   * Client Version
+   */
+  clientVersion?: string | null;
+  /**
+   * Reliable
+   *
+   * Whether or not to use reliable logging.  If set to False, the method will respond immediately before verifying that the traces have been successfully ingested, and no error message will be returned if ingestion fails.  If set to True, the method will wait for the traces to be successfully ingested or return an error message if there is an ingestion failure.
+   */
+  reliable?: boolean;
   /**
    * Name
    *
@@ -16841,6 +21849,14 @@ export type SessionCreateRequest = {
    * External id of the session.
    */
   externalId?: string | null;
+  /**
+   * User Metadata
+   *
+   * User metadata for the session.
+   */
+  userMetadata?: {
+    [key: string]: string;
+  } | null;
 };
 
 /**
@@ -17063,6 +22079,56 @@ export type StageWithRulesets = {
 };
 
 /**
+ * StandardError
+ */
+export type StandardError = {
+  /**
+   * Error Code
+   */
+  errorCode: number;
+  errorType: ErrorType;
+  /**
+   * Error Group
+   */
+  errorGroup: string;
+  severity: ErrorSeverity;
+  /**
+   * Message
+   */
+  message: string;
+  /**
+   * User Action
+   */
+  userAction?: string | null;
+  /**
+   * Documentation Link
+   */
+  documentationLink?: string | null;
+  /**
+   * Retriable
+   */
+  retriable?: boolean;
+  /**
+   * Blocking
+   */
+  blocking?: boolean;
+  /**
+   * Http Status Code
+   */
+  httpStatusCode?: number | null;
+  /**
+   * Source Service
+   */
+  sourceService?: string | null;
+  /**
+   * Context
+   */
+  context?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
  * StarAggregate
  */
 export type StarAggregate = {
@@ -17126,30 +22192,6 @@ export type StringData = {
    * Input Strings
    */
   inputStrings: Array<string>;
-};
-
-/**
- * StringFilter
- *
- * Filters on a string field.
- */
-export type StringFilter = {
-  /**
-   * Name
-   */
-  name: string | null;
-  /**
-   * Operator
-   */
-  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
-  /**
-   * Value
-   */
-  value: string | Array<string>;
-  /**
-   * Case Sensitive
-   */
-  caseSensitive?: boolean;
 };
 
 /**
@@ -17239,6 +22281,10 @@ export type SyntheticDatasetExtensionRequest = {
    * Count
    */
   count?: number;
+  /**
+   * Project Id
+   */
+  projectId?: string | null;
 };
 
 /**
@@ -17414,6 +22460,22 @@ export type TaskResourceLimits = {
 };
 
 /**
+ * TaskResultStatus
+ */
+export const TaskResultStatus = {
+  PENDING: 'pending',
+  STARTED: 'started',
+  COMPLETED: 'completed',
+  FAILED: 'failed'
+} as const;
+
+/**
+ * TaskResultStatus
+ */
+export type TaskResultStatus =
+  (typeof TaskResultStatus)[keyof typeof TaskResultStatus];
+
+/**
  * TaskType
  *
  * Valid task types for modeling.
@@ -17459,6 +22521,51 @@ export type TemplateStubRequest = {
    * Templates
    */
   templates: Array<string>;
+};
+
+/**
+ * TestScore
+ */
+export type TestScore = {
+  nodeType: NodeType;
+  /**
+   * Score
+   */
+  score?: number | number | string | boolean | null;
+};
+
+/**
+ * TextAggregate
+ */
+export type TextAggregate = {
+  /**
+   * Feedback Type
+   */
+  feedbackType?: 'text';
+  /**
+   * Count
+   */
+  count: number;
+  /**
+   * Unrated Count
+   */
+  unratedCount: number;
+};
+
+/**
+ * TextContentPart
+ *
+ * A text segment within a message.
+ */
+export type TextContentPart = {
+  /**
+   * Type
+   */
+  type?: 'text';
+  /**
+   * Text
+   */
+  text: string;
 };
 
 /**
@@ -18183,9 +23290,14 @@ export type UpdateScorerRequest = {
   outputType?: OutputTypeEnum | null;
   inputType?: InputTypeEnum | null;
   /**
+   * Multimodal Capabilities
+   */
+  multimodalCapabilities?: Array<MultimodalCapability> | null;
+  /**
    * Required Scorers
    */
   requiredScorers?: Array<string> | null;
+  rollUpMethod?: NumericRollUpMethod | null;
 };
 
 /**
@@ -18257,13 +23369,22 @@ export type UserCollaborator = {
 
 /**
  * UserCollaboratorCreate
+ *
+ * Create a user collaborator using either user_id or email.
+ *
+ * When using email, if the user doesn't exist in the organization,
+ * they will be invited automatically.
  */
 export type UserCollaboratorCreate = {
   role?: CollaboratorRole;
   /**
    * User Id
    */
-  userId: string;
+  userId?: string | null;
+  /**
+   * User Email
+   */
+  userEmail?: string | null;
 };
 
 /**
@@ -18354,6 +23475,43 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 /**
+ * ValidResult
+ */
+export type ValidResult = {
+  /**
+   * Result Type
+   */
+  resultType?: 'valid';
+  /**
+   * Score Type
+   */
+  scoreType: string;
+  /**
+   * Scoreable Node Types
+   */
+  scoreableNodeTypes: Array<NodeType>;
+  /**
+   * Include Llm Credentials
+   */
+  includeLlmCredentials?: boolean;
+  chainAggregation?: ChainAggregationStrategy | null;
+  /**
+   * Test Scores
+   */
+  testScores: Array<TestScore>;
+};
+
+/**
+ * ValidateCodeScorerResponse
+ */
+export type ValidateCodeScorerResponse = {
+  /**
+   * Task Id
+   */
+  taskId: string;
+};
+
+/**
  * ValidateLLMScorerLogRecordRequest
  *
  * Request to validate a new LLM scorer based on a log record.
@@ -18413,12 +23571,21 @@ export type ValidateLlmScorerLogRecordRequest = {
         type: 'text';
       } & LogRecordsTextFilter)
   >;
-  filterTree?: FilterExpression | null;
-  sort?: LogRecordsSortClause;
+  filterTree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
+  /**
+   * Sort for the query.  Defaults to native sort (created_at, id descending).
+   */
+  sort?: LogRecordsSortClause | null;
   /**
    * Truncate Fields
    */
   truncateFields?: boolean;
+  /**
+   * Include Counts
+   *
+   * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
+   */
+  includeCounts?: boolean;
   /**
    * Query
    */
@@ -18437,12 +23604,32 @@ export type ValidateLlmScorerLogRecordRequest = {
 
 /**
  * ValidateLLMScorerLogRecordResponse
+ */
+export type ValidateLlmScorerLogRecordResponse = {
+  /**
+   * Metrics Experiment Id
+   */
+  metricsExperimentId: string;
+};
+
+/**
+ * ValidateRegisteredScorerResult
+ */
+export type ValidateRegisteredScorerResult = {
+  /**
+   * Result
+   */
+  result: ValidResult | InvalidResult;
+};
+
+/**
+ * ValidateScorerLogRecordResponse
  *
- * Response model for validating a new LLM scorer based on a log record.
+ * Response model for validating a scorer based on log records.
  *
  * Returns the uuid of the experiment created with the copied log records to store the metric testing results.
  */
-export type ValidateLlmScorerLogRecordResponse = {
+export type ValidateScorerLogRecordResponse = {
   /**
    * Metrics Experiment Id
    */
@@ -18492,6 +23679,10 @@ export type VegasGatewayIntegration = {
  */
 export type VegasGatewayIntegrationCreate = {
   /**
+   * Configuration for multi-modal (file upload) capabilities.
+   */
+  multiModalConfig?: MultiModalModelIntegrationConfig | null;
+  /**
    * Endpoint
    */
   endpoint: string;
@@ -18533,6 +23724,72 @@ export type VertexAiIntegrationCreate = {
    * Token
    */
   token: string;
+};
+
+/**
+ * WebSearchAction
+ *
+ * Action payload for a web search call event.
+ */
+export type WebSearchAction = {
+  /**
+   * Type
+   *
+   * Type of web search action
+   */
+  type: 'search';
+  /**
+   * Query
+   *
+   * Search query string
+   */
+  query?: string | null;
+  /**
+   * Sources
+   *
+   * Optional provider-specific sources
+   */
+  sources?: unknown | null;
+};
+
+/**
+ * WebSearchCallEvent
+ *
+ * An OpenAI-style web search call event.
+ */
+export type WebSearchCallEvent = {
+  /**
+   * Type
+   */
+  type?: 'web_search_call';
+  /**
+   * Id
+   *
+   * Unique identifier for the event
+   */
+  id?: string | null;
+  /**
+   * Status of the event
+   */
+  status?: EventStatus | null;
+  /**
+   * Metadata
+   *
+   * Provider-specific metadata and additional fields
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Error Message
+   *
+   * Error message if the event failed
+   */
+  errorMessage?: string | null;
+  /**
+   * Web search action payload
+   */
+  action: WebSearchAction;
 };
 
 /**
@@ -18834,7 +24091,16 @@ export type GalileoCoreSchemasLoggingLlmMessage = {
   /**
    * Content
    */
-  content: string;
+  content:
+    | string
+    | Array<
+        | ({
+            type: 'text';
+          } & TextContentPart)
+        | ({
+            type: 'file';
+          } & FileContentPart)
+      >;
   role: GalileoCoreSchemasLoggingLlmMessageRole;
   /**
    * Tool Call Id
@@ -18880,6 +24146,7 @@ export type GalileoCoreSchemasSharedMessageMessage = {
   [key: string]:
     | unknown
     | string
+    | string
     | GalileoCoreSchemasSharedMessageRoleMessageRole;
 };
 
@@ -18914,6 +24181,9 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
   BLEU: 'bleu',
   CHUNK_ATTRIBUTION_UTILIZATION_LUNA: 'chunk_attribution_utilization_luna',
   CHUNK_ATTRIBUTION_UTILIZATION: 'chunk_attribution_utilization',
+  CHUNK_RELEVANCE: 'chunk_relevance',
+  CONTEXT_PRECISION: 'context_precision',
+  PRECISION_AT_K: 'precision_at_k',
   COMPLETENESS_LUNA: 'completeness_luna',
   COMPLETENESS: 'completeness',
   CONTEXT_ADHERENCE: 'context_adherence',
@@ -18944,6 +24214,11 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
   PROMPT_INJECTION_LUNA: 'prompt_injection_luna',
   PROMPT_PERPLEXITY: 'prompt_perplexity',
   ROUGE: 'rouge',
+  REASONING_COHERENCE: 'reasoning_coherence',
+  SQL_EFFICIENCY: 'sql_efficiency',
+  SQL_ADHERENCE: 'sql_adherence',
+  SQL_INJECTION: 'sql_injection',
+  SQL_CORRECTNESS: 'sql_correctness',
   TOOL_ERROR_RATE: 'tool_error_rate',
   TOOL_ERROR_RATE_LUNA: 'tool_error_rate_luna',
   TOOL_SELECTION_QUALITY: 'tool_selection_quality',
@@ -18985,6 +24260,7 @@ export const PromptgalileoSchemasScorerNameScorerName = {
   _INPUT_TOXICITY: '_input_toxicity',
   _INPUT_TOXICITY_GPT: '_input_toxicity_gpt',
   _USER_REGISTERED: '_user_registered',
+  _COMPOSITE_USER_REGISTERED: '_composite_user_registered',
   _USER_SUBMITTED: '_user_submitted',
   _USER_GENERATED: '_user_generated',
   _USER_FINETUNED: '_user_finetuned',
@@ -19611,9 +24887,21 @@ export type UpdateDatasetContentDatasetsDatasetIdContentPatchData = {
 
 export type UpdateDatasetContentDatasetsDatasetIdContentPatchErrors = {
   /**
-   * Validation Error
+   * Dataset not found
+   */
+  404: unknown;
+  /**
+   * ETag mismatch; client's If-Match does not match current resource version
+   */
+  412: unknown;
+  /**
+   * Validation error in request body
    */
   422: HttpValidationError;
+  /**
+   * Resource lock could not be acquired; another update may be in progress
+   */
+  423: unknown;
 };
 
 export type UpdateDatasetContentDatasetsDatasetIdContentPatchError =
@@ -19621,10 +24909,13 @@ export type UpdateDatasetContentDatasetsDatasetIdContentPatchError =
 
 export type UpdateDatasetContentDatasetsDatasetIdContentPatchResponses = {
   /**
-   * Successful Response
+   * Dataset content updated successfully
    */
-  200: unknown;
+  204: void;
 };
+
+export type UpdateDatasetContentDatasetsDatasetIdContentPatchResponse =
+  UpdateDatasetContentDatasetsDatasetIdContentPatchResponses[keyof UpdateDatasetContentDatasetsDatasetIdContentPatchResponses];
 
 export type UpsertDatasetContentDatasetsDatasetIdContentPutData = {
   /**
@@ -19643,9 +24934,17 @@ export type UpsertDatasetContentDatasetsDatasetIdContentPutData = {
 
 export type UpsertDatasetContentDatasetsDatasetIdContentPutErrors = {
   /**
-   * Validation Error
+   * Dataset not found
+   */
+  404: unknown;
+  /**
+   * Validation error in request body
    */
   422: HttpValidationError;
+  /**
+   * Resource lock could not be acquired; another update may be in progress
+   */
+  423: unknown;
 };
 
 export type UpsertDatasetContentDatasetsDatasetIdContentPutError =
@@ -19653,10 +24952,13 @@ export type UpsertDatasetContentDatasetsDatasetIdContentPutError =
 
 export type UpsertDatasetContentDatasetsDatasetIdContentPutResponses = {
   /**
-   * Successful Response
+   * Dataset content upserted successfully
    */
-  200: unknown;
+  204: void;
 };
+
+export type UpsertDatasetContentDatasetsDatasetIdContentPutResponse =
+  UpsertDatasetContentDatasetsDatasetIdContentPutResponses[keyof UpsertDatasetContentDatasetsDatasetIdContentPutResponses];
 
 export type DownloadDatasetDatasetsDatasetIdDownloadGetData = {
   body?: never;
@@ -20936,7 +26238,12 @@ export type ListLogStreamsProjectsProjectIdLogStreamsGetData = {
      */
     projectId: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Include Counts
+     */
+    includeCounts?: boolean;
+  };
   url: '/projects/{project_id}/log_streams';
 };
 
@@ -21005,6 +26312,10 @@ export type ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetData =
     };
     query?: {
       /**
+       * Include Counts
+       */
+      includeCounts?: boolean;
+      /**
        * Starting Token
        */
       startingToken?: number;
@@ -21037,6 +26348,38 @@ export type ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetRespon
 
 export type ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetResponse =
   ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetResponses[keyof ListLogStreamsPaginatedProjectsProjectIdLogStreamsPaginatedGetResponses];
+
+export type SearchLogStreamsProjectsProjectIdLogStreamsSearchPostData = {
+  body: LogStreamSearchRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    projectId: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/log_streams/search';
+};
+
+export type SearchLogStreamsProjectsProjectIdLogStreamsSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SearchLogStreamsProjectsProjectIdLogStreamsSearchPostError =
+  SearchLogStreamsProjectsProjectIdLogStreamsSearchPostErrors[keyof SearchLogStreamsProjectsProjectIdLogStreamsSearchPostErrors];
+
+export type SearchLogStreamsProjectsProjectIdLogStreamsSearchPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListLogStreamResponse;
+};
+
+export type SearchLogStreamsProjectsProjectIdLogStreamsSearchPostResponse =
+  SearchLogStreamsProjectsProjectIdLogStreamsSearchPostResponses[keyof SearchLogStreamsProjectsProjectIdLogStreamsSearchPostResponses];
 
 export type DeleteLogStreamProjectsProjectIdLogStreamsLogStreamIdDeleteData = {
   body?: never;
@@ -21148,6 +26491,84 @@ export type UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponses =
 
 export type UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponse =
   UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponses[keyof UpdateLogStreamProjectsProjectIdLogStreamsLogStreamIdPutResponses];
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Log Stream Id
+       */
+      logStreamId: string;
+      /**
+       * Project Id
+       */
+      projectId: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/log_streams/{log_stream_id}/metric_settings';
+  };
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetError =
+  GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetErrors[keyof GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetErrors];
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponse =
+  GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponses[keyof GetMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsGetResponses];
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchData =
+  {
+    body: MetricSettingsRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      projectId: string;
+      /**
+       * Log Stream Id
+       */
+      logStreamId: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/log_streams/{log_stream_id}/metric_settings';
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchError =
+  UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchErrors[keyof UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchErrors];
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponse =
+  UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses[keyof UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses];
 
 export type LogTracesProjectsProjectIdTracesPostData = {
   body: LogTracesIngestRequest;
@@ -21479,6 +26900,39 @@ export type QueryTracesProjectsProjectIdTracesSearchPostResponses = {
 export type QueryTracesProjectsProjectIdTracesSearchPostResponse =
   QueryTracesProjectsProjectIdTracesSearchPostResponses[keyof QueryTracesProjectsProjectIdTracesSearchPostResponses];
 
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostData = {
+  body: LogRecordsPartialQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    projectId: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces/partial_search';
+};
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostError =
+  QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors[keyof QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors];
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponse =
+  QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses[keyof QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses];
+
 export type CountTracesProjectsProjectIdTracesCountPostData = {
   body: LogRecordsQueryCountRequest;
   path: {
@@ -21574,6 +27028,39 @@ export type QuerySpansProjectsProjectIdSpansSearchPostResponses = {
 
 export type QuerySpansProjectsProjectIdSpansSearchPostResponse =
   QuerySpansProjectsProjectIdSpansSearchPostResponses[keyof QuerySpansProjectsProjectIdSpansSearchPostResponses];
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostData = {
+  body: LogRecordsPartialQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    projectId: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans/partial_search';
+};
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostError =
+  QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors[keyof QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors];
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponse =
+  QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses[keyof QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses];
 
 export type CountSpansProjectsProjectIdSpansCountPostData = {
   body: LogRecordsQueryCountRequest;
@@ -21702,6 +27189,41 @@ export type QuerySessionsProjectsProjectIdSessionsSearchPostResponses = {
 
 export type QuerySessionsProjectsProjectIdSessionsSearchPostResponse =
   QuerySessionsProjectsProjectIdSessionsSearchPostResponses[keyof QuerySessionsProjectsProjectIdSessionsSearchPostResponses];
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostData =
+  {
+    body: LogRecordsPartialQueryRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      projectId: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/sessions/partial_search';
+  };
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostError =
+  QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors[keyof QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors];
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponse =
+  QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses[keyof QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses];
 
 export type CountSessionsProjectsProjectIdSessionsCountPostData = {
   body: LogRecordsQueryCountRequest;
@@ -22002,7 +27524,12 @@ export type ListExperimentsProjectsProjectIdExperimentsGetData = {
      */
     projectId: string;
   };
-  query?: never;
+  query?: {
+    /**
+     * Include Counts
+     */
+    includeCounts?: boolean;
+  };
   url: '/projects/{project_id}/experiments';
 };
 
@@ -22071,6 +27598,10 @@ export type ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetData
     };
     query?: {
       /**
+       * Include Counts
+       */
+      includeCounts?: boolean;
+      /**
        * Starting Token
        */
       startingToken?: number;
@@ -22103,6 +27634,38 @@ export type ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetResp
 
 export type ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetResponse =
   ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetResponses[keyof ListExperimentsPaginatedProjectsProjectIdExperimentsPaginatedGetResponses];
+
+export type SearchExperimentsProjectsProjectIdExperimentsSearchPostData = {
+  body: ExperimentSearchRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    projectId: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/experiments/search';
+};
+
+export type SearchExperimentsProjectsProjectIdExperimentsSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SearchExperimentsProjectsProjectIdExperimentsSearchPostError =
+  SearchExperimentsProjectsProjectIdExperimentsSearchPostErrors[keyof SearchExperimentsProjectsProjectIdExperimentsSearchPostErrors];
+
+export type SearchExperimentsProjectsProjectIdExperimentsSearchPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListExperimentResponse;
+};
+
+export type SearchExperimentsProjectsProjectIdExperimentsSearchPostResponse =
+  SearchExperimentsProjectsProjectIdExperimentsSearchPostResponses[keyof SearchExperimentsProjectsProjectIdExperimentsSearchPostResponses];
 
 export type DeleteExperimentProjectsProjectIdExperimentsExperimentIdDeleteData =
   {
@@ -22326,6 +27889,84 @@ export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponse
 export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponse =
   GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses[keyof GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses];
 
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Experiment Id
+       */
+      experimentId: string;
+      /**
+       * Project Id
+       */
+      projectId: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/experiments/{experiment_id}/metric_settings';
+  };
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetError =
+  GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetErrors[keyof GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetErrors];
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponse =
+  GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponses[keyof GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetResponses];
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchData =
+  {
+    body: MetricSettingsRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      projectId: string;
+      /**
+       * Experiment Id
+       */
+      experimentId: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/experiments/{experiment_id}/metric_settings';
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchError =
+  UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchErrors[keyof UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchErrors];
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: MetricSettingsResponse;
+  };
+
+export type UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponse =
+  UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponses[keyof UpdateMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsPatchResponses];
+
 export type CreateJobJobsPostData = {
   body: CreateJobRequest;
   path?: never;
@@ -22473,13 +28114,13 @@ export type GetSettingsProjectsProjectIdRunsRunIdScorerSettingsGetData = {
   body?: never;
   path: {
     /**
-     * Project Id
-     */
-    projectId: string;
-    /**
      * Run Id
      */
     runId: string;
+    /**
+     * Project Id
+     */
+    projectId: string;
   };
   query?: never;
   url: '/projects/{project_id}/runs/{run_id}/scorer-settings';
@@ -23804,6 +29445,96 @@ export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses = {
 
 export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponse =
   CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses[keyof CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses];
+
+export type ValidateCodeScorerScorersCodeValidatePostData = {
+  body: BodyValidateCodeScorerScorersCodeValidatePost;
+  path?: never;
+  query?: never;
+  url: '/scorers/code/validate';
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostError =
+  ValidateCodeScorerScorersCodeValidatePostErrors[keyof ValidateCodeScorerScorersCodeValidatePostErrors];
+
+export type ValidateCodeScorerScorersCodeValidatePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ValidateCodeScorerResponse;
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostResponse =
+  ValidateCodeScorerScorersCodeValidatePostResponses[keyof ValidateCodeScorerScorersCodeValidatePostResponses];
+
+export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostData = {
+  body: BodyValidateCodeScorerLogRecordScorersCodeValidateLogRecordPost;
+  path?: never;
+  query?: never;
+  url: '/scorers/code/validate/log_record';
+};
+
+export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostError =
+  ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostErrors[keyof ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostErrors];
+
+export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: ValidateScorerLogRecordResponse;
+  };
+
+export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponse =
+  ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponses[keyof ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponses];
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Task Id
+     */
+    taskId: string;
+  };
+  query?: never;
+  url: '/scorers/code/validate/{task_id}';
+};
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetError =
+  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors];
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: RegisteredScorerTaskResultResponse;
+  };
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponse =
+  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses];
 
 export type GetScorerVersionCodeScorersScorerIdVersionCodeGetData = {
   body?: never;
