@@ -313,6 +313,8 @@ export interface IGalileoLoggerSpan {
     numInputTokens?: number;
     numOutputTokens?: number;
     totalTokens?: number;
+    numReasoningTokens?: number;
+    numCachedInputTokens?: number;
     timeToFirstTokenNs?: number;
     temperature?: number;
     statusCode?: number;
