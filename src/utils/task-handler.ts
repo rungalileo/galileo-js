@@ -4,6 +4,8 @@
  */
 import { getSdkLogger } from 'galileo-generated';
 
+const sdkLogger = getSdkLogger();
+
 export type TaskStatus =
   | 'not_found'
   | 'pending'
@@ -80,7 +82,7 @@ export class TaskHandler {
       });
     }
 
-    getSdkLogger().error(
+    sdkLogger.error(
       `Parent task ${parentTaskId} failed: ${parentError.message}. ${childTasks.length} dependent task(s) skipped.`
     );
   }
@@ -95,7 +97,7 @@ export class TaskHandler {
       task.resolver(rejectedPromise);
     }
 
-    getSdkLogger().warn(errorMessage);
+    sdkLogger.warn(errorMessage);
     return Promise.reject(new Error(errorMessage));
   }
 
@@ -357,7 +359,7 @@ export class TaskHandler {
     }
 
     if (tasksToRemove.length > 0) {
-      getSdkLogger().debug(
+      sdkLogger.debug(
         `TaskHandler: Cleaned up ${tasksToRemove.length} completed/failed task(s)`
       );
     }

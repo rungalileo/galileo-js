@@ -15,6 +15,8 @@ import {
   WorkflowStepType
 } from './types/legacy-step.types';
 
+const sdkLogger = getSdkLogger();
+
 export default class GalileoWorkflow {
   public projectName: string;
 
@@ -32,7 +34,7 @@ export default class GalileoWorkflow {
     this.workflows.push(step);
     this.currentWorkflow = nestedWorkflow ? step : null;
 
-    getSdkLogger().info('➕ New workflow added…');
+    sdkLogger.info('➕ New workflow added…');
 
     return step;
   }

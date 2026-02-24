@@ -16,6 +16,8 @@ import {
   ScorersConfiguration
 } from '../types/scorer.types';
 
+const sdkLogger = getSdkLogger();
+
 /**
  * @deprecated This class is no longer actively maintained. Please use `runExperiment` instead.
  */
@@ -117,8 +119,8 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    getSdkLogger().info('🚀 Workflows uploaded!');
-    getSdkLogger().info(JSON.stringify(loggedWorkflows));
+    sdkLogger.info('🚀 Workflows uploaded!');
+    sdkLogger.info(JSON.stringify(loggedWorkflows));
 
     return loggedWorkflows;
   }

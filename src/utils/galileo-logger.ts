@@ -42,6 +42,7 @@ import type {
   IGalileoLogger
 } from '../types/logging/logger.types';
 
+const sdkLogger = getSdkLogger();
 const NUM_RETRIES = 3;
 
 /**
@@ -55,10 +56,7 @@ function skipIfDisabled<T, Args extends unknown[]>(
 ): (this: GalileoLogger, ...args: Args) => T {
   return function (this: GalileoLogger, ...args: Args): T {
     if (this.isLoggingDisabled()) {
-      getSdkLogger().warn(
-        'Logging is disabled, skipping execution of',
-        fn.name
-      );
+      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
       return defaultValueFn(args);
     }
     return fn.apply(this, args);
@@ -76,10 +74,7 @@ function skipIfDisabledAsync<T, Args extends unknown[]>(
 ): (this: GalileoLogger, ...args: Args) => Promise<T> {
   return async function (this: GalileoLogger, ...args: Args): Promise<T> {
     if (this.isLoggingDisabled()) {
-      getSdkLogger().warn(
-        'Logging is disabled, skipping execution of',
-        fn.name
-      );
+      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
       return defaultValueFn(args);
     }
     return await fn.apply(this, args);
@@ -288,7 +283,7 @@ class GalileoLogger implements IGalileoLogger {
           return existingSessionId;
         }
       } catch (_error) {
-        getSdkLogger().info(
+        sdkLogger.info(
           'No session found with external ID provided, continuing to create new session'
         );
       }
@@ -1228,20 +1223,20 @@ class GalileoLogger implements IGalileoLogger {
   async flush(): Promise<Trace[]> {
     try {
       if (this.mode === 'streaming') {
-        getSdkLogger().warn(
+        sdkLogger.warn(
           'Flushing in streaming mode is not supported. Traces are automatically ingested as they are created.'
         );
         return [];
       }
 
       if (!this.traces.length) {
-        getSdkLogger().warn('No traces to flush.');
+        sdkLogger.warn('No traces to flush.');
         return [];
       }
 
       const currentParent = this.currentParent();
       if (currentParent !== undefined) {
-        getSdkLogger().info('Concluding the active trace...');
+        sdkLogger.info('Concluding the active trace...');
         const lastOutputs = GalileoLogger.getLastOutput(currentParent);
         this.conclude({
           output: lastOutputs?.output,
@@ -1261,13 +1256,13 @@ class GalileoLogger implements IGalileoLogger {
 
       // Compute local metrics if configured
       if (this.localMetrics && this.localMetrics.length > 0) {
-        getSdkLogger().info('Computing metrics for local scorers...');
+        sdkLogger.info('Computing metrics for local scorers...');
         for (const trace of this.traces) {
           populateLocalMetrics(trace, this.localMetrics);
         }
       }
 
-      getSdkLogger().info(`Flushing ${this.traces.length} traces...`);
+      sdkLogger.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
       // Create TracesIngestRequest - convert traces to JSON format.
@@ -1290,14 +1285,12 @@ class GalileoLogger implements IGalileoLogger {
         await this.client.ingestTraces(tracesIngestRequest);
       }
 
-      getSdkLogger().info(
-        `Successfully flushed ${loggedTraces.length} traces.`
-      );
+      sdkLogger.info(`Successfully flushed ${loggedTraces.length} traces.`);
       this.traces = []; // Clear after uploading
       this.setParentStack([]);
       return loggedTraces;
     } catch (error) {
-      getSdkLogger().error(String(error));
+      sdkLogger.error(String(error));
       return [];
     }
   }
@@ -1318,7 +1311,7 @@ class GalileoLogger implements IGalileoLogger {
 
           while (!this.taskHandler.allTasksCompleted()) {
             if (Date.now() - startWait > timeoutSeconds * 1000) {
-              getSdkLogger().warn(
+              sdkLogger.warn(
                 'Terminate timeout reached. Some requests may not have completed.'
               );
               break;
@@ -1328,15 +1321,15 @@ class GalileoLogger implements IGalileoLogger {
           }
 
           if (this.taskHandler.allTasksCompleted()) {
-            getSdkLogger().info('All requests are complete.');
+            sdkLogger.info('All requests are complete.');
           }
 
           this.taskHandler.terminate();
         }
-        getSdkLogger().info('Terminating logger in streaming mode.');
+        sdkLogger.info('Terminating logger in streaming mode.');
       }
     } catch (error) {
-      getSdkLogger().error('Error in terminate():', error);
+      sdkLogger.error('Error in terminate():', error);
       throw error;
     }
   }
@@ -1376,7 +1369,7 @@ class GalileoLogger implements IGalileoLogger {
         disableLoggingValue?.toLowerCase() ?? ''
       );
     } catch (error) {
-      getSdkLogger().error(
+      sdkLogger.error(
         'Error checking if logging is disabled; GALILEO_DISABLE_LOGGING environment variable is not set correctly:',
         error
       );
@@ -1538,9 +1531,7 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      getSdkLogger().error(
-        error instanceof Error ? error.message : String(error)
-      );
+      sdkLogger.error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -1660,9 +1651,7 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      getSdkLogger().error(
-        error instanceof Error ? error.message : String(error)
-      );
+      sdkLogger.error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -1771,17 +1760,14 @@ class GalileoLogger implements IGalileoLogger {
             // Increment retry count on each retry attempt
             this.taskHandler?.incrementRetry(taskId);
             const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            getSdkLogger().warn(
-              `Retry #${retryCount} for task ${taskId}: `,
-              error
-            );
+            sdkLogger.warn(`Retry #${retryCount} for task ${taskId}: `, error);
           }
         );
       })
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
-        getSdkLogger().error(`Task ${taskId} failed:`, error);
+        sdkLogger.error(`Task ${taskId} failed:`, error);
       });
   }
 
@@ -1796,9 +1782,7 @@ class GalileoLogger implements IGalileoLogger {
 
     const currentParent = this.currentParent();
     if (!currentParent) {
-      getSdkLogger().error(
-        'A trace needs to be created in order to add a span.'
-      );
+      sdkLogger.error('A trace needs to be created in order to add a span.');
       return;
     }
 
@@ -1809,9 +1793,7 @@ class GalileoLogger implements IGalileoLogger {
         : currentParent;
 
     if (!parentStep) {
-      getSdkLogger().error(
-        'A trace needs to be created in order to add a span.'
-      );
+      sdkLogger.error('A trace needs to be created in order to add a span.');
       return;
     }
 
@@ -1845,17 +1827,14 @@ class GalileoLogger implements IGalileoLogger {
             // Increment retry count on each retry attempt
             this.taskHandler?.incrementRetry(taskId);
             const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            getSdkLogger().warn(
-              `Retry #${retryCount} for task ${taskId}: `,
-              error
-            );
+            sdkLogger.warn(`Retry #${retryCount} for task ${taskId}: `, error);
           }
         );
       })
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
-        getSdkLogger().error(`Task ${taskId} failed:`, error);
+        sdkLogger.error(`Task ${taskId} failed:`, error);
       });
   }
 
@@ -1905,7 +1884,7 @@ class GalileoLogger implements IGalileoLogger {
               // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
               const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              getSdkLogger().warn(
+              sdkLogger.warn(
                 `Retry #${retryCount} for task ${taskId}: ${error.message}`
               );
             }
@@ -1916,7 +1895,7 @@ class GalileoLogger implements IGalileoLogger {
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
-        getSdkLogger().error(`Task ${taskId} failed:`, error);
+        sdkLogger.error(`Task ${taskId} failed:`, error);
       });
   }
 
@@ -1971,7 +1950,7 @@ class GalileoLogger implements IGalileoLogger {
               // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
               const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              getSdkLogger().warn(
+              sdkLogger.warn(
                 `Retry #${retryCount} for task ${taskId}: `,
                 error
               );
@@ -1983,7 +1962,7 @@ class GalileoLogger implements IGalileoLogger {
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
-        getSdkLogger().error(`Task ${taskId} failed:`, error);
+        sdkLogger.error(`Task ${taskId} failed:`, error);
       });
   }
 
@@ -2011,7 +1990,7 @@ class GalileoLogger implements IGalileoLogger {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
       if (this.mode === 'streaming') {
-        getSdkLogger().error('No existing workflow to conclude.');
+        sdkLogger.error('No existing workflow to conclude.');
         return;
       } else {
         throw new Error('No existing workflow to conclude.');

@@ -61,6 +61,8 @@ import {
   LogRecordsQueryResponseOpenAPI
 } from '../../types/shared.types';
 
+const sdkLogger = getSdkLogger();
+
 import { GalileoGenerated } from 'galileo-generated';
 const galileoGenerated = new GalileoGenerated();
 
@@ -166,7 +168,7 @@ export class TraceService extends BaseClient {
       },
       { project_id: this.projectId }
     );
-    getSdkLogger().info(
+    sdkLogger.info(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
     );
   }

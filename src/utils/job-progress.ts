@@ -1,11 +1,12 @@
 import cliProgress from 'cli-progress';
 import { GalileoApiClient } from '../api-client';
 import { JobDbType, JobStatus, RequestData, Scorers } from '../types/job.types';
-import { getSdkLogger, type GalileoSdkLogger } from 'galileo-generated';
+import { getSdkLogger } from 'galileo-generated';
 
-export interface JobProgressLogger extends Partial<
-  Pick<GalileoSdkLogger, 'info' | 'debug'>
-> {}
+export interface JobProgressLogger {
+  info: (message: string) => void;
+  debug: (message: string) => void;
+}
 
 export interface PollJobOptions {
   timeout?: number;
@@ -101,12 +102,9 @@ const extractScorerName = (
 export async function logScorerJobsStatus(
   projectId: string,
   runId: string,
-  logger: JobProgressLogger = {}
+  logger?: JobProgressLogger
 ): Promise<void> {
-  const {
-    info = getSdkLogger().info.bind(getSdkLogger()),
-    debug = getSdkLogger().debug.bind(getSdkLogger())
-  } = logger;
+  const finalLogger = logger || getSdkLogger();
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId });
 
@@ -116,23 +114,25 @@ export async function logScorerJobsStatus(
     const scorerName = extractScorerName(job.requestData || {});
 
     if (!scorerName) {
-      debug(`Scorer job ${job.id} has no scorer name.`);
+      finalLogger.debug(`Scorer job ${job.id} has no scorer name.`);
       continue;
     }
 
     const canonicalScorerName = normalizeScorerName(scorerName);
     const cleanName = canonicalScorerName.replace(/^_+/, '');
 
-    debug(`Scorer job ${job.id} has scorer ${canonicalScorerName}.`);
+    finalLogger.debug(
+      `Scorer job ${job.id} has scorer ${canonicalScorerName}.`
+    );
 
     if (isJobIncomplete(job.status)) {
-      info(`${cleanName}: Computing 🚧`);
+      finalLogger.info(`${cleanName}: Computing 🚧`);
     } else if (isJobFailed(job.status)) {
-      info(
+      finalLogger.info(
         `${cleanName}: Failed ❌, error was: ${job.errorMessage || 'Unknown error'}`
       );
     } else {
-      info(`${cleanName}: Done ✅`);
+      finalLogger.info(`${cleanName}: Done ✅`);
     }
   }
 }
@@ -249,17 +249,14 @@ export async function getJobProgress(
   }
 
   // Log debug message
-  const {
-    debug = getSdkLogger().debug.bind(getSdkLogger()),
-    info = getSdkLogger().info.bind(getSdkLogger())
-  } = options.logger || {};
-  debug(`Job ${jobId} status: ${job.status}.`);
+  const logger = options.logger || getSdkLogger();
+  logger.debug(`Job ${jobId} status: ${job.status}.`);
 
   // Log scorer jobs status
-  info(
+  logger.info(
     'Initial job complete, executing scorers asynchronously. Current status as follows:'
   );
-  await logScorerJobsStatus(projectId, runId, { info, debug });
+  await logScorerJobsStatus(projectId, runId, logger);
 
   return job.id;
 }

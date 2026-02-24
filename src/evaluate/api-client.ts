@@ -11,6 +11,8 @@ import {
 import { timestampName } from '../utils/utils';
 import { ProjectTypes } from '../types/project.types';
 
+const sdkLogger = getSdkLogger();
+
 export default class GalileoEvaluateApiClient extends GalileoLegacyApiClient {
   constructor() {
     super();
@@ -34,7 +36,7 @@ export default class GalileoEvaluateApiClient extends GalileoLegacyApiClient {
       }
     );
 
-    getSdkLogger().info(`✨ ${runName ?? timestampName('run')} created.`);
+    sdkLogger.info(`✨ ${runName ?? timestampName('run')} created.`);
 
     return run.id;
   }

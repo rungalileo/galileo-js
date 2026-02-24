@@ -33,6 +33,8 @@ import { getProjectWithEnvFallbacks } from '../utils/projects';
 import type { Dataset } from '../entities/datasets';
 import { getSdkLogger } from 'galileo-generated';
 
+const sdkLogger = getSdkLogger();
+
 /**
  * Entity class for managing experiments.
  * Provides high-level methods for creating, getting, updating, deleting, and querying experiments.
@@ -200,7 +202,7 @@ export class Experiments {
       metadata?: Record<string, unknown>
     ) => Promise<unknown>
   ): Promise<string> {
-    getSdkLogger().debug(`Processing dataset row: ${JSON.stringify(row)}`);
+    sdkLogger.debug(`Processing dataset row: ${JSON.stringify(row)}`);
 
     let output: string = '';
 
@@ -212,7 +214,7 @@ export class Experiments {
       );
       output = JSON.stringify(result);
     } catch (error) {
-      getSdkLogger().error(`Error processing dataset row:`, row, error);
+      sdkLogger.error(`Error processing dataset row:`, row, error);
       output = `Error: ${error instanceof Error ? error.message : String(error)}`;
     }
 
@@ -293,7 +295,7 @@ export class Experiments {
 
         // Flush the logger
         await flush({ projectName, experimentId: experiment.id });
-        getSdkLogger().info(
+        sdkLogger.info(
           `${outputs.length} rows processed for ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'}.`
         );
 
@@ -303,7 +305,7 @@ export class Experiments {
           effectiveProjectId
         );
         const message = `Experiment ${experiment.name ?? 'Unnamed Experiment'} has completed and results are available at ${link}`;
-        getSdkLogger().info(message);
+        sdkLogger.info(message);
 
         return {
           experiment,
@@ -356,7 +358,7 @@ export class Experiments {
       );
     }
 
-    getSdkLogger().info(`Preparing to run experiment '${name}'...`);
+    sdkLogger.info(`Preparing to run experiment '${name}'...`);
 
     const project = await this.getExperimentProject(projectName, projectId);
     if (!project.name) {
@@ -374,7 +376,7 @@ export class Experiments {
       experimentName,
       project.name
     );
-    getSdkLogger().info(`🚀 Experiment ${experimentName} created.`);
+    sdkLogger.info(`🚀 Experiment ${experimentName} created.`);
 
     await this.configureExperimentTags(
       params.experimentTags,
@@ -391,7 +393,7 @@ export class Experiments {
       );
     }
 
-    getSdkLogger().info('Retrieving the dataset...');
+    sdkLogger.info('Retrieving the dataset...');
 
     // Load dataset and records using centralized function
     const [loadedDatasetObj, records] = await this.loadExperimentData(
@@ -452,7 +454,7 @@ export class Experiments {
       projectName
     });
     if (experiment) {
-      getSdkLogger().warn(
+      sdkLogger.warn(
         `Experiment with name '${experimentName}' already exists, adding a timestamp`
       );
 
@@ -508,11 +510,11 @@ export class Experiments {
             value,
             tagType: 'generic'
           });
-          getSdkLogger().debug(
+          sdkLogger.debug(
             `Added tag ${key}=${value} to experiment ${experimentId}`
           );
         } catch (e) {
-          getSdkLogger().warn(
+          sdkLogger.warn(
             `Failed to add tag ${key}=${value} to experiment ${experimentId}: ${e}`
           );
           // Continue with other tags even if one fails (matches Python behavior)
@@ -531,7 +533,7 @@ export class Experiments {
     let scorerConfigs: ScorerConfig[] = [];
     let localMetricConfigs: LocalMetricConfig[] = [];
     if (metrics && metrics.length > 0) {
-      getSdkLogger().info('Retrieving metrics...');
+      sdkLogger.info('Retrieving metrics...');
       const metricsInstance = new Metrics();
       [scorerConfigs, localMetricConfigs] =
         await metricsInstance.createMetricConfigs(
@@ -584,7 +586,7 @@ export class Experiments {
     localMetricConfigs: LocalMetricConfig[],
     scorerConfigsLength: number
   ): Promise<RunExperimentWithFunctionOutput> {
-    getSdkLogger().info(
+    sdkLogger.info(
       `Processing runner function ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'} for project ${projectName}...`
     );
 
@@ -598,11 +600,11 @@ export class Experiments {
     );
 
     if (scorerConfigsLength > 0) {
-      getSdkLogger().info(
+      sdkLogger.info(
         `Metrics are still being calculated for runner function ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'}. Results will be available at ${functionResult.link}`
       );
     } else {
-      getSdkLogger().info(
+      sdkLogger.info(
         `Runner function ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'} is complete. Results are available at ${functionResult.link}`
       );
     }
@@ -631,7 +633,7 @@ export class Experiments {
     if ('version' in promptTemplate) {
       promptTemplateVersionId = (promptTemplate as PromptTemplateVersion).id;
     } else {
-      getSdkLogger().info(
+      sdkLogger.info(
         `Defaulting to the selected version for prompt template ${promptTemplate.name}`
       );
       promptTemplateVersionId = (promptTemplate as PromptTemplate)
@@ -639,7 +641,7 @@ export class Experiments {
     }
     client.experimentId = experiment.id;
 
-    getSdkLogger().info(
+    sdkLogger.info(
       `Starting prompt experiment ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'} for project ${projectName}...`
     );
 
@@ -656,7 +658,7 @@ export class Experiments {
       experiment.id,
       projectId
     );
-    getSdkLogger().info(
+    sdkLogger.info(
       `Prompt experiment ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'} has started and is currently processing. Results will be available at ${linkToResults}`
     );
 

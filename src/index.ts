@@ -296,5 +296,4 @@ export {
   ProjectAPIException
 } from './utils/errors';
 
-export { enableLogging, disableLogging, setLogger } from './utils/sdk-logger';
-export type { LogLevel, GalileoSdkLogger } from './utils/sdk-logger';
+export { enableLogging, disableLogging } from 'galileo-generated';

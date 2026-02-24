@@ -12,7 +12,11 @@ import {
   JobName,
   RequestData
 } from '../../src/types/job.types';
-import { enableLogging, disableLogging } from 'galileo-generated';
+import {
+  enableLogging,
+  disableLogging,
+  resetSdkLogger
+} from 'galileo-generated';
 
 // Create mock functions that will be accessible
 const mockInit = jest.fn<
@@ -64,6 +68,7 @@ describe('Job Progress Utilities', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockInit.mockResolvedValue(undefined);
+    resetSdkLogger();
   });
 
   const createMockJob = (

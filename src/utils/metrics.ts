@@ -38,6 +38,8 @@ import path from 'node:path';
 import { ScorerSettings } from '../entities/scorers';
 import { getSdkLogger } from 'galileo-generated';
 
+const sdkLogger = getSdkLogger();
+
 /**
  * Metrics class for managing metrics in the Galileo platform.
  * Public-facing API that delegates to internal utilities and GalileoApiClient.
@@ -103,7 +105,7 @@ export class Metrics {
     pollIntervalMs,
     requiredMetrics
   }: CreateCustomCodeMetricParams): Promise<BaseScorerVersionResponse> {
-    getSdkLogger().info(`Creating custom code metric: ${name}`);
+    sdkLogger.info(`Creating custom code metric: ${name}`);
 
     // Read the code file
     const absolutePath = path.resolve(codePath);
@@ -127,7 +129,7 @@ export class Metrics {
 
     // Read the file content asynchronously
     const codeContent = await fs.readFile(absolutePath, 'utf-8');
-    getSdkLogger().debug(`Read code file: ${codeContent.length} bytes`);
+    sdkLogger.debug(`Read code file: ${codeContent.length} bytes`);
 
     // Check if the file is empty
     if (!codeContent || codeContent.trim().length === 0) {
@@ -139,7 +141,7 @@ export class Metrics {
     const scoreableNodeTypes = [nodeLevel];
 
     // Validate the code metric first
-    getSdkLogger().info(`Validating code metric...`);
+    sdkLogger.info(`Validating code metric...`);
     const validationResult = await validateCodeScorer(
       codeContent,
       scoreableNodeTypes,
@@ -149,7 +151,7 @@ export class Metrics {
     );
 
     // Create the scorer with type 'code'
-    getSdkLogger().info(`Creating metric: ${name}`);
+    sdkLogger.info(`Creating metric: ${name}`);
     const scorer = await createScorer(
       name,
       ScorerTypes.code,
@@ -161,16 +163,16 @@ export class Metrics {
       scoreableNodeTypes,
       undefined
     );
-    getSdkLogger().info(`Metric created: ${scorer.id}`);
+    sdkLogger.info(`Metric created: ${scorer.id}`);
 
     // Create a code scorer version with the code content and validation result
-    getSdkLogger().info(`Creating code metric version...`);
+    sdkLogger.info(`Creating code metric version...`);
     const scorerVersion = await createCodeScorerVersion(
       scorer.id,
       codeContent,
       JSON.stringify(validationResult)
     );
-    getSdkLogger().info(`Custom code metric created successfully: ${name}`);
+    sdkLogger.info(`Custom code metric created successfully: ${name}`);
     return scorerVersion;
   }
 

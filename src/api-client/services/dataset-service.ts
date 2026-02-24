@@ -29,6 +29,8 @@ import {
 } from '../../types/dataset.types';
 import { BodyCreateDatasetDatasetsPost } from '../../types/openapi.types';
 
+const sdkLogger = getSdkLogger();
+
 export class DatasetService extends BaseClient {
   constructor(apiUrl: string, token: string) {
     super();
@@ -199,7 +201,7 @@ export class DatasetService extends BaseClient {
       const dataset = this.convertToCamelCase<DatasetOpenAPI, DatasetDBType>(
         datasetOpenAPI
       );
-      getSdkLogger().info(
+      sdkLogger.info(
         `✅  Dataset '${dataset.name}' with ${dataset.numRows} rows uploaded.`
       );
 

@@ -15,6 +15,8 @@ import { version } from '../../package.json';
 import GalileoObserveApiClient from './api-client';
 import { getSdkLogger } from 'galileo-generated';
 
+const sdkLogger = getSdkLogger();
+
 /**
  * @deprecated This class is no longer actively maintained. Please use `GalileoLogger` instead.
  */
@@ -97,8 +99,8 @@ export default class GalileoObserveWorkflow extends GalileoWorkflow {
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    getSdkLogger().info('🚀 Workflows uploaded!');
-    getSdkLogger().info(JSON.stringify(loggedWorkflows));
+    sdkLogger.info('🚀 Workflows uploaded!');
+    sdkLogger.info(JSON.stringify(loggedWorkflows));
 
     return loggedWorkflows;
   }
