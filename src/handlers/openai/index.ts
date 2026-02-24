@@ -167,7 +167,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   return new StreamWrapper(
                     response,
                     requestData,
-                    logger!,
+                    logger,
                     startTime,
                     !isParentTraceValid, // Complete trace only if we started it (no parent)
                     false // Chat Completions API, not Responses API
@@ -183,19 +183,12 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   requestData as Record<string, unknown>
                 );
 
-                const finalMetadata = { ...extracted.metadata };
-                if (usage.rejectedPredictionTokens > 0) {
-                  finalMetadata.rejected_prediction_tokens = String(
-                    usage.rejectedPredictionTokens
-                  );
-                }
-
                 const temperature =
                   typeof requestData.temperature === 'number'
                     ? requestData.temperature
                     : undefined;
 
-                logger!.addLlmSpan({
+                logger.addLlmSpan({
                   input: normalizedInput,
                   output,
                   name: 'openai-completion-generation',
@@ -206,7 +199,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                   numReasoningTokens: usage.reasoningTokens,
                   numCachedInputTokens: usage.cachedTokens,
                   durationNs,
-                  metadata: finalMetadata,
+                  metadata: extracted.metadata,
                   tools: extracted.tools as JsonObject[] | undefined,
                   statusCode: 200,
                   temperature
@@ -214,7 +207,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
 
                 if (!isParentTraceValid) {
                   // If we started a trace (no parent), conclude it
-                  logger!.conclude({
+                  logger.conclude({
                     output: JSON.stringify(output),
                     durationNs
                   });
@@ -256,7 +249,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
 
           const isParentTraceValid = !!logger.currentParent();
           if (!isParentTraceValid) {
-            logger!.startTrace({
+            logger.startTrace({
               input: JSON.stringify(normalizedInput),
               output: undefined,
               name: 'openai-responses-generation'
@@ -274,7 +267,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
             if (!isParentTraceValid) {
               processErrorSpan(
                 error,
-                logger!,
+                logger,
                 'openai-responses-generation',
                 requestData as Record<string, unknown>,
                 startTime,
@@ -290,7 +283,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
             return new StreamWrapper(
               response,
               requestData,
-              logger!,
+              logger,
               startTime,
               !isParentTraceValid, // Complete trace only if we started it (no parent)
               true // Responses API stream
@@ -325,7 +318,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
             // Pending calls indicate multi-turn conversation continues
             const hasPending = hasPendingFunctionCalls(outputItems);
             if (!isParentTraceValid && !hasPending) {
-              logger!.conclude({
+              logger.conclude({
                 output: JSON.stringify(consolidatedOutput),
                 durationNs: calculateDurationNs(startTime)
               });
@@ -807,7 +800,7 @@ class StreamWrapper implements AsyncIterable<any> {
       numCachedInputTokens: usage.cachedTokens,
       durationNs: calculateDurationNs(startTimeForMetrics, endTime),
       metadata: extracted.metadata,
-      tools: extracted.tools as any,
+      tools: extracted.tools as JsonObject[],
       statusCode: 200,
       temperature
     });
