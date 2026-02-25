@@ -298,8 +298,9 @@ export class GalileoCallback
     const nodeId = runId;
     const node = this._nodes[nodeId];
 
+    // If the node doesn't exist, it's likely a chain end event arriving after the root node has been committed
+    // https://app.shortcut.com/galileo/story/36763/bug-ts-js-sdk-showing-no-node-exists-however-successfully-logging-to-galileo
     if (!node) {
-      console.warn(`No node exists for run_id ${nodeId}`);
       return;
     }
 
