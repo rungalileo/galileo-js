@@ -296,4 +296,9 @@ export {
   ProjectAPIException
 } from './utils/errors';
 
-export { enableLogging, disableLogging, setCustomLogger, resetSdkLogger } from 'galileo-generated';
+export {
+  enableLogging,
+  disableLogging,
+  setCustomLogger,
+  resetSdkLogger
+} from 'galileo-generated';
