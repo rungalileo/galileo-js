@@ -154,7 +154,7 @@ const logScorerJobsInternal = async (
  * Gets and logs the status of all scorer jobs for a given project and run.
  * @param projectId The unique identifier of the project.
  * @param runId The unique identifier of the run.
- * @param logger Optional logger interface (defaults to console).
+ * @param logger Optional logger interface (defaults to internal SDK logger).
  */
 export async function logScorerJobsStatus(
   projectId: string,
