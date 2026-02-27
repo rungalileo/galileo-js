@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { GalileoConfig } from 'galileo-generated';
 import {
   addRowsToDataset,
   createDataset,
@@ -190,9 +191,9 @@ const server = setupServer(...handlers);
 beforeAll(() => {
   process.env.GALILEO_CONSOLE_URL = TEST_HOST;
   process.env.GALILEO_API_KEY = 'placeholder';
+  GalileoConfig.reset();
   server.listen();
   jest.useFakeTimers();
-  jest.spyOn(console, 'log').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -204,7 +205,6 @@ afterEach(() => {
 afterAll(() => {
   server.close();
   jest.useRealTimers();
-  jest.mocked(console.log).mockRestore();
 });
 
 const createDatasetCases: DatasetType[] = [

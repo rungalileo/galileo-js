@@ -1,4 +1,5 @@
 import { BaseClient, RequestMethod } from '../base-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Routes } from '../../types/routes.types';
 import { promises as fs } from 'fs';
 import {
@@ -27,6 +28,8 @@ import {
   DatasetAppendRowOpenAPI
 } from '../../types/dataset.types';
 import { BodyCreateDatasetDatasetsPost } from '../../types/openapi.types';
+
+const sdkLogger = getSdkLogger();
 
 export class DatasetService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -198,8 +201,7 @@ export class DatasetService extends BaseClient {
       const dataset = this.convertToCamelCase<DatasetOpenAPI, DatasetDBType>(
         datasetOpenAPI
       );
-      // eslint-disable-next-line no-console
-      console.log(
+      sdkLogger.info(
         `✅  Dataset '${dataset.name}' with ${dataset.numRows} rows uploaded.`
       );
 

@@ -2,6 +2,9 @@
  * Task handler for managing asynchronous tasks with dependency tracking and status monitoring.
  * This class is used in streaming mode to manage concurrent API requests and ensure proper ordering.
  */
+import { getSdkLogger } from 'galileo-generated';
+
+const sdkLogger = getSdkLogger();
 
 export type TaskStatus =
   | 'not_found'
@@ -79,7 +82,7 @@ export class TaskHandler {
       });
     }
 
-    console.error(
+    sdkLogger.error(
       `Parent task ${parentTaskId} failed: ${parentError.message}. ${childTasks.length} dependent task(s) skipped.`
     );
   }
@@ -94,7 +97,7 @@ export class TaskHandler {
       task.resolver(rejectedPromise);
     }
 
-    console.warn(errorMessage);
+    sdkLogger.warn(errorMessage);
     return Promise.reject(new Error(errorMessage));
   }
 
@@ -356,7 +359,7 @@ export class TaskHandler {
     }
 
     if (tasksToRemove.length > 0) {
-      console.debug(
+      sdkLogger.debug(
         `TaskHandler: Cleaned up ${tasksToRemove.length} completed/failed task(s)`
       );
     }

@@ -115,7 +115,7 @@ import {
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
 import { SegmentFilter, RunScorerSettingsResponse } from '../types/runs.types';
-import { GalileoConfig } from 'galileo-generated';
+import { GalileoConfig, getSdkLogger } from 'galileo-generated';
 
 const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
 
@@ -253,8 +253,7 @@ export class GalileoApiClient extends BaseClient {
                 createExampleTemplates: false
               });
               this.projectId = project.id;
-              // eslint-disable-next-line no-console
-              console.log(`✨ ${projectName} created.`);
+              getSdkLogger().info(`✨ ${projectName} created.`);
             } else {
               throw err;
             }
@@ -286,8 +285,7 @@ export class GalileoApiClient extends BaseClient {
               const logStream =
                 await this.logStreamService.createLogStream(logStreamName);
               this.logStreamId = logStream.id;
-              // eslint-disable-next-line no-console
-              console.log(`✨ ${logStreamName} created.`);
+              getSdkLogger().info(`✨ ${logStreamName} created.`);
             } else {
               throw err;
             }

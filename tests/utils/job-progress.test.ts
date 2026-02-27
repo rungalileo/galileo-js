@@ -4,14 +4,15 @@ import {
   getJob,
   getRunScorerJobs,
   getScorerJobsStatus,
-  JobProgressLogger
+  type JobProgressLogger
 } from '../../src/utils/job-progress';
+import type { JobDbType, RequestData } from '../../src/types/job.types';
+import { JobStatus, JobName } from '../../src/types/job.types';
 import {
-  JobDbType,
-  JobStatus,
-  JobName,
-  RequestData
-} from '../../src/types/job.types';
+  enableLogging,
+  disableLogging,
+  resetSdkLogger
+} from 'galileo-generated';
 
 // Create mock functions that will be accessible
 const mockInit = jest.fn<
@@ -63,6 +64,7 @@ describe('Job Progress Utilities', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockInit.mockResolvedValue(undefined);
+    resetSdkLogger();
   });
 
   const createMockJob = (
@@ -207,8 +209,9 @@ describe('Job Progress Utilities', () => {
       const jobs = [createScorerJob('completeness_nli', JobStatus.completed)];
       mockGetRunScorerJobs.mockResolvedValue(jobs);
 
+      enableLogging('info');
       const consoleSpy = {
-        log: jest.spyOn(console, 'log').mockImplementation(() => {
+        info: jest.spyOn(console, 'info').mockImplementation(() => {
           // Mock implementation
         }),
         debug: jest.spyOn(console, 'debug').mockImplementation(() => {
@@ -218,9 +221,10 @@ describe('Job Progress Utilities', () => {
 
       await logScorerJobsStatus(projectId, runId);
 
-      expect(consoleSpy.log).toHaveBeenCalled();
-      consoleSpy.log.mockRestore();
+      expect(consoleSpy.info).toHaveBeenCalled();
+      consoleSpy.info.mockRestore();
       consoleSpy.debug.mockRestore();
+      disableLogging();
     });
 
     it('should normalize scorer names correctly', async () => {
@@ -418,20 +422,15 @@ describe('Job Progress Utilities', () => {
       ];
       mockGetJobsForProjectRun.mockResolvedValue(jobs);
 
-      const consoleSpy = {
-        log: jest.spyOn(console, 'log').mockImplementation(() => {
-          // Mock implementation
-        }),
-        debug: jest.spyOn(console, 'debug').mockImplementation(() => {
-          // Mock implementation
-        })
+      const logger: JobProgressLogger = {
+        info: jest.fn(),
+        debug: jest.fn()
       };
 
-      await getScorerJobsStatus(projectId, runId);
+      await getScorerJobsStatus(projectId, runId, logger);
 
-      expect(consoleSpy.log).toHaveBeenCalled();
-      consoleSpy.log.mockRestore();
-      consoleSpy.debug.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith('completeness_luna: Done ✅');
+      expect(mockGetJobsForProjectRun).toHaveBeenCalledWith(projectId, runId);
     });
   });
 });

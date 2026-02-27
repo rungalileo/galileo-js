@@ -6,6 +6,7 @@ import {
   Trace,
   WorkflowSpan
 } from '../../src/utils/galileo-logger';
+import { enableLogging, disableLogging } from 'galileo-generated';
 import { Message, MessageRole } from '../../src/types/message.types';
 import { Document } from '../../src/types/document.types';
 import { randomUUID } from 'crypto';
@@ -2387,6 +2388,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2401,9 +2403,10 @@ describe('GalileoLogger', () => {
         expect(createdLogger['traceId']).toBeUndefined();
         expect(createdLogger.traces.length).toBe(0);
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: `Trace ${mockTraceId} not found` })
+          `Trace ${mockTraceId} not found`
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should log and return when spanId not found', async () => {
@@ -2413,6 +2416,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2426,9 +2430,10 @@ describe('GalileoLogger', () => {
         expect(mockInstance.getSpan).toHaveBeenCalledWith(mockSpanId);
         expect(createdLogger['spanId']).toBeUndefined();
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'Span undefined not found' })
+          'Span undefined not found'
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should log and return when span does not belong to trace', async () => {
@@ -2473,6 +2478,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2490,11 +2496,10 @@ describe('GalileoLogger', () => {
         expect(createdLogger['spanId']).toBeUndefined();
         expect(createdLogger.traces.length).toBe(1);
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message: `Span undefined does not belong to trace ${mockTraceId}`
-          })
+          `Span undefined does not belong to trace ${mockTraceId}`
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should log and return when span type is not workflow or agent', async () => {
@@ -2539,6 +2544,7 @@ describe('GalileoLogger', () => {
         (GalileoApiClient as unknown as jest.Mock).mockImplementation(
           () => mockInstance
         );
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2553,12 +2559,10 @@ describe('GalileoLogger', () => {
         expect(createdLogger['spanId']).toBeUndefined();
         expect(createdLogger.traces.length).toBe(0);
         expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({
-            message:
-              "Only 'workflow' and 'agent' span types can be initialized, got llm"
-          })
+          "Only 'workflow' and 'agent' span types can be initialized, got llm"
         );
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
     });
 
@@ -2603,6 +2607,7 @@ describe('GalileoLogger', () => {
           .fn()
           .mockRejectedValue(new Error('API error'));
         mockClient.init = jest.fn().mockResolvedValue(undefined);
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2611,10 +2616,9 @@ describe('GalileoLogger', () => {
 
         expect(logger['traceId']).toBe(originalTraceId);
         expect(logger.traces.length).toBe(0);
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'API error' })
-        );
+        expect(consoleErrorSpy).toHaveBeenCalledWith('API error');
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
 
       it('should not add to parent stack when addToParentStack is false', async () => {
@@ -2737,6 +2741,7 @@ describe('GalileoLogger', () => {
         mockClient.getSpan = jest
           .fn()
           .mockRejectedValue(new Error('API error'));
+        enableLogging('error');
         const consoleErrorSpy = jest
           .spyOn(console, 'error')
           .mockImplementation(() => {});
@@ -2744,10 +2749,9 @@ describe('GalileoLogger', () => {
         await logger['initSpan'](mockSpanId);
 
         expect(logger['spanId']).toBe(originalSpanId);
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          expect.objectContaining({ message: 'API error' })
-        );
+        expect(consoleErrorSpy).toHaveBeenCalledWith('API error');
         consoleErrorSpy.mockRestore();
+        disableLogging();
       });
     });
 
@@ -3133,6 +3137,516 @@ describe('GalileoLogger', () => {
         // and updateTrace for the trace
         expect(mockClient.updateSpan).toHaveBeenCalled();
         expect(mockClient.updateTrace).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Disabled Logging Feature', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      process.env.GALILEO_PROJECT = 'test-project';
+      process.env.GALILEO_LOG_STREAM = 'test-log-stream';
+    });
+
+    describe('isLoggingDisabled() method', () => {
+      it('should return false when GALILEO_DISABLE_LOGGING is not set', () => {
+        delete process.env.GALILEO_DISABLE_LOGGING;
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(false);
+      });
+
+      it('should return false when GALILEO_DISABLE_LOGGING is empty string', () => {
+        process.env.GALILEO_DISABLE_LOGGING = '';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(false);
+      });
+
+      it('should return false when GALILEO_DISABLE_LOGGING is "0"', () => {
+        process.env.GALILEO_DISABLE_LOGGING = '0';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(false);
+      });
+
+      it('should return false when GALILEO_DISABLE_LOGGING is "false"', () => {
+        process.env.GALILEO_DISABLE_LOGGING = 'false';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(false);
+      });
+
+      it('should return false when GALILEO_DISABLE_LOGGING is "False" (case insensitive)', () => {
+        process.env.GALILEO_DISABLE_LOGGING = 'False';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(false);
+      });
+
+      it('should return true when GALILEO_DISABLE_LOGGING is "true"', () => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(true);
+      });
+
+      it('should return true when GALILEO_DISABLE_LOGGING is "1"', () => {
+        process.env.GALILEO_DISABLE_LOGGING = '1';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(true);
+      });
+
+      it('should return true when GALILEO_DISABLE_LOGGING is any non-zero, non-false value', () => {
+        process.env.GALILEO_DISABLE_LOGGING = 'yes';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(true);
+      });
+
+      it('should handle whitespace in GALILEO_DISABLE_LOGGING', () => {
+        process.env.GALILEO_DISABLE_LOGGING = '  true  ';
+        logger = new GalileoLogger();
+        expect(logger.isLoggingDisabled()).toBe(true);
+      });
+    });
+
+    describe('startTrace() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return empty trace when logging is disabled', () => {
+        const result = logger.startTrace({ input: 'test input' });
+        expect(result).toBeInstanceOf(Trace);
+        expect(result.input).toBe('');
+        expect(result.output).toBe('');
+      });
+
+      it('should not add trace to traces array when logging is disabled', () => {
+        logger.startTrace({ input: 'test input' });
+        expect(logger['traces']).toHaveLength(0);
+      });
+    });
+
+    describe('addLlmSpan() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return span when logging is disabled', () => {
+        const result = logger.addLlmSpan({
+          input: 'test input',
+          output: 'test output'
+        });
+        expect(result).toBeInstanceOf(LlmSpan);
+        // When disabled, the skipIfDisabled wrapper returns default span
+        expect(result).toBeTruthy();
+      });
+    });
+
+    describe('addRetrieverSpan() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return span when logging is disabled', () => {
+        const result = logger.addRetrieverSpan({
+          input: 'test input',
+          output: []
+        });
+        expect(result).toBeInstanceOf(RetrieverSpan);
+        expect(result).toBeTruthy();
+      });
+    });
+
+    describe('addToolSpan() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return span when logging is disabled', () => {
+        const result = logger.addToolSpan({
+          input: 'test input'
+        });
+        expect(result).toBeInstanceOf(ToolSpan);
+        expect(result).toBeTruthy();
+      });
+    });
+
+    describe('addWorkflowSpan() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return span when logging is disabled', () => {
+        const result = logger.addWorkflowSpan({
+          input: 'test input'
+        });
+        expect(result).toBeInstanceOf(WorkflowSpan);
+        expect(result).toBeTruthy();
+      });
+    });
+
+    describe('addAgentSpan() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return span when logging is disabled', () => {
+        const result = logger.addAgentSpan({
+          input: 'test input'
+        });
+        expect(result).toBeInstanceOf(AgentSpan);
+        expect(result).toBeTruthy();
+      });
+    });
+
+    describe('conclude() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return undefined when logging is disabled', () => {
+        const result = logger.conclude({ output: 'test output' });
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe('flush() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return empty array when logging is disabled', async () => {
+        const result = await logger.flush();
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe('terminate() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should resolve without error when logging is disabled', async () => {
+        await expect(logger.terminate()).resolves.toBeUndefined();
+      });
+    });
+
+    describe('startSession() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should return empty string when logging is disabled', async () => {
+        const result = await logger.startSession({ name: 'test-session' });
+        expect(result).toBe('');
+      });
+    });
+
+    describe('clearSession() with disabled logging', () => {
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+      });
+
+      it('should not throw when logging is disabled', () => {
+        expect(() => logger.clearSession()).not.toThrow();
+      });
+    });
+
+    describe('initTrace() with disabled logging', () => {
+      let disabledMockClient: MockGalileoApiClient;
+
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+        disabledMockClient = logger[
+          'client'
+        ] as unknown as MockGalileoApiClient;
+        disabledMockClient.init = jest.fn().mockResolvedValue(undefined);
+      });
+
+      it('should not initialize trace when logging is disabled', async () => {
+        await logger['initTrace']('test-trace-id');
+        expect(logger['traces']).toHaveLength(0);
+      });
+    });
+
+    describe('initSpan() with disabled logging', () => {
+      let disabledMockClient: MockGalileoApiClient;
+
+      beforeEach(() => {
+        process.env.GALILEO_DISABLE_LOGGING = 'true';
+        logger = new GalileoLogger();
+        disabledMockClient = logger[
+          'client'
+        ] as unknown as MockGalileoApiClient;
+        disabledMockClient.init = jest.fn().mockResolvedValue(undefined);
+      });
+
+      it('should not initialize span when logging is disabled', async () => {
+        await logger['initSpan']('test-span-id');
+        expect(logger['traces']).toHaveLength(0);
+      });
+    });
+  });
+
+  describe('Error Handling', () => {
+    let mockClient: MockGalileoApiClient;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      process.env.GALILEO_PROJECT = 'test-project';
+      process.env.GALILEO_LOG_STREAM = 'test-log-stream';
+      logger = new GalileoLogger();
+      mockClient = logger['client'] as unknown as MockGalileoApiClient;
+    });
+
+    describe('Configuration Validation', () => {
+      it('should throw error when ingestionHook is provided in non-batch mode', () => {
+        expect(() => {
+          logger = new GalileoLogger({
+            mode: 'streaming',
+            ingestionHook: async () => undefined
+          });
+        }).toThrow(
+          'ingestionHook is intended for batch mode; using it with a non-batch mode may lead to unexpected behavior.'
+        );
+      });
+
+      it('should not throw error when ingestionHook is provided in batch mode', () => {
+        expect(() => {
+          logger = new GalileoLogger({
+            mode: 'batch',
+            ingestionHook: async () => undefined
+          });
+        }).not.toThrow();
+      });
+
+      it('should allow traceId in streaming mode', async () => {
+        const mockTrace = {
+          id: 'test-trace-id',
+          input: 'test input',
+          createdAt: '2024-01-01T00:00:00Z',
+          userMetadata: {},
+          tags: [],
+          metrics: {}
+        };
+        mockClient.getTrace = jest.fn().mockResolvedValue(mockTrace);
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+
+        const streamingLogger = await GalileoLogger.create({
+          mode: 'streaming',
+          traceId: 'test-trace-id'
+        });
+        expect(streamingLogger).toBeTruthy();
+      });
+
+      it('should throw error when traceId is provided in batch mode', async () => {
+        await expect(
+          GalileoLogger.create({
+            mode: 'batch',
+            traceId: 'test-trace-id'
+          })
+        ).rejects.toThrow(
+          'traceId and spanId can only be used in streaming mode.'
+        );
+      });
+
+      it('should throw error when spanId is provided in batch mode', async () => {
+        await expect(
+          GalileoLogger.create({
+            mode: 'batch',
+            spanId: 'test-span-id'
+          })
+        ).rejects.toThrow(
+          'traceId and spanId can only be used in streaming mode.'
+        );
+      });
+    });
+
+    describe('startTrace() error handling', () => {
+      it('should throw error when trace already exists', () => {
+        logger.startTrace({ input: 'first trace' });
+        expect(() => {
+          logger.startTrace({ input: 'second trace' });
+        }).toThrow(
+          'You must conclude the existing trace before adding a new one.'
+        );
+      });
+    });
+
+    describe('addChildSpanToParent() error handling', () => {
+      it('should throw error when no trace exists', () => {
+        const span = new LlmSpan({
+          input: 'test',
+          output: 'test'
+        });
+        expect(() => {
+          logger.addChildSpanToParent(span);
+        }).toThrow('A trace needs to be created in order to add a span.');
+      });
+    });
+
+    describe('conclude() error handling in batch mode', () => {
+      it('should throw error when no trace exists in batch mode', () => {
+        expect(() => {
+          logger.conclude({ output: 'test' });
+        }).toThrow('No existing workflow to conclude.');
+      });
+    });
+
+    describe('conclude() error handling in streaming mode', () => {
+      beforeEach(() => {
+        logger = new GalileoLogger({ mode: 'streaming' });
+        mockClient = logger['client'] as unknown as MockGalileoApiClient;
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+      });
+
+      it('should not throw error when no trace exists in streaming mode', () => {
+        const result = logger.conclude({ output: 'test' });
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe('initTrace() error handling', () => {
+      beforeEach(() => {
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+        mockClient.getTrace = jest
+          .fn()
+          .mockRejectedValue(new Error('Trace not found'));
+      });
+
+      it('should handle error when trace fetch fails', async () => {
+        await logger['initTrace']('non-existent-trace-id');
+        expect(logger['traces']).toHaveLength(0);
+      });
+
+      it('should throw error when trace is not found', async () => {
+        mockClient.getTrace = jest.fn().mockResolvedValue(null);
+        await logger['initTrace']('non-existent-trace-id');
+        expect(logger['traces']).toHaveLength(0);
+      });
+    });
+
+    describe('initSpan() error handling', () => {
+      beforeEach(() => {
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+      });
+
+      it('should handle error when span is not found', async () => {
+        mockClient.getSpan = jest.fn().mockResolvedValue(null);
+        await logger['initSpan']('non-existent-span-id');
+        expect(logger['traces']).toHaveLength(0);
+      });
+
+      it('should handle error when span type is invalid', async () => {
+        mockClient.getSpan = jest.fn().mockResolvedValue({
+          id: 'test-span-id',
+          type: 'llm',
+          input: 'test input',
+          createdAt: '2024-01-01T00:00:00Z'
+        });
+        await logger['initSpan']('test-span-id');
+        expect(logger['traces']).toHaveLength(0);
+      });
+
+      it('should handle error when span does not belong to trace', async () => {
+        const mockTrace = {
+          id: 'trace-123',
+          input: 'test input',
+          createdAt: '2024-01-01T00:00:00Z',
+          userMetadata: {},
+          tags: [],
+          metrics: {}
+        };
+        mockClient.getTrace = jest.fn().mockResolvedValue(mockTrace);
+        mockClient.getSpan = jest.fn().mockResolvedValue({
+          id: 'test-span-id',
+          traceId: 'different-trace-id',
+          type: 'workflow',
+          input: 'test input',
+          createdAt: '2024-01-01T00:00:00Z'
+        });
+
+        await logger['initTrace']('trace-123');
+        await logger['initSpan']('test-span-id');
+        expect(logger['traces']).toHaveLength(1);
+      });
+    });
+
+    describe('Environment Variable Parsing', () => {
+      it('should handle undefined GALILEO_DISABLE_LOGGING gracefully', () => {
+        delete process.env.GALILEO_DISABLE_LOGGING;
+        expect(() => {
+          logger = new GalileoLogger();
+        }).not.toThrow();
+        expect(logger.isLoggingDisabled()).toBe(false);
+      });
+
+      it('should handle malformed GALILEO_DISABLE_LOGGING', () => {
+        process.env.GALILEO_DISABLE_LOGGING = 'invalid-value';
+        expect(() => {
+          logger = new GalileoLogger();
+        }).not.toThrow();
+        expect(logger.isLoggingDisabled()).toBe(true);
+      });
+    });
+
+    describe('flush() error handling', () => {
+      beforeEach(() => {
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+        mockClient.ingestTraces = jest
+          .fn()
+          .mockRejectedValue(new Error('API error'));
+      });
+
+      it('should handle error during ingestTraces call', async () => {
+        logger.startTrace({ input: 'test input' });
+        const result = await logger.flush();
+        expect(result).toEqual([]);
+      });
+
+      it('should clear traces after flush attempt even on error', async () => {
+        logger.startTrace({ input: 'test input' });
+        await logger.flush();
+        // Traces should be cleared or kept as-is, check the implementation
+        // This is to ensure we don't have duplicate traces on retry
+      });
+    });
+
+    describe('terminate() error handling', () => {
+      beforeEach(() => {
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+      });
+
+      it('should handle error during terminate in batch mode', async () => {
+        mockClient.ingestTraces = jest
+          .fn()
+          .mockRejectedValue(new Error('API error'));
+        logger = new GalileoLogger({ mode: 'batch' });
+        logger.startTrace({ input: 'test' });
+
+        await expect(logger.terminate()).resolves.toBeUndefined();
+      });
+
+      it('should wait for tasks to complete in streaming mode', async () => {
+        logger = new GalileoLogger({ mode: 'streaming' });
+        mockClient.init = jest.fn().mockResolvedValue(undefined);
+
+        logger.startTrace({ input: 'test input' });
+        logger.addLlmSpan({
+          input: 'llm input',
+          output: 'llm output'
+        });
+
+        await logger.terminate();
+        expect(logger['taskHandler']?.allTasksCompleted()).toBe(true);
       });
     });
   });

@@ -1,4 +1,5 @@
 import { GalileoLegacyApiClient, RequestMethod } from '../legacy-api-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Node } from '../types/node.types';
 import { Routes } from '../types/routes.types';
 import { RunTag } from './../types/tag.types';
@@ -9,6 +10,8 @@ import {
 } from '../types/scorer.types';
 import { timestampName } from '../utils/utils';
 import { ProjectTypes } from '../types/project.types';
+
+const sdkLogger = getSdkLogger();
 
 export default class GalileoEvaluateApiClient extends GalileoLegacyApiClient {
   constructor() {
@@ -33,8 +36,7 @@ export default class GalileoEvaluateApiClient extends GalileoLegacyApiClient {
       }
     );
 
-    // eslint-disable-next-line no-console
-    console.log(`✨ ${runName ?? timestampName('run')} created.`);
+    sdkLogger.info(`✨ ${runName ?? timestampName('run')} created.`);
 
     return run.id;
   }

@@ -1,4 +1,5 @@
 import { BaseClient, RequestMethod } from '../base-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Routes } from '../../types/routes.types';
 import {
   ScorerTypes,
@@ -23,6 +24,8 @@ import {
   DeleteScorerResponseOpenAPI
 } from '../../types/scorer.types';
 import { StepType } from '../../types/logging/step.types';
+
+const sdkLogger = getSdkLogger();
 
 export class ScorerService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -275,8 +278,8 @@ export class ScorerService extends BaseClient {
     codeContent: string,
     validationResult?: string
   ): Promise<BaseScorerVersionResponse> => {
-    console.log(`Creating metric version: ${scorerId}`);
-    console.log(`Code content length: ${codeContent.length} bytes`);
+    sdkLogger.info(`Creating metric version: ${scorerId}`);
+    sdkLogger.debug(`Code content length: ${codeContent.length} bytes`);
 
     // Create FormData with the code content as a file
     const formData = new FormData();
@@ -285,7 +288,7 @@ export class ScorerService extends BaseClient {
 
     // Add validation result if provided
     if (validationResult) {
-      console.log(`Including validation result in request`);
+      sdkLogger.debug(`Including validation result in request`);
       formData.append('validation_result', validationResult);
     }
 
@@ -296,7 +299,7 @@ export class ScorerService extends BaseClient {
       { scorer_id: scorerId }
     );
 
-    console.log(`Metric version created: ${result.id}`);
+    sdkLogger.info(`Metric version created: ${result.id}`);
     return this.convertToCamelCase<
       BaseScorerVersionResponseOpenAPI,
       BaseScorerVersionResponse
@@ -315,8 +318,8 @@ export class ScorerService extends BaseClient {
     scoreableNodeTypes: StepType[],
     requiredScorers?: string[]
   ): Promise<ValidateCodeScorerResponse> => {
-    console.log(`Submitting code for validation...`);
-    console.log(`Step type(s): ${JSON.stringify(scoreableNodeTypes)}`);
+    sdkLogger.info(`Submitting code for validation...`);
+    sdkLogger.debug(`Step type(s): ${JSON.stringify(scoreableNodeTypes)}`);
 
     const formData = new FormData();
     const blob = new Blob([codeContent], { type: 'text/x-python' });
@@ -331,7 +334,7 @@ export class ScorerService extends BaseClient {
       Routes.codeScorerValidate,
       formData
     );
-    console.log(`Validation task created: ${response.task_id}`);
+    sdkLogger.info(`Validation task created: ${response.task_id}`);
     return response;
   };
 
@@ -385,7 +388,7 @@ export class ScorerService extends BaseClient {
       const response = await this.getCodeScorerValidationResult(task_id);
 
       if (response.status === TaskStatus.COMPLETE) {
-        console.log(`Validation completed successfully`);
+        sdkLogger.info(`Validation completed successfully`);
         // Parse result if it's a string
         let result: ValidateRegisteredScorerResult | null = null;
         if (typeof response.result === 'string') {
@@ -408,7 +411,7 @@ export class ScorerService extends BaseClient {
 
         // Check if result is invalid
         if (result.result.result_type === ResultType.INVALID) {
-          console.log(
+          sdkLogger.warn(
             `Validation result: INVALID - ${result.result.error_message}`
           );
           throw new Error(
@@ -416,8 +419,8 @@ export class ScorerService extends BaseClient {
           );
         }
 
-        console.log(`  Score type: ${result.result.score_type}`);
-        console.log(
+        sdkLogger.debug(`  Score type: ${result.result.score_type}`);
+        sdkLogger.debug(
           `  Step type(s): ${JSON.stringify(result.result.scoreable_node_types)}`
         );
 
@@ -429,7 +432,7 @@ export class ScorerService extends BaseClient {
           typeof response.result === 'string'
             ? response.result
             : 'Validation task failed';
-        console.log(`Validation task failed: ${errorMessage}`);
+        sdkLogger.error(`Validation task failed: ${errorMessage}`);
         throw new Error(`Code metric validation failed: ${errorMessage}`);
       }
 
@@ -437,7 +440,7 @@ export class ScorerService extends BaseClient {
       await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     }
 
-    console.log(
+    sdkLogger.warn(
       `Validation timed out after ${timeoutMs / 1000} seconds (${pollCount} polls)`
     );
     throw new Error(

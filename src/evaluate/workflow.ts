@@ -7,6 +7,7 @@ import {
 } from '../types/legacy-step.types';
 import GalileoWorkflow from '../workflow';
 import GalileoEvaluateApiClient from './api-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Node } from '../types/node.types';
 import { RunTag } from '../types/tag.types';
 import {
@@ -14,6 +15,8 @@ import {
   RegisteredScorer,
   ScorersConfiguration
 } from '../types/scorer.types';
+
+const sdkLogger = getSdkLogger();
 
 /**
  * @deprecated This class is no longer actively maintained. Please use `runExperiment` instead.
@@ -116,10 +119,8 @@ export default class GalileoEvaluateWorkflow extends GalileoWorkflow {
     const loggedWorkflows = this.workflows;
     this.workflows = [];
 
-    // eslint-disable-next-line no-console
-    console.log('🚀 Workflows uploaded!');
-    // eslint-disable-next-line no-console
-    console.log(loggedWorkflows);
+    sdkLogger.info('🚀 Workflows uploaded!');
+    sdkLogger.info(JSON.stringify(loggedWorkflows));
 
     return loggedWorkflows;
   }

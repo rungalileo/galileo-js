@@ -1,3 +1,4 @@
+import { getSdkLogger } from 'galileo-generated';
 import {
   AgentStep,
   AgentStepType,
@@ -13,6 +14,8 @@ import {
   WorkflowStep,
   WorkflowStepType
 } from './types/legacy-step.types';
+
+const sdkLogger = getSdkLogger();
 
 export default class GalileoWorkflow {
   public projectName: string;
@@ -31,8 +34,7 @@ export default class GalileoWorkflow {
     this.workflows.push(step);
     this.currentWorkflow = nestedWorkflow ? step : null;
 
-    // eslint-disable-next-line no-console
-    console.log('➕ New workflow added…');
+    sdkLogger.info('➕ New workflow added…');
 
     return step;
   }

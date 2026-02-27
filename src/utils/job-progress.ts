@@ -1,10 +1,12 @@
 import cliProgress from 'cli-progress';
 import { GalileoApiClient } from '../api-client';
-import { JobDbType, JobStatus, RequestData, Scorers } from '../types/job.types';
+import type { JobDbType, RequestData } from '../types/job.types';
+import { JobStatus, Scorers } from '../types/job.types';
+import { getSdkLogger } from 'galileo-generated';
 
 export interface JobProgressLogger {
-  info?: (message: string) => void;
-  debug?: (message: string) => void;
+  info: (message: string) => void;
+  debug: (message: string) => void;
 }
 
 export interface PollJobOptions {
@@ -92,46 +94,77 @@ const extractScorerName = (
 };
 
 /**
- * Gets and logs the status of all scorer jobs for a given project and run.
- * @param service The JobProgressService instance.
+ * Logs the status of a single scorer job.
+ * @param job The job to log status for.
+ * @param scorerName The scorer name extracted from the job.
+ * @param logger The logger to use for output.
+ */
+const logJobStatus = (
+  job: JobDbType,
+  scorerName: string,
+  logger: JobProgressLogger
+): void => {
+  const canonicalScorerName = normalizeScorerName(scorerName);
+  const cleanName = canonicalScorerName.replace(/^_+/, '');
+
+  logger.debug(`Scorer job ${job.id} has scorer ${canonicalScorerName}.`);
+
+  if (isJobIncomplete(job.status)) {
+    logger.info(`${cleanName}: Computing 🚧`);
+  } else if (isJobFailed(job.status)) {
+    logger.info(
+      `${cleanName}: Failed ❌, error was: ${job.errorMessage || 'Unknown error'}`
+    );
+  } else {
+    logger.info(`${cleanName}: Done ✅`);
+  }
+};
+
+/**
+ * Internal helper to log scorer jobs status using a custom fetch function.
  * @param projectId The unique identifier of the project.
  * @param runId The unique identifier of the run.
- * @param logger Optional logger interface (defaults to console).
+ * @param logger The logger to use for output.
+ * @param fetchJobs Function to fetch jobs from API.
  */
-export async function logScorerJobsStatus(
+const logScorerJobsInternal = async (
   projectId: string,
   runId: string,
-  logger: JobProgressLogger = {}
-): Promise<void> {
-  const { info = console.log, debug = console.debug } = logger;
+  logger: JobProgressLogger,
+  fetchJobs: (client: GalileoApiClient) => Promise<JobDbType[]>
+): Promise<void> => {
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId });
 
-  const scorerJobs = await apiClient.getRunScorerJobs(projectId, runId);
+  const scorerJobs = await fetchJobs(apiClient);
 
   for (const job of scorerJobs) {
     const scorerName = extractScorerName(job.requestData || {});
 
     if (!scorerName) {
-      debug(`Scorer job ${job.id} has no scorer name.`);
+      logger.debug(`Scorer job ${job.id} has no scorer name.`);
       continue;
     }
 
-    const canonicalScorerName = normalizeScorerName(scorerName);
-    const cleanName = canonicalScorerName.replace(/^_+/, '');
-
-    debug(`Scorer job ${job.id} has scorer ${canonicalScorerName}.`);
-
-    if (isJobIncomplete(job.status)) {
-      info(`${cleanName}: Computing 🚧`);
-    } else if (isJobFailed(job.status)) {
-      info(
-        `${cleanName}: Failed ❌, error was: ${job.errorMessage || 'Unknown error'}`
-      );
-    } else {
-      info(`${cleanName}: Done ✅`);
-    }
+    logJobStatus(job, scorerName, logger);
   }
+};
+
+/**
+ * Gets and logs the status of all scorer jobs for a given project and run.
+ * @param projectId The unique identifier of the project.
+ * @param runId The unique identifier of the run.
+ * @param logger Optional logger interface (defaults to internal SDK logger).
+ */
+export async function logScorerJobsStatus(
+  projectId: string,
+  runId: string,
+  logger?: JobProgressLogger
+): Promise<void> {
+  const finalLogger = logger || getSdkLogger();
+  await logScorerJobsInternal(projectId, runId, finalLogger, (client) =>
+    client.getRunScorerJobs(projectId, runId)
+  );
 }
 
 /**
@@ -246,14 +279,14 @@ export async function getJobProgress(
   }
 
   // Log debug message
-  const { debug = console.debug, info = console.log } = options.logger || {};
-  debug(`Job ${jobId} status: ${job.status}.`);
+  const logger = options.logger || getSdkLogger();
+  logger.debug(`Job ${jobId} status: ${job.status}.`);
 
   // Log scorer jobs status
-  info(
+  logger.info(
     'Initial job complete, executing scorers asynchronously. Current status as follows:'
   );
-  await logScorerJobsStatus(projectId, runId, { info, debug });
+  await logScorerJobsStatus(projectId, runId, logger);
 
   return job.id;
 }
@@ -289,42 +322,17 @@ export async function getRunScorerJobs(
  * Legacy function matching Python scorer_jobs_status() behavior.
  * @param projectId The ID of the project.
  * @param runId The ID of the run.
+ * @param logger Optional logger interface (defaults to sdkLogger).
  */
 export const getScorerJobsStatus = async (
   projectId: string,
-  runId: string
+  runId: string,
+  logger?: JobProgressLogger
 ): Promise<void> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectId, runId });
-
-  const scorerJobs = await apiClient.getJobsForProjectRun(projectId, runId);
-
-  for (const job of scorerJobs) {
-    const requestData = job.requestData as RequestData;
-    let scorerName: string | undefined;
-
-    if (requestData?.prompt_scorer_settings?.scorer_name) {
-      scorerName = requestData.prompt_scorer_settings.scorer_name;
-    } else if (requestData?.scorer_config?.name) {
-      scorerName = requestData.scorer_config.name;
-    }
-
-    if (!scorerName) {
-      console.debug(`Scorer job ${job.id} has no scorer name.`);
-      continue;
-    }
-
-    const canonicalScorerName = normalizeScorerName(scorerName);
-    const cleanName = canonicalScorerName.replace(/^_+/, '');
-
-    if (isJobIncomplete(job.status)) {
-      console.log(`${cleanName}: Computing 🚧`);
-    } else if (isJobFailed(job.status)) {
-      console.log(`${cleanName}: Failed ❌, error was: ${job.errorMessage}`);
-    } else {
-      console.log(`${cleanName}: Done ✅`);
-    }
-  }
+  const finalLogger = logger || getSdkLogger();
+  await logScorerJobsInternal(projectId, runId, finalLogger, (client) =>
+    client.getJobsForProjectRun(projectId, runId)
+  );
 };
 
 /**

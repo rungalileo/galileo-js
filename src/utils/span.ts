@@ -1,10 +1,13 @@
 import { Document, ChunkMetaDataValueType } from '../types/document.types';
+import { getSdkLogger } from 'galileo-generated';
 import { Message, MessageRole, ToolCall } from '../types/message.types';
 import {
   LlmSpanAllowedInputType,
   LlmSpanAllowedOutputType,
   RetrieverSpanAllowedOutputType
 } from '../types/logging/step.types';
+
+const sdkLogger = getSdkLogger();
 
 /**
  * Attempt to convert an object to a Message, or return null if not possible
@@ -54,7 +57,7 @@ export const convertToMessage = (
       }
     }
   } catch (e) {
-    console.log('Unable to convert to Message', e);
+    sdkLogger.warn('Unable to convert to Message', e);
   }
 
   if (typeof obj === 'string') {
@@ -80,7 +83,7 @@ export const convertLlmInput = (
     try {
       return value as Message[];
     } catch (e) {
-      console.log('Unable to convert to Message', e);
+      sdkLogger.warn('Unable to convert to Message', e);
     }
 
     // some other kind of array
@@ -115,7 +118,7 @@ export const tryConvertToDocument = (value: object): Document | null => {
         metadata: value['metadata'] as Record<string, ChunkMetaDataValueType>
       });
     } catch (e) {
-      console.log('Unable to convert to Document', e);
+      sdkLogger.warn('Unable to convert to Document', e);
     }
   }
   return null;
@@ -157,7 +160,7 @@ export const convertRetrieverOutput = (
     }
     return [new Document({ content: JSON.stringify(value) })];
   } catch (e) {
-    console.log('Unable to set output', e);
+    sdkLogger.warn('Unable to set output', e);
     return [new Document({ content: '' })];
   }
 };

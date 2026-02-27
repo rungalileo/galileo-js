@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { GalileoConfig } from 'galileo-generated';
 import {
   createPrompt,
   deletePrompt,
@@ -162,6 +163,7 @@ const server = setupServer(...handlers);
 beforeAll(() => {
   process.env.GALILEO_CONSOLE_URL = TEST_HOST;
   process.env.GALILEO_API_KEY = 'placeholder';
+  GalileoConfig.reset();
   server.listen();
 });
 

@@ -1,4 +1,5 @@
 import { BaseClient, RequestMethod } from '../base-client';
+import { getSdkLogger } from 'galileo-generated';
 import { Routes } from '../../types/routes.types';
 import {
   Trace,
@@ -59,6 +60,8 @@ import {
   LogRecordsQueryResponse,
   LogRecordsQueryResponseOpenAPI
 } from '../../types/shared.types';
+
+const sdkLogger = getSdkLogger();
 
 import { GalileoGenerated } from 'galileo-generated';
 const galileoGenerated = new GalileoGenerated();
@@ -165,8 +168,7 @@ export class TraceService extends BaseClient {
       },
       { project_id: this.projectId }
     );
-    // eslint-disable-next-line no-console
-    console.log(
+    sdkLogger.info(
       `🚀 ${traces.length} Traces ingested for project ${this.projectId}.`
     );
   }

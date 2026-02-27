@@ -1,8 +1,10 @@
 import { decode } from 'jsonwebtoken';
+import { getSdkLogger } from 'galileo-generated';
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 import { Project, ProjectTypes } from './types/project.types';
 import { Routes } from './types/routes.types';
+const sdkLogger = getSdkLogger();
 
 import querystring from 'querystring';
 export enum RequestMethod {
@@ -34,16 +36,14 @@ export class GalileoLegacyApiClient {
       if (projectName) {
         try {
           this.projectId = await this.getProjectIdByName(projectName);
-          // eslint-disable-next-line no-console
-          console.log(`✅ Using ${projectName}`);
+          sdkLogger.info(`✅ Using ${projectName}`);
         } catch (err: unknown) {
           const error = err as Error;
 
           if (error.message.includes('not found')) {
             const project = await this.createProject(projectName);
             this.projectId = project.id;
-            // eslint-disable-next-line no-console
-            console.log(`✨ ${projectName} created.`);
+            sdkLogger.info(`✨ ${projectName} created.`);
           } else {
             throw err;
           }

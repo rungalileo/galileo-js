@@ -35,12 +35,14 @@ import { populateLocalMetrics } from '../utils/metrics';
 import type { Payload, ProtectResponse } from '../types/new-api.types';
 import { handleGalileoHttpExceptionsForRetry, withRetry } from './retry-utils';
 import { TaskHandler } from './task-handler';
+import { getSdkLogger } from 'galileo-generated';
 import type {
   GalileoLoggerConfig,
   GalileoLoggerConfigExtended,
   IGalileoLogger
 } from '../types/logging/logger.types';
 
+const sdkLogger = getSdkLogger();
 const NUM_RETRIES = 3;
 
 /**
@@ -54,7 +56,7 @@ function skipIfDisabled<T, Args extends unknown[]>(
 ): (this: GalileoLogger, ...args: Args) => T {
   return function (this: GalileoLogger, ...args: Args): T {
     if (this.isLoggingDisabled()) {
-      console.warn('Logging is disabled, skipping execution of', fn.name);
+      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
       return defaultValueFn(args);
     }
     return fn.apply(this, args);
@@ -72,7 +74,7 @@ function skipIfDisabledAsync<T, Args extends unknown[]>(
 ): (this: GalileoLogger, ...args: Args) => Promise<T> {
   return async function (this: GalileoLogger, ...args: Args): Promise<T> {
     if (this.isLoggingDisabled()) {
-      console.warn('Logging is disabled, skipping execution of', fn.name);
+      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
       return defaultValueFn(args);
     }
     return await fn.apply(this, args);
@@ -281,7 +283,7 @@ class GalileoLogger implements IGalileoLogger {
           return existingSessionId;
         }
       } catch (_error) {
-        console.info(
+        sdkLogger.info(
           'No session found with external ID provided, continuing to create new session'
         );
       }
@@ -1221,20 +1223,20 @@ class GalileoLogger implements IGalileoLogger {
   async flush(): Promise<Trace[]> {
     try {
       if (this.mode === 'streaming') {
-        console.warn(
+        sdkLogger.warn(
           'Flushing in streaming mode is not supported. Traces are automatically ingested as they are created.'
         );
         return [];
       }
 
       if (!this.traces.length) {
-        console.warn('No traces to flush.');
+        sdkLogger.warn('No traces to flush.');
         return [];
       }
 
       const currentParent = this.currentParent();
       if (currentParent !== undefined) {
-        console.info('Concluding the active trace...');
+        sdkLogger.info('Concluding the active trace...');
         const lastOutputs = GalileoLogger.getLastOutput(currentParent);
         this.conclude({
           output: lastOutputs?.output,
@@ -1254,13 +1256,13 @@ class GalileoLogger implements IGalileoLogger {
 
       // Compute local metrics if configured
       if (this.localMetrics && this.localMetrics.length > 0) {
-        console.info('Computing metrics for local scorers...');
+        sdkLogger.info('Computing metrics for local scorers...');
         for (const trace of this.traces) {
           populateLocalMetrics(trace, this.localMetrics);
         }
       }
 
-      console.info(`Flushing ${this.traces.length} traces...`);
+      sdkLogger.info(`Flushing ${this.traces.length} traces...`);
       const loggedTraces = [...this.traces];
 
       // Create TracesIngestRequest - convert traces to JSON format.
@@ -1283,12 +1285,12 @@ class GalileoLogger implements IGalileoLogger {
         await this.client.ingestTraces(tracesIngestRequest);
       }
 
-      console.info(`Successfully flushed ${loggedTraces.length} traces.`);
+      sdkLogger.info(`Successfully flushed ${loggedTraces.length} traces.`);
       this.traces = []; // Clear after uploading
       this.setParentStack([]);
       return loggedTraces;
     } catch (error) {
-      console.error(error);
+      sdkLogger.error(String(error));
       return [];
     }
   }
@@ -1309,7 +1311,7 @@ class GalileoLogger implements IGalileoLogger {
 
           while (!this.taskHandler.allTasksCompleted()) {
             if (Date.now() - startWait > timeoutSeconds * 1000) {
-              console.warn(
+              sdkLogger.warn(
                 'Terminate timeout reached. Some requests may not have completed.'
               );
               break;
@@ -1319,15 +1321,15 @@ class GalileoLogger implements IGalileoLogger {
           }
 
           if (this.taskHandler.allTasksCompleted()) {
-            console.info('All requests are complete.');
+            sdkLogger.info('All requests are complete.');
           }
 
           this.taskHandler.terminate();
         }
-        console.info('Terminating logger in streaming mode.');
+        sdkLogger.info('Terminating logger in streaming mode.');
       }
     } catch (error) {
-      console.error('Error in terminate():', error);
+      sdkLogger.error('Error in terminate():', error);
       throw error;
     }
   }
@@ -1367,7 +1369,7 @@ class GalileoLogger implements IGalileoLogger {
         disableLoggingValue?.toLowerCase() ?? ''
       );
     } catch (error) {
-      console.error(
+      sdkLogger.error(
         'Error checking if logging is disabled; GALILEO_DISABLE_LOGGING environment variable is not set correctly:',
         error
       );
@@ -1529,7 +1531,7 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      console.error(error);
+      sdkLogger.error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -1649,7 +1651,7 @@ class GalileoLogger implements IGalileoLogger {
         }
       }
 
-      console.error(error);
+      sdkLogger.error(error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -1748,24 +1750,14 @@ class GalileoLogger implements IGalileoLogger {
       .submitTask(taskId, async () => {
         await this.ensureClientInitialized();
 
-        await withRetry(
-          handleGalileoHttpExceptionsForRetry(async () => {
-            await this.client.ingestTraces(tracesIngestRequest);
-          }),
-          taskId,
-          NUM_RETRIES,
-          (error) => {
-            // Increment retry count on each retry attempt
-            this.taskHandler?.incrementRetry(taskId);
-            const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            console.warn(`Retry #${retryCount} for task ${taskId}: `, error);
-          }
-        );
+        this.submitStreamingTask(taskId, async () => {
+          await this.client.ingestTraces(tracesIngestRequest);
+        });
       })
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
         // Errors are already logged by retry logic
-        console.error(`Task ${taskId} failed:`, error);
+        sdkLogger.error(`Task ${taskId} failed:`, error);
       });
   }
 
@@ -1780,7 +1772,7 @@ class GalileoLogger implements IGalileoLogger {
 
     const currentParent = this.currentParent();
     if (!currentParent) {
-      console.error('A trace needs to be created in order to add a span.');
+      sdkLogger.error('A trace needs to be created in order to add a span.');
       return;
     }
 
@@ -1791,7 +1783,7 @@ class GalileoLogger implements IGalileoLogger {
         : currentParent;
 
     if (!parentStep) {
-      console.error('A trace needs to be created in order to add a span.');
+      sdkLogger.error('A trace needs to be created in order to add a span.');
       return;
     }
 
@@ -1810,30 +1802,9 @@ class GalileoLogger implements IGalileoLogger {
 
     const taskId = `span-ingest-${span.id}`;
 
-    // Submit task with retry logic wrapped inside (fire-and-forget)
-    this.taskHandler
-      .submitTask(taskId, async () => {
-        await this.ensureClientInitialized();
-
-        await withRetry(
-          handleGalileoHttpExceptionsForRetry(async () => {
-            await this.client.ingestSpans(spansIngestRequest);
-          }),
-          taskId,
-          NUM_RETRIES,
-          (error) => {
-            // Increment retry count on each retry attempt
-            this.taskHandler?.incrementRetry(taskId);
-            const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            console.warn(`Retry #${retryCount} for task ${taskId}: `, error);
-          }
-        );
-      })
-      .catch((error) => {
-        // Handle errors silently in fire-and-forget mode
-        // Errors are already logged by retry logic
-        console.error(`Task ${taskId} failed:`, error);
-      });
+    this.submitStreamingTask(taskId, async () => {
+      await this.client.ingestSpans(spansIngestRequest);
+    });
   }
 
   /**
@@ -1864,37 +1835,13 @@ class GalileoLogger implements IGalileoLogger {
 
     const taskId = `trace-update-${trace.id}`;
 
-    // Submit task with retry logic wrapped inside (fire-and-forget)
-    // Updates depend on previous tasks (dependent_on_prev=True in Python)
-    this.taskHandler
-      .submitTask(
-        taskId,
-        async () => {
-          await this.ensureClientInitialized();
-
-          await withRetry(
-            handleGalileoHttpExceptionsForRetry(async () => {
-              await this.client.updateTrace(traceUpdateRequest);
-            }),
-            taskId,
-            NUM_RETRIES,
-            (error) => {
-              // Increment retry count on each retry attempt
-              this.taskHandler?.incrementRetry(taskId);
-              const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              console.warn(
-                `Retry #${retryCount} for task ${taskId}: ${error.message}`
-              );
-            }
-          );
-        },
-        `trace-ingest-${trace.id}` // Dependent on previous task
-      )
-      .catch((error) => {
-        // Handle errors silently in fire-and-forget mode
-        // Errors are already logged by retry logic
-        console.error(`Task ${taskId} failed:`, error);
-      });
+    this.submitStreamingTask(
+      taskId,
+      async () => {
+        await this.client.updateTrace(traceUpdateRequest);
+      },
+      `trace-ingest-${trace.id}`
+    );
   }
 
   /**
@@ -1930,8 +1877,32 @@ class GalileoLogger implements IGalileoLogger {
 
     const taskId = `span-update-${span.id}`;
 
-    // Submit task with retry logic wrapped inside (fire-and-forget)
-    // Updates depend on previous tasks (dependent_on_prev=True in Python)
+    this.submitStreamingTask(
+      taskId,
+      async () => {
+        await this.client.updateSpan(spanUpdateRequest);
+      },
+      `span-ingest-${span.id}`
+    );
+  }
+
+  /**
+   * Generic streaming operation handler that wraps retry logic and task submission.
+   * Handles the common pattern used by ingestTraceStreaming, ingestSpanStreaming, updateTraceStreaming and updateSpanStreaming.
+   *
+   * @param taskId - Unique identifier for the task
+   * @param operation - The async operation to execute with retry logic
+   * @param dependentOnTaskId - (Optional) Task ID to depend on for ordering
+   */
+  private submitStreamingTask(
+    taskId: string,
+    operation: () => Promise<void>,
+    dependentOnTaskId?: string
+  ): void {
+    if (this.mode !== 'streaming' || !this.taskHandler) {
+      return;
+    }
+
     this.taskHandler
       .submitTask(
         taskId,
@@ -1939,25 +1910,23 @@ class GalileoLogger implements IGalileoLogger {
           await this.ensureClientInitialized();
 
           await withRetry(
-            handleGalileoHttpExceptionsForRetry(async () => {
-              await this.client.updateSpan(spanUpdateRequest);
-            }),
+            handleGalileoHttpExceptionsForRetry(operation),
             taskId,
             NUM_RETRIES,
             (error) => {
-              // Increment retry count on each retry attempt
               this.taskHandler?.incrementRetry(taskId);
               const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-              console.warn(`Retry #${retryCount} for task ${taskId}: `, error);
+              sdkLogger.warn(
+                `Retry #${retryCount} for task ${taskId}: `,
+                error
+              );
             }
           );
         },
-        `span-ingest-${span.id}` // Dependent on previous task
+        dependentOnTaskId
       )
       .catch((error) => {
-        // Handle errors silently in fire-and-forget mode
-        // Errors are already logged by retry logic
-        console.error(`Task ${taskId} failed:`, error);
+        sdkLogger.error(`Task ${taskId} failed:`, error);
       });
   }
 
@@ -1985,7 +1954,7 @@ class GalileoLogger implements IGalileoLogger {
     const currentParent = this.currentParent();
     if (currentParent === undefined) {
       if (this.mode === 'streaming') {
-        console.error('No existing workflow to conclude.');
+        sdkLogger.error('No existing workflow to conclude.');
         return;
       } else {
         throw new Error('No existing workflow to conclude.');
