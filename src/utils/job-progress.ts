@@ -1,6 +1,7 @@
 import cliProgress from 'cli-progress';
 import { GalileoApiClient } from '../api-client';
-import { JobDbType, JobStatus, RequestData, Scorers } from '../types/job.types';
+import type { JobDbType, RequestData } from '../types/job.types';
+import { JobStatus, Scorers } from '../types/job.types';
 import { getSdkLogger } from 'galileo-generated';
 
 export interface JobProgressLogger {
@@ -292,11 +293,14 @@ export async function getRunScorerJobs(
  * Legacy function matching Python scorer_jobs_status() behavior.
  * @param projectId The ID of the project.
  * @param runId The ID of the run.
+ * @param logger Optional logger interface (defaults to sdkLogger).
  */
 export const getScorerJobsStatus = async (
   projectId: string,
-  runId: string
+  runId: string,
+  logger?: JobProgressLogger
 ): Promise<void> => {
+  const finalLogger = logger || getSdkLogger();
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId });
 
@@ -313,7 +317,7 @@ export const getScorerJobsStatus = async (
     }
 
     if (!scorerName) {
-      getSdkLogger().debug(`Scorer job ${job.id} has no scorer name.`);
+      finalLogger.debug(`Scorer job ${job.id} has no scorer name.`);
       continue;
     }
 
@@ -321,13 +325,13 @@ export const getScorerJobsStatus = async (
     const cleanName = canonicalScorerName.replace(/^_+/, '');
 
     if (isJobIncomplete(job.status)) {
-      getSdkLogger().info(`${cleanName}: Computing 🚧`);
+      finalLogger.info(`${cleanName}: Computing 🚧`);
     } else if (isJobFailed(job.status)) {
-      getSdkLogger().info(
+      finalLogger.info(
         `${cleanName}: Failed ❌, error was: ${job.errorMessage}`
       );
     } else {
-      getSdkLogger().info(`${cleanName}: Done ✅`);
+      finalLogger.info(`${cleanName}: Done ✅`);
     }
   }
 };

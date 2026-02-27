@@ -1750,19 +1750,9 @@ class GalileoLogger implements IGalileoLogger {
       .submitTask(taskId, async () => {
         await this.ensureClientInitialized();
 
-        await withRetry(
-          handleGalileoHttpExceptionsForRetry(async () => {
-            await this.client.ingestTraces(tracesIngestRequest);
-          }),
-          taskId,
-          NUM_RETRIES,
-          (error) => {
-            // Increment retry count on each retry attempt
-            this.taskHandler?.incrementRetry(taskId);
-            const retryCount = this.taskHandler?.getRetryCount(taskId) || 0;
-            sdkLogger.warn(`Retry #${retryCount} for task ${taskId}: `, error);
-          }
-        );
+        this.submitStreamingTask(taskId, async () => {
+          await this.client.ingestTraces(tracesIngestRequest);
+        });
       })
       .catch((error) => {
         // Handle errors silently in fire-and-forget mode
@@ -1898,7 +1888,7 @@ class GalileoLogger implements IGalileoLogger {
 
   /**
    * Generic streaming operation handler that wraps retry logic and task submission.
-   * Handles the common pattern used by ingestTraceStreaming, ingestSpanStreaming, and updateTraceStreaming.
+   * Handles the common pattern used by ingestTraceStreaming, ingestSpanStreaming, updateTraceStreaming and updateSpanStreaming.
    *
    * @param taskId - Unique identifier for the task
    * @param operation - The async operation to execute with retry logic

@@ -4,13 +4,15 @@ import {
   getJob,
   getRunScorerJobs,
   getScorerJobsStatus,
-  JobProgressLogger
+  type JobProgressLogger
 } from '../../src/utils/job-progress';
-import {
+import type {
   JobDbType,
-  JobStatus,
-  JobName,
   RequestData
+} from '../../src/types/job.types';
+import {
+  JobStatus,
+  JobName
 } from '../../src/types/job.types';
 import {
   enableLogging,
@@ -426,22 +428,15 @@ describe('Job Progress Utilities', () => {
       ];
       mockGetJobsForProjectRun.mockResolvedValue(jobs);
 
-      enableLogging('info');
-      const consoleSpy = {
-        info: jest.spyOn(console, 'info').mockImplementation(() => {
-          // Mock implementation
-        }),
-        debug: jest.spyOn(console, 'debug').mockImplementation(() => {
-          // Mock implementation
-        })
+      const logger: JobProgressLogger = {
+        info: jest.fn(),
+        debug: jest.fn()
       };
 
-      await getScorerJobsStatus(projectId, runId);
+      await getScorerJobsStatus(projectId, runId, logger);
 
-      expect(consoleSpy.info).toHaveBeenCalled();
-      consoleSpy.info.mockRestore();
-      consoleSpy.debug.mockRestore();
-      disableLogging();
+      expect(logger.info).toHaveBeenCalledWith('completeness_luna: Done ✅');
+      expect(mockGetJobsForProjectRun).toHaveBeenCalledWith(projectId, runId);
     });
   });
 });
