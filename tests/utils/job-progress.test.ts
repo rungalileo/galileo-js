@@ -6,14 +6,8 @@ import {
   getScorerJobsStatus,
   type JobProgressLogger
 } from '../../src/utils/job-progress';
-import type {
-  JobDbType,
-  RequestData
-} from '../../src/types/job.types';
-import {
-  JobStatus,
-  JobName
-} from '../../src/types/job.types';
+import type { JobDbType, RequestData } from '../../src/types/job.types';
+import { JobStatus, JobName } from '../../src/types/job.types';
 import {
   enableLogging,
   disableLogging,
