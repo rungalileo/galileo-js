@@ -18,11 +18,12 @@ import {
   createGalileoCustomSpanData,
   type GalileoCustomSpanData
 } from './custom-span';
+import { getSdkLogger } from 'galileo-generated';
+const sdkLogger = getSdkLogger();
 
 // Warn if @openai/agents package is not available (optional peer dependency)
 import('@openai/agents-core' as string).catch(() => {
-  // eslint-disable-next-line no-console
-  console.warn(
+  sdkLogger.warn(
     '@openai/agents package is not installed. GalileoTracingProcessor will not function.'
   );
 });
