@@ -94,8 +94,64 @@ const extractScorerName = (
 };
 
 /**
+ * Logs the status of a single scorer job.
+ * @param job The job to log status for.
+ * @param scorerName The scorer name extracted from the job.
+ * @param logger The logger to use for output.
+ */
+const logJobStatus = (
+  job: JobDbType,
+  scorerName: string,
+  logger: JobProgressLogger
+): void => {
+  const canonicalScorerName = normalizeScorerName(scorerName);
+  const cleanName = canonicalScorerName.replace(/^_+/, '');
+
+  logger.debug(`Scorer job ${job.id} has scorer ${canonicalScorerName}.`);
+
+  if (isJobIncomplete(job.status)) {
+    logger.info(`${cleanName}: Computing 🚧`);
+  } else if (isJobFailed(job.status)) {
+    logger.info(
+      `${cleanName}: Failed ❌, error was: ${job.errorMessage || 'Unknown error'}`
+    );
+  } else {
+    logger.info(`${cleanName}: Done ✅`);
+  }
+};
+
+/**
+ * Internal helper to log scorer jobs status using a custom fetch function.
+ * @param projectId The unique identifier of the project.
+ * @param runId The unique identifier of the run.
+ * @param logger The logger to use for output.
+ * @param fetchJobs Function to fetch jobs from API.
+ */
+const logScorerJobsInternal = async (
+  projectId: string,
+  runId: string,
+  logger: JobProgressLogger,
+  fetchJobs: (client: GalileoApiClient) => Promise<JobDbType[]>
+): Promise<void> => {
+  const apiClient = new GalileoApiClient();
+  await apiClient.init({ projectId, runId });
+
+  const scorerJobs = await fetchJobs(apiClient);
+
+  for (const job of scorerJobs) {
+    const scorerName = extractScorerName(job.requestData || {});
+
+    if (!scorerName) {
+      logger.debug(`Scorer job ${job.id} has no scorer name.`);
+      continue;
+    }
+
+    logJobStatus(job, scorerName, logger);
+  }
+};
+
+/**
  * Gets and logs the status of all scorer jobs for a given project and run.
- * @param service The JobProgressService instance.
  * @param projectId The unique identifier of the project.
  * @param runId The unique identifier of the run.
  * @param logger Optional logger interface (defaults to console).
@@ -106,36 +162,9 @@ export async function logScorerJobsStatus(
   logger?: JobProgressLogger
 ): Promise<void> {
   const finalLogger = logger || getSdkLogger();
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectId, runId });
-
-  const scorerJobs = await apiClient.getRunScorerJobs(projectId, runId);
-
-  for (const job of scorerJobs) {
-    const scorerName = extractScorerName(job.requestData || {});
-
-    if (!scorerName) {
-      finalLogger.debug(`Scorer job ${job.id} has no scorer name.`);
-      continue;
-    }
-
-    const canonicalScorerName = normalizeScorerName(scorerName);
-    const cleanName = canonicalScorerName.replace(/^_+/, '');
-
-    finalLogger.debug(
-      `Scorer job ${job.id} has scorer ${canonicalScorerName}.`
-    );
-
-    if (isJobIncomplete(job.status)) {
-      finalLogger.info(`${cleanName}: Computing 🚧`);
-    } else if (isJobFailed(job.status)) {
-      finalLogger.info(
-        `${cleanName}: Failed ❌, error was: ${job.errorMessage || 'Unknown error'}`
-      );
-    } else {
-      finalLogger.info(`${cleanName}: Done ✅`);
-    }
-  }
+  await logScorerJobsInternal(projectId, runId, finalLogger, (client) =>
+    client.getRunScorerJobs(projectId, runId)
+  );
 }
 
 /**
@@ -301,39 +330,9 @@ export const getScorerJobsStatus = async (
   logger?: JobProgressLogger
 ): Promise<void> => {
   const finalLogger = logger || getSdkLogger();
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectId, runId });
-
-  const scorerJobs = await apiClient.getJobsForProjectRun(projectId, runId);
-
-  for (const job of scorerJobs) {
-    const requestData = job.requestData as RequestData;
-    let scorerName: string | undefined;
-
-    if (requestData?.prompt_scorer_settings?.scorer_name) {
-      scorerName = requestData.prompt_scorer_settings.scorer_name;
-    } else if (requestData?.scorer_config?.name) {
-      scorerName = requestData.scorer_config.name;
-    }
-
-    if (!scorerName) {
-      finalLogger.debug(`Scorer job ${job.id} has no scorer name.`);
-      continue;
-    }
-
-    const canonicalScorerName = normalizeScorerName(scorerName);
-    const cleanName = canonicalScorerName.replace(/^_+/, '');
-
-    if (isJobIncomplete(job.status)) {
-      finalLogger.info(`${cleanName}: Computing 🚧`);
-    } else if (isJobFailed(job.status)) {
-      finalLogger.info(
-        `${cleanName}: Failed ❌, error was: ${job.errorMessage}`
-      );
-    } else {
-      finalLogger.info(`${cleanName}: Done ✅`);
-    }
-  }
+  await logScorerJobsInternal(projectId, runId, finalLogger, (client) =>
+    client.getJobsForProjectRun(projectId, runId)
+  );
 };
 
 /**
