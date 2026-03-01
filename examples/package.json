@@ -9,7 +9,7 @@
   "author": "Galileo Technologies Inc. <team@galileo.ai>",
   "license": "ISC",
   "dependencies": {
-    "@langchain/community": "^0.3.18",
+    "@langchain/community": "^1.1.14",
     "@langchain/core": "^0.3.13",
     "@langchain/openai": "^0.3.11",
     "@rungalileo/galileo": "file:..",
