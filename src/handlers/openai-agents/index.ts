@@ -175,21 +175,27 @@ export class GalileoTracingProcessor implements TracingProcessor {
       };
     }
 
+    // Determine parent ID (prefer explicit parentId, fallback to traceId)
+    const parentId = span.parentId ?? span.traceId;
+
+    // Validate that parent node exists before creating and linking this node
+    const parentNode = this._nodes.get(parentId);
+    if (!parentNode) {
+      sdkLogger.warn(
+        `Parent node ${parentId} not found for span ${span.spanId} in trace ${span.traceId}`
+      );
+      return;
+    }
+
     const node = createNode({
       nodeType: nodeType as Node['nodeType'],
       spanParams: initialParams,
       runId: span.spanId,
-      parentRunId: span.parentId ?? span.traceId
+      parentRunId: parentId
     });
 
     this._nodes.set(span.spanId, node);
-
-    // Link to parent node
-    const parentId = span.parentId ?? span.traceId;
-    const parentNode = this._nodes.get(parentId);
-    if (parentNode) {
-      parentNode.children.push(span.spanId);
-    }
+    parentNode.children.push(span.spanId);
   }
 
   /**
