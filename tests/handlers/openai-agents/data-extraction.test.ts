@@ -45,7 +45,18 @@ describe('parseUsage', () => {
     expect(result.outputTokens).toBe(15);
   });
 
-  test('test parse usage extracts reasoning_tokens from details', () => {
+  test('test parse usage extracts reasoning_tokens from output_tokens_details', () => {
+    const result = parseUsage({
+      input_tokens: 10,
+      output_tokens: 5,
+      output_tokens_details: { reasoning_tokens: 3 },
+      input_tokens_details: { cached_tokens: 2 }
+    });
+    expect(result.reasoningTokens).toBe(3);
+    expect(result.cachedTokens).toBe(2);
+  });
+
+  test('test parse usage extracts reasoning_tokens from details (legacy shape)', () => {
     const result = parseUsage({
       input_tokens: 10,
       output_tokens: 5,

@@ -41,14 +41,21 @@ export function parseUsage(
     0;
   const totalTokens = (usageData.total_tokens as number | undefined) ?? null;
 
-  // details is a flat Record<string, unknown> in the Agents SDK
-  const details = (usageData.details as Record<string, unknown>) ?? {};
+  // Reasoning tokens live in output_tokens_details (Responses API) or details (legacy Agents SDK shape)
+  const outputDetails =
+    (usageData.output_tokens_details as Record<string, unknown> | undefined) ??
+    (usageData.details as Record<string, unknown> | undefined) ??
+    {};
+  // Cached tokens live in input_tokens_details (Responses API) or the same details object
+  const inputDetails =
+    (usageData.input_tokens_details as Record<string, unknown> | undefined) ??
+    outputDetails;
   const reasoningTokens =
-    (details.reasoning_tokens as number | undefined) ??
+    (outputDetails.reasoning_tokens as number | undefined) ??
     (usageData.reasoning_tokens as number | undefined) ??
     0;
   const cachedTokens =
-    (details.cached_tokens as number | undefined) ??
+    (inputDetails.cached_tokens as number | undefined) ??
     (usageData.cached_tokens as number | undefined) ??
     0;
 
