@@ -3,6 +3,7 @@ import {
   mapSpanName,
   GALILEO_CUSTOM_TYPE
 } from '../../../src/handlers/openai-agents/span-mapping';
+import type { NodeType } from '../../../src/handlers/openai-agents/node';
 
 describe('mapSpanType', () => {
   test('test maps generation to llm', () => {
@@ -37,8 +38,8 @@ describe('mapSpanType', () => {
     expect(mapSpanType({ type: 'mcp_tools' })).toBe('tool');
   });
 
-  test('test maps agent to workflow', () => {
-    expect(mapSpanType({ type: 'agent' })).toBe('workflow');
+  test('test maps agent to agent', () => {
+    expect(mapSpanType({ type: 'agent' })).toBe('agent');
   });
 
   test('test maps handoff to workflow', () => {
@@ -90,10 +91,10 @@ describe('mapSpanName', () => {
   });
 
   test('test agent fallback uses spanData.name or Agent', () => {
-    expect(
-      mapSpanName({ type: 'agent', name: 'PlannerAgent' }, 'workflow')
-    ).toBe('PlannerAgent');
-    expect(mapSpanName({ type: 'agent' }, 'workflow')).toBe('Agent');
+    expect(mapSpanName({ type: 'agent', name: 'PlannerAgent' }, 'agent')).toBe(
+      'PlannerAgent'
+    );
+    expect(mapSpanName({ type: 'agent' }, 'agent')).toBe('Agent');
   });
 
   test('test handoff formats from-to arrow', () => {
@@ -135,5 +136,59 @@ describe('mapSpanName', () => {
 
   test('test mcp_tools fallback is MCP Tools', () => {
     expect(mapSpanName({ type: 'mcp_tools' }, 'tool')).toBe('MCP Tools');
+  });
+});
+
+describe('agent span type distinction', () => {
+  test('test agent maps to agent not workflow', () => {
+    const result = mapSpanType({ type: 'agent' });
+    expect(result).toBe('agent');
+    expect(result).not.toBe('workflow');
+  });
+
+  test('test handoff still maps to workflow', () => {
+    expect(mapSpanType({ type: 'handoff' })).toBe('workflow');
+  });
+
+  test('test custom still maps to workflow', () => {
+    expect(mapSpanType({ type: 'custom' })).toBe('workflow');
+  });
+
+  test('test galileo_custom sentinel is unaffected', () => {
+    expect(mapSpanType({ type: 'custom', __galileoCustom: true })).toBe(
+      GALILEO_CUSTOM_TYPE
+    );
+  });
+
+  test('test mapSpanType returns NodeType or GALILEO_CUSTOM_TYPE for all known types', () => {
+    const knownTypes: Array<{
+      type: string;
+      expected: NodeType | typeof GALILEO_CUSTOM_TYPE;
+    }> = [
+      { type: 'generation', expected: 'llm' },
+      { type: 'response', expected: 'llm' },
+      { type: 'function', expected: 'tool' },
+      { type: 'guardrail', expected: 'tool' },
+      { type: 'transcription', expected: 'tool' },
+      { type: 'speech', expected: 'tool' },
+      { type: 'speech_group', expected: 'tool' },
+      { type: 'mcp_tools', expected: 'tool' },
+      { type: 'agent', expected: 'agent' },
+      { type: 'handoff', expected: 'workflow' },
+      { type: 'custom', expected: 'workflow' }
+    ];
+    for (const { type, expected } of knownTypes) {
+      expect(mapSpanType({ type })).toBe(expected);
+    }
+  });
+
+  test('test mapSpanName returns Agent for agent type without name', () => {
+    expect(mapSpanName({ type: 'agent' }, 'agent')).toBe('Agent');
+  });
+
+  test('test mapSpanName returns spanData.name for agent type with name', () => {
+    expect(mapSpanName({ type: 'agent', name: 'RouterAgent' }, 'agent')).toBe(
+      'RouterAgent'
+    );
   });
 });

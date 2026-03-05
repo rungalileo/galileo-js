@@ -82,8 +82,9 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(planner);
     await processor.onTraceEnd(trace);
 
-    // Verify all spans logged
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(3); // 2 agents + 1 handoff
+    // Verify all spans logged: 2 agents use addAgentSpan, 1 handoff uses addWorkflowSpan
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(2);
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
   });
 
   test('test agent->tool->llm->tool flow', async () => {
@@ -127,7 +128,7 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1); // agent
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1); // agent
     expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(2); // 2 tools
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1); // 1 llm
   });
@@ -249,7 +250,8 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(2); // agent + custom
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1); // agent
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1); // custom (galileo_custom → workflow)
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     // conclude is called for all non-root workflow/agent spans
     expect(mockLogger.conclude).toHaveBeenCalled();
@@ -359,8 +361,8 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(rootAgent);
     await processor.onTraceEnd(trace);
 
-    // Verify all spans logged
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(3); // 3 agents
+    // Verify all spans logged: 3 agents use addAgentSpan
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(3);
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
     // conclude is called for all non-root workflow/agent spans

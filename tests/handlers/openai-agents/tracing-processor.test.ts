@@ -3,6 +3,7 @@ import type {
   AgentTrace,
   AgentSpan
 } from '../../../src/handlers/openai-agents';
+import { AgentType } from '../../../src/types/new-api.types';
 
 // Helper to build a mock AgentTrace
 function makeTrace(overrides: Partial<AgentTrace> = {}): AgentTrace {
@@ -121,7 +122,7 @@ describe('GalileoTracingProcessor lifecycle', () => {
     expect(toolCall.name).toBe('search_tool');
   });
 
-  test('test full trace with workflow span calls addWorkflowSpan and conclude', async () => {
+  test('test full trace with agent span calls addAgentSpan and conclude', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);
     const trace = makeTrace();
@@ -139,10 +140,10 @@ describe('GalileoTracingProcessor lifecycle', () => {
     await processor.onSpanEnd(span);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
-    const workflowCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
-    expect(workflowCall.name).toBe('PlannerAgent');
-    // conclude is called for workflow spans
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.name).toBe('PlannerAgent');
+    // conclude is called for agent spans
     expect(mockLogger.conclude).toHaveBeenCalled();
   });
 
@@ -209,7 +210,7 @@ describe('GalileoTracingProcessor lifecycle', () => {
     expect(mockLogger.flush).toHaveBeenCalledTimes(1);
   });
 
-  test('test nested workflow span is logged as child', async () => {
+  test('test nested agent span is logged as child', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);
     const trace = makeTrace();
@@ -237,9 +238,9 @@ describe('GalileoTracingProcessor lifecycle', () => {
     await processor.onSpanEnd(agentSpan);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
-    // conclude called for workflow span
+    // conclude called for agent span
     expect(mockLogger.conclude).toHaveBeenCalled();
   });
 
@@ -403,7 +404,7 @@ describe('Span tree construction edge cases', () => {
 
     // All should be logged
     expect(mockLogger.startTrace).toHaveBeenCalledTimes(1);
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1); // agent
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1); // agent
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
   });
@@ -679,8 +680,8 @@ describe('Error handling and recovery', () => {
     await processor.onSpanEnd(span);
     await processor.onTraceEnd(trace);
 
-    const workflowCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
-    const meta = workflowCall.metadata as Record<string, string>;
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    const meta = agentCall.metadata as Record<string, string>;
     expect(meta.error_message).toBe('Error occurred');
   });
 
@@ -831,5 +832,367 @@ describe('Metadata handling and serialization', () => {
     const meta = toolCall.metadata as Record<string, string>;
     expect(meta.error_message).toBe('Tool error');
     expect(meta.error_type).toBe('SpanError');
+  });
+});
+
+describe('Agent span emission', () => {
+  test('test agent span calls addAgentSpan not addWorkflowSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-span-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'TestAgent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addWorkflowSpan).not.toHaveBeenCalled();
+  });
+
+  test('test agent span passes name and output correctly', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-span-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'RouterAgent', output: 'routed' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.name).toBe('RouterAgent');
+  });
+
+  test('test agent span with no agentType passes undefined agentType', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-span-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'Agent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.agentType).toBeUndefined();
+  });
+
+  test('test agent span conclude is called after children', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const agentSpan = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent' }
+    });
+
+    const toolSpan = makeSpan({
+      spanId: 'tool-001',
+      parentId: 'agent-001',
+      spanData: { type: 'function', name: 'my_tool' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(agentSpan);
+    await processor.onSpanStart(toolSpan);
+    await processor.onSpanEnd(toolSpan);
+    await processor.onSpanEnd(agentSpan);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.conclude).toHaveBeenCalled();
+  });
+
+  test('test agent span error passes statusCode 500 as direct field', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-err-001',
+      parentId: 'trace-001',
+      error: { message: 'Agent failed' },
+      spanData: { type: 'agent', name: 'FailingAgent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    // statusCode is passed as a direct field, not folded into metadata
+    expect(agentCall.statusCode).toBe(500);
+    const meta = agentCall.metadata as Record<string, string>;
+    expect(meta.error_message).toBe('Agent failed');
+    expect(meta.status_code).toBeUndefined();
+  });
+
+  test('test agent span without error passes statusCode 200', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-ok-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'HappyAgent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.statusCode).toBe(200);
+    const meta = agentCall.metadata as Record<string, string>;
+    expect(meta.status_code).toBeUndefined();
+  });
+});
+
+describe('Agent type extraction', () => {
+  test('test agent span with planner agentType is passed to addAgentSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-planner-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'PlannerAgent', agentType: 'planner' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.agentType).toBe(AgentType.PLANNER);
+  });
+
+  test('test agent span with router agentType is passed to addAgentSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-router-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'RouterAgent', agentType: 'router' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.agentType).toBe(AgentType.ROUTER);
+  });
+
+  test('test agent span with uppercase agentType is normalized', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-sup-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'agent',
+        name: 'SupervisorAgent',
+        agentType: 'SUPERVISOR'
+      }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.agentType).toBe(AgentType.SUPERVISOR);
+  });
+
+  test('test agent span with unknown agentType defaults to default', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-unknown-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'WeirdAgent', agentType: 'unknown_type' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.agentType).toBe(AgentType.DEFAULT);
+  });
+
+  test('test agent span with missing agentType returns undefined', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-notype-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.agentType).toBeUndefined();
+  });
+
+  test('test all known agentType values map correctly', async () => {
+    const typeMap: Array<{ input: string; expected: string }> = [
+      { input: 'classifier', expected: AgentType.CLASSIFIER },
+      { input: 'planner', expected: AgentType.PLANNER },
+      { input: 'react', expected: AgentType.REACT },
+      { input: 'reflection', expected: AgentType.REFLECTION },
+      { input: 'router', expected: AgentType.ROUTER },
+      { input: 'supervisor', expected: AgentType.SUPERVISOR },
+      { input: 'judge', expected: AgentType.JUDGE },
+      { input: 'default', expected: AgentType.DEFAULT }
+    ];
+
+    for (const { input, expected } of typeMap) {
+      const mockLogger = createMockLogger();
+      const processor = new GalileoTracingProcessor(mockLogger as never, false);
+      const trace = makeTrace();
+
+      const span = makeSpan({
+        spanId: `agent-${input}-001`,
+        parentId: 'trace-001',
+        spanData: { type: 'agent', agentType: input }
+      });
+
+      await processor.onTraceStart(trace);
+      await processor.onSpanStart(span);
+      await processor.onSpanEnd(span);
+      await processor.onTraceEnd(trace);
+
+      const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+      expect(agentCall.agentType).toBe(expected);
+    }
+  });
+});
+
+describe('Span hierarchy correctness', () => {
+  test('test trace with agent child maintains correct parent-child order', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const agentSpan = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'RootAgent' }
+    });
+
+    const llmSpan = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'agent-001',
+      spanData: { type: 'generation', model: 'gpt-4o' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(agentSpan);
+    await processor.onSpanStart(llmSpan);
+    await processor.onSpanEnd(llmSpan);
+    await processor.onSpanEnd(agentSpan);
+    await processor.onTraceEnd(trace);
+
+    // startTrace is called first, then addAgentSpan, then addLlmSpan, then conclude
+    const callOrder = mockLogger.startTrace.mock.invocationCallOrder[0];
+    const agentOrder = mockLogger.addAgentSpan.mock.invocationCallOrder[0];
+    const llmOrder = mockLogger.addLlmSpan.mock.invocationCallOrder[0];
+    const concludeOrder = mockLogger.conclude.mock.invocationCallOrder[0];
+
+    expect(callOrder).toBeLessThan(agentOrder);
+    expect(agentOrder).toBeLessThan(llmOrder);
+    expect(llmOrder).toBeLessThan(concludeOrder);
+  });
+
+  test('test workflow span type still uses addWorkflowSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const handoffSpan = makeSpan({
+      spanId: 'handoff-001',
+      parentId: 'trace-001',
+      spanData: { type: 'handoff', from_agent: 'A', to_agent: 'B' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(handoffSpan);
+    await processor.onSpanEnd(handoffSpan);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addAgentSpan).not.toHaveBeenCalled();
+  });
+
+  test('test agent and workflow spans both call conclude', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const agentSpan = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent' }
+    });
+
+    const handoffSpan = makeSpan({
+      spanId: 'handoff-001',
+      parentId: 'agent-001',
+      spanData: { type: 'handoff' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(agentSpan);
+    await processor.onSpanStart(handoffSpan);
+    await processor.onSpanEnd(handoffSpan);
+    await processor.onSpanEnd(agentSpan);
+    await processor.onTraceEnd(trace);
+
+    // conclude is called 3 times: once for handoff (workflow), once for agent, once for concludeAll in onTraceEnd
+    expect(mockLogger.conclude).toHaveBeenCalledTimes(3);
   });
 });

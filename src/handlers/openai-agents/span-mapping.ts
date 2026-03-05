@@ -34,6 +34,8 @@ export function mapSpanType(spanData: {
       return 'tool';
 
     case 'agent':
+      return 'agent';
+
     case 'handoff':
     case 'custom':
       return 'workflow';

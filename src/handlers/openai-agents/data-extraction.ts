@@ -203,9 +203,12 @@ export function extractWorkflowData(
     const tools = spanData.tools;
     const handoffs = spanData.handoffs;
     const outputType = spanData.output_type;
+    const agentType =
+      typeof spanData.agentType === 'string' ? spanData.agentType : undefined;
     return {
       input: '',
       output: undefined,
+      ...(agentType !== undefined ? { agentType } : {}),
       metadata: {
         ...(tools !== undefined ? { tools: JSON.stringify(tools) } : {}),
         ...(handoffs !== undefined

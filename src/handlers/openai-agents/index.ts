@@ -3,6 +3,7 @@ import { GalileoLogger } from '../../utils/galileo-logger';
 import { GalileoSingleton } from '../../singleton';
 import { calculateDurationNs } from '../../utils/utils';
 import type { JsonObject } from '../../types/base.types';
+import { AgentType } from '../../types/new-api.types';
 import { type Node, createNode } from './node';
 import { mapSpanType, mapSpanName, GALILEO_CUSTOM_TYPE } from './span-mapping';
 import {
@@ -67,6 +68,32 @@ export interface TracingProcessor {
   onSpanEnd(span: AgentSpan): Promise<void>;
   shutdown(timeout?: number): Promise<void>;
   forceFlush(): Promise<void>;
+}
+
+/**
+ * Maps an OpenAI agent type string to a Galileo AgentType enum value.
+ * Returns undefined when no agentType is present so addAgentSpan() can use its default.
+ */
+function extractAgentType(
+  spanParams: Record<string, unknown>
+): AgentType | undefined {
+  const raw = spanParams.agentType;
+  if (typeof raw !== 'string' || !raw) {
+    return undefined;
+  }
+
+  const typeMap: Record<string, AgentType> = {
+    classifier: AgentType.CLASSIFIER,
+    planner: AgentType.PLANNER,
+    react: AgentType.REACT,
+    reflection: AgentType.REFLECTION,
+    router: AgentType.ROUTER,
+    supervisor: AgentType.SUPERVISOR,
+    judge: AgentType.JUDGE,
+    default: AgentType.DEFAULT
+  };
+
+  return typeMap[raw.toLowerCase()] ?? AgentType.DEFAULT;
 }
 
 /**
@@ -373,8 +400,19 @@ export class GalileoTracingProcessor implements TracingProcessor {
         metadata,
         createdAt: startedAt
       });
+    } else if (node.nodeType === 'agent') {
+      this._galileoLogger.addAgentSpan({
+        input,
+        output,
+        name,
+        durationNs,
+        metadata,
+        createdAt: startedAt,
+        agentType: extractAgentType(params),
+        statusCode
+      });
     } else {
-      // workflow or agent child nodes
+      // workflow and other parent nodes
       this._galileoLogger.addWorkflowSpan({
         input,
         output,

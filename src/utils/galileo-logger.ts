@@ -1184,6 +1184,7 @@ class GalileoLogger implements IGalileoLogger {
     tags?: string[];
     agentType?: AgentType;
     stepNumber?: number;
+    statusCode?: number;
   }): AgentSpan {
     const span = new AgentSpan({
       input: options.input,
@@ -1196,7 +1197,8 @@ class GalileoLogger implements IGalileoLogger {
       tags: options.tags,
       metrics: new Metrics({ durationNs: options.durationNs }),
       agentType: options.agentType,
-      stepNumber: options.stepNumber
+      stepNumber: options.stepNumber,
+      statusCode: options.statusCode
     });
 
     this.addChildSpanToParent(span);
