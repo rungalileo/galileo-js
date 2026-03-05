@@ -470,7 +470,8 @@ export class GalileoTracingProcessor implements TracingProcessor {
         durationNs,
         metadata,
         tags,
-        createdAt: startedAt
+        createdAt: startedAt,
+        statusCode
       });
     }
 
@@ -487,7 +488,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
       !firstNode &&
       (node.nodeType === 'workflow' || node.nodeType === 'agent')
     ) {
-      this._galileoLogger.conclude({ output, durationNs });
+      this._galileoLogger.conclude({ output, durationNs, statusCode });
     }
   }
 

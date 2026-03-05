@@ -562,3 +562,148 @@ describe('Output tracking integration', () => {
     ).toBe(true);
   });
 });
+
+describe('Workflow span statusCode propagation', () => {
+  test('test workflow span statusCode passed to addWorkflowSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // Create a workflow span (handoff type maps to workflow nodeType)
+    const workflow = makeSpan({
+      spanId: 'workflow-001',
+      parentId: 'trace-001',
+      spanData: { type: 'handoff', from_agent: 'Agent1', to_agent: 'Agent2' }
+    });
+
+    // Create a successful child LLM span
+    const llm = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'workflow-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: [],
+        output: 'successful response'
+      },
+      error: null
+    });
+
+    await processor.onSpanStart(workflow);
+    await processor.onSpanStart(llm);
+    await processor.onSpanEnd(llm);
+    await processor.onSpanEnd(workflow);
+    await processor.onTraceEnd(trace);
+
+    // Verify addWorkflowSpan was called (note: statusCode may be 200 by default)
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const workflowSpanCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    // Verify statusCode parameter is being passed through (defaults to 200 for success)
+    expect(workflowSpanCall.statusCode).toBe(200);
+  });
+
+  test('test workflow span with direct error has statusCode 500', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // Create a workflow span that itself has an error
+    const workflowWithError = makeSpan({
+      spanId: 'workflow-001',
+      parentId: 'trace-001',
+      spanData: { type: 'handoff', from_agent: 'Agent1', to_agent: 'Agent2' },
+      error: {
+        message: 'Workflow execution failed',
+        data: { reason: 'timeout' }
+      }
+    });
+
+    await processor.onSpanStart(workflowWithError);
+    await processor.onSpanEnd(workflowWithError);
+    await processor.onTraceEnd(trace);
+
+    // Verify addWorkflowSpan was called with statusCode 500
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const workflowSpanCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    expect(workflowSpanCall.statusCode).toBe(500);
+  });
+
+  test('test agent span statusCode passed to addAgentSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // Create an agent span
+    const agent = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'TestAgent' }
+    });
+
+    // Create a child LLM span
+    const llm = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'agent-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: [],
+        output: 'test output'
+      },
+      error: null
+    });
+
+    await processor.onSpanStart(agent);
+    await processor.onSpanStart(llm);
+    await processor.onSpanEnd(llm);
+    await processor.onSpanEnd(agent);
+    await processor.onTraceEnd(trace);
+
+    // Verify addAgentSpan was called with statusCode parameter
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    const agentSpanCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentSpanCall.statusCode).toBe(200);
+  });
+
+  test('test conclude called with statusCode for workflow spans', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // Create nested workflow spans to test conclude calls
+    const outerWorkflow = makeSpan({
+      spanId: 'workflow-001',
+      parentId: 'trace-001',
+      spanData: { type: 'handoff', from_agent: 'Agent1', to_agent: 'Agent2' }
+    });
+
+    const innerWorkflow = makeSpan({
+      spanId: 'workflow-002',
+      parentId: 'workflow-001',
+      spanData: { type: 'custom', name: 'InnerWorkflow' }
+    });
+
+    await processor.onSpanStart(outerWorkflow);
+    await processor.onSpanStart(innerWorkflow);
+    await processor.onSpanEnd(innerWorkflow);
+    await processor.onSpanEnd(outerWorkflow);
+    await processor.onTraceEnd(trace);
+
+    // Verify conclude was called for the workflow spans
+    expect(mockLogger.conclude).toHaveBeenCalled();
+    // Find calls that pass statusCode
+    const concludeCalls = mockLogger.conclude.mock.calls;
+    const callsWithStatusCode = concludeCalls.filter(
+      (call) => call[0]?.statusCode !== undefined
+    );
+    expect(callsWithStatusCode.length).toBeGreaterThan(0);
+  });
+});

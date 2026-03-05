@@ -1115,6 +1115,7 @@ class GalileoLogger implements IGalileoLogger {
    * @param options.createdAt - (Optional) The timestamp when the span was created.
    * @param options.metadata - (Optional) Additional metadata as key-value pairs.
    * @param options.tags - (Optional) Array of tags to categorize the span.
+   * @param options.statusCode - (Optional) HTTP status code or execution status (e.g., 200 for success, 500 for error).
    * @param options.stepNumber - (Optional) The step number in a multi-step process.
    * @returns The created workflow span.
    */
@@ -1128,6 +1129,7 @@ class GalileoLogger implements IGalileoLogger {
     createdAt?: Date;
     metadata?: Record<string, string>;
     tags?: string[];
+    statusCode?: number;
     stepNumber?: number;
   }): WorkflowSpan {
     const span = new WorkflowSpan({
@@ -1139,6 +1141,7 @@ class GalileoLogger implements IGalileoLogger {
       createdAt: options.createdAt || GalileoApiClient.getTimestampRecord(),
       metadata: options.metadata,
       tags: options.tags,
+      statusCode: options.statusCode,
       metrics: new Metrics({ durationNs: options.durationNs }),
       stepNumber: options.stepNumber
     });
