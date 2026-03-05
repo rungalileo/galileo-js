@@ -99,6 +99,11 @@ function extractAgentType(
 /**
  * GalileoTracingProcessor implements the OpenAI Agents SDK TracingProcessor interface
  * to capture agent runs and emit them to GalileoLogger.
+ *
+ * Trace Input Handling:
+ * - Trace-level input is populated from the first LLM or Tool span with non-empty input
+ * - This ensures user queries are preserved in trace metadata
+ * - Falls back to trace name if no meaningful input is captured
  */
 export class GalileoTracingProcessor implements TracingProcessor {
   private _nodes = new Map<string, Node>();
@@ -114,6 +119,25 @@ export class GalileoTracingProcessor implements TracingProcessor {
     private readonly _galileoLogger: GalileoLogger = GalileoSingleton.getInstance().getClient(),
     private readonly _flushOnTraceEnd: boolean = true
   ) {}
+
+  /**
+   * Checks if a value is a meaningful, non-empty input string.
+   * Filters out null, undefined, empty strings, and JSON 'null'.
+   */
+  private isMeaningfulInput(value: unknown): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+    const str = String(value).trim();
+    if (str.length === 0) {
+      return false;
+    }
+    // Filter out JSON-serialized null (from earlier spans)
+    if (str === 'null' || str === '""') {
+      return false;
+    }
+    return true;
+  }
 
   /**
    * Called when a trace starts. Creates a root agent node.
@@ -283,6 +307,16 @@ export class GalileoTracingProcessor implements TracingProcessor {
     // Track last output for trace-level output
     if (node.spanParams.output !== undefined) {
       this._lastOutput = node.spanParams.output;
+    }
+
+    // Track first input for trace-level input (capture from first meaningful span)
+    // Only capture from LLM or Tool spans (not workflow/agent), and only if we haven't captured yet
+    if (
+      this._firstInput === null &&
+      (node.nodeType === 'llm' || node.nodeType === 'tool') &&
+      this.isMeaningfulInput(node.spanParams.input)
+    ) {
+      this._firstInput = node.spanParams.input;
     }
   }
 

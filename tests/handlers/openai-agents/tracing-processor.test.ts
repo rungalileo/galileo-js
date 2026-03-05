@@ -1196,3 +1196,158 @@ describe('Span hierarchy correctness', () => {
     expect(mockLogger.conclude).toHaveBeenCalledTimes(3);
   });
 });
+
+describe('_firstInput population (trace-level input handling)', () => {
+  test('captures first input from LLM span', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // LLM span with input
+    const llm = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: 'What is the weather in NYC?',
+        output: 'It is sunny...'
+      }
+    });
+
+    await processor.onSpanStart(llm);
+    await processor.onSpanEnd(llm);
+    await processor.onTraceEnd(trace);
+
+    // Verify startTrace was called with the LLM input
+    // Note: input is JSON-stringified by extractLlmData
+    const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
+    expect(startTraceCall.input).toBe('"What is the weather in NYC?"');
+  });
+
+  test('captures first input from tool span if LLM input unavailable', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // Tool span (with input, no LLM)
+    const tool = makeSpan({
+      spanId: 'tool-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'function',
+        name: 'search',
+        input: 'NYC weather forecast',
+        output: 'Sunny, 72F'
+      }
+    });
+
+    await processor.onSpanStart(tool);
+    await processor.onSpanEnd(tool);
+    await processor.onTraceEnd(trace);
+
+    const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
+    expect(startTraceCall.input).toBe('NYC weather forecast');
+  });
+
+  test('skips empty or null inputs, uses first meaningful one', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    // First LLM with empty input
+    const llm1 = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: '',
+        output: 'response'
+      }
+    });
+
+    // Second LLM with actual input
+    const llm2 = makeSpan({
+      spanId: 'llm-002',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: 'Real question',
+        output: 'Real answer'
+      }
+    });
+
+    await processor.onSpanStart(llm1);
+    await processor.onSpanEnd(llm1);
+    await processor.onSpanStart(llm2);
+    await processor.onSpanEnd(llm2);
+    await processor.onTraceEnd(trace);
+
+    // Should use input from llm2, not llm1
+    // Note: input is JSON-stringified by extractLlmData
+    const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
+    expect(startTraceCall.input).toBe('"Real question"');
+  });
+
+  test('falls back to trace name if no meaningful input captured', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace({ name: 'Agent Workflow' });
+
+    await processor.onTraceStart(trace);
+    await processor.onTraceEnd(trace); // No spans at all
+
+    const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
+    // Should fall back to trace name
+    expect(startTraceCall.input).toBe('Agent Workflow');
+  });
+
+  test('only captures input from first meaningful span, ignores later ones', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    const llm1 = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: 'First query',
+        output: 'First answer'
+      }
+    });
+
+    const llm2 = makeSpan({
+      spanId: 'llm-002',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: 'Second query',
+        output: 'Second answer'
+      }
+    });
+
+    await processor.onSpanStart(llm1);
+    await processor.onSpanEnd(llm1);
+    await processor.onSpanStart(llm2);
+    await processor.onSpanEnd(llm2);
+    await processor.onTraceEnd(trace);
+
+    const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
+    // Should use first input, not second
+    // Note: input is JSON-stringified by extractLlmData
+    expect(startTraceCall.input).toBe('"First query"');
+  });
+});
