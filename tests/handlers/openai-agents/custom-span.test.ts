@@ -16,7 +16,7 @@ describe('createGalileoCustomSpanData()', () => {
   });
 
   test('test creates span with name parameter', () => {
-    const galileoSpan = { test: 'data' };
+    const galileoSpan = { type: 'tool', input: 'data' };
     const result = createGalileoCustomSpanData(galileoSpan, 'My Custom Span');
 
     expect(result.name).toBe('My Custom Span');
@@ -24,7 +24,7 @@ describe('createGalileoCustomSpanData()', () => {
   });
 
   test('test creates span with extraData', () => {
-    const galileoSpan = { test: 'data' };
+    const galileoSpan = { type: 'tool', input: 'data' };
     const extraData = { key1: 'value1', key2: 42 };
     const result = createGalileoCustomSpanData(
       galileoSpan,
@@ -65,7 +65,7 @@ describe('createGalileoCustomSpanData()', () => {
   });
 
   test('test extraData merges correctly with galileoSpan', () => {
-    const galileoSpan = { id: 'span-1' };
+    const galileoSpan = { name: 'span-1' };
     const extraData = { tag1: 'tag', tag2: 'meta' };
     const result = createGalileoCustomSpanData(
       galileoSpan,
@@ -76,12 +76,12 @@ describe('createGalileoCustomSpanData()', () => {
     expect(result.data).toEqual({
       tag1: 'tag',
       tag2: 'meta',
-      galileoSpan: { id: 'span-1' }
+      galileoSpan: { name: 'span-1' }
     });
   });
 
   test('test handles empty extraData', () => {
-    const galileoSpan = { test: 'data' };
+    const galileoSpan = { type: 'tool', input: 'data' };
     const result = createGalileoCustomSpanData(galileoSpan, undefined, {});
 
     expect(result.data.galileoSpan).toBe(galileoSpan);

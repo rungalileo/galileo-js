@@ -2,6 +2,7 @@ import {
   extractLlmData,
   extractToolData,
   extractWorkflowData,
+  extractGalileoCustomData,
   parseUsage
 } from '../../../src/handlers/openai-agents/data-extraction';
 
@@ -315,5 +316,165 @@ describe('extractWorkflowData', () => {
     const result = extractWorkflowData({ type: 'future_type' });
     expect(result.input).toBe('');
     expect(result.output).toBeUndefined();
+  });
+});
+
+describe('extractGalileoCustomData', () => {
+  test('test extracts tool type from galileoSpan', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: {
+          type: 'tool',
+          input: 'tool input',
+          output: 'tool output',
+          metadata: { key: 'val' },
+          tags: ['tag1'],
+          statusCode: 201
+        }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('tool');
+    expect(result.params.input).toBe('tool input');
+    expect(result.params.output).toBe('tool output');
+    expect(result.params.metadata).toEqual({ key: 'val' });
+    expect(result.params.tags).toEqual(['tag1']);
+    expect(result.params.statusCode).toBe(201);
+  });
+
+  test('test extracts workflow type from galileoSpan', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: {
+          type: 'workflow',
+          input: 'wf in',
+          output: 'wf out'
+        }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('workflow');
+    expect(result.params.input).toBe('wf in');
+    expect(result.params.output).toBe('wf out');
+  });
+
+  test('test extracts agent type from galileoSpan', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: {
+          type: 'agent',
+          input: 'agent in'
+        }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('agent');
+    expect(result.params.input).toBe('agent in');
+  });
+
+  test('test falls back to workflow for unrecognized galileoSpan type', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: { type: 'future_type', input: 'x' }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('workflow');
+    expect(result.params.input).toBe('x');
+  });
+
+  test('test falls back to workflow for llm type (not delegated)', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: { type: 'llm', input: 'prompt' }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('workflow');
+  });
+
+  test('test falls back to extractWorkflowData when no galileoSpan', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: { input: 'plain input', output: 'plain output' }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('workflow');
+    expect(result.params.input).toBe('plain input');
+    expect(result.params.output).toBe('plain output');
+  });
+
+  test('test falls back to extractWorkflowData when galileoSpan is not an object', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: { galileoSpan: 'not-an-object' }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('workflow');
+  });
+
+  test('test serializes object input/output from galileoSpan', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: {
+          type: 'tool',
+          input: { query: 'hello' },
+          output: { answer: 'world' }
+        }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.params.input).toBe(JSON.stringify({ query: 'hello' }));
+    expect(result.params.output).toBe(JSON.stringify({ answer: 'world' }));
+  });
+
+  test('test omits tags and statusCode when not provided', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: { type: 'tool', input: 'in' }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.params).not.toHaveProperty('tags');
+    expect(result.params).not.toHaveProperty('statusCode');
+  });
+
+  test('test handles missing data field gracefully', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.nodeType).toBe('workflow');
+  });
+
+  test('test defaults to empty input when galileoSpan has no input', () => {
+    const spanData = {
+      type: 'custom',
+      __galileoCustom: true,
+      data: {
+        galileoSpan: { type: 'tool' }
+      }
+    };
+    const result = extractGalileoCustomData(spanData);
+    expect(result.params.input).toBe('');
+    expect(result.params.output).toBeUndefined();
+    expect(result.params.metadata).toEqual({});
   });
 });

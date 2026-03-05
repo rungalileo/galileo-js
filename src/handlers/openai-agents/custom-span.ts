@@ -1,6 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
+ * Duck-typed interface describing the expected shape of a Galileo span object
+ * that can be injected into the OpenAI Agents tracing flow.
+ *
+ * Mirrors the fields extracted by galileo-python's GalileoCustomSpan handler:
+ * input, output, metadata (user_metadata), tags, status_code, and type.
+ */
+export interface GalileoSpanLike {
+  type?: string;
+  input?: unknown;
+  output?: unknown;
+  name?: string;
+  metadata?: Record<string, string>;
+  tags?: string[];
+  statusCode?: number;
+}
+
+/**
  * A lightweight subtype of CustomSpanData that carries a reference to a
  * pre-configured GalileoSpan so it can be injected into the agent tracing flow.
  *
@@ -13,7 +30,7 @@ export interface GalileoCustomSpanData {
   /** (Optional) Display name for the span. */
   name?: string;
   /** Arbitrary data payload, must contain a 'galileoSpan' key with the GalileoSpan reference. */
-  data: Record<string, unknown> & { galileoSpan: unknown };
+  data: Record<string, unknown> & { galileoSpan: GalileoSpanLike };
   /** Sentinel flag used internally by mapSpanType() to identify this type. */
   __galileoCustom: true;
 }
@@ -26,7 +43,7 @@ export interface GalileoCustomSpanData {
  * @returns A GalileoCustomSpanData object.
  */
 export function createGalileoCustomSpanData(
-  galileoSpan: unknown,
+  galileoSpan: GalileoSpanLike,
   name?: string,
   extraData?: Record<string, unknown>
 ): GalileoCustomSpanData {

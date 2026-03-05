@@ -302,7 +302,7 @@ describe('GalileoTracingProcessor lifecycle', () => {
   });
 
   test('test addGalileoCustomSpan creates a GalileoCustomSpanData', () => {
-    const mockSpan = { id: 'span-xyz' };
+    const mockSpan = { type: 'tool', name: 'span-xyz' };
     const result = GalileoTracingProcessor.addGalileoCustomSpan(
       mockSpan,
       'MyCustom'

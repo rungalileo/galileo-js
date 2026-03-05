@@ -9,7 +9,8 @@ import { mapSpanType, mapSpanName, GALILEO_CUSTOM_TYPE } from './span-mapping';
 import {
   extractLlmData,
   extractToolData,
-  extractWorkflowData
+  extractWorkflowData,
+  extractGalileoCustomData
 } from './data-extraction';
 import {
   extractEmbeddedToolCalls,
@@ -17,7 +18,8 @@ import {
 } from './embedded-tools';
 import {
   createGalileoCustomSpanData,
-  type GalileoCustomSpanData
+  type GalileoCustomSpanData,
+  type GalileoSpanLike
 } from './custom-span';
 import { getSdkLogger } from 'galileo-generated';
 const sdkLogger = getSdkLogger();
@@ -210,24 +212,31 @@ export class GalileoTracingProcessor implements TracingProcessor {
     const spanType = mapSpanType(spanData);
     const spanName = mapSpanName(spanData, spanType);
 
-    // Determine effective node type — galileo_custom delegates to inner span
-    const nodeType = spanType === GALILEO_CUSTOM_TYPE ? 'workflow' : spanType;
-
-    // Extract initial data based on span type
     let initialParams: Record<string, unknown> = {
       name: spanName,
       startedAt: span.startedAt || new Date().toISOString()
     };
 
-    if (nodeType === 'llm') {
+    // Determine effective node type and extract data.
+    // galileo_custom delegates to the inner galileoSpan for type + fields.
+    let nodeType: Node['nodeType'];
+
+    if (spanType === GALILEO_CUSTOM_TYPE) {
+      const custom = extractGalileoCustomData(spanData);
+      nodeType = custom.nodeType;
+      initialParams = { ...initialParams, ...custom.params };
+    } else if (spanType === 'llm') {
+      nodeType = 'llm';
       initialParams = { ...initialParams, ...extractLlmData(spanData) };
-    } else if (nodeType === 'tool') {
+    } else if (spanType === 'tool') {
+      nodeType = 'tool';
       initialParams = { ...initialParams, ...extractToolData(spanData) };
+    } else if (spanType === 'agent') {
+      nodeType = 'agent';
+      initialParams = { ...initialParams, ...extractWorkflowData(spanData) };
     } else {
-      initialParams = {
-        ...initialParams,
-        ...extractWorkflowData(spanData)
-      };
+      nodeType = 'workflow';
+      initialParams = { ...initialParams, ...extractWorkflowData(spanData) };
     }
 
     // Determine parent ID (prefer explicit parentId, fallback to traceId)
@@ -243,7 +252,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
     }
 
     const node = createNode({
-      nodeType: nodeType as Node['nodeType'],
+      nodeType,
       spanParams: initialParams,
       runId: span.spanId,
       parentRunId: parentId
@@ -361,6 +370,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
     const durationNs = (params.durationNs as number | undefined) ?? 0;
     const metadata =
       (params.metadata as Record<string, string> | undefined) ?? {};
+    const tags = (params.tags as string[] | undefined) ?? undefined;
     const statusCode = (params.statusCode as number | undefined) ?? 200;
     const input = params.input !== undefined ? String(params.input) : '';
     const output =
@@ -436,6 +446,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
         durationNs,
         statusCode,
         metadata,
+        tags,
         createdAt: startedAt
       });
     } else if (node.nodeType === 'agent') {
@@ -445,6 +456,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
         name,
         durationNs,
         metadata,
+        tags,
         createdAt: startedAt,
         agentType: extractAgentType(params),
         statusCode
@@ -457,6 +469,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
         name,
         durationNs,
         metadata,
+        tags,
         createdAt: startedAt
       });
     }
@@ -486,7 +499,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
    * @returns A GalileoCustomSpanData object that can be passed to the OpenAI Agents SDK.
    */
   static addGalileoCustomSpan(
-    galileoSpan: unknown,
+    galileoSpan: GalileoSpanLike,
     name?: string,
     extraData?: Record<string, unknown>
   ): GalileoCustomSpanData {
@@ -521,13 +534,14 @@ export async function registerGalileoTraceProcessor(options?: {
 }
 
 export { createGalileoCustomSpanData as GalileoCustomSpan } from './custom-span';
-export type { GalileoCustomSpanData } from './custom-span';
+export type { GalileoCustomSpanData, GalileoSpanLike } from './custom-span';
 export type { Node, NodeType } from './node';
 export { mapSpanType, mapSpanName, GALILEO_CUSTOM_TYPE } from './span-mapping';
 export {
   extractLlmData,
   extractToolData,
   extractWorkflowData,
+  extractGalileoCustomData,
   parseUsage
 } from './data-extraction';
 export {

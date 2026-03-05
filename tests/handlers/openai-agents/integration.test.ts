@@ -213,7 +213,7 @@ describe('Multi-agent integration flows', () => {
     }
   });
 
-  test('test custom spans mixed with regular spans', async () => {
+  test('test galileo_custom span delegates to inner galileoSpan as tool', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);
     const trace = makeTrace();
@@ -232,7 +232,16 @@ describe('Multi-agent integration flows', () => {
       spanData: {
         type: 'custom',
         __galileoCustom: true,
-        data: { input: 'test', output: 'result' }
+        data: {
+          galileoSpan: {
+            type: 'tool',
+            input: 'custom tool input',
+            output: 'custom tool output',
+            metadata: { source: 'test' },
+            tags: ['custom-tag'],
+            statusCode: 200
+          }
+        }
       }
     });
 
@@ -250,11 +259,150 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1); // agent
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1); // custom (galileo_custom → workflow)
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
-    // conclude is called for all non-root workflow/agent spans
+
+    const toolCall = mockLogger.addToolSpan.mock.calls[0][0];
+    expect(toolCall.input).toBe('custom tool input');
+    expect(toolCall.output).toBe('custom tool output');
+    expect(toolCall.metadata).toEqual({ source: 'test' });
+    expect(toolCall.tags).toEqual(['custom-tag']);
+  });
+
+  test('test galileo_custom span with workflow type', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    const agent = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent' }
+    });
+
+    const customSpan = makeSpan({
+      spanId: 'custom-001',
+      parentId: 'agent-001',
+      spanData: {
+        type: 'custom',
+        __galileoCustom: true,
+        data: {
+          galileoSpan: {
+            type: 'workflow',
+            input: 'wf input',
+            output: 'wf output'
+          }
+        }
+      }
+    });
+
+    await processor.onSpanStart(agent);
+    await processor.onSpanStart(customSpan);
+    await processor.onSpanEnd(customSpan);
+    await processor.onSpanEnd(agent);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const wfCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    expect(wfCall.input).toBe('wf input');
+    expect(wfCall.output).toBe('wf output');
     expect(mockLogger.conclude).toHaveBeenCalled();
+  });
+
+  test('test galileo_custom span with agent type', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    const customSpan = makeSpan({
+      spanId: 'custom-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'custom',
+        __galileoCustom: true,
+        data: {
+          galileoSpan: {
+            type: 'agent',
+            input: 'agent input',
+            output: 'agent output',
+            metadata: { role: 'planner' }
+          }
+        }
+      }
+    });
+
+    await processor.onSpanStart(customSpan);
+    await processor.onSpanEnd(customSpan);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(agentCall.input).toBe('agent input');
+    expect(agentCall.output).toBe('agent output');
+    expect(agentCall.metadata).toEqual({ role: 'planner' });
+  });
+
+  test('test galileo_custom span without galileoSpan falls back to workflow', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    const customSpan = makeSpan({
+      spanId: 'custom-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'custom',
+        __galileoCustom: true,
+        data: { input: 'fallback input', output: 'fallback output' }
+      }
+    });
+
+    await processor.onSpanStart(customSpan);
+    await processor.onSpanEnd(customSpan);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const wfCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    expect(wfCall.input).toBe('fallback input');
+    expect(wfCall.output).toBe('fallback output');
+  });
+
+  test('test galileo_custom span with unrecognized type falls back to workflow', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    await processor.onTraceStart(trace);
+
+    const customSpan = makeSpan({
+      spanId: 'custom-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'custom',
+        __galileoCustom: true,
+        data: {
+          galileoSpan: {
+            type: 'unknown_future_type',
+            input: 'some input'
+          }
+        }
+      }
+    });
+
+    await processor.onSpanStart(customSpan);
+    await processor.onSpanEnd(customSpan);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const wfCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    expect(wfCall.input).toBe('some input');
   });
 
   test('test error in middle of flow handled', async () => {

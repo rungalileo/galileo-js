@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { GalileoSpanLike } from './custom-span';
+import type { NodeType } from './node';
 
 /**
  * Normalised token count structure returned by parseUsage.
@@ -261,4 +263,62 @@ export function extractWorkflowData(
   }
 
   return { input: '', output: undefined, metadata: {} };
+}
+
+const VALID_GALILEO_NODE_TYPES: readonly string[] = [
+  'tool',
+  'workflow',
+  'agent'
+];
+
+/**
+ * Extracts span parameters from a GalileoCustomSpanData, delegating to the
+ * inner galileoSpan for input, output, metadata, tags, statusCode, and type.
+ *
+ * @param spanData - The span data object (must have __galileoCustom: true).
+ * @returns The effective node type and extracted parameters.
+ */
+export function extractGalileoCustomData(spanData: Record<string, unknown>): {
+  nodeType: NodeType;
+  params: Record<string, unknown>;
+} {
+  const data = (spanData.data as Record<string, unknown> | undefined) ?? {};
+  const galileoSpan = data.galileoSpan as GalileoSpanLike | undefined;
+
+  if (!galileoSpan || typeof galileoSpan !== 'object') {
+    return { nodeType: 'workflow', params: extractWorkflowData(spanData) };
+  }
+
+  const input =
+    galileoSpan.input !== undefined
+      ? typeof galileoSpan.input === 'string'
+        ? galileoSpan.input
+        : JSON.stringify(galileoSpan.input)
+      : '';
+  const output =
+    galileoSpan.output !== undefined
+      ? typeof galileoSpan.output === 'string'
+        ? galileoSpan.output
+        : JSON.stringify(galileoSpan.output)
+      : undefined;
+  const metadata = galileoSpan.metadata ?? {};
+  const tags = galileoSpan.tags;
+  const statusCode = galileoSpan.statusCode;
+
+  const nodeType: NodeType =
+    typeof galileoSpan.type === 'string' &&
+    VALID_GALILEO_NODE_TYPES.includes(galileoSpan.type)
+      ? (galileoSpan.type as NodeType)
+      : 'workflow';
+
+  return {
+    nodeType,
+    params: {
+      input,
+      output,
+      metadata,
+      ...(tags !== undefined ? { tags } : {}),
+      ...(statusCode !== undefined ? { statusCode } : {})
+    }
+  };
 }
