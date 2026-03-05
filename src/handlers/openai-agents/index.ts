@@ -22,13 +22,6 @@ import {
 import { getSdkLogger } from 'galileo-generated';
 const sdkLogger = getSdkLogger();
 
-// Warn if @openai/agents package is not available (optional peer dependency)
-import('@openai/agents-core' as string).catch(() => {
-  sdkLogger.warn(
-    '@openai/agents package is not installed. GalileoTracingProcessor will not function.'
-  );
-});
-
 /**
  * Minimal interface for an OpenAI Agents SDK Trace object.
  */
@@ -109,6 +102,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
   private _nodes = new Map<string, Node>();
   private _lastOutput: unknown = null;
   private _firstInput: unknown = null;
+  private static _depCheckDone = false;
 
   /**
    * Creates a new GalileoTracingProcessor.
@@ -118,7 +112,17 @@ export class GalileoTracingProcessor implements TracingProcessor {
   constructor(
     private readonly _galileoLogger: GalileoLogger = GalileoSingleton.getInstance().getClient(),
     private readonly _flushOnTraceEnd: boolean = true
-  ) {}
+  ) {
+    // Lazily check for @openai/agents-core package only when processor is instantiated
+    if (!GalileoTracingProcessor._depCheckDone) {
+      GalileoTracingProcessor._depCheckDone = true;
+      import('@openai/agents-core' as string).catch(() => {
+        sdkLogger.warn(
+          '@openai/agents package is not installed. GalileoTracingProcessor will not function.'
+        );
+      });
+    }
+  }
 
   /**
    * Checks if a value is a meaningful, non-empty input string.
