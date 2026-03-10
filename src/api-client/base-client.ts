@@ -58,7 +58,7 @@ export class BaseClient {
 
     headers = { ...headers, ...extraHeaders };
 
-    const endpointPath = `${this.apiUrl}/${endpoint
+    const endpointPath = `${this.apiUrl.replace(/\/$/, '')}/${endpoint
       .replace(
         '{project_id}',
         params && 'project_id' in params ? (params.project_id as string) : ''
@@ -209,7 +209,7 @@ export class BaseClient {
 
     headers = { ...headers, ...extraHeaders };
 
-    const endpointPath = `${this.apiUrl}/${endpoint
+    const endpointPath = `${this.apiUrl.replace(/\/$/, '')}/${endpoint
       .replace(
         '{project_id}',
         params && 'project_id' in params ? (params.project_id as string) : ''
