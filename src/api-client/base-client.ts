@@ -33,9 +33,16 @@ export const GENERIC_ERROR_MESSAGE =
   'This error has been automatically tracked. Please try again.';
 
 export class BaseClient {
-  protected apiUrl: string = '';
+  private _apiUrl: string = '';
   protected token: string = '';
   protected client: Client<paths> | undefined = undefined;
+
+  protected get apiUrl(): string {
+    return this._apiUrl;
+  }
+  protected set apiUrl(url: string) {
+    this._apiUrl = url.replace(/\/$/, '');
+  }
 
   /**
    * Make an HTTP request to the Galileo API and return the raw Axios response.
@@ -58,7 +65,7 @@ export class BaseClient {
 
     headers = { ...headers, ...extraHeaders };
 
-    const endpointPath = `${this.apiUrl.replace(/\/$/, '')}/${endpoint
+    const endpointPath = `${this.apiUrl}/${endpoint
       .replace(
         '{project_id}',
         params && 'project_id' in params ? (params.project_id as string) : ''
@@ -209,7 +216,7 @@ export class BaseClient {
 
     headers = { ...headers, ...extraHeaders };
 
-    const endpointPath = `${this.apiUrl.replace(/\/$/, '')}/${endpoint
+    const endpointPath = `${this.apiUrl}/${endpoint
       .replace(
         '{project_id}',
         params && 'project_id' in params ? (params.project_id as string) : ''
