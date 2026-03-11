@@ -245,25 +245,11 @@ export function log<T extends unknown[], R>(
         // set via experimentContext.run() or init(). If no context exists, use getClient() to
         // retrieve the last logger configured during the ongoing workflow.
         const exp = experimentContext.getStore();
-        const logStore = loggerContext.getStore();
 
-        // Priority: logStore (loggerContext) > exp (experimentContext) > getClient()
-        const hasLogStoreData =
-          logStore &&
-          (logStore.logStreamName ||
-            logStore.sessionId ||
-            (logStore.parentStack && logStore.parentStack.length > 0));
         const hasExpData =
           exp && (exp.projectName || exp.experimentId || exp.logStreamName);
 
-        if (hasLogStoreData) {
-          // Use loggerContext data if available
-          logger = GalileoSingleton.getInstance().getLogger({
-            projectName: exp?.projectName,
-            experimentId: exp?.experimentId,
-            logstream: logStore?.logStreamName ?? exp?.logStreamName
-          });
-        } else if (hasExpData) {
+        if (hasExpData) {
           // Use experimentContext data if available
           logger = GalileoSingleton.getInstance().getLogger({
             projectName: exp?.projectName,
