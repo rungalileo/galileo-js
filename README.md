@@ -10,9 +10,16 @@ JS/TypeScript client library for the Galileo platform.
 
 ### Setup
 
-Set the following environment variables:
+Set the following environment variables.
+For credentials, either:
 
 - `GALILEO_API_KEY`: Your Galileo API key
+  or
+- `GALILEO_USERNAME`: Your Galileo login
+- `GALILEO_PASSWORD`: Your Galileo password
+
+then:
+
 - `GALILEO_PROJECT`: (Optional) Project name
 - `GALILEO_LOG_STREAM`: (Optional) Log stream name
 
@@ -77,7 +84,7 @@ const wrappedToolCall = log(
   }
 );
 
-const wrappedFunc = await log({ name: 'workflow span' }, async (input) => {
+const wrappedFunc = log({ name: 'workflow span' }, async (input) => {
   const result = await callOpenAI(input);
   return wrappedToolCall(result);
 });
@@ -103,26 +110,21 @@ const logger = new GalileoLogger({
 console.log('Creating trace with spans...');
 
 // Create a new trace
-const trace = logger.startTrace(
-  'Example trace input', // input
-  undefined, // output (will be set later)
-  'Example Trace', // name
-  Date.now() * 1000000, // createdAt in nanoseconds
-  undefined, // durationNs
-  { source: 'test-script' }, // metadata
-  ['test', 'example'] // tags
-);
+const trace = logger.startTrace({
+  input: 'Example trace input',
+  name: 'Example Trace',
+  createdAt: new Date(),
+  metadata: { source: 'test-script' },
+  tags: ['test', 'example']
+});
 
 // Add a workflow span (parent span)
-const workflowSpan = logger.addWorkflowSpan(
-  'Processing workflow', // input
-  undefined, // output (will be set later)
-  'Main Workflow', // name
-  undefined, // durationNs
-  Date.now() * 1000000, // createdAt in nanoseconds
-  { workflow_type: 'test' }, // userMetadata
-  ['workflow'] // tags
-);
+const workflowSpan = logger.addWorkflowSpan({
+  input: 'Processing workflow',
+  name: 'Main Workflow',
+  metadata: { workflow_type: 'test' },
+  tags: ['workflow']
+});
 
 // Add an LLM span as a child of the workflow span
 logger.addLlmSpan({
@@ -134,7 +136,7 @@ logger.addLlmSpan({
   model: 'gpt-3.5-turbo', // model name
   name: 'Chat Completion', // name
   durationNs: 1000000000, // durationNs (1s)
-  userMetadata: { temperature: '0.7' }, // userMetadata
+  metadata: { temperature: '0.7' }, // userMetadata
   tags: ['llm', 'chat'] // tags
 });
 
@@ -193,9 +195,9 @@ const datasets = await getDatasets();
 Create a prompt template and use it to run a prompt experiment:
 
 ```js
-import { createPromptTemplate, runExperiment } from 'galileo';
+import { createPrompt, runExperiment } from 'galileo';
 
-const template = await createPromptTemplate({
+const template = await createPrompt({
   template: [{ role: 'user', content: 'Say "Hello, {name}"!' }],
   projectName: 'my-test-project-5',
   name: `Hello name prompt`
@@ -253,7 +255,7 @@ const runner = async (input) => {
 await runExperiment({
   name: `Test Experiment`,
   datasetName: 'names',
-  runner: runner,
+  function: runner,
   metrics: ['output_tone'],
   projectName: 'my-test-project-5'
 });
