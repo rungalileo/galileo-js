@@ -37,20 +37,14 @@ import { OpenAI } from 'openai';
 
 const openai = wrapOpenAI(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
 
-// Optionally initialize the logger if you haven't set GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables
-await init({
-  projectName: 'my-test-project-4',
-  logStreamName: 'my-test-log-stream'
-});
-
 const result = await openai.chat.completions.create({
-  model: 'gpt-4o',
+  model: 'gpt-5-mini',
   messages: [{ content: 'Say hello world!', role: 'user' }]
 });
 
 console.log(result);
 
-// Upload the trace to Galileo
+// Upload the trace to Galileo.
 await flush();
 ```
 
@@ -65,17 +59,18 @@ const openai = wrapOpenAI(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
 // This will automatically create an llm span since we're using the `wrapOpenAI` wrapper
 const callOpenAI = async (input) => {
   const result = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-5-mini',
     messages: [{ content: `Say hello ${input}!`, role: 'user' }]
   });
   return result;
 };
 
 // Optionally initialize the logger if you haven't set GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables
-await init({
-  projectName: 'my-test-project-4',
-  logStreamName: 'my-test-log-stream'
-});
+const config = {
+  projectName: 'My Test Project',
+  logstream: 'my-ts-test-log-stream'
+};
+await init(config);
 
 const wrappedToolCall = log(
   { name: 'tool span', spanType: 'tool' },
@@ -92,8 +87,9 @@ const wrappedFunc = log({ name: 'workflow span' }, async (input) => {
 // This will create a workflow span with an llm span and a tool span
 const result = await wrappedFunc('world');
 
-// Upload the trace to Galileo
-await flush();
+// Upload the trace to Galileo. Standalone function requires the same
+// config used in init, so the same internal logger flushes the traces
+await flush(config);
 ```
 
 Logging with the GalileoLogger
@@ -152,7 +148,8 @@ logger.conclude({
   durationNs: 3000000000 // 3 seconds
 });
 
-// Upload the traces to Galileo
+// Upload the trace to Galileo. Since logger was used
+// directly, no additional config necessary for flush
 const flushedTraces = await logger.flush();
 ```
 
@@ -165,7 +162,7 @@ import { createDataset } from 'galileo';
 
 const dataset = await createDataset({
   name: 'names',
-  dataset: [
+  content: [
     { name: 'John' },
     { name: 'Jane' },
     { name: 'Bob' },
@@ -208,7 +205,7 @@ await runExperiment({
   name: `Test Experiment`,
   datasetName: 'names',
   promptTemplate: template,
-  metrics: ['output_tone'],
+  metrics: ['correctness'],
   projectName: 'my-test-project-5'
 });
 ```
@@ -231,7 +228,7 @@ await runExperiment({
   name: `Test Experiment`,
   dataset: dataset,
   promptTemplate: template,
-  metrics: ['output_tone'],
+  metrics: ['correctness'],
   projectName: 'my-test-project-5'
 });
 ```
@@ -246,7 +243,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const runner = async (input) => {
   const result = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-5-mini',
     messages: [{ content: `Say hello ${input['name']}!`, role: 'user' }]
   });
   return result;
@@ -278,7 +275,7 @@ const dataset = [
 
 const runner = async (input) => {
   const result = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-5-mini',
     messages: [{ content: `Say hello ${input['name']}!`, role: 'user' }]
   });
   return result;
@@ -288,7 +285,7 @@ await runExperiment({
   name: `Test Experiment`,
   dataset: dataset,
   runner: runner,
-  metrics: ['output_tone'],
+  metrics: ['correctness'],
   projectName: 'my-test-project-5'
 });
 ```
