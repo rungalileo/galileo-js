@@ -82,9 +82,9 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(planner);
     await processor.onTraceEnd(trace);
 
-    // Verify all spans logged: 2 agents use addAgentSpan, 1 handoff uses addWorkflowSpan
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(2);
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    // Verify all spans logged: 2 agents + 1 handoff all use addWorkflowSpan
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(3);
+    expect(mockLogger.addAgentSpan).not.toHaveBeenCalled();
   });
 
   test('test agent->tool->llm->tool flow', async () => {
@@ -128,7 +128,7 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1); // agent
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1); // agent (uses addWorkflowSpan)
     expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(2); // 2 tools
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1); // 1 llm
   });
@@ -259,7 +259,7 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1); // agent (uses addWorkflowSpan)
     expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
 
@@ -305,8 +305,10 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
-    const wfCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    // addWorkflowSpan called twice: once for the agent container, once for the custom workflow span
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(2);
+    // The custom workflow span is the first child logged (index 1 after agent at index 0)
+    const wfCall = mockLogger.addWorkflowSpan.mock.calls[1][0];
     expect(wfCall.input).toBe('wf input');
     expect(wfCall.output).toBe('wf output');
     expect(mockLogger.conclude).toHaveBeenCalled();
@@ -340,8 +342,8 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(customSpan);
     await processor.onTraceEnd(trace);
 
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
-    const agentCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const agentCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
     expect(agentCall.input).toBe('agent input');
     expect(agentCall.output).toBe('agent output');
     expect(agentCall.metadata).toEqual({ role: 'planner' });
@@ -509,8 +511,8 @@ describe('Multi-agent integration flows', () => {
     await processor.onSpanEnd(rootAgent);
     await processor.onTraceEnd(trace);
 
-    // Verify all spans logged: 3 agents use addAgentSpan
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(3);
+    // Verify all spans logged: 3 agents use addWorkflowSpan
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(3);
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
     // conclude is called for all non-root workflow/agent spans
@@ -632,7 +634,7 @@ describe('Workflow span statusCode propagation', () => {
     expect(workflowSpanCall.statusCode).toBe(500);
   });
 
-  test('test agent span statusCode passed to addAgentSpan', async () => {
+  test('test agent span statusCode passed to addWorkflowSpan', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);
     const trace = makeTrace();
@@ -665,9 +667,9 @@ describe('Workflow span statusCode propagation', () => {
     await processor.onSpanEnd(agent);
     await processor.onTraceEnd(trace);
 
-    // Verify addAgentSpan was called with statusCode parameter
-    expect(mockLogger.addAgentSpan).toHaveBeenCalledTimes(1);
-    const agentSpanCall = mockLogger.addAgentSpan.mock.calls[0][0];
+    // Verify addWorkflowSpan was called with statusCode parameter
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const agentSpanCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
     expect(agentSpanCall.statusCode).toBe(200);
   });
 

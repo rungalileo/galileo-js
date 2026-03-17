@@ -265,8 +265,8 @@ describe('extractWorkflowData', () => {
       to_agent: 'AgentB'
     };
     const result = extractWorkflowData(spanData);
-    expect(result.input).toBe('AgentA');
-    expect(result.output).toBe('AgentB');
+    expect(result.input).toBe('{"from_agent":"AgentA"}');
+    expect(result.output).toBe('{"to_agent":"AgentB"}');
     const meta = result.metadata as Record<string, string>;
     expect(meta.from_agent).toBe('AgentA');
     expect(meta.to_agent).toBe('AgentB');
@@ -275,7 +275,7 @@ describe('extractWorkflowData', () => {
   test('test extract handoff span data with missing agents', () => {
     const result = extractWorkflowData({ type: 'handoff' });
     expect(result.input).toBe('');
-    expect(result.output).toBe('');
+    expect(result.output).toBeUndefined();
   });
 
   test('test extract custom span data with input and output', () => {

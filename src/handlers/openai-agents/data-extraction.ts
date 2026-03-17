@@ -227,8 +227,8 @@ export function extractWorkflowData(
     const from = String((spanData.from_agent as string | undefined) ?? '');
     const to = String((spanData.to_agent as string | undefined) ?? '');
     return {
-      input: from,
-      output: to,
+      input: from ? JSON.stringify({ from_agent: from }) : '',
+      output: to ? JSON.stringify({ to_agent: to }) : undefined,
       metadata: {
         from_agent: from,
         to_agent: to

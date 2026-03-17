@@ -68,7 +68,11 @@ export interface TracingProcessor {
 /**
  * Maps an OpenAI agent type string to a Galileo AgentType enum value.
  * Returns undefined when no agentType is present so addAgentSpan() can use its default.
+ *
+ * Currently not being used because of parity with galileo-python (which used workflow instead)
+ * Ts and Py have to be updated simultaneously.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function extractAgentType(
   spanParams: Record<string, unknown>
 ): AgentType | undefined {
@@ -299,6 +303,17 @@ export class GalileoTracingProcessor implements TracingProcessor {
       // Refresh LLM data at end (usage may be populated now)
       const finalData = extractLlmData(spanData);
       node.spanParams = { ...node.spanParams, ...finalData };
+    } else if (spanData.type === 'handoff') {
+      // to_agent is set on the span AFTER span.start() fires (inside withHandoffSpan's fn),
+      // so we must re-extract at span end to capture the populated to_agent value.
+      // Also re-compute the name so it reflects the final to_agent.
+      const refreshed = extractWorkflowData(spanData);
+      const refreshedName = mapSpanName(spanData, 'workflow');
+      node.spanParams = {
+        ...node.spanParams,
+        ...refreshed,
+        name: refreshedName
+      };
     }
 
     // Handle errors
@@ -450,21 +465,20 @@ export class GalileoTracingProcessor implements TracingProcessor {
         createdAt: startedAt
       });
     } else if (node.nodeType === 'agent') {
-      this._galileoLogger.addAgentSpan({
-        input,
+      this._galileoLogger.addWorkflowSpan({
+        input: input || 'Workflow Step',
         output,
         name,
         durationNs,
         metadata,
         tags,
         createdAt: startedAt,
-        agentType: extractAgentType(params),
         statusCode
       });
     } else {
       // workflow and other parent nodes
       this._galileoLogger.addWorkflowSpan({
-        input,
+        input: input || 'Workflow Step',
         output,
         name,
         durationNs,
@@ -483,12 +497,26 @@ export class GalileoTracingProcessor implements TracingProcessor {
       }
     }
 
-    // Conclude workflow/agent spans after their children
+    // Conclude workflow/agent spans after their children.
+    // When the span itself has no output (always the case for agent spans, since
+    // AgentSpanData carries no output field), fall back to the last child's output.
     if (
       !firstNode &&
       (node.nodeType === 'workflow' || node.nodeType === 'agent')
     ) {
-      this._galileoLogger.conclude({ output, durationNs, statusCode });
+      let concludeOutput = output;
+      if (concludeOutput === undefined && node.children.length > 0) {
+        const lastChildId = node.children[node.children.length - 1];
+        const lastChild = this._nodes.get(lastChildId);
+        if (lastChild?.spanParams.output !== undefined) {
+          concludeOutput = String(lastChild.spanParams.output);
+        }
+      }
+      this._galileoLogger.conclude({
+        output: concludeOutput,
+        durationNs,
+        statusCode
+      });
     }
   }
 
