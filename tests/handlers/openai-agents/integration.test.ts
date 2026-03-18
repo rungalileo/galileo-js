@@ -159,7 +159,7 @@ describe('Multi-agent integration flows', () => {
     await processor.onTraceEnd(trace);
 
     const toolCall = mockLogger.addToolSpan.mock.calls[0][0];
-    expect(toolCall.output).toBe('Guardrail triggered');
+    expect(toolCall.output).toBe('{"triggered":true}');
   });
 
   test('test embedded tool calls from OpenAI response', async () => {

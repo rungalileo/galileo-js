@@ -12,7 +12,7 @@ import { AgentFinish } from '@langchain/core/agents';
 import { Document, DocumentInterface } from '@langchain/core/documents';
 import { GalileoSingleton } from '../singleton';
 import { GalileoLogger } from '../utils/galileo-logger';
-import { toStringValue, convertToStringDict } from '../utils/serialization';
+import { toStringValue, toStringRecord } from '../utils/serialization';
 import { getSdkLogger } from 'galileo-generated';
 import { Serialized } from '@langchain/core/load/serializable.js';
 
@@ -151,8 +151,8 @@ export class GalileoCallback
     let metadata: Record<string, string> | undefined = undefined;
     if (node.spanParams.metadata) {
       try {
-        metadata = convertToStringDict(
-          node.spanParams.metadata as Record<string, any>
+        metadata = toStringRecord(
+          node.spanParams.metadata as Record<string, unknown>
         );
       } catch (e) {
         sdkLogger.warn('Unable to convert metadata to a string dictionary', e);
@@ -485,7 +485,7 @@ export class GalileoCallback
       | undefined;
 
     // Serialize messages safely
-    let serializedMessages;
+    let serializedMessages: unknown;
     try {
       const flattenedMessages = messages.flat().map((msg) => ({
         content: msg.content,
@@ -516,7 +516,7 @@ export class GalileoCallback
   public async handleLLMEnd(output: LLMResult, runId: string): Promise<void> {
     const tokenUsage = output.llmOutput?.tokenUsage || {};
 
-    let serializedOutput;
+    let serializedOutput: unknown;
     try {
       const flattenedOutput = output.generations.flat().map((g) => ({
         text: g.text,
@@ -605,7 +605,7 @@ export class GalileoCallback
     documents: DocumentInterface<Record<string, unknown>>[],
     runId: string
   ): Promise<void> {
-    let serializedResponse;
+    let serializedResponse: unknown;
     try {
       serializedResponse = documents.map((doc) => ({
         pageContent: doc.pageContent,

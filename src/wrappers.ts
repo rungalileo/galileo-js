@@ -7,7 +7,7 @@ import {
 import { serializeToStr } from './entities/serialization';
 import {
   argsToDict,
-  convertToStringDict,
+  toStringRecord,
   extractParamsInfo,
   toStringValue
 } from './utils/serialization';
@@ -215,7 +215,7 @@ export function log<T extends unknown[], R>(
         spanParams.metadata &&
         typeof spanParams.metadata === 'object' &&
         spanParams.metadata !== null
-          ? convertToStringDict(spanParams.metadata as Record<string, unknown>)
+          ? toStringRecord(spanParams.metadata as Record<string, unknown>)
           : undefined;
       const tags = Array.isArray(spanParams.tags)
         ? spanParams.tags.map((tag) => toStringValue(tag))

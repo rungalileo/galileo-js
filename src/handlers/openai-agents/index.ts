@@ -2,6 +2,7 @@
 import { GalileoLogger } from '../../utils/galileo-logger';
 import { GalileoSingleton } from '../../singleton';
 import { calculateDurationNs } from '../../utils/utils';
+import { toStringRecord } from '../../utils/serialization';
 import type { JsonObject } from '../../types/base.types';
 import { AgentType } from '../../types/new-api.types';
 import { type Node, createNode } from './node';
@@ -160,12 +161,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
     };
 
     if (trace.metadata) {
-      // Convert metadata values to strings for Galileo
-      const meta: Record<string, string> = {};
-      for (const [k, v] of Object.entries(trace.metadata)) {
-        meta[k] = typeof v === 'string' ? v : JSON.stringify(v);
-      }
-      spanParams.metadata = meta;
+      spanParams.metadata = toStringRecord(trace.metadata);
     }
 
     const node = createNode({
@@ -383,8 +379,9 @@ export class GalileoTracingProcessor implements TracingProcessor {
     const params = node.spanParams;
     const name = (params.name as string | undefined) ?? 'Agent Run';
     const durationNs = (params.durationNs as number | undefined) ?? 0;
-    const metadata =
-      (params.metadata as Record<string, string> | undefined) ?? {};
+    const metadata = toStringRecord(
+      (params.metadata as Record<string, unknown> | undefined) ?? {}
+    );
     const tags = (params.tags as string[] | undefined) ?? undefined;
     const statusCode = (params.statusCode as number | undefined) ?? 200;
     const input = params.input !== undefined ? String(params.input) : '';
@@ -423,9 +420,8 @@ export class GalileoTracingProcessor implements TracingProcessor {
       const temperature =
         (params.temperature as number | undefined) ?? undefined;
       const model = (params.model as string | undefined) ?? 'unknown';
-      const tools = (params.tools as string | undefined)
-        ? (JSON.parse(params.tools as string) as Record<string, unknown>[])
-        : undefined;
+      const tools =
+        (params.tools as Record<string, unknown>[] | undefined) ?? undefined;
 
       // Build embedded tool calls metadata
       const embeddedToolCalls = params.embeddedToolCalls as

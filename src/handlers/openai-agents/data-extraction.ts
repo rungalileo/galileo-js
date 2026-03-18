@@ -1,6 +1,26 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { GalileoSpanLike } from './custom-span';
 import type { NodeType } from './node';
+
+const MODEL_PARAM_KEYS = [
+  'temperature',
+  'max_output_tokens',
+  'top_p',
+  'tool_choice',
+  'parallel_tool_calls',
+  'truncation',
+  'seed',
+  'frequency_penalty',
+  'presence_penalty'
+];
+
+const RESPONSE_EXCLUDE = new Set([
+  'input',
+  'output',
+  'usage',
+  'tools',
+  'error',
+  'status'
+]);
 
 /**
  * Normalised token count structure returned by parseUsage.
@@ -79,11 +99,17 @@ export function extractLlmData(
   spanData: Record<string, unknown>
 ): Record<string, unknown> {
   if (spanData.type === 'generation') {
-    const usage = parseUsage(
-      (spanData.usage as Record<string, unknown> | undefined) ?? null
-    );
+    const usageRaw =
+      (spanData.usage as Record<string, unknown> | undefined) ?? {};
+    const usage = parseUsage(usageRaw);
     const modelConfig =
       (spanData.model_config as Record<string, unknown> | undefined) ?? {};
+    const inputDetails =
+      (usageRaw.input_tokens_details as Record<string, unknown> | undefined) ??
+      null;
+    const outputDetails =
+      (usageRaw.output_tokens_details as Record<string, unknown> | undefined) ??
+      null;
 
     return {
       input: spanData.input !== undefined ? JSON.stringify(spanData.input) : '',
@@ -99,7 +125,9 @@ export function extractLlmData(
       numCachedInputTokens: usage.cachedTokens,
       metadata: {
         gen_ai_system: 'openai',
-        model_config: JSON.stringify(modelConfig)
+        model_config: modelConfig,
+        ...(inputDetails ? { input_tokens_details: inputDetails } : {}),
+        ...(outputDetails ? { output_tokens_details: outputDetails } : {})
       }
     };
   }
@@ -122,20 +150,42 @@ export function extractLlmData(
       (response?.temperature as number | undefined) ?? undefined;
     const tools = response?.tools;
 
+    const modelParameters: Record<string, unknown> = response
+      ? Object.fromEntries(
+          MODEL_PARAM_KEYS.filter((k) => response[k] !== undefined).map((k) => [
+            k,
+            response[k]
+          ])
+        )
+      : {};
+
+    const responseMetadata: Record<string, unknown> = response
+      ? Object.fromEntries(
+          Object.entries(response).filter(([k]) => !RESPONSE_EXCLUDE.has(k))
+        )
+      : {};
+
     return {
       input: input !== undefined ? JSON.stringify(input) : '',
       output:
         response?.output !== undefined ? JSON.stringify(response.output) : '',
       model,
       temperature,
-      tools: tools !== undefined ? JSON.stringify(tools) : undefined,
+      tools: tools !== undefined ? tools : undefined,
+      modelParameters,
       numInputTokens: usage.inputTokens,
       numOutputTokens: usage.outputTokens,
       totalTokens: usage.totalTokens ?? undefined,
       numReasoningTokens: usage.reasoningTokens,
       numCachedInputTokens: usage.cachedTokens,
       metadata: {
-        gen_ai_system: 'openai'
+        gen_ai_system: 'openai',
+        ...(Object.keys(responseMetadata).length > 0
+          ? { response_metadata: responseMetadata }
+          : {}),
+        ...(response?.instructions !== undefined
+          ? { instructions: response.instructions }
+          : {})
       },
       _responseObject: response
     };
@@ -177,10 +227,10 @@ export function extractToolData(
     const triggered = Boolean(spanData.triggered);
     return {
       input: '',
-      output: triggered ? 'Guardrail triggered' : 'Guardrail passed',
+      output: JSON.stringify({ triggered }),
       metadata: {
-        triggered: String(triggered),
-        guardrail_name: String((spanData.name as string | undefined) ?? '')
+        triggered,
+        ...(triggered ? { status: 'warning' } : {})
       }
     };
   }
@@ -212,13 +262,9 @@ export function extractWorkflowData(
       output: undefined,
       ...(agentType !== undefined ? { agentType } : {}),
       metadata: {
-        ...(tools !== undefined ? { tools: JSON.stringify(tools) } : {}),
-        ...(handoffs !== undefined
-          ? { handoffs: JSON.stringify(handoffs) }
-          : {}),
-        ...(outputType !== undefined
-          ? { output_type: JSON.stringify(outputType) }
-          : {})
+        ...(tools !== undefined ? { tools } : {}),
+        ...(handoffs !== undefined ? { handoffs } : {}),
+        ...(outputType !== undefined ? { output_type: outputType } : {})
       }
     };
   }
@@ -251,11 +297,14 @@ export function extractWorkflowData(
           : JSON.stringify(data.output)
         : undefined;
 
-    // Everything except input/output goes to metadata
+    // Everything except input/output goes to metadata; values are kept as-is
     const metaEntries = Object.entries(data)
-      .filter(([k]) => k !== 'input' && k !== 'output')
-      .reduce<Record<string, string>>((acc, [k, v]) => {
-        acc[k] = typeof v === 'string' ? v : JSON.stringify(v);
+      .filter(
+        ([k, v]) =>
+          k !== 'input' && k !== 'output' && v !== null && v !== undefined
+      )
+      .reduce<Record<string, unknown>>((acc, [k, v]) => {
+        acc[k] = v;
         return acc;
       }, {});
 

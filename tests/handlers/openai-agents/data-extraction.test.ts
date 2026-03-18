@@ -108,8 +108,45 @@ describe('extractLlmData generation', () => {
   test('test extract generation metadata includes gen_ai_system openai', () => {
     const spanData = { type: 'generation' };
     const result = extractLlmData(spanData);
-    const meta = result.metadata as Record<string, string>;
+    const meta = result.metadata as Record<string, unknown>;
     expect(meta.gen_ai_system).toBe('openai');
+  });
+
+  test('test extract generation metadata model_config is raw dict', () => {
+    const spanData = {
+      type: 'generation',
+      model_config: { temperature: 0.5, max_tokens: 200 }
+    };
+    const result = extractLlmData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.model_config).toEqual({ temperature: 0.5, max_tokens: 200 });
+  });
+
+  test('test extract generation metadata includes token detail objects', () => {
+    const spanData = {
+      type: 'generation',
+      usage: {
+        input_tokens: 10,
+        output_tokens: 5,
+        input_tokens_details: { cached_tokens: 3 },
+        output_tokens_details: { reasoning_tokens: 2 }
+      }
+    };
+    const result = extractLlmData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.input_tokens_details).toEqual({ cached_tokens: 3 });
+    expect(meta.output_tokens_details).toEqual({ reasoning_tokens: 2 });
+  });
+
+  test('test extract generation metadata omits absent token details', () => {
+    const spanData = {
+      type: 'generation',
+      usage: { input_tokens: 10, output_tokens: 5 }
+    };
+    const result = extractLlmData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta).not.toHaveProperty('input_tokens_details');
+    expect(meta).not.toHaveProperty('output_tokens_details');
   });
 });
 
@@ -151,6 +188,93 @@ describe('extractLlmData response', () => {
     const result = extractLlmData(spanData);
     expect(result.model).toBe('unknown');
     expect(result.numInputTokens).toBe(0);
+  });
+
+  test('test extract response tools returned as raw array not JSON string', () => {
+    const toolsArray = [{ type: 'function', name: 'search' }];
+    const spanData = {
+      type: 'response',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        tools: toolsArray,
+        output: []
+      }
+    };
+    const result = extractLlmData(spanData);
+    expect(result.tools).toEqual(toolsArray);
+    expect(typeof result.tools).not.toBe('string');
+  });
+
+  test('test extract response model_parameters from whitelist', () => {
+    const spanData = {
+      type: 'response',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        temperature: 0.7,
+        max_output_tokens: 512,
+        top_p: 1,
+        tool_choice: 'auto',
+        seed: 42,
+        irrelevant_field: 'ignored',
+        output: []
+      }
+    };
+    const result = extractLlmData(spanData);
+    const mp = result.modelParameters as Record<string, unknown>;
+    expect(mp.temperature).toBe(0.7);
+    expect(mp.max_output_tokens).toBe(512);
+    expect(mp.top_p).toBe(1);
+    expect(mp.tool_choice).toBe('auto');
+    expect(mp.seed).toBe(42);
+    expect(mp).not.toHaveProperty('irrelevant_field');
+  });
+
+  test('test extract response metadata includes response_metadata', () => {
+    const spanData = {
+      type: 'response',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        temperature: 0.5,
+        object: 'response',
+        output: []
+      }
+    };
+    const result = extractLlmData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.gen_ai_system).toBe('openai');
+    const rm = meta.response_metadata as Record<string, unknown>;
+    expect(rm.model).toBe('gpt-4o');
+    expect(rm.temperature).toBe(0.5);
+    expect(rm).not.toHaveProperty('usage');
+    expect(rm).not.toHaveProperty('output');
+  });
+
+  test('test extract response metadata includes instructions when present', () => {
+    const spanData = {
+      type: 'response',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        instructions: 'You are a helpful assistant.',
+        output: []
+      }
+    };
+    const result = extractLlmData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.instructions).toBe('You are a helpful assistant.');
+  });
+
+  test('test extract response metadata omits instructions when absent', () => {
+    const spanData = {
+      type: 'response',
+      _response: { model: 'gpt-4o', usage: {}, output: [] }
+    };
+    const result = extractLlmData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta).not.toHaveProperty('instructions');
   });
 });
 
@@ -207,18 +331,21 @@ describe('extractToolData', () => {
     const spanData = { type: 'guardrail', triggered: true, name: 'PII Filter' };
     const result = extractToolData(spanData);
     expect(result.input).toBe('');
-    expect(result.output).toBe('Guardrail triggered');
-    const meta = result.metadata as Record<string, string>;
-    expect(meta.triggered).toBe('true');
-    expect(meta.guardrail_name).toBe('PII Filter');
+    expect(result.output).toBe('{"triggered":true}');
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.triggered).toBe(true);
+    expect(meta.status).toBe('warning');
+    expect(meta).not.toHaveProperty('guardrail_name');
   });
 
   test('test extract guardrail span not triggered', () => {
     const spanData = { type: 'guardrail', triggered: false, name: 'Safety' };
     const result = extractToolData(spanData);
-    expect(result.output).toBe('Guardrail passed');
-    const meta = result.metadata as Record<string, string>;
-    expect(meta.triggered).toBe('false');
+    expect(result.output).toBe('{"triggered":false}');
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.triggered).toBe(false);
+    expect(meta).not.toHaveProperty('status');
+    expect(meta).not.toHaveProperty('guardrail_name');
   });
 
   test('test extract tool data for transcription returns empty', () => {
@@ -244,10 +371,10 @@ describe('extractWorkflowData', () => {
     };
     const result = extractWorkflowData(spanData);
     expect(result.input).toBe('');
-    const meta = result.metadata as Record<string, string>;
-    expect(meta.tools).toBe(JSON.stringify(['search', 'calculator']));
-    expect(meta.handoffs).toBe(JSON.stringify(['ReviewAgent']));
-    expect(meta.output_type).toBe(JSON.stringify('string'));
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.tools).toEqual(['search', 'calculator']);
+    expect(meta.handoffs).toEqual(['ReviewAgent']);
+    expect(meta.output_type).toBe('string');
   });
 
   test('test extract agent span data without optional fields', () => {
@@ -290,10 +417,24 @@ describe('extractWorkflowData', () => {
     const result = extractWorkflowData(spanData);
     expect(result.input).toBe('custom input');
     expect(result.output).toBe('custom output');
-    const meta = result.metadata as Record<string, string>;
+    const meta = result.metadata as Record<string, unknown>;
     expect(meta.extra_key).toBe('extra value');
     expect(meta.input).toBeUndefined();
     expect(meta.output).toBeUndefined();
+  });
+
+  test('test extract custom span data with object metadata value kept as-is', () => {
+    const spanData = {
+      type: 'custom',
+      data: {
+        input: 'in',
+        output: 'out',
+        config: { retries: 3, timeout: 5000 }
+      }
+    };
+    const result = extractWorkflowData(spanData);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.config).toEqual({ retries: 3, timeout: 5000 });
   });
 
   test('test extract custom span data with object input serialised', () => {
