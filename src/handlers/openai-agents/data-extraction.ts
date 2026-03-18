@@ -91,6 +91,16 @@ export function parseUsage(
 }
 
 /**
+ * Serialize a value to a string for LLM span input/output fields.
+ * Strings are returned as-is; null/undefined produce ''; everything else is JSON-serialized.
+ */
+function llmSerializeToString(value: unknown): string {
+  if (value === undefined || value === null) return '';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
+
+/**
  * Extracts LLM-relevant fields from a GenerationSpanData or ResponseSpanData.
  * @param spanData - The span data object (must have type 'generation' or 'response').
  * @returns A flat record of LLM span parameters.
@@ -112,9 +122,8 @@ export function extractLlmData(
       null;
 
     return {
-      input: spanData.input !== undefined ? JSON.stringify(spanData.input) : '',
-      output:
-        spanData.output !== undefined ? JSON.stringify(spanData.output) : '',
+      input: llmSerializeToString(spanData.input),
+      output: llmSerializeToString(spanData.output),
       model: (spanData.model as string | undefined) ?? 'unknown',
       temperature: (modelConfig.temperature as number | undefined) ?? undefined,
       modelParameters: modelConfig,
@@ -166,9 +175,8 @@ export function extractLlmData(
       : {};
 
     return {
-      input: input !== undefined ? JSON.stringify(input) : '',
-      output:
-        response?.output !== undefined ? JSON.stringify(response.output) : '',
+      input: llmSerializeToString(input),
+      output: llmSerializeToString(response?.output),
       model,
       temperature,
       tools: tools !== undefined ? tools : undefined,

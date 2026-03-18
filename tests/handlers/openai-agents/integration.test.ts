@@ -557,11 +557,7 @@ describe('Output tracking integration', () => {
     await processor.onTraceEnd(trace);
 
     const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
-    // Output is stringified, so check for either the string or JSON-stringified version
-    expect(
-      startTraceCall.output === 'Final output' ||
-        startTraceCall.output === '"Final output"'
-    ).toBe(true);
+    expect(startTraceCall.output).toBe('Final output');
   });
 });
 

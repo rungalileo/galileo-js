@@ -938,7 +938,7 @@ describe('Agent span emission', () => {
 
     // conclude for the agent span (first conclude call) should carry the LLM child's output
     const concludeCall = mockLogger.conclude.mock.calls[0][0];
-    expect(concludeCall.output).toBe('"Final answer from LLM"');
+    expect(concludeCall.output).toBe('Final answer from LLM');
   });
 
   test('test agent span conclude receives last of multiple children outputs', async () => {
@@ -979,7 +979,7 @@ describe('Agent span emission', () => {
 
     // The conclude for the agent span should use the last child (LLM), not the tool
     const concludeCall = mockLogger.conclude.mock.calls[0][0];
-    expect(concludeCall.output).toBe('"LLM final response"');
+    expect(concludeCall.output).toBe('LLM final response');
   });
 
   test('test agent span conclude uses undefined when no children have output', async () => {
@@ -1215,9 +1215,8 @@ describe('_firstInput population (trace-level input handling)', () => {
     await processor.onTraceEnd(trace);
 
     // Verify startTrace was called with the LLM input
-    // Note: input is JSON-stringified by extractLlmData
     const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
-    expect(startTraceCall.input).toBe('"What is the weather in NYC?"');
+    expect(startTraceCall.input).toBe('What is the weather in NYC?');
   });
 
   test('captures first input from tool span if LLM input unavailable', async () => {
@@ -1285,9 +1284,8 @@ describe('_firstInput population (trace-level input handling)', () => {
     await processor.onTraceEnd(trace);
 
     // Should use input from llm2, not llm1
-    // Note: input is JSON-stringified by extractLlmData
     const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
-    expect(startTraceCall.input).toBe('"Real question"');
+    expect(startTraceCall.input).toBe('Real question');
   });
 
   test('falls back to trace name if no meaningful input captured', async () => {
@@ -1340,7 +1338,6 @@ describe('_firstInput population (trace-level input handling)', () => {
 
     const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
     // Should use first input, not second
-    // Note: input is JSON-stringified by extractLlmData
-    expect(startTraceCall.input).toBe('"First query"');
+    expect(startTraceCall.input).toBe('First query');
   });
 });

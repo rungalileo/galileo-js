@@ -144,7 +144,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
       return false;
     }
     // Filter out JSON-serialized null (from earlier spans)
-    if (str === 'null' || str === '""') {
+    if (str === 'null') {
       return false;
     }
     return true;

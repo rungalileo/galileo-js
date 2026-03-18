@@ -148,6 +148,17 @@ describe('extractLlmData generation', () => {
     expect(meta).not.toHaveProperty('input_tokens_details');
     expect(meta).not.toHaveProperty('output_tokens_details');
   });
+
+  test('test extract generation span with string input and output not double encoded', () => {
+    const spanData = {
+      type: 'generation',
+      input: 'What is the weather?',
+      output: 'It is sunny.'
+    };
+    const result = extractLlmData(spanData);
+    expect(result.input).toBe('What is the weather?');
+    expect(result.output).toBe('It is sunny.');
+  });
 });
 
 describe('extractLlmData response', () => {
@@ -275,6 +286,16 @@ describe('extractLlmData response', () => {
     const result = extractLlmData(spanData);
     const meta = result.metadata as Record<string, unknown>;
     expect(meta).not.toHaveProperty('instructions');
+  });
+
+  test('test extract response span with string input not double encoded', () => {
+    const spanData = {
+      type: 'response',
+      _input: 'Hello',
+      _response: { model: 'gpt-4o', usage: {}, output: [] }
+    };
+    const result = extractLlmData(spanData);
+    expect(result.input).toBe('Hello');
   });
 });
 
