@@ -153,12 +153,12 @@ export function extractEmbeddedToolCalls(
     const toolName = getToolNameFromType(itemType);
     const toolCallId =
       (typedItem.id as string | undefined) ??
-      (typedItem.tool_call_id as string | undefined) ??
+      (typedItem.call_id as string | undefined) ??
       null;
-    const status = (typedItem.status as string | undefined) ?? null;
+    const status = (typedItem.status as string | undefined) ?? 'completed';
 
     results.push({
-      type: itemType,
+      type: 'function',
       function: { name: toolName },
       tool_call_id: toolCallId,
       tool_call_type: itemType,

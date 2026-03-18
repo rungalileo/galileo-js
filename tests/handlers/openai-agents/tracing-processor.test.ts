@@ -274,10 +274,9 @@ describe('GalileoTracingProcessor lifecycle', () => {
 
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     const llmCall = mockLogger.addLlmSpan.mock.calls[0][0];
-    expect(llmCall.metadata.embedded_tool_calls).toBeDefined();
-    const embedded = JSON.parse(llmCall.metadata.embedded_tool_calls);
-    expect(embedded.length).toBe(1);
-    expect(embedded[0].type).toBe('web_search_call');
+    expect(Array.isArray(llmCall.tools)).toBe(true);
+    expect(llmCall.tools.length).toBe(1);
+    expect(llmCall.tools[0].type).toBe('function');
   });
 
   test('test metadata values are stringified', async () => {
@@ -502,15 +501,8 @@ describe('Response span data merging', () => {
     // addLlmSpan should be called for response type
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     const llmCall = mockLogger.addLlmSpan.mock.calls[0][0];
-    // Verify that either embeddedToolCalls exists or metadata includes them
-    if (llmCall.embeddedToolCalls) {
-      expect(Array.isArray(llmCall.embeddedToolCalls)).toBe(true);
-      expect(llmCall.embeddedToolCalls[0].type).toBe('code_interpreter_call');
-    } else {
-      // May be in metadata as embedded_tool_calls
-      const meta = llmCall.metadata as Record<string, string>;
-      expect(meta.embedded_tool_calls).toBeDefined();
-    }
+    expect(Array.isArray(llmCall.tools)).toBe(true);
+    expect(llmCall.tools[0].type).toBe('function');
   });
 
   test('test _responseObject removed from final params', async () => {

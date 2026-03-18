@@ -201,16 +201,10 @@ describe('Multi-agent integration flows', () => {
 
     expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
     const llmCall = mockLogger.addLlmSpan.mock.calls[0][0];
-    // Verify that either embeddedToolCalls exists or metadata includes them
-    if (llmCall.embeddedToolCalls) {
-      expect(llmCall.embeddedToolCalls.length).toBe(2);
-      expect(llmCall.embeddedToolCalls[0].type).toBe('web_search_call');
-      expect(llmCall.embeddedToolCalls[1].type).toBe('code_interpreter_call');
-    } else {
-      // May be in metadata as embedded_tool_calls
-      const meta = llmCall.metadata as Record<string, string>;
-      expect(meta.embedded_tool_calls).toBeDefined();
-    }
+    expect(Array.isArray(llmCall.tools)).toBe(true);
+    expect(llmCall.tools.length).toBe(2);
+    expect(llmCall.tools[0].type).toBe('function');
+    expect(llmCall.tools[1].type).toBe('function');
   });
 
   test('test galileo_custom span delegates to inner galileoSpan as tool', async () => {

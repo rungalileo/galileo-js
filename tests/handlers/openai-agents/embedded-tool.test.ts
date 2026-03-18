@@ -167,12 +167,26 @@ describe('extractEmbeddedToolCalls', () => {
     };
     const result = extractEmbeddedToolCalls(response);
     expect(result.length).toBe(1);
-    expect(result[0].type).toBe('code_interpreter_call');
+    expect(result[0].type).toBe('function');
     expect(result[0].function.name).toBe('code_interpreter');
     expect(result[0].tool_call_id).toBe('ci_001');
     expect(result[0].tool_call_input).toBe('x = 1');
     expect(result[0].tool_call_output).toBe('output log');
     expect(result[0].tool_call_status).toBe('completed');
+  });
+
+  test('test tool_call_id falls back to call_id when id absent', () => {
+    const response = {
+      output: [
+        {
+          type: 'web_search_call',
+          call_id: 'fallback_id_001',
+          action: { query: 'test' }
+        }
+      ]
+    };
+    const result = extractEmbeddedToolCalls(response);
+    expect(result[0].tool_call_id).toBe('fallback_id_001');
   });
 
   test('test extracts file_search_call', () => {
@@ -218,8 +232,16 @@ describe('extractEmbeddedToolCalls', () => {
     };
     const result = extractEmbeddedToolCalls(response);
     expect(result.length).toBe(2);
-    expect(result[0].type).toBe('code_interpreter_call');
-    expect(result[1].type).toBe('web_search_call');
+    expect(result[0].type).toBe('function');
+    expect(result[1].type).toBe('function');
+  });
+
+  test('test tool_call_status defaults to completed when absent', () => {
+    const response = {
+      output: [{ type: 'web_search_call', action: { query: 'q' } }]
+    };
+    const result = extractEmbeddedToolCalls(response);
+    expect(result[0].tool_call_status).toBe('completed');
   });
 
   test('test handles null output items gracefully', () => {

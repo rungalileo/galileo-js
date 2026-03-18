@@ -13,10 +13,7 @@ import {
   extractWorkflowData,
   extractGalileoCustomData
 } from './data-extraction';
-import {
-  extractEmbeddedToolCalls,
-  type EmbeddedToolCall
-} from './embedded-tools';
+import { extractEmbeddedToolCalls } from './embedded-tools';
 import {
   createGalileoCustomSpanData,
   type GalileoCustomSpanData,
@@ -285,16 +282,19 @@ export class GalileoTracingProcessor implements TracingProcessor {
       const responseObj = finalData._responseObject as
         | Record<string, unknown>
         | undefined;
-      if (responseObj) {
-        const embeddedTools = extractEmbeddedToolCalls(responseObj);
-        if (embeddedTools.length > 0) {
-          node.spanParams.embeddedToolCalls = embeddedTools;
-        }
-      }
-      // Merge updated data (output may not have been available at span start)
+      // Merge updated data first (output/tools may not have been available at span start)
       const { _responseObject: _removed, ...rest } = finalData;
       void _removed;
       node.spanParams = { ...node.spanParams, ...rest };
+      // Append embedded tool calls (model-invoked tools) to tools[] — mirrors Python handler
+      if (responseObj) {
+        const embeddedTools = extractEmbeddedToolCalls(responseObj);
+        if (embeddedTools.length > 0) {
+          const existingTools =
+            (node.spanParams.tools as unknown[] | undefined) ?? [];
+          node.spanParams.tools = [...existingTools, ...embeddedTools];
+        }
+      }
     } else if (spanData.type === 'generation') {
       // Refresh LLM data at end (usage may be populated now)
       const finalData = extractLlmData(spanData);
@@ -423,15 +423,6 @@ export class GalileoTracingProcessor implements TracingProcessor {
       const tools =
         (params.tools as Record<string, unknown>[] | undefined) ?? undefined;
 
-      // Build embedded tool calls metadata
-      const embeddedToolCalls = params.embeddedToolCalls as
-        | EmbeddedToolCall[]
-        | undefined;
-      const llmMeta: Record<string, string> = { ...metadata };
-      if (embeddedToolCalls && embeddedToolCalls.length > 0) {
-        llmMeta.embedded_tool_calls = JSON.stringify(embeddedToolCalls);
-      }
-
       this._galileoLogger.addLlmSpan({
         input,
         output: output ?? '',
@@ -445,7 +436,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
         numCachedInputTokens,
         temperature,
         statusCode,
-        metadata: llmMeta,
+        metadata,
         tools: tools as JsonObject[] | undefined,
         createdAt: startedAt
       });
