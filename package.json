@@ -18,6 +18,7 @@
   },
   "scripts": {
     "build": "npm run format && npm run lint && tsc",
+    "prepare": "npm run build",
     "test": "jest --detectOpenHandles --forceExit --silent",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix",
