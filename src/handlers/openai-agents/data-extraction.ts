@@ -339,8 +339,7 @@ export function extractGalileoCustomData(spanData: Record<string, unknown>): {
   nodeType: NodeType;
   params: Record<string, unknown>;
 } {
-  const data = (spanData.data as Record<string, unknown> | undefined) ?? {};
-  const galileoSpan = data.galileoSpan as GalileoSpanLike | undefined;
+  const galileoSpan = spanData._galileoSpan as GalileoSpanLike | undefined;
 
   if (!galileoSpan || typeof galileoSpan !== 'object') {
     return { nodeType: 'workflow', params: extractWorkflowData(spanData) };

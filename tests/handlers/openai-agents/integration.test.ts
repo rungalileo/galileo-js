@@ -226,15 +226,13 @@ describe('Multi-agent integration flows', () => {
       spanData: {
         type: 'custom',
         __galileoCustom: true,
-        data: {
-          galileoSpan: {
-            type: 'tool',
-            input: 'custom tool input',
-            output: 'custom tool output',
-            metadata: { source: 'test' },
-            tags: ['custom-tag'],
-            statusCode: 200
-          }
+        _galileoSpan: {
+          type: 'tool',
+          input: 'custom tool input',
+          output: 'custom tool output',
+          metadata: { source: 'test' },
+          tags: ['custom-tag'],
+          statusCode: 200
         }
       }
     });
@@ -283,12 +281,10 @@ describe('Multi-agent integration flows', () => {
       spanData: {
         type: 'custom',
         __galileoCustom: true,
-        data: {
-          galileoSpan: {
-            type: 'workflow',
-            input: 'wf input',
-            output: 'wf output'
-          }
+        _galileoSpan: {
+          type: 'workflow',
+          input: 'wf input',
+          output: 'wf output'
         }
       }
     });
@@ -321,13 +317,11 @@ describe('Multi-agent integration flows', () => {
       spanData: {
         type: 'custom',
         __galileoCustom: true,
-        data: {
-          galileoSpan: {
-            type: 'agent',
-            input: 'agent input',
-            output: 'agent output',
-            metadata: { role: 'planner' }
-          }
+        _galileoSpan: {
+          type: 'agent',
+          input: 'agent input',
+          output: 'agent output',
+          metadata: { role: 'planner' }
         }
       }
     });
@@ -383,11 +377,9 @@ describe('Multi-agent integration flows', () => {
       spanData: {
         type: 'custom',
         __galileoCustom: true,
-        data: {
-          galileoSpan: {
-            type: 'unknown_future_type',
-            input: 'some input'
-          }
+        _galileoSpan: {
+          type: 'unknown_future_type',
+          input: 'some input'
         }
       }
     });

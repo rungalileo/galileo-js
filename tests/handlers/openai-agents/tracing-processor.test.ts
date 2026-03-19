@@ -299,16 +299,34 @@ describe('GalileoTracingProcessor lifecycle', () => {
     }
   });
 
-  test('test addGalileoCustomSpan creates a GalileoCustomSpanData', () => {
-    const mockSpan = { type: 'tool', name: 'span-xyz' };
-    const result = GalileoTracingProcessor.addGalileoCustomSpan(
-      mockSpan,
-      'MyCustom'
+  test('test addGalileoCustomSpan invokes callback and returns its value', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    void processor;
+
+    const galileoSpan = { type: 'tool' as const, input: 'query' };
+    const result = await GalileoTracingProcessor.addGalileoCustomSpan(
+      galileoSpan,
+      async () => 'callback-result',
+      { name: 'My Custom Span' }
     );
-    expect(result.type).toBe('custom');
-    expect(result.__galileoCustom).toBe(true);
-    expect(result.data.galileoSpan).toBe(mockSpan);
-    expect(result.name).toBe('MyCustom');
+
+    expect(result).toBe('callback-result');
+  });
+
+  test('test addGalileoCustomSpan fallback calls callback when SDK unavailable', async () => {
+    const callbackFn = jest.fn().mockResolvedValue('fallback-result');
+    const galileoSpan = { type: 'tool' as const, input: 'query' };
+
+    // The SDK is not installed in the test environment; the fallback path runs.
+    const result = await GalileoTracingProcessor.addGalileoCustomSpan(
+      galileoSpan,
+      callbackFn,
+      { name: 'Fallback Span' }
+    );
+
+    expect(callbackFn).toHaveBeenCalledTimes(1);
+    expect(result).toBe('fallback-result');
   });
 });
 
@@ -1331,5 +1349,138 @@ describe('_firstInput population (trace-level input handling)', () => {
     const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
     // Should use first input, not second
     expect(startTraceCall.input).toBe('First query');
+  });
+});
+
+describe('GalileoCustomSpan integration via onSpanStart/onSpanEnd', () => {
+  // Simulate the spanData shape that withCustomSpan produces:
+  // the SDK spreads options.data fields onto the top level of spanData.
+  function makeCustomSpan(
+    galileoSpan: Record<string, unknown>,
+    overrides: Partial<AgentSpan> = {}
+  ): AgentSpan {
+    return makeSpan({
+      spanId: 'custom-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'custom',
+        __galileoCustom: true,
+        _galileoSpan: galileoSpan,
+        name: (galileoSpan.name as string | undefined) ?? 'Galileo Custom'
+      },
+      ...overrides
+    });
+  }
+
+  test('test custom tool span calls addToolSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const galileoSpan = {
+      type: 'tool',
+      input: 'my input',
+      output: 'my output'
+    };
+    const span = makeCustomSpan(galileoSpan);
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addToolSpan).toHaveBeenCalledTimes(1);
+    const call = mockLogger.addToolSpan.mock.calls[0][0];
+    expect(call.input).toBe('my input');
+    expect(call.output).toBe('my output');
+  });
+
+  test('test custom workflow span calls addWorkflowSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const galileoSpan = { type: 'workflow', input: 'wf in', output: 'wf out' };
+    const span = makeCustomSpan(galileoSpan);
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    // root is logged via startTrace, not addWorkflowSpan; custom workflow span = 1 call
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    const customCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
+    expect(customCall.input).toBe('wf in');
+  });
+
+  test('test output mutation inside callback is captured at onSpanEnd', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    // galileoSpan starts with no output — simulates a user who will set it later
+    const galileoSpan: Record<string, unknown> = {
+      type: 'tool',
+      input: 'query',
+      output: undefined
+    };
+    const span = makeCustomSpan(galileoSpan);
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+
+    // Simulate the user mutating galileoSpan.output inside the callback before it returns
+    galileoSpan.output = 'result after work';
+
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    // Re-extraction at onSpanEnd should have picked up the mutation
+    const call = mockLogger.addToolSpan.mock.calls[0][0];
+    expect(call.output).toBe('result after work');
+  });
+
+  test('test custom span with metadata and tags', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const galileoSpan = {
+      type: 'tool',
+      input: 'in',
+      metadata: { source: 'db' },
+      tags: ['tag-a'],
+      statusCode: 201
+    };
+    const span = makeCustomSpan(galileoSpan);
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const call = mockLogger.addToolSpan.mock.calls[0][0];
+    expect(call.metadata).toEqual({ source: 'db' });
+    expect(call.tags).toEqual(['tag-a']);
+    expect(call.statusCode).toBe(201);
+  });
+
+  test('test custom span with unknown type falls back to addWorkflowSpan', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const galileoSpan = { type: 'future_type', input: 'in' };
+    const span = makeCustomSpan(galileoSpan);
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    // root is logged via startTrace; unknown type custom span → 1 addWorkflowSpan call
+    expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
+    expect(mockLogger.addToolSpan).not.toHaveBeenCalled();
   });
 });

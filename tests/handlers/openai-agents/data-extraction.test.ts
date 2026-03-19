@@ -486,15 +486,13 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: {
-          type: 'tool',
-          input: 'tool input',
-          output: 'tool output',
-          metadata: { key: 'val' },
-          tags: ['tag1'],
-          statusCode: 201
-        }
+      _galileoSpan: {
+        type: 'tool',
+        input: 'tool input',
+        output: 'tool output',
+        metadata: { key: 'val' },
+        tags: ['tag1'],
+        statusCode: 201
       }
     };
     const result = extractGalileoCustomData(spanData);
@@ -510,12 +508,10 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: {
-          type: 'workflow',
-          input: 'wf in',
-          output: 'wf out'
-        }
+      _galileoSpan: {
+        type: 'workflow',
+        input: 'wf in',
+        output: 'wf out'
       }
     };
     const result = extractGalileoCustomData(spanData);
@@ -528,11 +524,9 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: {
-          type: 'agent',
-          input: 'agent in'
-        }
+      _galileoSpan: {
+        type: 'agent',
+        input: 'agent in'
       }
     };
     const result = extractGalileoCustomData(spanData);
@@ -544,9 +538,7 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: { type: 'future_type', input: 'x' }
-      }
+      _galileoSpan: { type: 'future_type', input: 'x' }
     };
     const result = extractGalileoCustomData(spanData);
     expect(result.nodeType).toBe('workflow');
@@ -557,9 +549,7 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: { type: 'llm', input: 'prompt' }
-      }
+      _galileoSpan: { type: 'llm', input: 'prompt' }
     };
     const result = extractGalileoCustomData(spanData);
     expect(result.nodeType).toBe('workflow');
@@ -581,7 +571,7 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: { galileoSpan: 'not-an-object' }
+      _galileoSpan: 'not-an-object'
     };
     const result = extractGalileoCustomData(spanData);
     expect(result.nodeType).toBe('workflow');
@@ -591,12 +581,10 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: {
-          type: 'tool',
-          input: { query: 'hello' },
-          output: { answer: 'world' }
-        }
+      _galileoSpan: {
+        type: 'tool',
+        input: { query: 'hello' },
+        output: { answer: 'world' }
       }
     };
     const result = extractGalileoCustomData(spanData);
@@ -608,16 +596,14 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: { type: 'tool', input: 'in' }
-      }
+      _galileoSpan: { type: 'tool', input: 'in' }
     };
     const result = extractGalileoCustomData(spanData);
     expect(result.params).not.toHaveProperty('tags');
     expect(result.params).not.toHaveProperty('statusCode');
   });
 
-  test('test handles missing data field gracefully', () => {
+  test('test handles missing galileoSpan gracefully', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true
@@ -630,9 +616,7 @@ describe('extractGalileoCustomData', () => {
     const spanData = {
       type: 'custom',
       __galileoCustom: true,
-      data: {
-        galileoSpan: { type: 'tool' }
-      }
+      _galileoSpan: { type: 'tool' }
     };
     const result = extractGalileoCustomData(spanData);
     expect(result.params.input).toBe('');

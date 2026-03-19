@@ -14,11 +14,7 @@ import {
   extractGalileoCustomData
 } from './data-extraction';
 import { extractEmbeddedToolCalls } from './embedded-tools';
-import {
-  createGalileoCustomSpanData,
-  type GalileoCustomSpanData,
-  type GalileoSpanLike
-} from './custom-span';
+import type { GalileoSpanLike } from './custom-span';
 import { getSdkLogger } from 'galileo-generated';
 const sdkLogger = getSdkLogger();
 
@@ -310,6 +306,11 @@ export class GalileoTracingProcessor implements TracingProcessor {
         ...refreshed,
         name: refreshedName
       };
+    } else if (spanData.__galileoCustom === true) {
+      // Re-extract at span end so mutations to galileoSpan made inside the callback
+      // (e.g. setting output after the work is done) are captured in node.spanParams.
+      const refreshed = extractGalileoCustomData(spanData);
+      node.spanParams = { ...node.spanParams, ...refreshed.params };
     }
 
     // Handle errors
@@ -508,18 +509,57 @@ export class GalileoTracingProcessor implements TracingProcessor {
   }
 
   /**
-   * Creates a custom span backed by GalileoCustomSpanData.
-   * @param galileoSpan - The Galileo span object to embed.
-   * @param name - (Optional) Display name for the custom span.
-   * @param extraData - (Optional) Extra data to include in the span payload.
-   * @returns A GalileoCustomSpanData object that can be passed to the OpenAI Agents SDK.
+   * Runs a callback under a custom Galileo span that is registered with the OpenAI Agents SDK
+   * trace provider and properly nested under the currently active span.
+   *
+   * The callback is the scope of the span's lifetime — it starts when the callback starts and
+   * ends when it returns or throws. Any SDK spans created inside the callback are automatically
+   * nested as children of this custom span.
+   *
+   * @param galileoSpan - Galileo span metadata (type, input, output, metadata, tags, statusCode).
+   *   Mutable — update galileoSpan.output inside the callback to capture results.
+   * @param callback - The work to run under this span. Return value is passed through.
+   * @param options.name - Display name in Galileo. Overrides galileoSpan.name.
+   * @param options.extraData - Additional data to attach to the span payload.
+   * @returns A promise that resolves to the callback's return value.
    */
-  static addGalileoCustomSpan(
+  static async addGalileoCustomSpan<T>(
     galileoSpan: GalileoSpanLike,
-    name?: string,
-    extraData?: Record<string, unknown>
-  ): GalileoCustomSpanData {
-    return createGalileoCustomSpanData(galileoSpan, name, extraData);
+    callback: () => T | Promise<T>,
+    options?: { name?: string; extraData?: Record<string, unknown> }
+  ): Promise<T> {
+    const spanName = options?.name ?? galileoSpan.name ?? 'Galileo Custom';
+    const spanOptions = {
+      data: {
+        name: spanName,
+        _galileoSpan: galileoSpan,
+        __galileoCustom: true,
+        ...(options?.extraData ?? {})
+      }
+    };
+
+    try {
+      const { withCustomSpan } = (await import(
+        '@openai/agents-core' as string
+      )) as {
+        withCustomSpan: <TOutput>(
+          fn: (span: unknown) => Promise<TOutput>,
+          options: Record<string, unknown>
+        ) => Promise<TOutput>;
+      };
+      return await withCustomSpan(
+        async (span) => {
+          void span;
+          return Promise.resolve(callback());
+        },
+        spanOptions as Record<string, unknown>
+      );
+    } catch {
+      sdkLogger.warn(
+        '@openai/agents package is not installed. addGalileoCustomSpan will execute callback without tracing.'
+      );
+      return await Promise.resolve(callback());
+    }
   }
 }
 
