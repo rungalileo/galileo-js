@@ -574,6 +574,39 @@ describe('Response span data merging', () => {
     expect(llmCall.numOutputTokens).toBe(5);
   });
 
+  test('test response span with response-level error sets statusCode and error_details in metadata', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const responseError = { status_code: 500, message: 'Server error' };
+    const span = makeSpan({
+      spanId: 'response-err-001',
+      parentId: 'trace-001',
+      spanData: {
+        type: 'response',
+        _input: 'hello',
+        _response: {
+          model: 'gpt-4o',
+          usage: { input_tokens: 5, output_tokens: 0 },
+          output: [],
+          error: responseError
+        }
+      }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    expect(mockLogger.addLlmSpan).toHaveBeenCalledTimes(1);
+    const llmCall = mockLogger.addLlmSpan.mock.calls[0][0];
+    expect(llmCall.statusCode).toBe(500);
+    const meta = llmCall.metadata as Record<string, unknown>;
+    expect(meta.error_details).toBe(JSON.stringify(responseError));
+  });
+
   test('test response span with no _responseObject handles gracefully', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);

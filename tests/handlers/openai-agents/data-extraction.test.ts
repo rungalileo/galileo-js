@@ -297,6 +297,53 @@ describe('extractLlmData response', () => {
     const result = extractLlmData(spanData);
     expect(result.input).toBe('Hello');
   });
+
+  test('test extractLlmData response span with response.error sets statusCode and error_details', () => {
+    const error = { status_code: 429, message: 'Rate limit' };
+    const spanData = {
+      type: 'response',
+      _input: 'hello',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        output: [],
+        error
+      }
+    };
+    const result = extractLlmData(spanData);
+    expect(result.statusCode).toBe(429);
+    const meta = result.metadata as Record<string, unknown>;
+    expect(meta.error_details).toEqual(error);
+  });
+
+  test('test extractLlmData response span with response.error missing status_code falls back to 500', () => {
+    const spanData = {
+      type: 'response',
+      _input: 'hello',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        output: [],
+        error: { message: 'Unknown error' }
+      }
+    };
+    const result = extractLlmData(spanData);
+    expect(result.statusCode).toBe(500);
+  });
+
+  test('test extractLlmData response span with no response.error has no statusCode', () => {
+    const spanData = {
+      type: 'response',
+      _input: 'hello',
+      _response: {
+        model: 'gpt-4o',
+        usage: {},
+        output: []
+      }
+    };
+    const result = extractLlmData(spanData);
+    expect(result.statusCode).toBeUndefined();
+  });
 });
 
 describe('extractLlmData unknown type', () => {

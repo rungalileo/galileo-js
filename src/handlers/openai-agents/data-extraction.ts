@@ -174,6 +174,14 @@ export function extractLlmData(
         )
       : {};
 
+    const responseError = response?.error as
+      | { status_code?: number; message?: string; [k: string]: unknown }
+      | undefined
+      | null;
+    const responseStatusCode = responseError
+      ? ((responseError.status_code as number | undefined) ?? 500)
+      : undefined;
+
     return {
       input: llmSerializeToString(input),
       output: llmSerializeToString(response?.output),
@@ -186,6 +194,9 @@ export function extractLlmData(
       totalTokens: usage.totalTokens ?? undefined,
       numReasoningTokens: usage.reasoningTokens,
       numCachedInputTokens: usage.cachedTokens,
+      ...(responseStatusCode !== undefined
+        ? { statusCode: responseStatusCode }
+        : {}),
       metadata: {
         gen_ai_system: 'openai',
         ...(Object.keys(responseMetadata).length > 0
@@ -193,7 +204,8 @@ export function extractLlmData(
           : {}),
         ...(response?.instructions !== undefined
           ? { instructions: response.instructions }
-          : {})
+          : {}),
+        ...(responseError ? { error_details: responseError } : {})
       },
       _responseObject: response
     };
