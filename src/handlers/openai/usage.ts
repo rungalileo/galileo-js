@@ -59,8 +59,14 @@ export function parseUsage(usageData: unknown): ParsedUsage {
   // Detailed token breakdowns (o1/o3/o4)
   // Responses API: input_tokens_details / output_tokens_details
   // Chat Completions: prompt_tokens_details / completion_tokens_details
+  // Agents SDK legacy: a single `details` object for both input and output
+  const legacyDetails =
+    typeof usage.details === 'object' && usage.details !== null
+      ? (usage.details as Record<string, unknown>)
+      : undefined;
+
   const inputDetails =
-    usage.input_tokens_details ?? usage.prompt_tokens_details;
+    usage.input_tokens_details ?? usage.prompt_tokens_details ?? legacyDetails;
   if (inputDetails != null && typeof inputDetails === 'object') {
     const details = inputDetails as Record<string, unknown>;
     const cached = details.cached_tokens;
@@ -70,7 +76,9 @@ export function parseUsage(usageData: unknown): ParsedUsage {
   }
 
   const outputDetails =
-    usage.output_tokens_details ?? usage.completion_tokens_details;
+    usage.output_tokens_details ??
+    usage.completion_tokens_details ??
+    legacyDetails;
   if (outputDetails != null && typeof outputDetails === 'object') {
     const details = outputDetails as Record<string, unknown>;
     const reasoning = details.reasoning_tokens;

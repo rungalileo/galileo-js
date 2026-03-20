@@ -1,5 +1,7 @@
 import type { GalileoSpanLike } from './custom-span';
 import type { NodeType } from './node';
+import { parseUsage } from '../openai/usage';
+export { parseUsage, type ParsedUsage } from '../openai/usage';
 
 const MODEL_PARAM_KEYS = [
   'temperature',
@@ -21,74 +23,6 @@ const RESPONSE_EXCLUDE = new Set([
   'error',
   'status'
 ]);
-
-/**
- * Normalised token count structure returned by parseUsage.
- */
-export interface ParsedUsage {
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number | null;
-  reasoningTokens: number;
-  cachedTokens: number;
-}
-
-/**
- * Normalises token counts from various OpenAI usage shapes.
- * @param usageData - The raw usage data from a span.
- * @returns Normalised token counts.
- */
-export function parseUsage(
-  usageData: Record<string, unknown> | null | undefined
-): ParsedUsage {
-  if (!usageData) {
-    return {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: null,
-      reasoningTokens: 0,
-      cachedTokens: 0
-    };
-  }
-
-  // Support both input_tokens/output_tokens (Responses/Agents SDK)
-  // and prompt_tokens/completion_tokens (Chat Completions legacy)
-  const inputTokens =
-    (usageData.input_tokens as number | undefined) ??
-    (usageData.prompt_tokens as number | undefined) ??
-    0;
-  const outputTokens =
-    (usageData.output_tokens as number | undefined) ??
-    (usageData.completion_tokens as number | undefined) ??
-    0;
-  const totalTokens = (usageData.total_tokens as number | undefined) ?? null;
-
-  // Reasoning tokens live in output_tokens_details (Responses API) or details (legacy Agents SDK shape)
-  const outputDetails =
-    (usageData.output_tokens_details as Record<string, unknown> | undefined) ??
-    (usageData.details as Record<string, unknown> | undefined) ??
-    {};
-  // Cached tokens live in input_tokens_details (Responses API) or the same details object
-  const inputDetails =
-    (usageData.input_tokens_details as Record<string, unknown> | undefined) ??
-    outputDetails;
-  const reasoningTokens =
-    (outputDetails.reasoning_tokens as number | undefined) ??
-    (usageData.reasoning_tokens as number | undefined) ??
-    0;
-  const cachedTokens =
-    (inputDetails.cached_tokens as number | undefined) ??
-    (usageData.cached_tokens as number | undefined) ??
-    0;
-
-  return {
-    inputTokens,
-    outputTokens,
-    totalTokens,
-    reasoningTokens,
-    cachedTokens
-  };
-}
 
 /**
  * Serialize a value to a string for LLM span input/output fields.

@@ -14,7 +14,8 @@ describe('parseUsage', () => {
       outputTokens: 0,
       totalTokens: null,
       reasoningTokens: 0,
-      cachedTokens: 0
+      cachedTokens: 0,
+      rejectedPredictionTokens: 0
     });
   });
 
@@ -25,7 +26,8 @@ describe('parseUsage', () => {
       outputTokens: 0,
       totalTokens: null,
       reasoningTokens: 0,
-      cachedTokens: 0
+      cachedTokens: 0,
+      rejectedPredictionTokens: 0
     });
   });
 
