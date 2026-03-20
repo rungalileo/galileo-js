@@ -2,7 +2,7 @@ import {
   EventSerializer,
   serializeToStr
 } from '../../src/entities/serialization';
-import { convertToStringDict } from '../../src/utils/serialization';
+import { toStringRecord } from '../../src/utils/serialization';
 
 describe('EventSerializer', () => {
   let serializer: EventSerializer;
@@ -591,13 +591,13 @@ describe('EventSerializer', () => {
     });
   });
 
-  describe('convertToStringDict', () => {
+  describe('toStringRecord', () => {
     it('should use serializeToStr for object values', () => {
       const input = {
         metadata: { nested: { value: 'test' } }
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.metadata).toBe('string');
       expect(result.metadata).toContain('test');
@@ -608,9 +608,9 @@ describe('EventSerializer', () => {
       const obj: Record<string, unknown> = { key: 'value' };
       obj.circular = obj;
 
-      expect(() => convertToStringDict({ meta: obj })).not.toThrow();
+      expect(() => toStringRecord({ meta: obj })).not.toThrow();
 
-      const result = convertToStringDict({ meta: obj });
+      const result = toStringRecord({ meta: obj });
       expect(typeof result.meta).toBe('string');
       expect(result.meta).toContain('key');
     });
@@ -622,7 +622,7 @@ describe('EventSerializer', () => {
         bool: true
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(result.str).toBe('hello');
       expect(result.num).toBe('42');
@@ -635,7 +635,7 @@ describe('EventSerializer', () => {
         undefinedValue: undefined
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(result.nullValue).toBe('');
       expect(result.undefinedValue).toBe('');
@@ -646,7 +646,7 @@ describe('EventSerializer', () => {
         items: [1, 2, [3, 4]]
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.items).toBe('string');
       expect(result.items).toContain('1');
@@ -660,7 +660,7 @@ describe('EventSerializer', () => {
         empty: {}
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.empty).toBe('string');
       expect(result.empty).toBe('{}');
@@ -677,7 +677,7 @@ describe('EventSerializer', () => {
         }
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.user).toBe('string');
       expect(result.user).toContain('John');
@@ -693,13 +693,13 @@ describe('EventSerializer', () => {
       obj2.ref = obj1;
 
       expect(() =>
-        convertToStringDict({
+        toStringRecord({
           first: obj1,
           second: obj2
         })
       ).not.toThrow();
 
-      const result = convertToStringDict({
+      const result = toStringRecord({
         first: obj1,
         second: obj2
       });
@@ -715,7 +715,7 @@ describe('EventSerializer', () => {
         timestamp: new Date('2024-01-01T12:00:00Z')
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.timestamp).toBe('string');
       expect(result.timestamp).toContain('2024-01-01');
@@ -726,7 +726,7 @@ describe('EventSerializer', () => {
         error: new Error('Test error')
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.error).toBe('string');
       expect(result.error).toContain('Error');
@@ -738,7 +738,7 @@ describe('EventSerializer', () => {
         tags: new Set(['tag1', 'tag2', 'tag3'])
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.tags).toBe('string');
       expect(result.tags).toContain('tag1');
@@ -754,7 +754,7 @@ describe('EventSerializer', () => {
         ])
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(typeof result.config).toBe('string');
       expect(result.config).toContain('key1');
@@ -773,12 +773,12 @@ describe('EventSerializer', () => {
       grandchild.root = obj; // Circular reference
 
       expect(() =>
-        convertToStringDict({
+        toStringRecord({
           tree: obj
         })
       ).not.toThrow();
 
-      const result = convertToStringDict({
+      const result = toStringRecord({
         tree: obj
       });
 
@@ -804,7 +804,7 @@ describe('EventSerializer', () => {
         }
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       // All values should be strings
       Object.values(result).forEach((value) => {
@@ -821,7 +821,7 @@ describe('EventSerializer', () => {
     });
 
     it('should handle empty input object', () => {
-      const result = convertToStringDict({});
+      const result = toStringRecord({});
       expect(result).toEqual({});
     });
 
@@ -832,7 +832,7 @@ describe('EventSerializer', () => {
         key3: 'value3'
       };
 
-      const result = convertToStringDict(input);
+      const result = toStringRecord(input);
 
       expect(Object.keys(result)).toEqual(['key1', 'key2', 'key3']);
     });

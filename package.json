@@ -48,6 +48,18 @@
     "@langchain/openai": "^0.3.11",
     "tiktoken": "^1.0.13"
   },
+  "peerDependencies": {
+    "@openai/agents": ">=0.4.0",
+    "openai": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@openai/agents": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.88.0",
     "@types/jest": "^29.5.14",

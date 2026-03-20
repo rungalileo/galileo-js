@@ -141,6 +141,11 @@ import {
 import { log } from './wrappers';
 import { wrapOpenAI, wrapAzureOpenAI } from './handlers/openai';
 import { GalileoCallback } from './handlers/langchain';
+import {
+  GalileoTracingProcessor,
+  GalileoCustomSpan,
+  registerGalileoTraceProcessor
+} from './handlers/openai-agents';
 import { getSessions, getSpans, getTraces, RecordType } from './utils/search';
 export {
   // Legacy clients
@@ -160,6 +165,10 @@ export {
   // OpenAI
   wrapOpenAI,
   wrapAzureOpenAI,
+  // OpenAI Agents
+  GalileoTracingProcessor,
+  GalileoCustomSpan,
+  registerGalileoTraceProcessor,
   // Datasets
   Dataset,
   Datasets,

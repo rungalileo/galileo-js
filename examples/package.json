@@ -12,8 +12,11 @@
     "@langchain/community": "^0.3.18",
     "@langchain/core": "^0.3.13",
     "@langchain/openai": "^0.3.11",
+    "@openai/agents": "^0.7.0",
     "@rungalileo/galileo": "file:..",
     "dotenv": "^16.4.5",
-    "typecript": "^0.0.1-security"
+    "openai": "^6.26.0",
+    "typecript": "^0.0.1-security",
+    "zod": "^4.0.0"
   }
 }

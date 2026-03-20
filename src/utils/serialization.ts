@@ -70,7 +70,7 @@ export const extractParamsInfo = <T extends unknown[], R>(
           // This is simplistic and may not work for complex expressions
           defaultValue = defaultValueStr;
         }
-      } catch (e) {
+      } catch (_) {
         defaultValue = defaultValueStr; // Fallback to string representation
       }
 
@@ -112,8 +112,8 @@ export const argsToDict = <T extends unknown[]>(
  * @param metadata - The metadata object with potentially complex values
  * @returns A new object with all values converted to strings
  */
-export const convertToStringDict = (
-  metadata: Record<string, any>
+export const toStringRecord = (
+  metadata: Record<string, unknown>
 ): Record<string, string> => {
   const result: Record<string, string> = {};
 
