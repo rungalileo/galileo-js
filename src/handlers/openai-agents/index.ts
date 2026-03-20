@@ -336,9 +336,19 @@ export class GalileoTracingProcessor implements TracingProcessor {
       };
     }
 
-    // Track last output for trace-level output
-    if (node.spanParams.output !== undefined) {
-      this._lastOutput = node.spanParams.output;
+    if (node.nodeType === 'workflow' || node.nodeType === 'agent') {
+      let tempOutput: unknown = node.spanParams.output;
+      if (tempOutput === undefined && node.children.length > 0) {
+        const lastChildId = node.children[node.children.length - 1];
+        const lastChild = this._nodes.get(lastChildId);
+        if (lastChild?.spanParams.output !== undefined) {
+          tempOutput = lastChild.spanParams.output;
+        }
+      }
+      if (node.spanParams.error) {
+        tempOutput = JSON.stringify(node.spanParams.error);
+      }
+      this._lastOutput = tempOutput !== undefined ? tempOutput : null;
     }
 
     // Track first input for trace-level input (capture from first meaningful span)

@@ -507,7 +507,7 @@ describe('Multi-agent integration flows', () => {
 });
 
 describe('Output tracking integration', () => {
-  test('test last output preserved across multiple spans', async () => {
+  test('test last output only set by workflow/agent spans, not llm spans', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);
     const trace = makeTrace();
@@ -542,6 +542,41 @@ describe('Output tracking integration', () => {
     await processor.onSpanEnd(llm2);
     await processor.onTraceEnd(trace);
 
+    // _lastOutput is only updated by workflow/agent spans (parity with Python).
+    // Bare LLM spans do not set _lastOutput, so trace output falls back to undefined.
+    const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
+    expect(startTraceCall.output).toBeUndefined();
+  });
+
+  test('test last output set by workflow span conclude', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const agentSpan = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'MyAgent' }
+    });
+    const llmSpan = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'agent-001',
+      spanData: {
+        type: 'generation',
+        model: 'gpt-4',
+        input: [],
+        output: 'Final output'
+      }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(agentSpan);
+    await processor.onSpanStart(llmSpan);
+    await processor.onSpanEnd(llmSpan);
+    await processor.onSpanEnd(agentSpan);
+    await processor.onTraceEnd(trace);
+
+    // _lastOutput is set from the workflow/agent conclude output (last child's output).
     const startTraceCall = mockLogger.startTrace.mock.calls[0][0];
     expect(startTraceCall.output).toBe('Final output');
   });
