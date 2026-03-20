@@ -43,6 +43,7 @@ export interface AgentSpan<
   error?: {
     message: string;
     data?: Record<string, unknown>;
+    type?: string;
   } | null;
   spanData: T & { type: string };
 }
@@ -101,6 +102,7 @@ function extractAgentType(
 export class GalileoTracingProcessor implements TracingProcessor {
   private _nodes = new Map<string, Node>();
   private _lastOutput: unknown = null;
+  private _lastStatusCode: number | null = null;
   private _firstInput: unknown = null;
   private static _depCheckDone = false;
 
@@ -185,7 +187,10 @@ export class GalileoTracingProcessor implements TracingProcessor {
     }
 
     this._commitTrace(trace);
-    this._galileoLogger.conclude({ concludeAll: true });
+    this._galileoLogger.conclude({
+      concludeAll: true,
+      statusCode: this._lastStatusCode ?? undefined
+    });
 
     if (this._flushOnTraceEnd) {
       await this._galileoLogger.flush();
@@ -193,6 +198,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
 
     this._nodes.clear();
     this._lastOutput = null;
+    this._lastStatusCode = null;
     this._firstInput = null;
   }
 
@@ -319,10 +325,11 @@ export class GalileoTracingProcessor implements TracingProcessor {
       const existingMeta =
         (node.spanParams.metadata as Record<string, string> | undefined) ?? {};
       node.spanParams.statusCode = 500;
+      node.spanParams.error = span.error;
       node.spanParams.metadata = {
         ...existingMeta,
         error_message: errorMessage,
-        error_type: 'SpanError',
+        error_type: span.error.type ?? 'SpanError',
         error_details: span.error.data
           ? JSON.stringify(span.error.data)
           : errorMessage
@@ -500,11 +507,18 @@ export class GalileoTracingProcessor implements TracingProcessor {
           concludeOutput = String(lastChild.spanParams.output);
         }
       }
+      const nodeError = params.error as
+        | { message: string; data?: Record<string, unknown>; type?: string }
+        | undefined;
+      if (nodeError) {
+        concludeOutput = JSON.stringify(nodeError);
+      }
       this._galileoLogger.conclude({
         output: concludeOutput,
         durationNs,
         statusCode
       });
+      this._lastStatusCode = statusCode;
     }
   }
 

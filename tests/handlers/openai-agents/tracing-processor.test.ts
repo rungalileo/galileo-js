@@ -653,6 +653,50 @@ describe('Error handling and recovery', () => {
     expect(meta.error_type).toBe('SpanError');
   });
 
+  test('test span error with type field uses error.type value', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'span-001',
+      parentId: 'trace-001',
+      error: { message: 'Agent failed', type: 'AgentError' },
+      spanData: { type: 'function', name: 'tool' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const toolCall = mockLogger.addToolSpan.mock.calls[0][0];
+    const meta = toolCall.metadata as Record<string, string>;
+    expect(meta.error_type).toBe('AgentError');
+  });
+
+  test('test span error without type field falls back to SpanError', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'span-001',
+      parentId: 'trace-001',
+      error: { message: 'Something broke' },
+      spanData: { type: 'function', name: 'tool' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const toolCall = mockLogger.addToolSpan.mock.calls[0][0];
+    const meta = toolCall.metadata as Record<string, string>;
+    expect(meta.error_type).toBe('SpanError');
+  });
+
   test('test span error with message and data', async () => {
     const mockLogger = createMockLogger();
     const processor = new GalileoTracingProcessor(mockLogger as never, false);
@@ -725,6 +769,34 @@ describe('Error handling and recovery', () => {
     const agentCall = mockLogger.addWorkflowSpan.mock.calls[0][0];
     const meta = agentCall.metadata as Record<string, string>;
     expect(meta.error_message).toBe('Error occurred');
+  });
+
+  test('test workflow span with error uses serialized error as conclude output', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const agentSpan = makeSpan({
+      spanId: 'span-agent',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'MyAgent' },
+      error: { message: 'Agent failed', type: 'AgentError', data: { code: 42 } }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(agentSpan);
+    await processor.onSpanEnd(agentSpan);
+    await processor.onTraceEnd(trace);
+
+    const concludeCall = mockLogger.conclude.mock.calls[0][0];
+    expect(concludeCall.output).toBe(
+      JSON.stringify({
+        message: 'Agent failed',
+        type: 'AgentError',
+        data: { code: 42 }
+      })
+    );
+    expect(concludeCall.statusCode).toBe(500);
   });
 
   test('test error on non-existent span ignored gracefully', async () => {
@@ -1515,5 +1587,116 @@ describe('GalileoCustomSpan integration via onSpanStart/onSpanEnd', () => {
     // root is logged via startTrace; unknown type custom span → 1 addWorkflowSpan call
     expect(mockLogger.addWorkflowSpan).toHaveBeenCalledTimes(1);
     expect(mockLogger.addToolSpan).not.toHaveBeenCalled();
+  });
+});
+
+describe('Trace-level statusCode propagation (_lastStatusCode)', () => {
+  test('test concludeAll receives statusCode from errored agent span', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-err-001',
+      parentId: 'trace-001',
+      error: { message: 'Agent crashed' },
+      spanData: { type: 'agent', name: 'CrashingAgent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    // The concludeAll call is the last conclude call
+    const concludeCalls = mockLogger.conclude.mock.calls as [
+      Record<string, unknown>
+    ][];
+    const concludeAll = concludeCalls.find((c) => c[0].concludeAll === true);
+    expect(concludeAll).toBeDefined();
+    expect(concludeAll![0].statusCode).toBe(500);
+  });
+
+  test('test concludeAll receives statusCode 200 when no errors', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const span = makeSpan({
+      spanId: 'agent-ok-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'HappyAgent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(span);
+    await processor.onSpanEnd(span);
+    await processor.onTraceEnd(trace);
+
+    const concludeCalls = mockLogger.conclude.mock.calls as [
+      Record<string, unknown>
+    ][];
+    const concludeAll = concludeCalls.find((c) => c[0].concludeAll === true);
+    expect(concludeAll).toBeDefined();
+    expect(concludeAll![0].statusCode).toBe(200);
+  });
+
+  test('test concludeAll uses last workflow statusCode when multiple agents', async () => {
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const agent1 = makeSpan({
+      spanId: 'agent-001',
+      parentId: 'trace-001',
+      spanData: { type: 'agent', name: 'FirstAgent' }
+    });
+    const agent2 = makeSpan({
+      spanId: 'agent-002',
+      parentId: 'trace-001',
+      error: { message: 'Second agent failed' },
+      spanData: { type: 'agent', name: 'SecondAgent' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(agent1);
+    await processor.onSpanEnd(agent1);
+    await processor.onSpanStart(agent2);
+    await processor.onSpanEnd(agent2);
+    await processor.onTraceEnd(trace);
+
+    // concludeAll should carry the last agent's statusCode (500 from agent2)
+    const concludeCalls = mockLogger.conclude.mock.calls as [
+      Record<string, unknown>
+    ][];
+    const concludeAll = concludeCalls.find((c) => c[0].concludeAll === true);
+    expect(concludeAll).toBeDefined();
+    expect(concludeAll![0].statusCode).toBe(500);
+  });
+
+  test('test concludeAll has no statusCode when trace has only LLM spans', async () => {
+    // LLM/tool spans do not update _lastStatusCode — only workflow/agent concludes do.
+    // When there are no workflow/agent spans, concludeAll statusCode should be undefined.
+    const mockLogger = createMockLogger();
+    const processor = new GalileoTracingProcessor(mockLogger as never, false);
+    const trace = makeTrace();
+
+    const llmSpan = makeSpan({
+      spanId: 'llm-001',
+      parentId: 'trace-001',
+      spanData: { type: 'generation', model: 'gpt-4o' }
+    });
+
+    await processor.onTraceStart(trace);
+    await processor.onSpanStart(llmSpan);
+    await processor.onSpanEnd(llmSpan);
+    await processor.onTraceEnd(trace);
+
+    const concludeCalls = mockLogger.conclude.mock.calls as [
+      Record<string, unknown>
+    ][];
+    const concludeAll = concludeCalls.find((c) => c[0].concludeAll === true);
+    expect(concludeAll).toBeDefined();
+    expect(concludeAll![0].statusCode).toBeUndefined();
   });
 });
