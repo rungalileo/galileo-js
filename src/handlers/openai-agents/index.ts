@@ -61,6 +61,31 @@ export interface TracingProcessor {
 }
 
 /**
+ * Returns true when a span input value is non-empty and not a JSON-serialized null.
+ */
+function isMeaningfulInput(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  const str = String(value).trim();
+  return str.length > 0 && str !== 'null';
+}
+
+/**
+ * Merges error fields into span metadata and returns the combined record.
+ */
+function buildErrorMetadata(
+  error: { message: string; data?: Record<string, unknown>; type?: string },
+  existing: Record<string, string>
+): Record<string, string> {
+  const errorMessage = error.message || 'Unknown error';
+  return {
+    ...existing,
+    error_message: errorMessage,
+    error_type: error.type ?? 'SpanError',
+    error_details: error.data ? JSON.stringify(error.data) : errorMessage
+  };
+}
+
+/**
  * Maps an OpenAI agent type string to a Galileo AgentType enum value.
  * Returns undefined when no agentType is present so addAgentSpan() can use its default.
  *
@@ -124,25 +149,6 @@ export class GalileoTracingProcessor implements TracingProcessor {
         );
       });
     }
-  }
-
-  /**
-   * Checks if a value is a meaningful, non-empty input string.
-   * Filters out null, undefined, empty strings, and JSON 'null'.
-   */
-  private isMeaningfulInput(value: unknown): boolean {
-    if (value === null || value === undefined) {
-      return false;
-    }
-    const str = String(value).trim();
-    if (str.length === 0) {
-      return false;
-    }
-    // Filter out JSON-serialized null (from earlier spans)
-    if (str === 'null') {
-      return false;
-    }
-    return true;
   }
 
   /**
@@ -277,78 +283,19 @@ export class GalileoTracingProcessor implements TracingProcessor {
         : 0;
     node.spanParams.durationNs = durationNs;
 
-    // Merge final data for response spans (embedded tool calls + response object)
-    const spanData = span.spanData;
-    if (spanData.type === 'response') {
-      const finalData = extractLlmData(spanData);
-      const responseObj = finalData._responseObject as
-        | Record<string, unknown>
-        | undefined;
-      // Merge updated data first (output/tools may not have been available at span start)
-      const { _responseObject: _removed, ...rest } = finalData;
-      void _removed;
-      node.spanParams = { ...node.spanParams, ...rest };
-      // Append embedded tool calls (model-invoked tools) to tools[] — mirrors Python handler
-      if (responseObj) {
-        const embeddedTools = extractEmbeddedToolCalls(responseObj);
-        if (embeddedTools.length > 0) {
-          const existingTools =
-            (node.spanParams.tools as unknown[] | undefined) ?? [];
-          node.spanParams.tools = [...existingTools, ...embeddedTools];
-        }
-      }
-    } else if (spanData.type === 'generation') {
-      // Refresh LLM data at end (usage may be populated now)
-      const finalData = extractLlmData(spanData);
-      node.spanParams = { ...node.spanParams, ...finalData };
-    } else if (spanData.type === 'handoff') {
-      // to_agent is set on the span AFTER span.start() fires (inside withHandoffSpan's fn),
-      // so we must re-extract at span end to capture the populated to_agent value.
-      // Also re-compute the name so it reflects the final to_agent.
-      const refreshed = extractWorkflowData(spanData);
-      const refreshedName = mapSpanName(spanData, 'workflow');
-      node.spanParams = {
-        ...node.spanParams,
-        ...refreshed,
-        name: refreshedName
-      };
-    } else if (spanData.__galileoCustom === true) {
-      // Re-extract at span end so mutations to galileoSpan made inside the callback
-      // (e.g. setting output after the work is done) are captured in node.spanParams.
-      const refreshed = extractGalileoCustomData(spanData);
-      node.spanParams = { ...node.spanParams, ...refreshed.params };
-    }
+    this._refreshSpanData(node, span.spanData);
 
     // Handle errors
     if (span.error) {
-      const errorMessage = span.error.message || 'Unknown error';
       const existingMeta =
         (node.spanParams.metadata as Record<string, string> | undefined) ?? {};
       node.spanParams.statusCode = 500;
       node.spanParams.error = span.error;
-      node.spanParams.metadata = {
-        ...existingMeta,
-        error_message: errorMessage,
-        error_type: span.error.type ?? 'SpanError',
-        error_details: span.error.data
-          ? JSON.stringify(span.error.data)
-          : errorMessage
-      };
+      node.spanParams.metadata = buildErrorMetadata(span.error, existingMeta);
     }
 
     if (node.nodeType === 'workflow' || node.nodeType === 'agent') {
-      let tempOutput: unknown = node.spanParams.output;
-      if (tempOutput === undefined && node.children.length > 0) {
-        const lastChildId = node.children[node.children.length - 1];
-        const lastChild = this._nodes.get(lastChildId);
-        if (lastChild?.spanParams.output !== undefined) {
-          tempOutput = lastChild.spanParams.output;
-        }
-      }
-      if (node.spanParams.error) {
-        tempOutput = JSON.stringify(node.spanParams.error);
-      }
-      this._lastOutput = tempOutput !== undefined ? tempOutput : null;
+      this._lastOutput = this._computeWorkflowOutput(node);
     }
 
     // Track first input for trace-level input (capture from first meaningful span)
@@ -356,7 +303,7 @@ export class GalileoTracingProcessor implements TracingProcessor {
     if (
       this._firstInput === null &&
       (node.nodeType === 'llm' || node.nodeType === 'tool') &&
-      this.isMeaningfulInput(node.spanParams.input)
+      isMeaningfulInput(node.spanParams.input)
     ) {
       this._firstInput = node.spanParams.input;
     }
@@ -379,6 +326,63 @@ export class GalileoTracingProcessor implements TracingProcessor {
   }
 
   /**
+   * Re-extracts span data at span-end time to capture fields that are populated
+   * after span-start (usage counters, response objects, to_agent for handoffs,
+   * and mutations made inside custom-span callbacks).
+   */
+  private _refreshSpanData(node: Node, spanData: AgentSpan['spanData']): void {
+    if (spanData.type === 'response') {
+      const finalData = extractLlmData(spanData);
+      const responseObj = finalData._responseObject as
+        | Record<string, unknown>
+        | undefined;
+      const { _responseObject: _removed, ...rest } = finalData;
+      void _removed;
+      node.spanParams = { ...node.spanParams, ...rest };
+      if (responseObj) {
+        const embeddedTools = extractEmbeddedToolCalls(responseObj);
+        if (embeddedTools.length > 0) {
+          const existingTools =
+            (node.spanParams.tools as unknown[] | undefined) ?? [];
+          node.spanParams.tools = [...existingTools, ...embeddedTools];
+        }
+      }
+    } else if (spanData.type === 'generation') {
+      node.spanParams = { ...node.spanParams, ...extractLlmData(spanData) };
+    } else if (spanData.type === 'handoff') {
+      // to_agent is populated inside withHandoffSpan's callback, after onSpanStart fires.
+      node.spanParams = {
+        ...node.spanParams,
+        ...extractWorkflowData(spanData),
+        name: mapSpanName(spanData, 'workflow')
+      };
+    } else if (spanData.__galileoCustom === true) {
+      const refreshed = extractGalileoCustomData(spanData);
+      node.spanParams = { ...node.spanParams, ...refreshed.params };
+    }
+  }
+
+  /**
+   * Computes the effective output for a workflow or agent node.
+   * Prefers the node's own output, falls back to the last child's output,
+   * and overrides with the serialized error when one is present.
+   */
+  private _computeWorkflowOutput(node: Node): unknown {
+    let result: unknown = node.spanParams.output;
+    if (result === undefined && node.children.length > 0) {
+      const lastChildId = node.children[node.children.length - 1];
+      const lastChild = this._nodes.get(lastChildId);
+      if (lastChild?.spanParams.output !== undefined) {
+        result = lastChild.spanParams.output;
+      }
+    }
+    if (node.spanParams.error) {
+      result = JSON.stringify(node.spanParams.error);
+    }
+    return result !== undefined ? result : null;
+  }
+
+  /**
    * Finds the root node for the trace and recursively logs the span tree.
    * @param trace - The trace to commit.
    */
@@ -389,11 +393,11 @@ export class GalileoTracingProcessor implements TracingProcessor {
   }
 
   /**
-   * Recursively emits nodes to GalileoLogger in correct parent→child order.
-   * @param node - The node to log.
-   * @param firstNode - Whether this is the root trace node.
+   * Emits a single node to GalileoLogger (startTrace, addLlmSpan, addToolSpan, or addWorkflowSpan).
+   * @param node - The node to emit.
+   * @param firstNode - True when this is the root trace node.
    */
-  private _logNodeTree(node: Node, firstNode = false): void {
+  private _logNode(node: Node, firstNode: boolean): void {
     const params = node.spanParams;
     const name = (params.name as string | undefined) ?? 'Agent Run';
     const durationNs = (params.durationNs as number | undefined) ?? 0;
@@ -411,7 +415,6 @@ export class GalileoTracingProcessor implements TracingProcessor {
         : undefined;
 
     if (firstNode) {
-      // Root node → startTrace
       const traceInput =
         this._firstInput !== null ? String(this._firstInput) : input;
       const traceOutput =
@@ -425,37 +428,25 @@ export class GalileoTracingProcessor implements TracingProcessor {
         metadata
       });
     } else if (node.nodeType === 'llm') {
-      const numInputTokens =
-        (params.numInputTokens as number | undefined) ?? undefined;
-      const numOutputTokens =
-        (params.numOutputTokens as number | undefined) ?? undefined;
-      const totalTokens =
-        (params.totalTokens as number | undefined) ?? undefined;
-      const numReasoningTokens =
-        (params.numReasoningTokens as number | undefined) ?? undefined;
-      const numCachedInputTokens =
-        (params.numCachedInputTokens as number | undefined) ?? undefined;
-      const temperature =
-        (params.temperature as number | undefined) ?? undefined;
-      const model = (params.model as string | undefined) ?? 'unknown';
-      const tools =
-        (params.tools as Record<string, unknown>[] | undefined) ?? undefined;
-
       this._galileoLogger.addLlmSpan({
         input,
         output: output ?? '',
         name,
-        model,
+        model: (params.model as string | undefined) ?? 'unknown',
         durationNs,
-        numInputTokens,
-        numOutputTokens,
-        totalTokens,
-        numReasoningTokens,
-        numCachedInputTokens,
-        temperature,
+        numInputTokens:
+          (params.numInputTokens as number | undefined) ?? undefined,
+        numOutputTokens:
+          (params.numOutputTokens as number | undefined) ?? undefined,
+        totalTokens: (params.totalTokens as number | undefined) ?? undefined,
+        numReasoningTokens:
+          (params.numReasoningTokens as number | undefined) ?? undefined,
+        numCachedInputTokens:
+          (params.numCachedInputTokens as number | undefined) ?? undefined,
+        temperature: (params.temperature as number | undefined) ?? undefined,
         statusCode,
         metadata,
-        tools: tools as JsonObject[] | undefined,
+        tools: (params.tools as JsonObject[] | undefined) ?? undefined,
         createdAt: startedAt
       });
     } else if (node.nodeType === 'tool') {
@@ -469,19 +460,8 @@ export class GalileoTracingProcessor implements TracingProcessor {
         tags,
         createdAt: startedAt
       });
-    } else if (node.nodeType === 'agent') {
-      this._galileoLogger.addWorkflowSpan({
-        input: input || 'Workflow Step',
-        output,
-        name,
-        durationNs,
-        metadata,
-        tags,
-        createdAt: startedAt,
-        statusCode
-      });
     } else {
-      // workflow and other parent nodes
+      // agent, workflow, and any other parent node types
       this._galileoLogger.addWorkflowSpan({
         input: input || 'Workflow Step',
         output,
@@ -493,8 +473,17 @@ export class GalileoTracingProcessor implements TracingProcessor {
         statusCode
       });
     }
+  }
 
-    // Recursively log children
+  /**
+   * Recursively emits nodes to GalileoLogger in parent→child order,
+   * then concludes workflow/agent spans after all their children are logged.
+   * @param node - The node to log.
+   * @param firstNode - True when this is the root trace node.
+   */
+  private _logNodeTree(node: Node, firstNode = false): void {
+    this._logNode(node, firstNode);
+
     for (const childId of node.children) {
       const childNode = this._nodes.get(childId);
       if (childNode) {
@@ -502,29 +491,16 @@ export class GalileoTracingProcessor implements TracingProcessor {
       }
     }
 
-    // Conclude workflow/agent spans after their children.
-    // When the span itself has no output (always the case for agent spans, since
-    // AgentSpanData carries no output field), fall back to the last child's output.
     if (
       !firstNode &&
       (node.nodeType === 'workflow' || node.nodeType === 'agent')
     ) {
-      let concludeOutput = output;
-      if (concludeOutput === undefined && node.children.length > 0) {
-        const lastChildId = node.children[node.children.length - 1];
-        const lastChild = this._nodes.get(lastChildId);
-        if (lastChild?.spanParams.output !== undefined) {
-          concludeOutput = String(lastChild.spanParams.output);
-        }
-      }
-      const nodeError = params.error as
-        | { message: string; data?: Record<string, unknown>; type?: string }
-        | undefined;
-      if (nodeError) {
-        concludeOutput = JSON.stringify(nodeError);
-      }
+      const params = node.spanParams;
+      const durationNs = (params.durationNs as number | undefined) ?? 0;
+      const statusCode = (params.statusCode as number | undefined) ?? 200;
+      const concludeOutput = this._computeWorkflowOutput(node);
       this._galileoLogger.conclude({
-        output: concludeOutput,
+        output: concludeOutput !== null ? String(concludeOutput) : undefined,
         durationNs,
         statusCode
       });
