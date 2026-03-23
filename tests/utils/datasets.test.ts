@@ -371,6 +371,59 @@ describe('datasets utils', () => {
         });
       }).toThrow('Dataset metadata must be a string or object');
     });
+
+    it('should accept groundTruth as alias for output', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        groundTruth: 'expected answer'
+      });
+      expect(record.output).toBe('expected answer');
+      expect(record.groundTruth).toBe('expected answer');
+    });
+
+    it('should give output precedence over groundTruth when both provided', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'from output',
+        groundTruth: 'from groundTruth'
+      });
+      expect(record.output).toBe('from output');
+      expect(record.groundTruth).toBe('from output');
+    });
+
+    it('should expose groundTruth as a non-enumerable getter', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'expected'
+      });
+      expect(Object.keys(record)).not.toContain('groundTruth');
+      expect(JSON.parse(JSON.stringify(record))).not.toHaveProperty(
+        'groundTruth'
+      );
+      expect(record.groundTruth).toBe('expected');
+    });
+
+    it('should store generatedOutput', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'expected',
+        generatedOutput: 'model response'
+      });
+      expect(record.generatedOutput).toBe('model response');
+    });
+
+    it('should serialize object generatedOutput to JSON string', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        generatedOutput: { key: 'value' }
+      });
+      expect(record.generatedOutput).toBe('{"key":"value"}');
+    });
   });
 
   describe('deserializeInputFromString', () => {
@@ -568,6 +621,52 @@ describe('convertDatasetRowToRecord', () => {
       metadata: undefined
     });
   });
+
+  it('should fall back to groundTruth column when output is absent', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-789',
+      values: ['input-value', 'expected'],
+      valuesDict: { input: 'input-value', groundTruth: 'expected' },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record.output).toBe('expected');
+    expect(record.groundTruth).toBe('expected');
+  });
+
+  it('should prefer output over groundTruth when both columns present', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-abc',
+      values: ['input-value', 'from-output', 'from-ground-truth'],
+      valuesDict: {
+        input: 'input-value',
+        output: 'from-output',
+        groundTruth: 'from-ground-truth'
+      },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record.output).toBe('from-output');
+  });
+
+  it('should extract generatedOutput column', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-def',
+      values: ['input-value', 'expected', 'model-response'],
+      valuesDict: {
+        input: 'input-value',
+        output: 'expected',
+        generatedOutput: 'model-response'
+      },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record.output).toBe('expected');
+    expect(record.generatedOutput).toBe('model-response');
+  });
 });
 
 describe('getRecordsForDataset', () => {
@@ -643,5 +742,20 @@ describe('getDatasetRecordsFromArray', () => {
         metadata: undefined
       }
     ]);
+  });
+
+  it('should normalise ground_truth to output', () => {
+    const rawRecords = [{ input: 'q', ground_truth: 'expected answer' }];
+    const records = getDatasetRecordsFromArray(rawRecords);
+    expect(records[0].output).toBe('expected answer');
+    expect(records[0].groundTruth).toBe('expected answer');
+  });
+
+  it('should pass through generatedOutput', () => {
+    const rawRecords = [
+      { input: 'q', output: 'expected', generated_output: 'model response' }
+    ];
+    const records = getDatasetRecordsFromArray(rawRecords);
+    expect(records[0].generatedOutput).toBe('model response');
   });
 });

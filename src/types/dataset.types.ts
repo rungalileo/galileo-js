@@ -66,6 +66,8 @@ export interface DatasetRecord {
   id?: string;
   input?: string;
   output?: string;
+  readonly groundTruth?: string;
+  generatedOutput?: string;
   metadata?: Record<string, string>;
 }
 
@@ -73,6 +75,8 @@ export interface DatasetRecordOptions {
   id?: string;
   input: unknown;
   output?: unknown;
+  groundTruth?: unknown;
+  generatedOutput?: unknown;
   metadata?: unknown;
 }
 

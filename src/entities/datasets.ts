@@ -87,18 +87,31 @@ export class Dataset {
     const client = await this.ensureClient();
     const etag = await client.getDatasetEtag(this.id);
 
-    // Sanitize values: convert all non-null values to strings (matching Python's sanitize_values)
+    // Sanitize values: convert all non-null values to strings.
+    // Also normalise ground_truth/groundTruth -> output (output takes precedence if both present).
     const stringifiedRows = rows.map((row) => {
       const stringifiedRow: Record<string, string | null> = {};
       for (const key in row) {
         const value = row[key];
-        if (value === null) {
-          stringifiedRow[key] = null;
-        } else if (typeof value === 'object') {
-          stringifiedRow[key] = JSON.stringify(value);
+        if (key === 'ground_truth' || key === 'groundTruth') {
+          // Normalise ground_truth/groundTruth -> output; skip if output already present
+          if (!('output' in row)) {
+            stringifiedRow['output'] =
+              value === null
+                ? null
+                : typeof value === 'object'
+                  ? JSON.stringify(value)
+                  : String(value);
+          }
         } else {
-          // Convert numbers and strings to strings
-          stringifiedRow[key] = String(value);
+          if (value === null) {
+            stringifiedRow[key] = null;
+          } else if (typeof value === 'object') {
+            stringifiedRow[key] = JSON.stringify(value);
+          } else {
+            // Convert numbers and strings to strings
+            stringifiedRow[key] = String(value);
+          }
         }
       }
       return stringifiedRow;
