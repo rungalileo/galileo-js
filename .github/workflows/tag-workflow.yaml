@@ -14,12 +14,16 @@ on:
 jobs:
   tag:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
 
       - name: Create and push tag
+        env:
+          TAG: ${{ inputs.tag }}
         run: |
-          git tag ${{ inputs.tag }}
-          git push origin ${{ inputs.tag }}
+          git tag -- "$TAG"
+          git push origin -- "$TAG"
