@@ -88,13 +88,13 @@ export class Dataset {
     const etag = await client.getDatasetEtag(this.id);
 
     // Sanitize values: convert all non-null values to strings.
-    // Also normalise ground_truth/groundTruth -> output (output takes precedence if both present).
+    // Also normalise groundTruth -> output (output takes precedence if both present).
     const stringifiedRows = rows.map((row) => {
       const stringifiedRow: Record<string, string | null> = {};
       for (const key in row) {
         const value = row[key];
-        if (key === 'ground_truth' || key === 'groundTruth') {
-          // Normalise ground_truth/groundTruth -> output; skip if output already present
+        if (key === 'groundTruth') {
+          // Normalise groundTruth -> output; skip if output already present
           if (!('output' in row)) {
             stringifiedRow['output'] =
               value === null

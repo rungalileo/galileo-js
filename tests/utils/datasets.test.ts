@@ -254,6 +254,67 @@ describe('datasets utils', () => {
     expect(addRowsToDatasetHandler).toHaveBeenCalled();
   });
 
+  test('add rows to dataset sends generatedOutput as generated_output on the wire', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.patch(
+        `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
+        async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, unknown>;
+          return new HttpResponse(null, { status: 204 });
+        }
+      )
+    );
+
+    await addRowsToDataset({
+      datasetId: EXAMPLE_DATASET.id,
+      rows: [
+        { input: 'q', output: 'expected', generatedOutput: 'model response' }
+      ]
+    });
+
+    expect(capturedBody).not.toBeNull();
+    const edits = (
+      capturedBody as unknown as {
+        edits: { values: Record<string, unknown> }[];
+      }
+    ).edits;
+    expect(edits[0].values).toMatchObject({
+      input: 'q',
+      output: 'expected',
+      generated_output: 'model response'
+    });
+    expect(edits[0].values).not.toHaveProperty('generatedOutput');
+  });
+
+  test('add rows to dataset normalises groundTruth to output on the wire', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.patch(
+        `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
+        async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, unknown>;
+          return new HttpResponse(null, { status: 204 });
+        }
+      )
+    );
+
+    await addRowsToDataset({
+      datasetId: EXAMPLE_DATASET.id,
+      rows: [{ input: 'q', groundTruth: 'expected' }]
+    });
+
+    expect(capturedBody).not.toBeNull();
+    const edits = (
+      capturedBody as unknown as {
+        edits: { values: Record<string, unknown> }[];
+      }
+    ).edits;
+    expect(edits[0].values).toMatchObject({ input: 'q', output: 'expected' });
+    expect(edits[0].values).not.toHaveProperty('groundTruth');
+    expect(edits[0].values).not.toHaveProperty('ground_truth');
+  });
+
   describe('createDatasetRecord', () => {
     it('should create a record with string input/output', () => {
       const record = createDatasetRecord({
@@ -744,16 +805,9 @@ describe('getDatasetRecordsFromArray', () => {
     ]);
   });
 
-  it('should normalise ground_truth to output', () => {
-    const rawRecords = [{ input: 'q', ground_truth: 'expected answer' }];
-    const records = getDatasetRecordsFromArray(rawRecords);
-    expect(records[0].output).toBe('expected answer');
-    expect(records[0].groundTruth).toBe('expected answer');
-  });
-
   it('should pass through generatedOutput', () => {
     const rawRecords = [
-      { input: 'q', output: 'expected', generated_output: 'model response' }
+      { input: 'q', output: 'expected', generatedOutput: 'model response' }
     ];
     const records = getDatasetRecordsFromArray(rawRecords);
     expect(records[0].generatedOutput).toBe('model response');

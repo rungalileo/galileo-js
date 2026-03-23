@@ -90,8 +90,8 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
       .map((item) => {
         const jsonifiedInner: Record<string, string> = {};
         for (const key in item) {
-          // Normalise ground_truth/groundTruth -> output (output takes precedence if both present)
-          if (key === 'ground_truth' || key === 'groundTruth') {
+          // Normalise groundTruth -> output (output takes precedence if both present)
+          if (key === 'groundTruth') {
             if (!('output' in item)) {
               jsonifiedInner['output'] = _stringifyValue(item[key]);
             }
@@ -265,9 +265,8 @@ export function getDatasetRecordsFromArray(
     createDatasetRecord({
       input: row['input'],
       output: row['output'],
-      groundTruth: (row['groundTruth'] ?? row['ground_truth']) as unknown,
-      generatedOutput: (row['generatedOutput'] ??
-        row['generated_output']) as unknown,
+      groundTruth: row['groundTruth'] as unknown,
+      generatedOutput: row['generatedOutput'] as unknown,
       metadata: row['metadata']
     })
   );
