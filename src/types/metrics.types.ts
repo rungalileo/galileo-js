@@ -96,6 +96,79 @@ export const GalileoMetrics = {
 /** @deprecated Use GalileoMetrics instead */
 export const GalileoScorers = GalileoMetrics;
 
+/**
+ * Human-readable metric labels matching the Galileo UI.
+ *
+ * Use these values when enabling scorers via label-based lookup.
+ * Keys match {@link GalileoMetrics} for easy cross-referencing.
+ *
+ * @example
+ * ```typescript
+ * import { GalileoMetricNames } from 'galileo';
+ *
+ * // Use labels for scorer selection
+ * await enableMetrics([GalileoMetricNames.contextAdherence, GalileoMetricNames.correctness]);
+ * ```
+ */
+export const GalileoMetricNames = {
+  // Primary entries — labels match Galileo UI
+  actionCompletionLuna: 'Action Completion (SLM)',
+  actionAdvancementLuna: 'Action Advancement (SLM)',
+  agenticSessionSuccess: 'Agentic Session Success',
+  agenticWorkflowSuccess: 'Agentic Workflow Success',
+  agentEfficiency: 'Agent Efficiency',
+  agentFlow: 'Agent Flow',
+  bleu: 'BLEU',
+  chunkAttributionUtilization: 'Chunk Attribution Utilization',
+  chunkAttributionUtilizationLuna: 'Chunk Attribution Utilization (SLM)',
+  completeness: 'Completeness',
+  completenessLuna: 'Completeness (SLM)',
+  contextAdherence: 'Context Adherence',
+  contextAdherenceLuna: 'Context Adherence (SLM)',
+  contextRelevance: 'Context Relevance',
+  conversationQuality: 'Conversation Quality',
+  correctness: 'Correctness',
+  groundTruthAdherence: 'Ground Truth Adherence',
+  inputPii: 'Input PII (SLM)',
+  inputPiiGpt: 'Input PII',
+  inputSexist: 'Input Sexism',
+  inputSexistLuna: 'Input Sexism (SLM)',
+  inputTone: 'Input Tone (SLM)',
+  inputToneGpt: 'Input Tone',
+  inputToxicity: 'Input Toxicity',
+  inputToxicityLuna: 'Input Toxicity (SLM)',
+  instructionAdherence: 'Instruction Adherence',
+  outputPii: 'Output PII (SLM)',
+  outputPiiGpt: 'Output PII',
+  outputSexist: 'Output Sexism',
+  outputSexistLuna: 'Output Sexism (SLM)',
+  outputTone: 'Output Tone (SLM)',
+  outputToneGpt: 'Output Tone',
+  outputToxicity: 'Output Toxicity',
+  outputToxicityLuna: 'Output Toxicity (SLM)',
+  promptInjection: 'Prompt Injection',
+  promptInjectionLuna: 'Prompt Injection (SLM)',
+  promptPerplexity: 'Prompt Perplexity',
+  rouge: 'ROUGE-1',
+  toolErrorRate: 'Tool Error Rate',
+  toolErrorRateLuna: 'Tool Error Rate (SLM)',
+  toolSelectionQuality: 'Tool Selection Quality',
+  toolSelectionQualityLuna: 'Tool Selection Quality (SLM)',
+  uncertainty: 'Uncertainty (SLM)',
+  userIntentChange: 'User Intent Change',
+
+  // Backward compatibility aliases
+  actionCompletion: 'Action Completion',
+  actionAdvancement: 'Action Advancement',
+  inputSexism: 'Input Sexism',
+  inputSexismLuna: 'Input Sexism (SLM)',
+  outputSexism: 'Output Sexism',
+  outputSexismLuna: 'Output Sexism (SLM)'
+} as const;
+
+export type GalileoMetricNames =
+  (typeof GalileoMetricNames)[keyof typeof GalileoMetricNames];
+
 export interface Metric {
   name: string;
   version?: number;

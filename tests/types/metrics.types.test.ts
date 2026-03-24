@@ -1,4 +1,7 @@
-import { GalileoMetrics } from '../../src/types/metrics.types';
+import {
+  GalileoMetrics,
+  GalileoMetricNames
+} from '../../src/types/metrics.types';
 import { snakeCase } from 'lodash';
 
 describe('GalileoScorers', () => {
@@ -66,4 +69,20 @@ describe('GalileoScorers', () => {
       });
     }
   );
+});
+
+describe('GalileoMetricNames', () => {
+  test('every key in GalileoMetricNames exists in GalileoMetrics', () => {
+    const metricsKeys = Object.keys(GalileoMetrics);
+    for (const key of Object.keys(GalileoMetricNames)) {
+      expect(metricsKeys).toContain(key);
+    }
+  });
+
+  test('all values are non-empty strings', () => {
+    for (const [key, value] of Object.entries(GalileoMetricNames)) {
+      expect(typeof value).toBe('string');
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
 });
