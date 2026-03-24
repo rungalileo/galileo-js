@@ -184,10 +184,12 @@ export function createDatasetRecord(
   const record: DatasetRecord = {
     id: options.id,
     input: _serializeToString(options.input),
-    output: resolvedOutput ? _serializeToString(resolvedOutput) : undefined,
-    generatedOutput: options.generatedOutput
-      ? _serializeToString(options.generatedOutput)
-      : undefined,
+    output:
+      resolvedOutput != null ? _serializeToString(resolvedOutput) : undefined,
+    generatedOutput:
+      options.generatedOutput != null
+        ? _serializeToString(options.generatedOutput)
+        : undefined,
     metadata: resultMetadata
   };
 

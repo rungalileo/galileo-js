@@ -95,7 +95,7 @@ export class Dataset {
         const value = row[key];
         if (key === 'groundTruth') {
           // Normalise groundTruth -> output; skip if output already present
-          if (!('output' in row)) {
+          if (!('output' in row) || row['output'] == null) {
             stringifiedRow['output'] =
               value === null
                 ? null
