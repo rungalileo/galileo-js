@@ -99,15 +99,19 @@ export const GalileoScorers = GalileoMetrics;
 /**
  * Human-readable metric labels matching the Galileo UI.
  *
- * Use these values when enabling scorers via label-based lookup.
  * Keys match {@link GalileoMetrics} for easy cross-referencing.
+ * Use these for display purposes, or pass them to label-based scorer
+ * lookup once the API supports label filters (sc-59939).
  *
  * @example
  * ```typescript
- * import { GalileoMetricNames } from 'galileo';
+ * import { GalileoMetrics, GalileoMetricNames } from 'galileo';
  *
- * // Use labels for scorer selection
- * await enableMetrics([GalileoMetricNames.contextAdherence, GalileoMetricNames.correctness]);
+ * // Use labels for UI display
+ * const label = GalileoMetricNames.contextAdherence; // "Context Adherence"
+ *
+ * // Enable scorers using internal metric names
+ * await enableMetrics([GalileoMetrics.contextAdherence, GalileoMetrics.correctness]);
  * ```
  */
 export const GalileoMetricNames = {

@@ -80,9 +80,9 @@ describe('GalileoMetricNames', () => {
   });
 
   test('all values are non-empty strings', () => {
-    for (const [key, value] of Object.entries(GalileoMetricNames)) {
+    for (const value of Object.values(GalileoMetricNames)) {
       expect(typeof value).toBe('string');
-      expect((value as string).length).toBeGreaterThan(0);
+      expect(value.length).toBeGreaterThan(0);
     }
   });
 });
