@@ -78,7 +78,6 @@ import { JobsService } from './services/job-service';
 import { JobProgressService } from './services/job-progress-service';
 import { RunsService } from './services/runs-service';
 import {
-  DatasetAppendRow,
   SyntheticDatasetExtensionRequest,
   SyntheticDatasetExtensionResponse,
   JobProgress,
@@ -115,7 +114,11 @@ import {
   LogRecordsMetricsResponse
 } from '../types/metrics.types';
 import { SegmentFilter, RunScorerSettingsResponse } from '../types/runs.types';
-import { GalileoConfig, getSdkLogger } from 'galileo-generated';
+import {
+  GalileoConfig,
+  getSdkLogger,
+  type DatasetAppendRow
+} from 'galileo-generated';
 
 const MILLISECONDS_TO_NEXT_TIMESTAMP = 100;
 
@@ -755,7 +758,7 @@ export class GalileoApiClient extends BaseClient {
     rows: DatasetAppendRow[]
   ): Promise<void> {
     this.ensureService(this.datasetService);
-    return this.datasetService!.appendRowsToDatasetContent(
+    return this.datasetService.appendRowsToDatasetContent(
       datasetId,
       etag,
       rows

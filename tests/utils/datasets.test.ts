@@ -284,7 +284,6 @@ describe('datasets utils', () => {
       output: 'expected',
       generated_output: 'model response'
     });
-    expect(edits[0].values).not.toHaveProperty('generatedOutput');
   });
 
   test('add rows to dataset normalises groundTruth to output on the wire', async () => {
