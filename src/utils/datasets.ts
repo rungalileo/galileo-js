@@ -92,9 +92,11 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
         for (const key in item) {
           // Normalise groundTruth -> output (output takes precedence if both present)
           if (key === 'groundTruth') {
-            if (!('output' in item)) {
+            if (!('output' in item) || item['output'] == null) {
               jsonifiedInner['output'] = _stringifyValue(item[key]);
             }
+          } else if (key === 'generatedOutput') {
+            jsonifiedInner['generated_output'] = _stringifyValue(item[key]);
           } else {
             jsonifiedInner[key] = _stringifyValue(item[key]);
           }

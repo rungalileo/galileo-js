@@ -67,25 +67,24 @@ export class Dataset {
       if (key === 'groundTruth') {
         // Normalise groundTruth -> output; skip if output already present
         if (!('output' in row) || row['output'] == null) {
-          stringifiedRow['output'] =
-            value === null
-              ? null
-              : typeof value === 'object'
-                ? JSON.stringify(value)
-                : String(value);
+          stringifiedRow['output'] = this.serializeDatasetRowValue(value);
         }
+      } else if (key === 'generatedOutput') {
+        stringifiedRow['generated_output'] =
+          this.serializeDatasetRowValue(value);
       } else {
-        if (value === null) {
-          stringifiedRow[key] = null;
-        } else if (typeof value === 'object') {
-          stringifiedRow[key] = JSON.stringify(value);
-        } else {
-          // Convert numbers and strings to strings
-          stringifiedRow[key] = String(value);
-        }
+        stringifiedRow[key] = this.serializeDatasetRowValue(value);
       }
     }
     return stringifiedRow;
+  }
+
+  private serializeDatasetRowValue(value: unknown): string | null {
+    return value === null
+      ? null
+      : typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value);
   }
 
   /**

@@ -258,17 +258,12 @@ export class DatasetService extends BaseClient {
     etag: string,
     rows: DatasetAppendRow[]
   ): Promise<void> {
-    const caseConvertedRows: DatasetAppendRow[] = rows.map((row) => {
-      row.values = this.convertToSnakeCase(row.values);
-      return row;
-    });
-
     await galileoGenerated.datasets.updateDatasetContentDatasetsDatasetIdContentPatch(
       {},
       {
         datasetId: datasetId,
         ifMatch: etag,
-        body: { edits: caseConvertedRows }
+        body: { edits: rows }
       }
     );
   }
