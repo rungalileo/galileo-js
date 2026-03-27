@@ -104,6 +104,7 @@ import {
 } from '../types/prompt-template.types';
 import { JobDbType, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
+import type { Messages } from '../types/new-api.types';
 import { StepType } from '../types/logging/step.types';
 import { LogRecordsExportRequest } from '../types/export.types';
 import {
@@ -1472,7 +1473,7 @@ export class GalileoApiClient extends BaseClient {
 
     return this.globalPromptTemplateService!.createGlobalPromptTemplate(
       {
-        template,
+        template: template as unknown as Messages,
         name
       },
       resolvedProjectId
