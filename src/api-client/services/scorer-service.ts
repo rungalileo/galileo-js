@@ -158,6 +158,103 @@ export class ScorerService extends BaseClient {
   };
 
   /**
+   * Retrieves a page of scorers filtered by label.
+   * Uses ScorerLabelFilter with optional strict mode and case sensitivity.
+   *
+   * @param options.labels - Labels to search for.
+   * @param options.strict - When false, also matches by scorer name as fallback.
+   * @param options.caseSensitive - Whether label matching is case-sensitive.
+   * @param options.startingToken - Pagination starting token.
+   * @param options.limit - Maximum results per page.
+   */
+  public getScorersPageByLabels = async (options: {
+    labels: string[];
+    strict?: boolean;
+    caseSensitive?: boolean;
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> => {
+    const payload: ListScorersRequest = {
+      filters: []
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filter: any = {
+      name: 'label',
+      operator: options.labels.length === 1 ? 'eq' : 'one_of',
+      value: options.labels.length === 1 ? options.labels[0] : options.labels,
+      caseSensitive: options.caseSensitive ?? false
+    };
+    if (options.strict !== undefined) {
+      filter.strict = options.strict;
+    }
+    payload.filters!.push(filter);
+
+    const request = this.convertToSnakeCase<
+      ListScorersRequest,
+      ListScorersRequestOpenAPI
+    >(payload);
+    const response = await this.makeRequest<ListScorersResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.scorers,
+      request,
+      {
+        starting_token: options.startingToken ?? 0,
+        limit: options.limit ?? 100
+      }
+    );
+
+    return this.convertToCamelCase<
+      ListScorersResponseOpenAPI,
+      ListScorersResponse
+    >(response);
+  };
+
+  /**
+   * Retrieves a page of scorers filtered by ID.
+   * Uses ScorerIDFilter.
+   *
+   * @param options.ids - Scorer IDs to search for.
+   * @param options.startingToken - Pagination starting token.
+   * @param options.limit - Maximum results per page.
+   */
+  public getScorersPageByIds = async (options: {
+    ids: string[];
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> => {
+    const payload: ListScorersRequest = {
+      filters: []
+    };
+
+    payload.filters!.push({
+      name: 'id',
+      operator: options.ids.length === 1 ? 'eq' : 'one_of',
+      value: options.ids.length === 1 ? options.ids[0] : options.ids
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    const request = this.convertToSnakeCase<
+      ListScorersRequest,
+      ListScorersRequestOpenAPI
+    >(payload);
+    const response = await this.makeRequest<ListScorersResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.scorers,
+      request,
+      {
+        starting_token: options.startingToken ?? 0,
+        limit: options.limit ?? 100
+      }
+    );
+
+    return this.convertToCamelCase<
+      ListScorersResponseOpenAPI,
+      ListScorersResponse
+    >(response);
+  };
+
+  /**
    * Retrieves a specific version of a scorer by its ID and version number.
    *
    * @param scorerId - The unique identifier of the scorer.

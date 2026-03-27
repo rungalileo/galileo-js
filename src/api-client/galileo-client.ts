@@ -1672,6 +1672,32 @@ export class GalileoApiClient extends BaseClient {
   }
 
   /**
+   * Retrieves a page of scorers filtered by label.
+   */
+  public async getScorersPageByLabels(options: {
+    labels: string[];
+    strict?: boolean;
+    caseSensitive?: boolean;
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> {
+    this.ensureService(this.scorerService);
+    return this.scorerService.getScorersPageByLabels(options);
+  }
+
+  /**
+   * Retrieves a page of scorers filtered by ID.
+   */
+  public async getScorersPageByIds(options: {
+    ids: string[];
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> {
+    this.ensureService(this.scorerService);
+    return this.scorerService.getScorersPageByIds(options);
+  }
+
+  /**
    * Retrieves a specific version of a scorer.
    * @param scorerId - The unique identifier of the scorer.
    * @param version - The version number to retrieve.

@@ -34,6 +34,8 @@ const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
 const mockGetScorersPage = jest.fn();
+const mockGetScorersPageByLabels = jest.fn();
+const mockGetScorersPageByIds = jest.fn();
 const mockCreateRunScorerSettings = jest.fn();
 const mockGetProject = jest.fn();
 const mockGetProjectByName = jest.fn();
@@ -54,6 +56,8 @@ jest.mock('../../src/api-client', () => {
         getScorerVersion: mockGetScorerVersion,
         getScorers: mockGetScorers,
         getScorersPage: mockGetScorersPage,
+        getScorersPageByLabels: mockGetScorersPageByLabels,
+        getScorersPageByIds: mockGetScorersPageByIds,
         createRunScorerSettings: mockCreateRunScorerSettings,
         getProject: mockGetProject,
         getProjectByName: mockGetProjectByName,
@@ -69,7 +73,8 @@ jest.mock('../../src/api-client', () => {
 describe('metrics utils', () => {
   const EXAMPLE_SCORER: Scorer = {
     id: 'scorer-123',
-    name: 'Correctness',
+    name: 'correctness',
+    label: 'Correctness',
     scorer_type: ScorerTypes.preset,
     tags: []
   };
@@ -129,12 +134,14 @@ describe('metrics utils', () => {
       EXAMPLE_CUSTOM_SCORER,
       {
         id: 'completeness-scorer',
-        name: 'Completeness',
+        name: 'completeness',
+        label: 'Completeness',
         scorer_type: ScorerTypes.preset
       },
       {
         id: 'toxicity-scorer',
         name: 'toxicity',
+        label: 'Toxicity',
         scorer_type: ScorerTypes.preset
       }
     ]);
@@ -144,15 +151,40 @@ describe('metrics utils', () => {
         EXAMPLE_CUSTOM_SCORER,
         {
           id: 'completeness-scorer',
-          name: 'Completeness',
+          name: 'completeness',
+          label: 'Completeness',
           scorer_type: ScorerTypes.preset
         },
         {
           id: 'toxicity-scorer',
           name: 'toxicity',
+          label: 'Toxicity',
           scorer_type: ScorerTypes.preset
         }
       ],
+      nextStartingToken: null
+    });
+    mockGetScorersPageByLabels.mockResolvedValue({
+      scorers: [
+        EXAMPLE_SCORER,
+        EXAMPLE_CUSTOM_SCORER,
+        {
+          id: 'completeness-scorer',
+          name: 'completeness',
+          label: 'Completeness',
+          scorer_type: ScorerTypes.preset
+        },
+        {
+          id: 'toxicity-scorer',
+          name: 'toxicity',
+          label: 'Toxicity',
+          scorer_type: ScorerTypes.preset
+        }
+      ],
+      nextStartingToken: null
+    });
+    mockGetScorersPageByIds.mockResolvedValue({
+      scorers: [],
       nextStartingToken: null
     });
     mockDeleteScorer.mockResolvedValue(undefined);

@@ -60,6 +60,8 @@ import {
 import {
   getScorers,
   getScorerVersion,
+  getScorersByLabels,
+  getScorersByIds,
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
@@ -252,6 +254,8 @@ export {
   ScorerSettings,
   getScorers,
   getScorerVersion,
+  getScorersByLabels,
+  getScorersByIds,
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
