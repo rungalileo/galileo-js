@@ -19,82 +19,72 @@ export type MetricValueType =
   | Record<string, SingleMetricValue>;
 
 /**
- * Galileo metrics as a const object.
- * Generated from OpenAPI schema to ensure type safety and completeness.
+ * Built-in Galileo metric scorers.
  *
- * This object provides camelCase keys for better developer experience
- * while maintaining the snake_case values required by the API.
- *
- * Includes backward compatibility aliases for deprecated names.
+ * Values are human-readable UI labels used for scorer lookup via the API.
+ * Naming convention: base name = LLM version, `Luna` suffix = SLM version.
  *
  * @example
  * ```typescript
  * import { GalileoMetrics } from 'galileo';
  *
- * // Use const object values
- * const metrics = [GalileoMetrics.correctness, GalileoMetrics.completeness];
+ * await enableMetrics({
+ *   projectName: 'my-project',
+ *   logStreamName: 'default',
+ *   metrics: [GalileoMetrics.correctness, GalileoMetrics.completeness],
+ * });
  * ```
  */
-/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 export const GalileoMetrics = {
-  // Primary entries (all unique values from OpenAPI)
-  actionCompletionLuna: 'action_completion_luna',
-  actionAdvancementLuna: 'action_advancement_luna',
-  agenticSessionSuccess: 'agentic_session_success',
-  agenticWorkflowSuccess: 'agentic_workflow_success',
-  agentEfficiency: 'agent_efficiency',
-  agentFlow: 'agent_flow',
-  bleu: 'bleu',
-  chunkAttributionUtilization: 'chunk_attribution_utilization',
-  chunkAttributionUtilizationLuna: 'chunk_attribution_utilization_luna',
-  completeness: 'completeness',
-  completenessLuna: 'completeness_luna',
-  contextAdherence: 'context_adherence',
-  contextAdherenceLuna: 'context_adherence_luna',
-  contextRelevance: 'context_relevance',
-  conversationQuality: 'conversation_quality',
-  correctness: 'correctness',
-  groundTruthAdherence: 'ground_truth_adherence',
-  inputPii: 'input_pii',
-  inputPiiGpt: 'input_pii_gpt',
-  inputSexist: 'input_sexist',
-  inputSexistLuna: 'input_sexist_luna',
-  inputTone: 'input_tone',
-  inputToneGpt: 'input_tone_gpt',
-  inputToxicity: 'input_toxicity',
-  inputToxicityLuna: 'input_toxicity_luna',
-  instructionAdherence: 'instruction_adherence',
-  outputPii: 'output_pii',
-  outputPiiGpt: 'output_pii_gpt',
-  outputSexist: 'output_sexist',
-  outputSexistLuna: 'output_sexist_luna',
-  outputTone: 'output_tone',
-  outputToneGpt: 'output_tone_gpt',
-  outputToxicity: 'output_toxicity',
-  outputToxicityLuna: 'output_toxicity_luna',
-  promptInjection: 'prompt_injection',
-  promptInjectionLuna: 'prompt_injection_luna',
-  promptPerplexity: 'prompt_perplexity',
-  rouge: 'rouge',
-  toolErrorRate: 'tool_error_rate',
-  toolErrorRateLuna: 'tool_error_rate_luna',
-  toolSelectionQuality: 'tool_selection_quality',
-  toolSelectionQualityLuna: 'tool_selection_quality_luna',
-  uncertainty: 'uncertainty',
-  userIntentChange: 'user_intent_change',
-
-  // Backward compatibility aliases
-  actionCompletion: 'agentic_session_success',
-  actionAdvancement: 'agentic_workflow_success',
-  inputSexism: 'input_sexist',
-  inputSexismLuna: 'input_sexist_luna',
-  outputSexism: 'output_sexist',
-  outputSexismLuna: 'output_sexist_luna'
-} as const satisfies Record<string, ScorerNameOpenAPI>;
-/* eslint-enable @typescript-eslint/no-duplicate-enum-values */
-
-/** @deprecated Use GalileoMetrics instead */
-export const GalileoScorers = GalileoMetrics;
+  actionAdvancement: 'Action Advancement',
+  actionAdvancementLuna: 'Action Advancement (SLM)',
+  actionCompletion: 'Action Completion',
+  actionCompletionLuna: 'Action Completion (SLM)',
+  agentEfficiency: 'Agent Efficiency',
+  agentFlow: 'Agent Flow',
+  chunkAttributionUtilization: 'Chunk Attribution Utilization',
+  chunkAttributionUtilizationLuna: 'Chunk Attribution Utilization (SLM)',
+  completeness: 'Completeness',
+  completenessLuna: 'Completeness (SLM)',
+  contextAdherence: 'Context Adherence',
+  contextAdherenceLuna: 'Context Adherence (SLM)',
+  contextPrecision: 'Context Precision',
+  contextRelevance: 'Context Relevance',
+  contextRelevanceLuna: 'Context Relevance (SLM)',
+  conversationQuality: 'Conversation Quality',
+  correctness: 'Correctness',
+  groundTruthAdherence: 'Ground Truth Adherence',
+  inputPii: 'Input PII', // LLM (fixed — was SLM)
+  inputPiiLuna: 'Input PII (SLM)',
+  inputSexism: 'Input Sexism',
+  inputSexismLuna: 'Input Sexism (SLM)',
+  inputTone: 'Input Tone', // LLM (fixed — was SLM)
+  inputToneLuna: 'Input Tone (SLM)',
+  inputToxicity: 'Input Toxicity',
+  inputToxicityLuna: 'Input Toxicity (SLM)',
+  instructionAdherence: 'Instruction Adherence',
+  outputPii: 'Output PII', // LLM (fixed — was SLM)
+  outputPiiLuna: 'Output PII (SLM)',
+  outputSexism: 'Output Sexism',
+  outputSexismLuna: 'Output Sexism (SLM)',
+  outputTone: 'Output Tone', // LLM (fixed — was SLM)
+  outputToneLuna: 'Output Tone (SLM)',
+  outputToxicity: 'Output Toxicity',
+  outputToxicityLuna: 'Output Toxicity (SLM)',
+  precisionAtK: 'Precision@K',
+  promptInjection: 'Prompt Injection',
+  promptInjectionLuna: 'Prompt Injection (SLM)',
+  reasoningCoherence: 'Reasoning Coherence',
+  sqlAdherence: 'SQL Adherence',
+  sqlCorrectness: 'SQL Correctness',
+  sqlEfficiency: 'SQL Efficiency',
+  sqlInjection: 'SQL Injection',
+  toolErrorRate: 'Tool Error Rate',
+  toolErrorRateLuna: 'Tool Error Rate (SLM)',
+  toolSelectionQuality: 'Tool Selection Quality',
+  toolSelectionQualityLuna: 'Tool Selection Quality (SLM)',
+  userIntentChange: 'User Intent Change'
+} as const;
 
 export interface Metric {
   name: string;
@@ -180,25 +170,10 @@ export type LogRecordsMetricsResponse =
   ObjectToCamel<LogRecordsMetricsResponseOpenAPI>;
 
 /**
- * Type representing all valid Galileo metric names.
- * This is a union of all string literal values from the OpenAPI schema.
+ * Type representing all valid Galileo metric labels.
+ * This is a union of all human-readable label string literals from the GalileoMetrics const.
  *
- * Use the {@link GalileoMetrics} const object for runtime access to metric names.
- *
- * @example
- * ```typescript
- * import { GalileoMetrics, type GalileoMetrics as GalileoMetricsType } from 'galileo';
- *
- * // Runtime usage
- * const metric: string = GalileoMetrics.correctness;
- *
- * // Type usage
- * function validateMetric(name: GalileoMetricsType): boolean {
- *   return Object.values(GalileoMetrics).includes(name);
- * }
- * ```
+ * Use the {@link GalileoMetrics} const object for runtime access to metric labels.
  */
-export type GalileoMetrics = ScorerNameOpenAPI;
-
-/** @deprecated Use GalileoMetrics type instead */
-export type GalileoScorers = GalileoMetrics;
+export type GalileoMetrics =
+  (typeof GalileoMetrics)[keyof typeof GalileoMetrics];

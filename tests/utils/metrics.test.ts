@@ -69,7 +69,7 @@ jest.mock('../../src/api-client', () => {
 describe('metrics utils', () => {
   const EXAMPLE_SCORER: Scorer = {
     id: 'scorer-123',
-    name: 'correctness',
+    name: 'Correctness',
     scorer_type: ScorerTypes.preset,
     tags: []
   };
@@ -129,7 +129,7 @@ describe('metrics utils', () => {
       EXAMPLE_CUSTOM_SCORER,
       {
         id: 'completeness-scorer',
-        name: 'completeness',
+        name: 'Completeness',
         scorer_type: ScorerTypes.preset
       },
       {
@@ -144,7 +144,7 @@ describe('metrics utils', () => {
         EXAMPLE_CUSTOM_SCORER,
         {
           id: 'completeness-scorer',
-          name: 'completeness',
+          name: 'Completeness',
           scorer_type: ScorerTypes.preset
         },
         {
