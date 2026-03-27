@@ -62,6 +62,15 @@ export {
   ListDatasetParamsOpenAPI
 };
 
+/**
+ * Normalized row from a dataset: input, expected output, model output, and metadata.
+ * @property id - (Optional) The unique identifier of the record.
+ * @property input - (Optional) The serialized input value.
+ * @property output - (Optional) The expected output or ground truth for API payloads.
+ * @property groundTruth - (Optional) On records from createDatasetRecord, getDatasetRecordsFromArray, and related helpers, read-only alias for output (non-enumerable; omitted from Object.keys, for...in, and JSON.stringify). Hand-built objects may use a normal enumerable property instead.
+ * @property generatedOutput - (Optional) The model-generated output; an enumerable own property included in JSON.stringify when defined.
+ * @property metadata - (Optional) Additional metadata as string key-value pairs.
+ */
 export interface DatasetRecord {
   id?: string;
   input?: string;
