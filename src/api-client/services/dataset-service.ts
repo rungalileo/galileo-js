@@ -1,5 +1,9 @@
 import { BaseClient, RequestMethod } from '../base-client';
-import { getSdkLogger } from 'galileo-generated';
+import {
+  getSdkLogger,
+  GalileoGenerated,
+  type DatasetAppendRow
+} from 'galileo-generated';
 import { Routes } from '../../types/routes.types';
 import { promises as fs } from 'fs';
 import {
@@ -8,7 +12,6 @@ import {
   DatasetContent,
   DatasetDBType,
   DatasetRow,
-  DatasetAppendRow,
   SyntheticDatasetExtensionRequest,
   SyntheticDatasetExtensionResponse,
   JobProgress,
@@ -24,12 +27,12 @@ import {
   JobProgressOpenAPI,
   SyntheticDatasetExtensionResponseOpenAPI,
   SyntheticDatasetExtensionRequestOpenAPI,
-  DatasetRowOpenAPI,
-  DatasetAppendRowOpenAPI
+  DatasetRowOpenAPI
 } from '../../types/dataset.types';
 import { BodyCreateDatasetDatasetsPost } from '../../types/openapi.types';
 
 const sdkLogger = getSdkLogger();
+const galileoGenerated = new GalileoGenerated();
 
 export class DatasetService extends BaseClient {
   constructor(apiUrl: string, token: string) {
@@ -255,19 +258,13 @@ export class DatasetService extends BaseClient {
     etag: string,
     rows: DatasetAppendRow[]
   ): Promise<void> {
-    const extraHeaders = {
-      'If-Match': etag
-    };
-
-    const rowsOpenAPI = rows.map((row) =>
-      this.convertToSnakeCase<DatasetAppendRow, DatasetAppendRowOpenAPI>(row)
-    );
-    await this.makeRequest<void>(
-      RequestMethod.PATCH,
-      Routes.datasetContent,
-      { edits: rowsOpenAPI },
-      { dataset_id: datasetId },
-      extraHeaders
+    await galileoGenerated.datasets.updateDatasetContentDatasetsDatasetIdContentPatch(
+      {},
+      {
+        datasetId: datasetId,
+        ifMatch: etag,
+        body: { edits: rows }
+      }
     );
   }
 
