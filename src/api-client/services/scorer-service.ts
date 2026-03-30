@@ -174,6 +174,10 @@ export class ScorerService extends BaseClient {
     startingToken?: number;
     limit?: number;
   }): Promise<ListScorersResponse> => {
+    if (options.labels.length === 0) {
+      return { scorers: [], startingToken: 0 };
+    }
+
     const payload: ListScorersRequest = {
       filters: []
     };
@@ -219,6 +223,10 @@ export class ScorerService extends BaseClient {
     startingToken?: number;
     limit?: number;
   }): Promise<ListScorersResponse> => {
+    if (options.ids.length === 0) {
+      return { scorers: [], startingToken: 0 };
+    }
+
     const payload: ListScorersRequest = {
       filters: []
     };

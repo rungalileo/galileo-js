@@ -1,6 +1,7 @@
 import {
   createCustomLlmMetric,
   createCustomCodeMetric,
+  createMetricConfigs,
   deleteMetric,
   getMetrics
 } from '../../src/utils/metrics';
@@ -491,8 +492,6 @@ describe('metrics utils', () => {
   });
 
   describe('createMetricConfigs - optimized retrieval', () => {
-    const { createMetricConfigs } = require('../../src/utils/metrics');
-
     it('should route UUID strings through getScorersPageByIds', async () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000';
       mockGetScorersPageByLabels.mockResolvedValueOnce({
