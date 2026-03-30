@@ -43,7 +43,7 @@ import { getSdkLogger } from 'galileo-generated';
 
 const sdkLogger = getSdkLogger();
 
-/** Regex to detect UUID strings (v4 format, case-insensitive). */
+/** Regex to detect UUID strings (case-insensitive). */
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -315,12 +315,16 @@ export class Metrics {
     // Make targeted API calls in parallel
     const labelNames = labelSearches.map(([label]) => label);
 
+    // De-duplicate before making API calls
+    const uniqueLabelNames = [...new Set(labelNames)];
+    const uniqueIdSearches = [...new Set(idSearches)];
+
     const [labelScorers, idScorers] = await Promise.all([
-      labelNames.length > 0
-        ? getScorersByLabels(labelNames, false)
+      uniqueLabelNames.length > 0
+        ? getScorersByLabels(uniqueLabelNames, false)
         : Promise.resolve([] as ScorerResponse[]),
-      idSearches.length > 0
-        ? getScorersByIds(idSearches)
+      uniqueIdSearches.length > 0
+        ? getScorersByIds(uniqueIdSearches)
         : Promise.resolve([] as ScorerResponse[])
     ]);
 

@@ -1488,13 +1488,13 @@ class GalileoLogger implements IGalileoLogger {
       }
 
       localTrace = new Trace({
-        input: String(traceObj.input || ''),
+        input: toStringValue(traceObj.input || ''),
         redactedInput: traceObj.redactedInput
-          ? String(traceObj.redactedInput)
+          ? toStringValue(traceObj.redactedInput)
           : undefined,
-        output: traceObj.output ? String(traceObj.output) : undefined,
+        output: traceObj.output ? toStringValue(traceObj.output) : undefined,
         redactedOutput: traceObj.redactedOutput
-          ? String(traceObj.redactedOutput)
+          ? toStringValue(traceObj.redactedOutput)
           : undefined,
         name: traceObj.name,
         createdAt: traceObj.createdAt

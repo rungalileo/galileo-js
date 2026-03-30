@@ -5,6 +5,8 @@ import {
   deleteScorer,
   getScorerVersion,
   getScorers,
+  getScorersByLabels,
+  getScorersByIds,
   validateCodeScorer,
   createRunScorerSettings
 } from '../../src/utils/scorers';
@@ -31,6 +33,8 @@ const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetScorers = jest.fn();
 const mockGetScorersPage = jest.fn();
+const mockGetScorersPageByLabels = jest.fn();
+const mockGetScorersPageByIds = jest.fn();
 const mockValidateCodeScorerAndWait = jest.fn();
 const mockCreateRunScorerSettings = jest.fn();
 
@@ -48,6 +52,8 @@ jest.mock('../../src/api-client', () => {
         getScorerVersion: mockGetScorerVersion,
         getScorers: mockGetScorers,
         getScorersPage: mockGetScorersPage,
+        getScorersPageByLabels: mockGetScorersPageByLabels,
+        getScorersPageByIds: mockGetScorersPageByIds,
         validateCodeScorerAndWait: (...args: unknown[]) =>
           mockValidateCodeScorerAndWait(...args),
         createRunScorerSettings: mockCreateRunScorerSettings
@@ -969,6 +975,112 @@ describe('scorers utility', () => {
     it('should have delete method', () => {
       const scorers = new Scorers();
       expect(typeof scorers.delete).toBe('function');
+    });
+  });
+
+  describe('getScorersByLabels', () => {
+    const mockScorer: Scorer = {
+      id: 'scorer-1',
+      name: 'correctness',
+      label: 'Correctness',
+      scorer_type: ScorerTypes.preset,
+      tags: []
+    };
+
+    it('should retrieve scorers by label', async () => {
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [mockScorer],
+        nextStartingToken: null
+      });
+
+      const result = await getScorersByLabels(['Correctness']);
+      expect(result).toEqual([mockScorer]);
+      expect(mockGetScorersPageByLabels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labels: ['Correctness'],
+          caseSensitive: false
+        })
+      );
+    });
+
+    it('should handle pagination', async () => {
+      const scorer2: Scorer = {
+        id: 'scorer-2',
+        name: 'completeness',
+        label: 'Completeness',
+        scorer_type: ScorerTypes.preset,
+        tags: []
+      };
+      mockGetScorersPageByLabels
+        .mockResolvedValueOnce({
+          scorers: [mockScorer],
+          nextStartingToken: 1
+        })
+        .mockResolvedValueOnce({
+          scorers: [scorer2],
+          nextStartingToken: null
+        });
+
+      const result = await getScorersByLabels(['Correctness', 'Completeness']);
+      expect(result).toEqual([mockScorer, scorer2]);
+      expect(mockGetScorersPageByLabels).toHaveBeenCalledTimes(2);
+    });
+
+    it('should pass strict flag', async () => {
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [mockScorer],
+        nextStartingToken: null
+      });
+
+      await getScorersByLabels(['Correctness'], true);
+      expect(mockGetScorersPageByLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ strict: true })
+      );
+    });
+  });
+
+  describe('getScorersByIds', () => {
+    const mockScorer: Scorer = {
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      name: 'correctness',
+      label: 'Correctness',
+      scorer_type: ScorerTypes.preset,
+      tags: []
+    };
+
+    it('should retrieve scorers by ID', async () => {
+      mockGetScorersPageByIds.mockResolvedValueOnce({
+        scorers: [mockScorer],
+        nextStartingToken: null
+      });
+
+      const result = await getScorersByIds([mockScorer.id]);
+      expect(result).toEqual([mockScorer]);
+      expect(mockGetScorersPageByIds).toHaveBeenCalledWith(
+        expect.objectContaining({ ids: [mockScorer.id] })
+      );
+    });
+
+    it('should handle pagination', async () => {
+      const scorer2: Scorer = {
+        id: '660e8400-e29b-41d4-a716-446655440001',
+        name: 'completeness',
+        scorer_type: ScorerTypes.preset,
+        tags: []
+      };
+      mockGetScorersPageByIds
+        .mockResolvedValueOnce({
+          scorers: [mockScorer],
+          nextStartingToken: 1
+        })
+        .mockResolvedValueOnce({
+          scorers: [scorer2],
+          nextStartingToken: null
+        });
+
+      const result = await getScorersByIds([mockScorer.id, scorer2.id]);
+      expect(result).toEqual([mockScorer, scorer2]);
+      expect(mockGetScorersPageByIds).toHaveBeenCalledTimes(2);
     });
   });
 

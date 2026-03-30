@@ -178,17 +178,13 @@ export class ScorerService extends BaseClient {
       filters: []
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const filter: any = {
+    payload.filters!.push({
       name: 'label',
       operator: options.labels.length === 1 ? 'eq' : 'one_of',
       value: options.labels.length === 1 ? options.labels[0] : options.labels,
-      caseSensitive: options.caseSensitive ?? false
-    };
-    if (options.strict !== undefined) {
-      filter.strict = options.strict;
-    }
-    payload.filters!.push(filter);
+      caseSensitive: options.caseSensitive ?? false,
+      strict: options.strict
+    });
 
     const request = this.convertToSnakeCase<
       ListScorersRequest,
@@ -228,11 +224,10 @@ export class ScorerService extends BaseClient {
     };
 
     payload.filters!.push({
-      name: 'id',
+      name: 'id' as const,
       operator: options.ids.length === 1 ? 'eq' : 'one_of',
       value: options.ids.length === 1 ? options.ids[0] : options.ids
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+    });
 
     const request = this.convertToSnakeCase<
       ListScorersRequest,

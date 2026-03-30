@@ -490,6 +490,167 @@ describe('metrics utils', () => {
     });
   });
 
+  describe('createMetricConfigs - optimized retrieval', () => {
+    const { createMetricConfigs } = require('../../src/utils/metrics');
+
+    it('should route UUID strings through getScorersPageByIds', async () => {
+      const uuid = '550e8400-e29b-41d4-a716-446655440000';
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [],
+        nextStartingToken: null
+      });
+      mockGetScorersPageByIds.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: uuid,
+            name: 'correctness',
+            label: 'Correctness',
+            scorerType: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
+
+      const [scorers] = await createMetricConfigs('project-1', 'run-1', [uuid]);
+
+      expect(scorers).toHaveLength(1);
+      expect(scorers[0].id).toBe(uuid);
+      expect(mockGetScorersPageByIds).toHaveBeenCalled();
+    });
+
+    it('should route mixed UUID + label inputs correctly', async () => {
+      const uuid = '550e8400-e29b-41d4-a716-446655440000';
+      mockGetScorersPageByLabels.mockReset();
+      mockGetScorersPageByIds.mockReset();
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: 'scorer-1',
+            name: 'correctness',
+            label: 'Correctness',
+            scorerType: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
+      mockGetScorersPageByIds.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: uuid,
+            name: 'custom',
+            scorerType: ScorerTypes.llm
+          }
+        ],
+        nextStartingToken: null
+      });
+
+      const [scorers] = await createMetricConfigs('project-1', 'run-1', [
+        GalileoMetrics.correctness,
+        uuid
+      ]);
+
+      expect(scorers).toHaveLength(2);
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
+      expect(mockGetScorersPageByIds).toHaveBeenCalled();
+    });
+
+    it('should throw error for unknown label', async () => {
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [],
+        nextStartingToken: null
+      });
+
+      await expect(
+        createMetricConfigs('project-1', 'run-1', ['NonexistentMetric'])
+      ).rejects.toThrow(
+        "One or more non-existent metrics are specified: 'NonexistentMetric'"
+      );
+    });
+
+    it('should throw error for unknown UUID', async () => {
+      const uuid = '550e8400-e29b-41d4-a716-446655440000';
+      mockGetScorersPageByIds.mockResolvedValueOnce({
+        scorers: [],
+        nextStartingToken: null
+      });
+
+      await expect(
+        createMetricConfigs('project-1', 'run-1', [uuid])
+      ).rejects.toThrow(uuid);
+    });
+
+    it('should handle Metric object with version', async () => {
+      mockGetScorersPageByLabels.mockReset();
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: 'scorer-1',
+            name: 'correctness',
+            label: 'Correctness',
+            scorerType: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
+      mockGetScorerVersion.mockResolvedValueOnce({
+        id: 'version-1',
+        version: 3,
+        scorer_id: 'scorer-1'
+      });
+
+      const [scorers] = await createMetricConfigs('project-1', 'run-1', [
+        { name: 'Correctness', version: 3 }
+      ]);
+
+      expect(scorers).toHaveLength(1);
+      expect(scorers[0].scorerVersion).toBeDefined();
+      expect(mockGetScorerVersion).toHaveBeenCalledWith('scorer-1', 3);
+    });
+
+    it('should not detect non-UUID strings as UUIDs', async () => {
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: 'scorer-1',
+            name: 'correctness',
+            label: 'Correctness',
+            scorerType: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
+
+      await createMetricConfigs('project-1', 'run-1', ['Correctness']);
+
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
+      expect(mockGetScorersPageByIds).not.toHaveBeenCalled();
+    });
+
+    it('should deduplicate labels before API call', async () => {
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: 'scorer-1',
+            name: 'correctness',
+            label: 'Correctness',
+            scorerType: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
+
+      const [scorers] = await createMetricConfigs('project-1', 'run-1', [
+        GalileoMetrics.correctness,
+        GalileoMetrics.correctness
+      ]);
+
+      // Both resolve but only one unique label sent to API
+      expect(scorers).toHaveLength(2);
+      const callArgs = mockGetScorersPageByLabels.mock.calls[0][0];
+      expect(callArgs.labels).toEqual(['Correctness']);
+    });
+  });
+
   describe('createCustomCodeMetric', () => {
     const CODE_SCORER: Scorer = {
       id: 'code-scorer-789',

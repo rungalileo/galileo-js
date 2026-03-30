@@ -70,7 +70,7 @@ export class Scorers {
    */
   async listByLabels(
     labels: string[],
-    strict?: boolean
+    strict: boolean = false
   ): Promise<ScorerResponse[]> {
     const client = await this.ensureClient();
 

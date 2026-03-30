@@ -1471,6 +1471,11 @@ export class GalileoApiClient extends BaseClient {
       options?.projectName
     );
 
+    // Cast is safe: Message[] (api.types, snake_case file_id) vs Messages
+    // (new-api.types, camelCase fileId) differ only in casing, and
+    // makeRequestWithConversion calls objectToSnake() before the API call.
+    // In practice, all SDK message content is string — FileContentPart is
+    // never instantiated. Unifying the dual type system is out of scope.
     return this.globalPromptTemplateService!.createGlobalPromptTemplate(
       {
         template: template as unknown as Messages,
