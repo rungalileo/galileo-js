@@ -55,6 +55,38 @@ export class Dataset {
     return this.client;
   }
 
+  private processDatasetRow(
+    row: Record<
+      string,
+      string | number | Record<string, string | number | null> | null
+    >
+  ) {
+    const stringifiedRow: Record<string, string | null> = {};
+    for (const key in row) {
+      const value = row[key];
+      if (key === 'groundTruth') {
+        // Normalise groundTruth -> output; skip if output already present
+        if (!('output' in row) || row['output'] == null) {
+          stringifiedRow['output'] = this.serializeDatasetRowValue(value);
+        }
+      } else if (key === 'generatedOutput') {
+        stringifiedRow['generated_output'] =
+          this.serializeDatasetRowValue(value);
+      } else {
+        stringifiedRow[key] = this.serializeDatasetRowValue(value);
+      }
+    }
+    return stringifiedRow;
+  }
+
+  private serializeDatasetRowValue(value: unknown): string | null {
+    return value === null
+      ? null
+      : typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value);
+  }
+
   /**
    * Gets the content of the dataset and caches it locally.
    * @returns A promise that resolves to the rows of the dataset.
@@ -87,22 +119,9 @@ export class Dataset {
     const client = await this.ensureClient();
     const etag = await client.getDatasetEtag(this.id);
 
-    // Sanitize values: convert all non-null values to strings (matching Python's sanitize_values)
-    const stringifiedRows = rows.map((row) => {
-      const stringifiedRow: Record<string, string | null> = {};
-      for (const key in row) {
-        const value = row[key];
-        if (value === null) {
-          stringifiedRow[key] = null;
-        } else if (typeof value === 'object') {
-          stringifiedRow[key] = JSON.stringify(value);
-        } else {
-          // Convert numbers and strings to strings
-          stringifiedRow[key] = String(value);
-        }
-      }
-      return stringifiedRow;
-    });
+    // Sanitize values: convert all non-null values to strings.
+    // Also normalise groundTruth -> output (output takes precedence if both present).
+    const stringifiedRows = rows.map((row) => this.processDatasetRow(row));
 
     await client.appendRowsToDatasetContent(
       this.id,

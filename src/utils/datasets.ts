@@ -90,7 +90,16 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
       .map((item) => {
         const jsonifiedInner: Record<string, string> = {};
         for (const key in item) {
-          jsonifiedInner[key] = _stringifyValue(item[key]);
+          // Normalise groundTruth -> output (output takes precedence if both present)
+          if (key === 'groundTruth') {
+            if (!('output' in item) || item['output'] == null) {
+              jsonifiedInner['output'] = _stringifyValue(item[key]);
+            }
+          } else if (key === 'generatedOutput') {
+            jsonifiedInner['generated_output'] = _stringifyValue(item[key]);
+          } else {
+            jsonifiedInner[key] = _stringifyValue(item[key]);
+          }
         }
         return _stringifyValue(jsonifiedInner);
       })
@@ -136,7 +145,9 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
  * @param options - The options used to create the dataset record.
  * @param options.id - (Optional) The unique identifier of the record.
  * @param options.input - The input value to serialize into the record.
- * @param options.output - (Optional) The output value to serialize into the record.
+ * @param options.output - (Optional) The output / ground truth value.
+ * @param options.groundTruth - (Optional) Alias for output. If both are provided, output takes precedence.
+ * @param options.generatedOutput - (Optional) The model-generated output value.
  * @param options.metadata - (Optional) Additional metadata for the record as a string or object.
  * @returns The normalized dataset record.
  */
@@ -170,12 +181,31 @@ export function createDatasetRecord(
     resultMetadata = record as Record<string, string>;
   }
 
-  return {
+  const resolvedOutput = options.output ?? options.groundTruth;
+
+  const record: DatasetRecord = {
     id: options.id,
     input: _serializeToString(options.input),
-    output: options.output ? _serializeToString(options.output) : undefined,
+    output:
+      resolvedOutput != null ? _serializeToString(resolvedOutput) : undefined,
+    generatedOutput:
+      options.generatedOutput != null
+        ? _serializeToString(options.generatedOutput)
+        : undefined,
     metadata: resultMetadata
   };
+
+  // Expose groundTruth as a non-enumerable read-only getter aliasing output.
+  // This is the solution for DatasetRecord being an interface, instead of a class.
+  Object.defineProperty(record, 'groundTruth', {
+    get() {
+      return this.output;
+    },
+    enumerable: false,
+    configurable: true
+  });
+
+  return record;
 }
 
 /**
@@ -239,6 +269,8 @@ export function getDatasetRecordsFromArray(
     createDatasetRecord({
       input: row['input'],
       output: row['output'],
+      groundTruth: row['groundTruth'] as unknown,
+      generatedOutput: row['generatedOutput'] as unknown,
       metadata: row['metadata']
     })
   );
@@ -625,6 +657,8 @@ export function convertDatasetRowToRecord(
     id: datasetRow.rowId,
     input: valuesDict['input'],
     output: valuesDict['output'],
+    groundTruth: valuesDict['groundTruth'],
+    generatedOutput: valuesDict['generatedOutput'],
     metadata: valuesDict['metadata']
   });
 }

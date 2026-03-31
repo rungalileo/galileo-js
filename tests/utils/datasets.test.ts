@@ -254,6 +254,66 @@ describe('datasets utils', () => {
     expect(addRowsToDatasetHandler).toHaveBeenCalled();
   });
 
+  test('add rows to dataset sends generatedOutput as generated_output on the wire', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.patch(
+        `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
+        async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, unknown>;
+          return new HttpResponse(null, { status: 204 });
+        }
+      )
+    );
+
+    await addRowsToDataset({
+      datasetId: EXAMPLE_DATASET.id,
+      rows: [
+        { input: 'q', output: 'expected', generatedOutput: 'model response' }
+      ]
+    });
+
+    expect(capturedBody).not.toBeNull();
+    const edits = (
+      capturedBody as unknown as {
+        edits: { values: Record<string, unknown> }[];
+      }
+    ).edits;
+    expect(edits[0].values).toMatchObject({
+      input: 'q',
+      output: 'expected',
+      generated_output: 'model response'
+    });
+  });
+
+  test('add rows to dataset normalises groundTruth to output on the wire', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.patch(
+        `${TEST_HOST}/datasets/${EXAMPLE_DATASET.id}/content`,
+        async ({ request }) => {
+          capturedBody = (await request.json()) as Record<string, unknown>;
+          return new HttpResponse(null, { status: 204 });
+        }
+      )
+    );
+
+    await addRowsToDataset({
+      datasetId: EXAMPLE_DATASET.id,
+      rows: [{ input: 'q', groundTruth: 'expected' }]
+    });
+
+    expect(capturedBody).not.toBeNull();
+    const edits = (
+      capturedBody as unknown as {
+        edits: { values: Record<string, unknown> }[];
+      }
+    ).edits;
+    expect(edits[0].values).toMatchObject({ input: 'q', output: 'expected' });
+    expect(edits[0].values).not.toHaveProperty('groundTruth');
+    expect(edits[0].values).not.toHaveProperty('ground_truth');
+  });
+
   describe('createDatasetRecord', () => {
     it('should create a record with string input/output', () => {
       const record = createDatasetRecord({
@@ -370,6 +430,59 @@ describe('datasets utils', () => {
           metadata: 12345
         });
       }).toThrow('Dataset metadata must be a string or object');
+    });
+
+    it('should accept groundTruth as alias for output', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        groundTruth: 'expected answer'
+      });
+      expect(record.output).toBe('expected answer');
+      expect(record.groundTruth).toBe('expected answer');
+    });
+
+    it('should give output precedence over groundTruth when both provided', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'from output',
+        groundTruth: 'from groundTruth'
+      });
+      expect(record.output).toBe('from output');
+      expect(record.groundTruth).toBe('from output');
+    });
+
+    it('should expose groundTruth as a non-enumerable getter', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'expected'
+      });
+      expect(Object.keys(record)).not.toContain('groundTruth');
+      expect(JSON.parse(JSON.stringify(record))).not.toHaveProperty(
+        'groundTruth'
+      );
+      expect(record.groundTruth).toBe('expected');
+    });
+
+    it('should store generatedOutput', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        output: 'expected',
+        generatedOutput: 'model response'
+      });
+      expect(record.generatedOutput).toBe('model response');
+    });
+
+    it('should serialize object generatedOutput to JSON string', () => {
+      const record = createDatasetRecord({
+        id: '1',
+        input: 'input text',
+        generatedOutput: { key: 'value' }
+      });
+      expect(record.generatedOutput).toBe('{"key":"value"}');
     });
   });
 
@@ -568,6 +681,52 @@ describe('convertDatasetRowToRecord', () => {
       metadata: undefined
     });
   });
+
+  it('should fall back to groundTruth column when output is absent', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-789',
+      values: ['input-value', 'expected'],
+      valuesDict: { input: 'input-value', groundTruth: 'expected' },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record.output).toBe('expected');
+    expect(record.groundTruth).toBe('expected');
+  });
+
+  it('should prefer output over groundTruth when both columns present', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-abc',
+      values: ['input-value', 'from-output', 'from-ground-truth'],
+      valuesDict: {
+        input: 'input-value',
+        output: 'from-output',
+        groundTruth: 'from-ground-truth'
+      },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record.output).toBe('from-output');
+  });
+
+  it('should extract generatedOutput column', () => {
+    const row: DatasetRow = {
+      index: 0,
+      rowId: 'row-def',
+      values: ['input-value', 'expected', 'model-response'],
+      valuesDict: {
+        input: 'input-value',
+        output: 'expected',
+        generatedOutput: 'model-response'
+      },
+      metadata: null
+    };
+    const record = convertDatasetRowToRecord(row);
+    expect(record.output).toBe('expected');
+    expect(record.generatedOutput).toBe('model-response');
+  });
 });
 
 describe('getRecordsForDataset', () => {
@@ -643,5 +802,13 @@ describe('getDatasetRecordsFromArray', () => {
         metadata: undefined
       }
     ]);
+  });
+
+  it('should pass through generatedOutput', () => {
+    const rawRecords = [
+      { input: 'q', output: 'expected', generatedOutput: 'model response' }
+    ];
+    const records = getDatasetRecordsFromArray(rawRecords);
+    expect(records[0].generatedOutput).toBe('model response');
   });
 });
