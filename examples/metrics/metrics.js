@@ -1,14 +1,14 @@
 const dotenv = await import('dotenv/config');
 
-const { enableMetrics, GalileoScorers } = await import('../../dist/index.js');
+const { enableMetrics, GalileoMetrics } = await import('../../dist/index.js');
 
 // Enable metric for a specific log stream and project
 await enableMetrics({
   projectName: 'js-project',
   logStreamName: 'js-log-stream',
   metrics: [
-    GalileoScorers.correctness,
-    GalileoScorers.completeness,
+    GalileoMetrics.correctness,
+    GalileoMetrics.completeness,
     'context_relevance',
     'instruction_adherence'
   ]
@@ -33,7 +33,7 @@ const localMetrics = await enableMetrics({
   logStreamName: 'js-log-stream',
   metrics: [
     // Built-in metrics
-    GalileoScorers.correctness,
+    GalileoMetrics.correctness,
     'completeness',
     // Custom metric with specific version
     { name: 'my_custom_metric', version: 2 },
