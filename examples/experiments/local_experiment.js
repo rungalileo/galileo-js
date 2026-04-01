@@ -3,7 +3,7 @@ import {
   createDataset,
   getDataset,
   runExperiment,
-  GalileoScorers
+  GalileoMetrics
 } from '../../dist/index.js';
 
 const datasetName = 'food_types';
@@ -52,7 +52,7 @@ await runExperiment({
   name: 'food-experiment',
   dataset: dataset,
   function: runner,
-  metrics: [GalileoScorers.groundTruthAdherence],
+  metrics: [GalileoMetrics.groundTruthAdherence],
   // Set the project name here
   projectName: 'e2e-working-demo'
 });
