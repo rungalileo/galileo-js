@@ -115,13 +115,13 @@ export class GalileoCallback
 
   /**
    * Shared name resolution helper (Python: _get_node_name).
-   * Resolution order: serialized.name → serialized.id[-1] → kwargs.name →
-   * kwargs.metadata.name → nodeType capitalised.
+   * Resolution order: serialized.name → serialized.id[-1] → params.name →
+   * params.metadata.name → nodeType capitalised.
    */
   private static _getNodeName(
     nodeType: string,
     serialized?: Serialized | null,
-    kwargs?: Record<string, unknown>
+    params?: Record<string, unknown>
   ): string {
     try {
       if (serialized?.name && serialized.name.length > 0) {
@@ -131,11 +131,11 @@ export class GalileoCallback
       if (Array.isArray(idArr) && idArr.length > 0) {
         return String(idArr[idArr.length - 1]);
       }
-      const kwargsName = kwargs?.name;
-      if (typeof kwargsName === 'string' && kwargsName.length > 0) {
-        return kwargsName;
+      const paramsName = params?.name;
+      if (typeof paramsName === 'string' && paramsName.length > 0) {
+        return paramsName;
       }
-      const metaName = (kwargs?.metadata as Record<string, unknown>)?.name;
+      const metaName = (params?.metadata as Record<string, unknown>)?.name;
       if (typeof metaName === 'string' && metaName.length > 0) {
         return metaName;
       }
@@ -202,12 +202,24 @@ export class GalileoCallback
 
     try {
       if (this._startNewTrace) {
+        let traceMetadata: Record<string, string> | undefined;
+        if (rootNode.spanParams.metadata) {
+          try {
+            traceMetadata = toStringRecord(
+              rootNode.spanParams.metadata as Record<string, unknown>
+            );
+          } catch (e) {
+            sdkLogger.warn(
+              'Unable to convert trace metadata to string dictionary',
+              e
+            );
+          }
+        }
+
         this._galileoLogger.startTrace({
           input: toStringValue(rootNode.spanParams.input || ''),
           name: rootNode.spanParams.name as string | undefined,
-          metadata: rootNode.spanParams.metadata as
-            | Record<string, string>
-            | undefined
+          metadata: traceMetadata
         });
       }
 
@@ -467,6 +479,26 @@ export class GalileoCallback
     }
   }
 
+  /**
+   * Shared error handler for all callback error methods.
+   * Extracts HTTP status from the error's response if available, falls back to 400.
+   */
+  private async _handleError(err: Error, runId: string): Promise<void> {
+    const errRecord = err as unknown as Record<string, unknown>;
+    const response = errRecord.response;
+    const status =
+      typeof response === 'object' &&
+      response !== null &&
+      typeof (response as Record<string, unknown>).status === 'number'
+        ? ((response as Record<string, unknown>).status as number)
+        : 400;
+
+    await this._endNode(runId, {
+      output: `Error: ${err.name}: ${err.message}`,
+      statusCode: status
+    });
+  }
+
   // LangChain callback methods
 
   public async handleChainStart(
@@ -527,10 +559,7 @@ export class GalileoCallback
   }
 
   public async handleChainError(err: Error, runId: string): Promise<void> {
-    await this._endNode(runId, {
-      output: `Error: ${err.name}: ${err.message}`,
-      statusCode: (err as any).response?.status ?? 400
-    });
+    await this._handleError(err, runId);
   }
 
   public async handleChainEnd(
@@ -595,10 +624,7 @@ export class GalileoCallback
   }
 
   public async handleLLMError(err: Error, runId: string): Promise<void> {
-    await this._endNode(runId, {
-      output: `Error: ${err.name}: ${err.message}`,
-      statusCode: (err as any).response?.status ?? 400
-    });
+    await this._handleError(err, runId);
   }
 
   public async handleLLMNewToken(
@@ -645,7 +671,11 @@ export class GalileoCallback
     let serializedMessages;
     try {
       const flattenedMessages = messages.flat().map((msg) => {
-        const serialized: Record<string, any> = {
+        const serialized: {
+          content: unknown;
+          role: string;
+          tool_calls?: unknown[];
+        } = {
           content: msg.content,
           role: msg.getType()
         };
@@ -705,8 +735,17 @@ export class GalileoCallback
     ) {
       const firstGen = output.generations?.flat()?.[0];
       // ChatGeneration has a .message property with usage_metadata; plain Generation does not.
-      // Access via optional chaining on 'any' since the Generation type doesn't declare .message.
-      const usageMeta = (firstGen as any)?.message?.usage_metadata as
+      // Use property narrowing since the Generation type doesn't declare .message.
+      const genRecord = firstGen as unknown as
+        | Record<string, unknown>
+        | undefined;
+      const message =
+        genRecord &&
+        typeof genRecord.message === 'object' &&
+        genRecord.message !== null
+          ? (genRecord.message as Record<string, unknown>)
+          : undefined;
+      const usageMeta = message?.usage_metadata as
         | Record<string, unknown>
         | undefined;
       if (usageMeta) {
@@ -748,9 +787,9 @@ export class GalileoCallback
     tags?: string[],
     metadata?: Record<string, any>
   ): Promise<void> {
-    // Note: Python's on_tool_start checks kwargs["inputs"] for a structured dict
+    // Note: Python's on_tool_start checks for a structured inputs dict via **kwargs
     // and uses it over the flat input_str. The JS @langchain/core callback interface
-    // does not expose a kwargs/inputs parameter, so we always use the flat `input`
+    // does not expose an equivalent parameter, so we always use the flat `input`
     // string here. This is a known JS/Python divergence; revisit if a future
     // @langchain/core version adds an `inputs` parameter.
     const name = GalileoCallback._getNodeName('tool', tool, metadata);
@@ -767,10 +806,7 @@ export class GalileoCallback
   }
 
   public async handleToolError(err: Error, runId: string): Promise<void> {
-    await this._endNode(runId, {
-      output: `Error: ${err.name}: ${err.message}`,
-      statusCode: (err as any).response?.status ?? 400
-    });
+    await this._handleError(err, runId);
   }
 
   public async handleToolEnd(output: unknown, runId: string): Promise<void> {
@@ -833,10 +869,7 @@ export class GalileoCallback
   }
 
   public async handleRetrieverError(err: Error, runId: string): Promise<void> {
-    await this._endNode(runId, {
-      output: `Error: ${err.name}: ${err.message}`,
-      statusCode: (err as any).response?.status ?? 400
-    });
+    await this._handleError(err, runId);
   }
 
   public async handleRetrieverEnd(
