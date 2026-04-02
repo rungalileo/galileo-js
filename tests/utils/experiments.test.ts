@@ -20,7 +20,7 @@ import {
 } from '../../src/types/prompt-template.types';
 import { Scorer, ScorerTypes } from '../../src/types/scorer.types';
 import { DatasetDBType, DatasetRow } from '../../src/types/dataset.types';
-import { GalileoMetrics, GalileoScorers } from '../../src/types/metrics.types';
+import { GalileoMetrics } from '../../src/types/metrics.types';
 import { Trace } from '../../src/types';
 
 // Create mock implementation functions
@@ -36,6 +36,8 @@ const mockGetProjectByName = jest.fn();
 const mockCreateRunScorerSettings = jest.fn();
 const mockGetScorers = jest.fn();
 const mockGetScorersPage = jest.fn();
+const mockGetScorersPageByLabels = jest.fn();
+const mockGetScorersPageByIds = jest.fn();
 const mockCreatePromptRunJob = jest.fn();
 const mockGetDataset = jest.fn();
 const mockGetDatasets = jest.fn();
@@ -63,6 +65,8 @@ jest.mock('../../src/api-client', () => {
           createRunScorerSettings: mockCreateRunScorerSettings,
           getScorers: mockGetScorers,
           getScorersPage: mockGetScorersPage,
+          getScorersPageByLabels: mockGetScorersPageByLabels,
+          getScorersPageByIds: mockGetScorersPageByIds,
           getScorerVersion: mockGetScorerVersion,
           createPromptRunJob: mockCreatePromptRunJob,
           getDataset: mockGetDataset,
@@ -187,6 +191,7 @@ const mockPromptTemplate: PromptTemplate = {
 const mockScorer: Scorer = {
   id: 'scorer-123',
   name: 'correctness',
+  label: 'Correctness',
   scorer_type: ScorerTypes.preset,
   tags: []
 };
@@ -231,6 +236,14 @@ describe('experiments utility', () => {
     mockGetScorers.mockResolvedValue([mockScorer]);
     mockGetScorersPage.mockResolvedValue({
       scorers: [mockScorer],
+      nextStartingToken: null
+    });
+    mockGetScorersPageByLabels.mockResolvedValue({
+      scorers: [mockScorer],
+      nextStartingToken: null
+    });
+    mockGetScorersPageByIds.mockResolvedValue({
+      scorers: [],
       nextStartingToken: null
     });
     mockGetScorerVersion.mockResolvedValue({
@@ -431,7 +444,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -585,7 +598,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: ['correctness'], // String metric name
+        metrics: ['Correctness'], // String metric name (label value)
         projectName
       });
 
@@ -594,7 +607,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
 
       // Verify the correct scorer was found by name
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
@@ -606,7 +619,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [{ name: 'correctness' }],
+        metrics: [{ name: 'Correctness' }],
         projectName
       });
 
@@ -615,7 +628,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -632,7 +645,7 @@ describe('experiments utility', () => {
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
-        metrics: [{ name: 'correctness', version: 3 }], // Object metric with version
+        metrics: [{ name: 'Correctness', version: 3 }], // Object metric with version
         projectName
       });
 
@@ -641,38 +654,39 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
       expect(mockGetScorerVersion).toHaveBeenCalledWith('scorer-123', 3);
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
 
     it('should handle multiple metrics with mixed formats', async () => {
-      mockGetScorersPage.mockImplementation(
-        (options?: { names?: string[] }) => {
-          const names = options?.names || [];
-          // When called without names, return all available scorers
-          const availableScorers = ['correctness', 'toxicity'];
-          const scorersToReturn = names.length > 0 ? names : availableScorers;
-          return {
-            scorers: scorersToReturn.map((name: string) => ({
-              id: `scorer-${name}`,
-              name,
-              scorer_type: ScorerTypes.preset
-            })),
-            nextStartingToken: null
-          };
-        }
-      );
+      mockGetScorersPageByLabels.mockResolvedValue({
+        scorers: [
+          {
+            id: 'scorer-Correctness',
+            name: 'correctness',
+            label: 'Correctness',
+            scorer_type: ScorerTypes.preset
+          },
+          {
+            id: 'scorer-Toxicity',
+            name: 'toxicity',
+            label: 'Toxicity',
+            scorer_type: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
 
       const result = await runExperiment({
         name: 'Test Experiment',
         datasetId: 'test-dataset-id',
         promptTemplate: mockPromptTemplate,
         metrics: [
-          'correctness',
-          { name: 'toxicity' },
-          { name: 'correctness', version: 3 }
+          'Correctness',
+          { name: 'Toxicity' },
+          { name: 'Correctness', version: 3 }
         ],
         projectName
       });
@@ -682,7 +696,7 @@ describe('experiments utility', () => {
         promptRunJobCreatedSuccessMessage
       );
       expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorersPage).toHaveBeenCalled();
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
       expect(mockCreateRunScorerSettings).toHaveBeenCalled();
       expect(mockCreatePromptRunJob).toHaveBeenCalled();
     });
@@ -721,7 +735,7 @@ describe('experiments utility', () => {
         'Test Experiment',
         projectName,
         undefined,
-        [GalileoScorers.correctness]
+        [GalileoMetrics.correctness]
       );
       expect(result).toEqual(mockExperiment);
       expect(mockCreateExperiment).toHaveBeenCalled();

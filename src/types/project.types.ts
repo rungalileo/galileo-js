@@ -10,8 +10,7 @@ export const ProjectTypes = {
   evaluate: 'prompt_evaluation',
   observe: 'llm_monitor',
   genAI: 'gen_ai',
-  training: 'training_inference', // New from API
-  protect: 'protect' // New from API
+  protect: 'protect'
 } as const satisfies Record<string, ProjectTypes>;
 
 // OpenAPI types (snake_case from API)

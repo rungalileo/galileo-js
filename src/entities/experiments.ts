@@ -9,7 +9,7 @@ import {
   DEFAULT_PROMPT_RUN_SETTINGS
 } from '../types/experiment.types';
 import type {
-  GalileoScorers,
+  GalileoMetrics,
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
@@ -101,7 +101,7 @@ export class Experiments {
     projectId?: string;
     projectName?: string;
     dataset?: ExperimentDatasetRequest | null;
-    metrics?: (GalileoScorers | string | Metric | LocalMetricConfig)[];
+    metrics?: (GalileoMetrics | string | Metric | LocalMetricConfig)[];
   }): Promise<ExperimentResponseType> {
     if (!options.name) {
       throw new Error(
@@ -525,7 +525,7 @@ export class Experiments {
 
   private async configureExperimentMetrics(
     metrics:
-      | (GalileoScorers | string | Metric | LocalMetricConfig)[]
+      | (GalileoMetrics | string | Metric | LocalMetricConfig)[]
       | undefined,
     projectId: string,
     experimentId: string

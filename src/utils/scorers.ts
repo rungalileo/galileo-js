@@ -49,6 +49,32 @@ export const getScorers = async (options?: {
 };
 
 /**
+ * Lists scorers by label with optional strict mode.
+ * @param labels - Labels to search for.
+ * @param strict - When false, also matches by scorer name as fallback.
+ * @returns A promise that resolves to an array of scorers.
+ */
+export const getScorersByLabels = async (
+  labels: string[],
+  strict?: boolean
+): Promise<ScorerResponse[]> => {
+  const scorersService = new Scorers();
+  return await scorersService.listByLabels(labels, strict);
+};
+
+/**
+ * Lists scorers by ID.
+ * @param ids - Scorer IDs to search for.
+ * @returns A promise that resolves to an array of scorers.
+ */
+export const getScorersByIds = async (
+  ids: string[]
+): Promise<ScorerResponse[]> => {
+  const scorersService = new Scorers();
+  return await scorersService.listByIds(ids);
+};
+
+/**
  * Retrieves a specific version of a scorer by its ID and version number.
  * @param scorerId - The unique identifier of the scorer.
  * @param version - The version number of the scorer to retrieve.

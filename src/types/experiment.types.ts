@@ -4,7 +4,7 @@ import type {
   PromptTemplateVersion
 } from '../types/prompt-template.types';
 import type {
-  GalileoScorers,
+  GalileoMetrics,
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
@@ -92,7 +92,7 @@ export type PromptTemplateType = PromptTemplate | PromptTemplateVersion;
 
 type BaseRunExperimentParams = {
   name: string;
-  metrics?: (GalileoScorers | string | Metric | LocalMetricConfig)[];
+  metrics?: (GalileoMetrics | string | Metric | LocalMetricConfig)[];
   projectName?: string;
   projectId?: string;
   experimentTags?: Record<string, string>;

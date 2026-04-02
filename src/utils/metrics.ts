@@ -14,7 +14,9 @@ import {
   validateCodeScorer,
   deleteScorer,
   getScorers,
-  getScorerVersion
+  getScorerVersion,
+  getScorersByLabels,
+  getScorersByIds
 } from './scorers';
 import {
   GalileoMetrics,
@@ -24,7 +26,8 @@ import {
 } from '../types/metrics.types';
 import type {
   BaseScorerVersionResponse,
-  ScorerConfig
+  ScorerConfig,
+  ScorerResponse
 } from '../types/scorer.types';
 import { GalileoApiClient } from '../api-client';
 import type { Trace } from '../types/logging/trace.types';
@@ -39,6 +42,10 @@ import { ScorerSettings } from '../entities/scorers';
 import { getSdkLogger } from 'galileo-generated';
 
 const sdkLogger = getSdkLogger();
+
+/** Regex to detect UUID strings (case-insensitive). */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Metrics class for managing metrics in the Galileo platform.
@@ -280,28 +287,22 @@ export class Metrics {
     metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
   ): Promise<[ScorerConfig[], LocalMetricConfig[]]> {
     const localMetricConfigs: LocalMetricConfig[] = [];
-    const scorerNameVersions: Array<[string, number | undefined]> = [];
+    const labelSearches: Array<[string, number | undefined]> = [];
+    const idSearches: string[] = [];
 
-    // Categorize metrics by type - match Python order: const object value first, then Metric, then LocalMetricConfig, then string
+    // Categorize metrics by type
     for (const metric of metrics) {
-      // Check if it's a GalileoMetrics const object value
-      // When you use GalileoMetrics.correctness, it's actually the string value
-      // Check if it's a GalileoMetrics const object value
-      // When you use GalileoMetrics.correctness, it's actually the string value
-      // So we check if it's a string that matches a const object value first
       if (typeof metric === 'string') {
-        const constValue = Object.values(GalileoMetrics).find(
-          (val) => val === metric
-        );
-        if (constValue) {
-          scorerNameVersions.push([constValue, undefined]);
+        if (UUID_RE.test(metric)) {
+          // UUID string → ID-based lookup
+          idSearches.push(metric);
         } else {
-          scorerNameVersions.push([metric, undefined]);
+          // GalileoMetrics label value or plain string → label-based lookup
+          labelSearches.push([metric, undefined]);
         }
       } else if (isMetric(metric)) {
-        scorerNameVersions.push([metric.name, metric.version]);
+        labelSearches.push([metric.name, metric.version]);
       } else if (isLocalMetricConfig(metric)) {
-        // Validate LocalMetricConfig
         this.validateLocalMetricConfig(metric);
         localMetricConfigs.push(metric);
       } else {
@@ -311,54 +312,91 @@ export class Metrics {
       }
     }
 
-    // Process server-side metrics
+    // Make targeted API calls in parallel
+    const labelNames = labelSearches.map(([label]) => label);
+
+    // De-duplicate before making API calls
+    const uniqueLabelNames = [...new Set(labelNames)];
+    const uniqueIdSearches = [...new Set(idSearches)];
+
+    const [labelScorers, idScorers] = await Promise.all([
+      uniqueLabelNames.length > 0
+        ? getScorersByLabels(uniqueLabelNames, false)
+        : Promise.resolve([] as ScorerResponse[]),
+      uniqueIdSearches.length > 0
+        ? getScorersByIds(uniqueIdSearches)
+        : Promise.resolve([] as ScorerResponse[])
+    ]);
+
+    // Build lookup maps — match by label (case-insensitive) or by name fallback
+    const labelMap = new Map<string, ScorerResponse>();
+    for (const s of labelScorers) {
+      if (s.label) {
+        labelMap.set(s.label.toLowerCase(), s);
+      }
+      if (s.name) {
+        labelMap.set(s.name.toLowerCase(), s);
+      }
+    }
+
+    const idMap = new Map(idScorers.map((s) => [s.id, s]));
+
+    // Resolve each metric against the maps
     const scorers: ScorerConfig[] = [];
-    if (scorerNameVersions.length > 0) {
-      const metricNames = scorerNameVersions.map(([name]) => name);
-      const allScorers = await getScorers({ names: metricNames });
-      const knownMetrics = new Map(allScorers.map((s) => [s.name, s]));
-      const unknownMetrics: string[] = [];
+    const unknownMetrics: string[] = [];
 
-      for (const [scorerName, scorerVersion] of scorerNameVersions) {
-        if (knownMetrics.has(scorerName)) {
-          const scorer = knownMetrics.get(scorerName)!;
-          const scorerConfig: ScorerConfig = {
-            id: scorer.id,
-            name: scorer.name,
-            scorerType: scorer.scorerType
-          };
+    for (const [label, version] of labelSearches) {
+      const scorer = labelMap.get(label.toLowerCase());
+      if (scorer) {
+        const scorerConfig: ScorerConfig = {
+          id: scorer.id,
+          name: scorer.name,
+          scorerType: scorer.scorerType
+        };
 
-          // Set the version on the ScorerConfig if provided
-          if (scorerVersion !== undefined) {
-            const rawVersion = await getScorerVersion(scorer.id, scorerVersion);
-            scorerConfig.scorerVersion = rawVersion;
-          }
-
-          scorers.push(scorerConfig);
-        } else {
-          unknownMetrics.push(scorerName);
+        if (version !== undefined) {
+          scorerConfig.scorerVersion = await getScorerVersion(
+            scorer.id,
+            version
+          );
         }
+
+        scorers.push(scorerConfig);
+      } else {
+        unknownMetrics.push(label);
       }
+    }
 
-      if (unknownMetrics.length > 0) {
-        throw new Error(
-          `One or more non-existent metrics are specified: ${unknownMetrics.map((m) => `'${m}'`).join(', ')}`
-        );
-      }
-
-      // Register server-side metrics with Galileo
-      if (scorers.length > 0) {
-        const apiClient = new GalileoApiClient();
-        await apiClient.init({ projectId });
-
-        // Use the run scorer settings endpoint (works for both experiments and log streams)
-        const scorerSettings = new ScorerSettings();
-        await scorerSettings.create({
-          projectId,
-          runId,
-          scorers
+    for (const id of idSearches) {
+      const scorer = idMap.get(id);
+      if (scorer) {
+        scorers.push({
+          id: scorer.id,
+          name: scorer.name,
+          scorerType: scorer.scorerType
         });
+      } else {
+        unknownMetrics.push(id);
       }
+    }
+
+    if (unknownMetrics.length > 0) {
+      throw new Error(
+        `One or more non-existent metrics are specified: ${unknownMetrics.map((m) => `'${m}'`).join(', ')}`
+      );
+    }
+
+    // Register server-side metrics with Galileo
+    if (scorers.length > 0) {
+      const apiClient = new GalileoApiClient();
+      await apiClient.init({ projectId });
+
+      const scorerSettings = new ScorerSettings();
+      await scorerSettings.create({
+        projectId,
+        runId,
+        scorers
+      });
     }
 
     return [scorers, localMetricConfigs];

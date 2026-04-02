@@ -63,6 +63,62 @@ export class Scorers {
   }
 
   /**
+   * Lists scorers by label with built-in pagination.
+   * @param labels - Labels to search for.
+   * @param strict - When false, also matches by scorer name as fallback. Defaults to false.
+   * @returns A promise that resolves to an array of scorers.
+   */
+  async listByLabels(
+    labels: string[],
+    strict: boolean = false
+  ): Promise<ScorerResponse[]> {
+    const client = await this.ensureClient();
+
+    const allScorers: ScorerResponse[] = [];
+    let startingToken: number | null = 0;
+
+    while (startingToken !== null) {
+      const response = await client.getScorersPageByLabels({
+        labels,
+        strict,
+        caseSensitive: false,
+        startingToken,
+        limit: 100
+      });
+
+      allScorers.push(...(response.scorers ?? []));
+      startingToken = response.nextStartingToken ?? null;
+    }
+
+    return allScorers;
+  }
+
+  /**
+   * Lists scorers by ID with built-in pagination.
+   * @param ids - Scorer IDs to search for.
+   * @returns A promise that resolves to an array of scorers.
+   */
+  async listByIds(ids: string[]): Promise<ScorerResponse[]> {
+    const client = await this.ensureClient();
+
+    const allScorers: ScorerResponse[] = [];
+    let startingToken: number | null = 0;
+
+    while (startingToken !== null) {
+      const response = await client.getScorersPageByIds({
+        ids,
+        startingToken,
+        limit: 100
+      });
+
+      allScorers.push(...(response.scorers ?? []));
+      startingToken = response.nextStartingToken ?? null;
+    }
+
+    return allScorers;
+  }
+
+  /**
    * Gets a specific scorer version.
    * @param scorerId - The unique identifier of the scorer.
    * @param version - The version number to retrieve.

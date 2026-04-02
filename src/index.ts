@@ -7,7 +7,6 @@ import { GalileoApiClient } from './api-client';
 import { GalileoConfig, type GalileoConfigInput } from 'galileo-generated';
 import {
   GalileoMetrics,
-  GalileoScorers,
   LocalMetricConfig,
   Metric
 } from './types/metrics.types';
@@ -61,6 +60,8 @@ import {
 import {
   getScorers,
   getScorerVersion,
+  getScorersByLabels,
+  getScorersByIds,
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
@@ -161,7 +162,6 @@ export {
   GalileoLogger,
   GalileoCallback,
   GalileoMetrics,
-  GalileoScorers,
   // OpenAI
   wrapOpenAI,
   wrapAzureOpenAI,
@@ -254,6 +254,8 @@ export {
   ScorerSettings,
   getScorers,
   getScorerVersion,
+  getScorersByLabels,
+  getScorersByIds,
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,

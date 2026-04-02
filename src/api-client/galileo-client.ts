@@ -103,6 +103,7 @@ import {
 } from '../types/prompt-template.types';
 import { JobDbType, TaskType } from '../types/job.types';
 import { Message } from '../types/message.types';
+import type { Messages } from '../types/new-api.types';
 import { StepType } from '../types/logging/step.types';
 import { LogRecordsExportRequest } from '../types/export.types';
 import {
@@ -1473,9 +1474,14 @@ export class GalileoApiClient extends BaseClient {
       options?.projectName
     );
 
+    // Cast is safe: Message[] (api.types, snake_case file_id) vs Messages
+    // (new-api.types, camelCase fileId) differ only in casing, and
+    // makeRequestWithConversion calls objectToSnake() before the API call.
+    // In practice, all SDK message content is string — FileContentPart is
+    // never instantiated. Unifying the dual type system is out of scope.
     return this.globalPromptTemplateService!.createGlobalPromptTemplate(
       {
-        template,
+        template: template as unknown as Messages,
         name
       },
       resolvedProjectId
@@ -1671,6 +1677,32 @@ export class GalileoApiClient extends BaseClient {
   }): Promise<ListScorersResponse> {
     this.ensureService(this.scorerService);
     return this.scorerService.getScorersPage(options);
+  }
+
+  /**
+   * Retrieves a page of scorers filtered by label.
+   */
+  public async getScorersPageByLabels(options: {
+    labels: string[];
+    strict?: boolean;
+    caseSensitive?: boolean;
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> {
+    this.ensureService(this.scorerService);
+    return this.scorerService.getScorersPageByLabels(options);
+  }
+
+  /**
+   * Retrieves a page of scorers filtered by ID.
+   */
+  public async getScorersPageByIds(options: {
+    ids: string[];
+    startingToken?: number;
+    limit?: number;
+  }): Promise<ListScorersResponse> {
+    this.ensureService(this.scorerService);
+    return this.scorerService.getScorersPageByIds(options);
   }
 
   /**
