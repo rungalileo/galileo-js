@@ -424,7 +424,6 @@ export interface IGalileoLoggerSpan {
     agentType?: AgentType;
     statusCode?: number;
     stepNumber?: number;
-    statusCode?: number;
   }): AgentSpan;
 }
 
