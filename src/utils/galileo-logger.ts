@@ -1153,7 +1153,6 @@ class GalileoLogger implements IGalileoLogger {
       tags: options.tags,
       statusCode: options.statusCode,
       metrics: new Metrics({ durationNs: options.durationNs }),
-      statusCode: options.statusCode,
       stepNumber: options.stepNumber
     });
 
@@ -1199,7 +1198,6 @@ class GalileoLogger implements IGalileoLogger {
     agentType?: AgentType;
     statusCode?: number;
     stepNumber?: number;
-    statusCode?: number;
   }): AgentSpan {
     const span = new AgentSpan({
       input: options.input,
