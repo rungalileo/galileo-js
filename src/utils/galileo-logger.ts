@@ -210,6 +210,16 @@ class GalileoLogger implements IGalileoLogger {
   }
 
   /**
+   * Push a span onto the parent stack so subsequent child spans nest under it.
+   * Used by handlers that need to make leaf spans (like tool) act as parents.
+   */
+  pushParent(span: StepWithChildSpans): void {
+    const stack = this.getParentStack();
+    stack.push(span);
+    this.setParentStack(stack);
+  }
+
+  /**
    * Check if there is an active trace.
    * @returns True if there is a current parent (trace or span), false otherwise.
    */
@@ -1143,6 +1153,7 @@ class GalileoLogger implements IGalileoLogger {
       tags: options.tags,
       statusCode: options.statusCode,
       metrics: new Metrics({ durationNs: options.durationNs }),
+      statusCode: options.statusCode,
       stepNumber: options.stepNumber
     });
 
@@ -1186,6 +1197,7 @@ class GalileoLogger implements IGalileoLogger {
     metadata?: Record<string, string>;
     tags?: string[];
     agentType?: AgentType;
+    statusCode?: number;
     stepNumber?: number;
     statusCode?: number;
   }): AgentSpan {
