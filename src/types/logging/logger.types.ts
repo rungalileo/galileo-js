@@ -60,6 +60,12 @@ export interface IGalileoLoggerCore {
   previousParent(): StepWithChildSpans | undefined;
 
   /**
+   * Push a span onto the parent stack so subsequent child spans nest under it.
+   * Used by handlers that need to make leaf spans (like tool) act as parents.
+   */
+  pushParent(span: StepWithChildSpans): void;
+
+  /**
    * Check if there is an active trace.
    * @returns True if there is a current parent (trace or span), false otherwise.
    */
@@ -396,6 +402,7 @@ export interface IGalileoLoggerSpan {
     createdAt?: Date;
     metadata?: Record<string, string>;
     tags?: string[];
+    statusCode?: number;
     stepNumber?: number;
   }): WorkflowSpan;
 
@@ -415,8 +422,8 @@ export interface IGalileoLoggerSpan {
     metadata?: Record<string, string>;
     tags?: string[];
     agentType?: AgentType;
-    stepNumber?: number;
     statusCode?: number;
+    stepNumber?: number;
   }): AgentSpan;
 }
 
