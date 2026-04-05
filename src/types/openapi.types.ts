@@ -915,7 +915,8 @@ export const AuthMethod = {
   OKTA: 'okta',
   AZURE_AD: 'azure-ad',
   CUSTOM: 'custom',
-  SAML: 'saml'
+  SAML: 'saml',
+  INVITE: 'invite'
 } as const;
 
 /**
@@ -3576,7 +3577,7 @@ export type CustomIntegration = {
    *
    * List of model properties with name and alias for the custom integration.
    */
-  model_properties?: Array<PromptgalileoSchemasConfigCustomModelProperties> | null;
+  model_properties?: Array<ModelProperties> | null;
   /**
    * Is Legacy Format
    *
@@ -3681,7 +3682,7 @@ export type CustomIntegrationCreate = {
    *
    * List of model properties with name and alias for the custom integration.
    */
-  model_properties?: Array<PromptgalileoSchemasConfigCustomModelProperties> | null;
+  model_properties?: Array<ModelProperties> | null;
   /**
    * Is Legacy Format
    *
@@ -7408,6 +7409,14 @@ export type ExperimentResponse = {
   aggregate_metrics?: {
     [key: string]: unknown;
   };
+  /**
+   * Structured Aggregate Metrics
+   *
+   * Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+   */
+  structured_aggregate_metrics?: {
+    [key: string]: MetricAggregates;
+  } | null;
   /**
    * Aggregate Feedback
    *
@@ -12670,42 +12679,6 @@ export type IntegrationDb = {
 };
 
 /**
- * IntegrationModelsResponse
- */
-export type IntegrationModelsResponse = {
-  /**
-   * Integration Name
-   */
-  integration_name: string;
-  /**
-   * Models
-   */
-  models: Array<string>;
-  /**
-   * Scorer Models
-   */
-  scorer_models: Array<string>;
-  /**
-   * Recommended Models
-   */
-  recommended_models?: {
-    [key in RecommendedModelPurpose]?: Array<string>;
-  };
-  /**
-   * Supports Num Judges
-   */
-  supports_num_judges?: boolean;
-  /**
-   * Supports File Uploads
-   */
-  supports_file_uploads?: boolean;
-  /**
-   * Model Properties
-   */
-  model_properties?: Array<ApiSchemasIntegrationLlmIntegrationModelProperties>;
-};
-
-/**
  * IntegrationName
  */
 export const IntegrationName = {
@@ -15833,6 +15806,62 @@ export type MetadataFilter = {
 };
 
 /**
+ * MetricAggregates
+ *
+ * Structured aggregate values for a single metric, computed from ClickHouse row-level data.
+ */
+export type MetricAggregates = {
+  /**
+   * Avg
+   */
+  avg?: number | null;
+  /**
+   * Sum
+   */
+  sum?: number | null;
+  /**
+   * Min
+   */
+  min?: number | null;
+  /**
+   * Max
+   */
+  max?: number | null;
+  /**
+   * Count
+   */
+  count?: number | null;
+  /**
+   * Pct
+   */
+  pct?: number | null;
+  /**
+   * P50
+   */
+  p50?: number | null;
+  /**
+   * P90
+   */
+  p90?: number | null;
+  /**
+   * P95
+   */
+  p95?: number | null;
+  /**
+   * P99
+   */
+  p99?: number | null;
+  /**
+   * Value Distribution
+   *
+   * Distribution of discrete values as {value: count}. For boolean metrics: {'0': 2, '1': 8}. For categorical metrics: {'low': 5, 'medium': 3, 'high': 2}.
+   */
+  value_distribution?: {
+    [key: string]: number;
+  } | null;
+};
+
+/**
  * MetricAggregation
  */
 export const MetricAggregation = {
@@ -16348,15 +16377,13 @@ export type MetricRollUp = {
    *
    * Roll up metrics e.g. sum, average, min, max for numeric, and category_count for categorical metrics.
    */
-  roll_up_metrics?:
-    | {
-        [key: string]: number;
-      }
-    | {
-        [key: string]: {
+  roll_up_metrics?: {
+    [key: string]:
+      | number
+      | {
           [key: string]: number;
         };
-      };
+  };
 };
 
 /**
@@ -16763,6 +16790,47 @@ export const ModelCostBy = {
  * ModelCostBy
  */
 export type ModelCostBy = (typeof ModelCostBy)[keyof typeof ModelCostBy];
+
+/**
+ * ModelProperties
+ *
+ * Properties for a model in a custom integration.
+ *
+ * Attributes:
+ * name: The model name used when calling the API.
+ * alias: The display name/alias for the model in the UI.
+ * Defaults to ``name`` when not provided.
+ * based_on: Alias of a built-in model whose parameter map should be used.
+ * Mutually exclusive with ``supported_parameters``.
+ * supported_parameters: Explicit list of parameter names this model supports.
+ * Mutually exclusive with ``based_on``.
+ */
+export type ModelProperties = {
+  /**
+   * Name
+   *
+   * The model name used when calling the API.
+   */
+  name: string;
+  /**
+   * Alias
+   *
+   * The display name/alias for the model. Defaults to name.
+   */
+  alias?: string | null;
+  /**
+   * Based On
+   *
+   * Alias of a built-in model whose parameter map should be used. For example, 'gpt-5.4'. Mutually exclusive with supported_parameters.
+   */
+  based_on?: string | null;
+  /**
+   * Supported Parameters
+   *
+   * Explicit list of parameter names this model supports (e.g., ['max_tokens', 'temperature', 'verbosity']). Each name must be a valid RunParamsMap field. Mutually exclusive with based_on.
+   */
+  supported_parameters?: Array<string> | null;
+};
 
 /**
  * ModelType
@@ -20572,22 +20640,6 @@ export type ReasoningEvent = {
       }>
     | null;
 };
-
-/**
- * RecommendedModelPurpose
- */
-export const RecommendedModelPurpose = {
-  CUSTOM_METRIC_JUDGE: 'custom_metric_judge',
-  CUSTOM_METRIC_AUTOGEN: 'custom_metric_autogen',
-  AUTOTUNE: 'autotune',
-  SIGNALS: 'signals'
-} as const;
-
-/**
- * RecommendedModelPurpose
- */
-export type RecommendedModelPurpose =
-  (typeof RecommendedModelPurpose)[keyof typeof RecommendedModelPurpose];
 
 /**
  * RecomputeLogRecordsMetricsRequest
@@ -24694,28 +24746,6 @@ export type ApiSchemasContentPromptBulkDeleteFailure = {
 };
 
 /**
- * ModelProperties
- */
-export type ApiSchemasIntegrationLlmIntegrationModelProperties = {
-  /**
-   * Alias
-   */
-  alias: string;
-  /**
-   * Name
-   */
-  name: string;
-  /**
-   * Input Modalities
-   */
-  input_modalities: Array<ContentModality>;
-  /**
-   * Multimodal Capabilities
-   */
-  multimodal_capabilities?: Array<MultimodalCapability>;
-};
-
-/**
  * GetProjectsPaginatedResponse
  */
 export type ApiSchemasProjectGetProjectsPaginatedResponse = {
@@ -24940,47 +24970,6 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
  */
 export type GalileoCoreSchemasSharedScorersScorerNameScorerName =
   (typeof GalileoCoreSchemasSharedScorersScorerNameScorerName)[keyof typeof GalileoCoreSchemasSharedScorersScorerNameScorerName];
-
-/**
- * ModelProperties
- *
- * Properties for a model in a custom integration.
- *
- * Attributes:
- * name: The model name used when calling the API.
- * alias: The display name/alias for the model in the UI.
- * Defaults to ``name`` when not provided.
- * based_on: Alias of a built-in model whose parameter map should be used.
- * Mutually exclusive with ``supported_parameters``.
- * supported_parameters: Explicit list of parameter names this model supports.
- * Mutually exclusive with ``based_on``.
- */
-export type PromptgalileoSchemasConfigCustomModelProperties = {
-  /**
-   * Name
-   *
-   * The model name used when calling the API.
-   */
-  name: string;
-  /**
-   * Alias
-   *
-   * The display name/alias for the model. Defaults to name.
-   */
-  alias?: string | null;
-  /**
-   * Based On
-   *
-   * Alias of a built-in model whose parameter map should be used. For example, 'gpt-5.4'. Mutually exclusive with supported_parameters.
-   */
-  based_on?: string | null;
-  /**
-   * Supported Parameters
-   *
-   * Explicit list of parameter names this model supports (e.g., ['max_tokens', 'temperature', 'verbosity']). Each name must be a valid RunParamsMap field. Mutually exclusive with based_on.
-   */
-  supported_parameters?: Array<string> | null;
-};
 
 /**
  * ScorerName
@@ -27319,642 +27308,6 @@ export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSett
 export type UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponse =
   UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses[keyof UpdateMetricSettingsProjectsProjectIdLogStreamsLogStreamIdMetricSettingsPatchResponses];
 
-export type LogTracesProjectsProjectIdTracesPostData = {
-  body: LogTracesIngestRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/traces';
-};
-
-export type LogTracesProjectsProjectIdTracesPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type LogTracesProjectsProjectIdTracesPostError =
-  LogTracesProjectsProjectIdTracesPostErrors[keyof LogTracesProjectsProjectIdTracesPostErrors];
-
-export type LogTracesProjectsProjectIdTracesPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogTracesIngestResponse;
-};
-
-export type LogTracesProjectsProjectIdTracesPostResponse =
-  LogTracesProjectsProjectIdTracesPostResponses[keyof LogTracesProjectsProjectIdTracesPostResponses];
-
-export type GetTraceProjectsProjectIdTracesTraceIdGetData = {
-  body?: never;
-  path: {
-    /**
-     * Trace Id
-     */
-    trace_id: string;
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: {
-    /**
-     * Include Presigned Urls
-     */
-    include_presigned_urls?: boolean;
-  };
-  url: '/projects/{project_id}/traces/{trace_id}';
-};
-
-export type GetTraceProjectsProjectIdTracesTraceIdGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetTraceProjectsProjectIdTracesTraceIdGetError =
-  GetTraceProjectsProjectIdTracesTraceIdGetErrors[keyof GetTraceProjectsProjectIdTracesTraceIdGetErrors];
-
-export type GetTraceProjectsProjectIdTracesTraceIdGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: ExtendedTraceRecordWithChildren;
-};
-
-export type GetTraceProjectsProjectIdTracesTraceIdGetResponse =
-  GetTraceProjectsProjectIdTracesTraceIdGetResponses[keyof GetTraceProjectsProjectIdTracesTraceIdGetResponses];
-
-export type UpdateTraceProjectsProjectIdTracesTraceIdPatchData = {
-  body: LogTraceUpdateRequest;
-  path: {
-    /**
-     * Trace Id
-     */
-    trace_id: string;
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/traces/{trace_id}';
-};
-
-export type UpdateTraceProjectsProjectIdTracesTraceIdPatchErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type UpdateTraceProjectsProjectIdTracesTraceIdPatchError =
-  UpdateTraceProjectsProjectIdTracesTraceIdPatchErrors[keyof UpdateTraceProjectsProjectIdTracesTraceIdPatchErrors];
-
-export type UpdateTraceProjectsProjectIdTracesTraceIdPatchResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogTraceUpdateResponse;
-};
-
-export type UpdateTraceProjectsProjectIdTracesTraceIdPatchResponse =
-  UpdateTraceProjectsProjectIdTracesTraceIdPatchResponses[keyof UpdateTraceProjectsProjectIdTracesTraceIdPatchResponses];
-
-export type GetSpanProjectsProjectIdSpansSpanIdGetData = {
-  body?: never;
-  path: {
-    /**
-     * Span Id
-     */
-    span_id: string;
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: {
-    /**
-     * Include Presigned Urls
-     */
-    include_presigned_urls?: boolean;
-  };
-  url: '/projects/{project_id}/spans/{span_id}';
-};
-
-export type GetSpanProjectsProjectIdSpansSpanIdGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetSpanProjectsProjectIdSpansSpanIdGetError =
-  GetSpanProjectsProjectIdSpansSpanIdGetErrors[keyof GetSpanProjectsProjectIdSpansSpanIdGetErrors];
-
-export type GetSpanProjectsProjectIdSpansSpanIdGetResponses = {
-  /**
-   * Response Get Span Projects  Project Id  Spans  Span Id  Get
-   *
-   * Successful Response
-   */
-  200:
-    | ({
-        type: 'agent';
-      } & ExtendedAgentSpanRecordWithChildren)
-    | ({
-        type: 'workflow';
-      } & ExtendedWorkflowSpanRecordWithChildren)
-    | ({
-        type: 'llm';
-      } & ExtendedLlmSpanRecord)
-    | ({
-        type: 'tool';
-      } & ExtendedToolSpanRecordWithChildren)
-    | ({
-        type: 'retriever';
-      } & ExtendedRetrieverSpanRecordWithChildren);
-};
-
-export type GetSpanProjectsProjectIdSpansSpanIdGetResponse =
-  GetSpanProjectsProjectIdSpansSpanIdGetResponses[keyof GetSpanProjectsProjectIdSpansSpanIdGetResponses];
-
-export type UpdateSpanProjectsProjectIdSpansSpanIdPatchData = {
-  body: LogSpanUpdateRequest;
-  path: {
-    /**
-     * Span Id
-     */
-    span_id: string;
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/spans/{span_id}';
-};
-
-export type UpdateSpanProjectsProjectIdSpansSpanIdPatchErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type UpdateSpanProjectsProjectIdSpansSpanIdPatchError =
-  UpdateSpanProjectsProjectIdSpansSpanIdPatchErrors[keyof UpdateSpanProjectsProjectIdSpansSpanIdPatchErrors];
-
-export type UpdateSpanProjectsProjectIdSpansSpanIdPatchResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogSpanUpdateResponse;
-};
-
-export type UpdateSpanProjectsProjectIdSpansSpanIdPatchResponse =
-  UpdateSpanProjectsProjectIdSpansSpanIdPatchResponses[keyof UpdateSpanProjectsProjectIdSpansSpanIdPatchResponses];
-
-export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostData =
-  {
-    body: MetricsTestingAvailableColumnsRequest;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-    };
-    query?: never;
-    url: '/projects/{project_id}/metrics-testing/available_columns';
-  };
-
-export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostError =
-  MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostErrors[keyof MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostErrors];
-
-export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: LogRecordsAvailableColumnsResponse;
-  };
-
-export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponse =
-  MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponses[keyof MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponses];
-
-export type QueryTracesProjectsProjectIdTracesSearchPostData = {
-  body: LogRecordsQueryRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/traces/search';
-};
-
-export type QueryTracesProjectsProjectIdTracesSearchPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type QueryTracesProjectsProjectIdTracesSearchPostError =
-  QueryTracesProjectsProjectIdTracesSearchPostErrors[keyof QueryTracesProjectsProjectIdTracesSearchPostErrors];
-
-export type QueryTracesProjectsProjectIdTracesSearchPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsQueryResponse;
-};
-
-export type QueryTracesProjectsProjectIdTracesSearchPostResponse =
-  QueryTracesProjectsProjectIdTracesSearchPostResponses[keyof QueryTracesProjectsProjectIdTracesSearchPostResponses];
-
-export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostData = {
-  body: LogRecordsPartialQueryRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/traces/partial_search';
-};
-
-export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostError =
-  QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors[keyof QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors];
-
-export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: LogRecordsPartialQueryResponse;
-  };
-
-export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponse =
-  QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses[keyof QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses];
-
-export type CountTracesProjectsProjectIdTracesCountPostData = {
-  body: LogRecordsQueryCountRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/traces/count';
-};
-
-export type CountTracesProjectsProjectIdTracesCountPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type CountTracesProjectsProjectIdTracesCountPostError =
-  CountTracesProjectsProjectIdTracesCountPostErrors[keyof CountTracesProjectsProjectIdTracesCountPostErrors];
-
-export type CountTracesProjectsProjectIdTracesCountPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsQueryCountResponse;
-};
-
-export type CountTracesProjectsProjectIdTracesCountPostResponse =
-  CountTracesProjectsProjectIdTracesCountPostResponses[keyof CountTracesProjectsProjectIdTracesCountPostResponses];
-
-export type LogSpansProjectsProjectIdSpansPostData = {
-  body: LogSpansIngestRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/spans';
-};
-
-export type LogSpansProjectsProjectIdSpansPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type LogSpansProjectsProjectIdSpansPostError =
-  LogSpansProjectsProjectIdSpansPostErrors[keyof LogSpansProjectsProjectIdSpansPostErrors];
-
-export type LogSpansProjectsProjectIdSpansPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogSpansIngestResponse;
-};
-
-export type LogSpansProjectsProjectIdSpansPostResponse =
-  LogSpansProjectsProjectIdSpansPostResponses[keyof LogSpansProjectsProjectIdSpansPostResponses];
-
-export type QuerySpansProjectsProjectIdSpansSearchPostData = {
-  body: LogRecordsQueryRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/spans/search';
-};
-
-export type QuerySpansProjectsProjectIdSpansSearchPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type QuerySpansProjectsProjectIdSpansSearchPostError =
-  QuerySpansProjectsProjectIdSpansSearchPostErrors[keyof QuerySpansProjectsProjectIdSpansSearchPostErrors];
-
-export type QuerySpansProjectsProjectIdSpansSearchPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsQueryResponse;
-};
-
-export type QuerySpansProjectsProjectIdSpansSearchPostResponse =
-  QuerySpansProjectsProjectIdSpansSearchPostResponses[keyof QuerySpansProjectsProjectIdSpansSearchPostResponses];
-
-export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostData = {
-  body: LogRecordsPartialQueryRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/spans/partial_search';
-};
-
-export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostError =
-  QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors[keyof QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors];
-
-export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: LogRecordsPartialQueryResponse;
-  };
-
-export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponse =
-  QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses[keyof QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses];
-
-export type CountSpansProjectsProjectIdSpansCountPostData = {
-  body: LogRecordsQueryCountRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/spans/count';
-};
-
-export type CountSpansProjectsProjectIdSpansCountPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type CountSpansProjectsProjectIdSpansCountPostError =
-  CountSpansProjectsProjectIdSpansCountPostErrors[keyof CountSpansProjectsProjectIdSpansCountPostErrors];
-
-export type CountSpansProjectsProjectIdSpansCountPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsQueryCountResponse;
-};
-
-export type CountSpansProjectsProjectIdSpansCountPostResponse =
-  CountSpansProjectsProjectIdSpansCountPostResponses[keyof CountSpansProjectsProjectIdSpansCountPostResponses];
-
-export type CreateSessionProjectsProjectIdSessionsPostData = {
-  body: SessionCreateRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/sessions';
-};
-
-export type CreateSessionProjectsProjectIdSessionsPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type CreateSessionProjectsProjectIdSessionsPostError =
-  CreateSessionProjectsProjectIdSessionsPostErrors[keyof CreateSessionProjectsProjectIdSessionsPostErrors];
-
-export type CreateSessionProjectsProjectIdSessionsPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: SessionCreateResponse;
-};
-
-export type CreateSessionProjectsProjectIdSessionsPostResponse =
-  CreateSessionProjectsProjectIdSessionsPostResponses[keyof CreateSessionProjectsProjectIdSessionsPostResponses];
-
-export type QuerySessionsProjectsProjectIdSessionsSearchPostData = {
-  body: LogRecordsQueryRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/sessions/search';
-};
-
-export type QuerySessionsProjectsProjectIdSessionsSearchPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type QuerySessionsProjectsProjectIdSessionsSearchPostError =
-  QuerySessionsProjectsProjectIdSessionsSearchPostErrors[keyof QuerySessionsProjectsProjectIdSessionsSearchPostErrors];
-
-export type QuerySessionsProjectsProjectIdSessionsSearchPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsQueryResponse;
-};
-
-export type QuerySessionsProjectsProjectIdSessionsSearchPostResponse =
-  QuerySessionsProjectsProjectIdSessionsSearchPostResponses[keyof QuerySessionsProjectsProjectIdSessionsSearchPostResponses];
-
-export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostData =
-  {
-    body: LogRecordsPartialQueryRequest;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-    };
-    query?: never;
-    url: '/projects/{project_id}/sessions/partial_search';
-  };
-
-export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostError =
-  QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors[keyof QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors];
-
-export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: LogRecordsPartialQueryResponse;
-  };
-
-export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponse =
-  QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses[keyof QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses];
-
-export type CountSessionsProjectsProjectIdSessionsCountPostData = {
-  body: LogRecordsQueryCountRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/sessions/count';
-};
-
-export type CountSessionsProjectsProjectIdSessionsCountPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type CountSessionsProjectsProjectIdSessionsCountPostError =
-  CountSessionsProjectsProjectIdSessionsCountPostErrors[keyof CountSessionsProjectsProjectIdSessionsCountPostErrors];
-
-export type CountSessionsProjectsProjectIdSessionsCountPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsQueryCountResponse;
-};
-
-export type CountSessionsProjectsProjectIdSessionsCountPostResponse =
-  CountSessionsProjectsProjectIdSessionsCountPostResponses[keyof CountSessionsProjectsProjectIdSessionsCountPostResponses];
-
-export type GetSessionProjectsProjectIdSessionsSessionIdGetData = {
-  body?: never;
-  path: {
-    /**
-     * Session Id
-     */
-    session_id: string;
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: {
-    /**
-     * Include Presigned Urls
-     */
-    include_presigned_urls?: boolean;
-  };
-  url: '/projects/{project_id}/sessions/{session_id}';
-};
-
-export type GetSessionProjectsProjectIdSessionsSessionIdGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetSessionProjectsProjectIdSessionsSessionIdGetError =
-  GetSessionProjectsProjectIdSessionsSessionIdGetErrors[keyof GetSessionProjectsProjectIdSessionsSessionIdGetErrors];
-
-export type GetSessionProjectsProjectIdSessionsSessionIdGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: ExtendedSessionRecordWithChildren;
-};
-
-export type GetSessionProjectsProjectIdSessionsSessionIdGetResponse =
-  GetSessionProjectsProjectIdSessionsSessionIdGetResponses[keyof GetSessionProjectsProjectIdSessionsSessionIdGetResponses];
-
 export type GetAggregatedTraceViewProjectsProjectIdTracesAggregatedPostData = {
   body: AggregatedTraceViewRequest;
   path: {
@@ -27989,35 +27342,6 @@ export type GetAggregatedTraceViewProjectsProjectIdTracesAggregatedPostResponses
 export type GetAggregatedTraceViewProjectsProjectIdTracesAggregatedPostResponse =
   GetAggregatedTraceViewProjectsProjectIdTracesAggregatedPostResponses[keyof GetAggregatedTraceViewProjectsProjectIdTracesAggregatedPostResponses];
 
-export type ExportRecordsProjectsProjectIdExportRecordsPostData = {
-  body: LogRecordsExportRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/export_records';
-};
-
-export type ExportRecordsProjectsProjectIdExportRecordsPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ExportRecordsProjectsProjectIdExportRecordsPostError =
-  ExportRecordsProjectsProjectIdExportRecordsPostErrors[keyof ExportRecordsProjectsProjectIdExportRecordsPostErrors];
-
-export type ExportRecordsProjectsProjectIdExportRecordsPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: unknown;
-};
-
 export type RecomputeMetricsProjectsProjectIdRecomputeMetricsPostData = {
   body: RecomputeLogRecordsMetricsRequest;
   path: {
@@ -28046,102 +27370,6 @@ export type RecomputeMetricsProjectsProjectIdRecomputeMetricsPostResponses = {
    */
   200: unknown;
 };
-
-export type DeleteTracesProjectsProjectIdTracesDeletePostData = {
-  body: LogRecordsDeleteRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/traces/delete';
-};
-
-export type DeleteTracesProjectsProjectIdTracesDeletePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type DeleteTracesProjectsProjectIdTracesDeletePostError =
-  DeleteTracesProjectsProjectIdTracesDeletePostErrors[keyof DeleteTracesProjectsProjectIdTracesDeletePostErrors];
-
-export type DeleteTracesProjectsProjectIdTracesDeletePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsDeleteResponse;
-};
-
-export type DeleteTracesProjectsProjectIdTracesDeletePostResponse =
-  DeleteTracesProjectsProjectIdTracesDeletePostResponses[keyof DeleteTracesProjectsProjectIdTracesDeletePostResponses];
-
-export type DeleteSpansProjectsProjectIdSpansDeletePostData = {
-  body: LogRecordsDeleteRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/spans/delete';
-};
-
-export type DeleteSpansProjectsProjectIdSpansDeletePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type DeleteSpansProjectsProjectIdSpansDeletePostError =
-  DeleteSpansProjectsProjectIdSpansDeletePostErrors[keyof DeleteSpansProjectsProjectIdSpansDeletePostErrors];
-
-export type DeleteSpansProjectsProjectIdSpansDeletePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsDeleteResponse;
-};
-
-export type DeleteSpansProjectsProjectIdSpansDeletePostResponse =
-  DeleteSpansProjectsProjectIdSpansDeletePostResponses[keyof DeleteSpansProjectsProjectIdSpansDeletePostResponses];
-
-export type DeleteSessionsProjectsProjectIdSessionsDeletePostData = {
-  body: LogRecordsDeleteRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/sessions/delete';
-};
-
-export type DeleteSessionsProjectsProjectIdSessionsDeletePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type DeleteSessionsProjectsProjectIdSessionsDeletePostError =
-  DeleteSessionsProjectsProjectIdSessionsDeletePostErrors[keyof DeleteSessionsProjectsProjectIdSessionsDeletePostErrors];
-
-export type DeleteSessionsProjectsProjectIdSessionsDeletePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: LogRecordsDeleteResponse;
-};
-
-export type DeleteSessionsProjectsProjectIdSessionsDeletePostResponse =
-  DeleteSessionsProjectsProjectIdSessionsDeletePostResponses[keyof DeleteSessionsProjectsProjectIdSessionsDeletePostResponses];
 
 export type ListExperimentsProjectsProjectIdExperimentsGetData = {
   body?: never;
@@ -28442,79 +27670,6 @@ export type ExperimentsAvailableColumnsProjectsProjectIdExperimentsAvailableColu
 
 export type ExperimentsAvailableColumnsProjectsProjectIdExperimentsAvailableColumnsPostResponse =
   ExperimentsAvailableColumnsProjectsProjectIdExperimentsAvailableColumnsPostResponses[keyof ExperimentsAvailableColumnsProjectsProjectIdExperimentsAvailableColumnsPostResponses];
-
-export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostData =
-  {
-    body: ExperimentMetricsRequest;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-      /**
-       * Experiment Id
-       */
-      experiment_id: string;
-    };
-    query?: never;
-    url: '/projects/{project_id}/experiments/{experiment_id}/metrics';
-  };
-
-export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostError =
-  GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostErrors[keyof GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostErrors];
-
-export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: ExperimentMetricsResponse;
-  };
-
-export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponse =
-  GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponses[keyof GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponses];
-
-export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostData = {
-  body: ExperimentMetricsRequest;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/experiments/metrics';
-};
-
-export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostError =
-  GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostErrors[keyof GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostErrors];
-
-export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: ExperimentMetricsResponse;
-  };
-
-export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponse =
-  GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses[keyof GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses];
 
 export type GetMetricSettingsProjectsProjectIdExperimentsExperimentIdMetricSettingsGetData =
   {
@@ -30927,32 +30082,6 @@ export type ListAvailableIntegrationsIntegrationsAvailableGetResponses = {
 export type ListAvailableIntegrationsIntegrationsAvailableGetResponse =
   ListAvailableIntegrationsIntegrationsAvailableGetResponses[keyof ListAvailableIntegrationsIntegrationsAvailableGetResponses];
 
-export type DeleteIntegrationIntegrationsNameDeleteData = {
-  body?: never;
-  path: {
-    name: IntegrationName;
-  };
-  query?: never;
-  url: '/integrations/{name}';
-};
-
-export type DeleteIntegrationIntegrationsNameDeleteErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type DeleteIntegrationIntegrationsNameDeleteError =
-  DeleteIntegrationIntegrationsNameDeleteErrors[keyof DeleteIntegrationIntegrationsNameDeleteErrors];
-
-export type DeleteIntegrationIntegrationsNameDeleteResponses = {
-  /**
-   * Successful Response
-   */
-  200: unknown;
-};
-
 export type GetIntegrationIntegrationsNameGetData = {
   body?: never;
   path: {
@@ -31883,65 +31012,24 @@ export type GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGet
 export type GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGetResponse =
   GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGetResponses[keyof GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGetResponses];
 
-export type GetIntegrationsAndModelInfoLlmIntegrationsGetData = {
-  body?: never;
-  path?: never;
-  query?: {
-    /**
-     * Multimodal Capabilities
-     */
-    multimodal_capabilities?: Array<MultimodalCapability> | null;
-  };
-  url: '/llm_integrations';
-};
-
-export type GetIntegrationsAndModelInfoLlmIntegrationsGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetIntegrationsAndModelInfoLlmIntegrationsGetError =
-  GetIntegrationsAndModelInfoLlmIntegrationsGetErrors[keyof GetIntegrationsAndModelInfoLlmIntegrationsGetErrors];
-
-export type GetIntegrationsAndModelInfoLlmIntegrationsGetResponses = {
-  /**
-   * Response Get Integrations And Model Info Llm Integrations Get
-   *
-   * Successful Response
-   */
-  200: {
-    [key in LlmIntegration]?: IntegrationModelsResponse;
-  };
-};
-
-export type GetIntegrationsAndModelInfoLlmIntegrationsGetResponse =
-  GetIntegrationsAndModelInfoLlmIntegrationsGetResponses[keyof GetIntegrationsAndModelInfoLlmIntegrationsGetResponses];
-
-export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetData =
+export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostData =
   {
-    body?: never;
+    body: ExperimentMetricsRequest;
     path: {
       /**
        * Project Id
        */
       project_id: string;
       /**
-       * Run Id
+       * Experiment Id
        */
-      run_id: string;
+      experiment_id: string;
     };
-    query?: {
-      /**
-       * Multimodal Capabilities
-       */
-      multimodal_capabilities?: Array<MultimodalCapability> | null;
-    };
-    url: '/llm_integrations/projects/{project_id}/runs/{run_id}';
+    query?: never;
+    url: '/projects/{project_id}/experiments/{experiment_id}/metrics';
   };
 
-export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetErrors =
+export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostErrors =
   {
     /**
      * Validation Error
@@ -31949,23 +31037,53 @@ export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRun
     422: HttpValidationError;
   };
 
-export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetError =
-  GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetErrors[keyof GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetErrors];
+export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostError =
+  GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostErrors[keyof GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostErrors];
 
-export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetResponses =
+export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponses =
   {
     /**
-     * Response Get Integrations And Model Info For Run Llm Integrations Projects  Project Id  Runs  Run Id  Get
-     *
      * Successful Response
      */
-    200: {
-      [key in LlmIntegration]?: IntegrationModelsResponse;
-    };
+    200: ExperimentMetricsResponse;
   };
 
-export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetResponse =
-  GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetResponses[keyof GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRunsRunIdGetResponses];
+export type GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponse =
+  GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponses[keyof GetExperimentMetricsProjectsProjectIdExperimentsExperimentIdMetricsPostResponses];
+
+export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostData = {
+  body: ExperimentMetricsRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/experiments/metrics';
+};
+
+export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostError =
+  GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostErrors[keyof GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostErrors];
+
+export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: ExperimentMetricsResponse;
+  };
+
+export type GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponse =
+  GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses[keyof GetExperimentsMetricsProjectsProjectIdExperimentsMetricsPostResponses];
 
 export type CreateScorersPostData = {
   body: CreateScorerRequest;
@@ -32083,6 +31201,209 @@ export type ValidateLlmScorerLogRecordScorersLlmValidateLogRecordPostResponses =
 export type ValidateLlmScorerLogRecordScorersLlmValidateLogRecordPostResponse =
   ValidateLlmScorerLogRecordScorersLlmValidateLogRecordPostResponses[keyof ValidateLlmScorerLogRecordScorersLlmValidateLogRecordPostResponses];
 
+export type LogTracesProjectsProjectIdTracesPostData = {
+  body: LogTracesIngestRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces';
+};
+
+export type LogTracesProjectsProjectIdTracesPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LogTracesProjectsProjectIdTracesPostError =
+  LogTracesProjectsProjectIdTracesPostErrors[keyof LogTracesProjectsProjectIdTracesPostErrors];
+
+export type LogTracesProjectsProjectIdTracesPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogTracesIngestResponse;
+};
+
+export type LogTracesProjectsProjectIdTracesPostResponse =
+  LogTracesProjectsProjectIdTracesPostResponses[keyof LogTracesProjectsProjectIdTracesPostResponses];
+
+export type GetTraceProjectsProjectIdTracesTraceIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Trace Id
+     */
+    trace_id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: {
+    /**
+     * Include Presigned Urls
+     */
+    include_presigned_urls?: boolean;
+  };
+  url: '/projects/{project_id}/traces/{trace_id}';
+};
+
+export type GetTraceProjectsProjectIdTracesTraceIdGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetTraceProjectsProjectIdTracesTraceIdGetError =
+  GetTraceProjectsProjectIdTracesTraceIdGetErrors[keyof GetTraceProjectsProjectIdTracesTraceIdGetErrors];
+
+export type GetTraceProjectsProjectIdTracesTraceIdGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ExtendedTraceRecordWithChildren;
+};
+
+export type GetTraceProjectsProjectIdTracesTraceIdGetResponse =
+  GetTraceProjectsProjectIdTracesTraceIdGetResponses[keyof GetTraceProjectsProjectIdTracesTraceIdGetResponses];
+
+export type UpdateTraceProjectsProjectIdTracesTraceIdPatchData = {
+  body: LogTraceUpdateRequest;
+  path: {
+    /**
+     * Trace Id
+     */
+    trace_id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces/{trace_id}';
+};
+
+export type UpdateTraceProjectsProjectIdTracesTraceIdPatchErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateTraceProjectsProjectIdTracesTraceIdPatchError =
+  UpdateTraceProjectsProjectIdTracesTraceIdPatchErrors[keyof UpdateTraceProjectsProjectIdTracesTraceIdPatchErrors];
+
+export type UpdateTraceProjectsProjectIdTracesTraceIdPatchResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogTraceUpdateResponse;
+};
+
+export type UpdateTraceProjectsProjectIdTracesTraceIdPatchResponse =
+  UpdateTraceProjectsProjectIdTracesTraceIdPatchResponses[keyof UpdateTraceProjectsProjectIdTracesTraceIdPatchResponses];
+
+export type GetSpanProjectsProjectIdSpansSpanIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Span Id
+     */
+    span_id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: {
+    /**
+     * Include Presigned Urls
+     */
+    include_presigned_urls?: boolean;
+  };
+  url: '/projects/{project_id}/spans/{span_id}';
+};
+
+export type GetSpanProjectsProjectIdSpansSpanIdGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetSpanProjectsProjectIdSpansSpanIdGetError =
+  GetSpanProjectsProjectIdSpansSpanIdGetErrors[keyof GetSpanProjectsProjectIdSpansSpanIdGetErrors];
+
+export type GetSpanProjectsProjectIdSpansSpanIdGetResponses = {
+  /**
+   * Response Get Span Projects  Project Id  Spans  Span Id  Get
+   *
+   * Successful Response
+   */
+  200:
+    | ({
+        type: 'agent';
+      } & ExtendedAgentSpanRecordWithChildren)
+    | ({
+        type: 'workflow';
+      } & ExtendedWorkflowSpanRecordWithChildren)
+    | ({
+        type: 'llm';
+      } & ExtendedLlmSpanRecord)
+    | ({
+        type: 'tool';
+      } & ExtendedToolSpanRecordWithChildren)
+    | ({
+        type: 'retriever';
+      } & ExtendedRetrieverSpanRecordWithChildren);
+};
+
+export type GetSpanProjectsProjectIdSpansSpanIdGetResponse =
+  GetSpanProjectsProjectIdSpansSpanIdGetResponses[keyof GetSpanProjectsProjectIdSpansSpanIdGetResponses];
+
+export type UpdateSpanProjectsProjectIdSpansSpanIdPatchData = {
+  body: LogSpanUpdateRequest;
+  path: {
+    /**
+     * Span Id
+     */
+    span_id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans/{span_id}';
+};
+
+export type UpdateSpanProjectsProjectIdSpansSpanIdPatchErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateSpanProjectsProjectIdSpansSpanIdPatchError =
+  UpdateSpanProjectsProjectIdSpansSpanIdPatchErrors[keyof UpdateSpanProjectsProjectIdSpansSpanIdPatchErrors];
+
+export type UpdateSpanProjectsProjectIdSpansSpanIdPatchResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogSpanUpdateResponse;
+};
+
+export type UpdateSpanProjectsProjectIdSpansSpanIdPatchResponse =
+  UpdateSpanProjectsProjectIdSpansSpanIdPatchResponses[keyof UpdateSpanProjectsProjectIdSpansSpanIdPatchResponses];
+
 export type TracesAvailableColumnsProjectsProjectIdTracesAvailableColumnsPostData =
   {
     body: LogRecordsAvailableColumnsRequest;
@@ -32117,6 +31438,41 @@ export type TracesAvailableColumnsProjectsProjectIdTracesAvailableColumnsPostRes
 
 export type TracesAvailableColumnsProjectsProjectIdTracesAvailableColumnsPostResponse =
   TracesAvailableColumnsProjectsProjectIdTracesAvailableColumnsPostResponses[keyof TracesAvailableColumnsProjectsProjectIdTracesAvailableColumnsPostResponses];
+
+export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostData =
+  {
+    body: MetricsTestingAvailableColumnsRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/metrics-testing/available_columns';
+  };
+
+export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostError =
+  MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostErrors[keyof MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostErrors];
+
+export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsAvailableColumnsResponse;
+  };
+
+export type MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponse =
+  MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponses[keyof MetricsTestingAvailableColumnsProjectsProjectIdMetricsTestingAvailableColumnsPostResponses];
 
 export type SpansAvailableColumnsProjectsProjectIdSpansAvailableColumnsPostData =
   {
@@ -32187,6 +31543,232 @@ export type SessionsAvailableColumnsProjectsProjectIdSessionsAvailableColumnsPos
 
 export type SessionsAvailableColumnsProjectsProjectIdSessionsAvailableColumnsPostResponse =
   SessionsAvailableColumnsProjectsProjectIdSessionsAvailableColumnsPostResponses[keyof SessionsAvailableColumnsProjectsProjectIdSessionsAvailableColumnsPostResponses];
+
+export type QueryTracesProjectsProjectIdTracesSearchPostData = {
+  body: LogRecordsQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces/search';
+};
+
+export type QueryTracesProjectsProjectIdTracesSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueryTracesProjectsProjectIdTracesSearchPostError =
+  QueryTracesProjectsProjectIdTracesSearchPostErrors[keyof QueryTracesProjectsProjectIdTracesSearchPostErrors];
+
+export type QueryTracesProjectsProjectIdTracesSearchPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsQueryResponse;
+};
+
+export type QueryTracesProjectsProjectIdTracesSearchPostResponse =
+  QueryTracesProjectsProjectIdTracesSearchPostResponses[keyof QueryTracesProjectsProjectIdTracesSearchPostResponses];
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostData = {
+  body: LogRecordsPartialQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces/partial_search';
+};
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostError =
+  QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors[keyof QueryPartialTracesProjectsProjectIdTracesPartialSearchPostErrors];
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponse =
+  QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses[keyof QueryPartialTracesProjectsProjectIdTracesPartialSearchPostResponses];
+
+export type CountTracesProjectsProjectIdTracesCountPostData = {
+  body: LogRecordsQueryCountRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces/count';
+};
+
+export type CountTracesProjectsProjectIdTracesCountPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CountTracesProjectsProjectIdTracesCountPostError =
+  CountTracesProjectsProjectIdTracesCountPostErrors[keyof CountTracesProjectsProjectIdTracesCountPostErrors];
+
+export type CountTracesProjectsProjectIdTracesCountPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsQueryCountResponse;
+};
+
+export type CountTracesProjectsProjectIdTracesCountPostResponse =
+  CountTracesProjectsProjectIdTracesCountPostResponses[keyof CountTracesProjectsProjectIdTracesCountPostResponses];
+
+export type LogSpansProjectsProjectIdSpansPostData = {
+  body: LogSpansIngestRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans';
+};
+
+export type LogSpansProjectsProjectIdSpansPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LogSpansProjectsProjectIdSpansPostError =
+  LogSpansProjectsProjectIdSpansPostErrors[keyof LogSpansProjectsProjectIdSpansPostErrors];
+
+export type LogSpansProjectsProjectIdSpansPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogSpansIngestResponse;
+};
+
+export type LogSpansProjectsProjectIdSpansPostResponse =
+  LogSpansProjectsProjectIdSpansPostResponses[keyof LogSpansProjectsProjectIdSpansPostResponses];
+
+export type QuerySpansProjectsProjectIdSpansSearchPostData = {
+  body: LogRecordsQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans/search';
+};
+
+export type QuerySpansProjectsProjectIdSpansSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QuerySpansProjectsProjectIdSpansSearchPostError =
+  QuerySpansProjectsProjectIdSpansSearchPostErrors[keyof QuerySpansProjectsProjectIdSpansSearchPostErrors];
+
+export type QuerySpansProjectsProjectIdSpansSearchPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsQueryResponse;
+};
+
+export type QuerySpansProjectsProjectIdSpansSearchPostResponse =
+  QuerySpansProjectsProjectIdSpansSearchPostResponses[keyof QuerySpansProjectsProjectIdSpansSearchPostResponses];
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostData = {
+  body: LogRecordsPartialQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans/partial_search';
+};
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostError =
+  QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors[keyof QueryPartialSpansProjectsProjectIdSpansPartialSearchPostErrors];
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponse =
+  QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses[keyof QueryPartialSpansProjectsProjectIdSpansPartialSearchPostResponses];
+
+export type CountSpansProjectsProjectIdSpansCountPostData = {
+  body: LogRecordsQueryCountRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans/count';
+};
+
+export type CountSpansProjectsProjectIdSpansCountPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CountSpansProjectsProjectIdSpansCountPostError =
+  CountSpansProjectsProjectIdSpansCountPostErrors[keyof CountSpansProjectsProjectIdSpansCountPostErrors];
+
+export type CountSpansProjectsProjectIdSpansCountPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsQueryCountResponse;
+};
+
+export type CountSpansProjectsProjectIdSpansCountPostResponse =
+  CountSpansProjectsProjectIdSpansCountPostResponses[keyof CountSpansProjectsProjectIdSpansCountPostResponses];
 
 export type QueryMetricsProjectsProjectIdMetricsSearchPostData = {
   body: LogRecordsMetricsQueryRequest;
@@ -32284,3 +31866,300 @@ export type QueryCustomMetricsProjectsProjectIdMetricsCustomSearchPostResponses 
 
 export type QueryCustomMetricsProjectsProjectIdMetricsCustomSearchPostResponse =
   QueryCustomMetricsProjectsProjectIdMetricsCustomSearchPostResponses[keyof QueryCustomMetricsProjectsProjectIdMetricsCustomSearchPostResponses];
+
+export type CreateSessionProjectsProjectIdSessionsPostData = {
+  body: SessionCreateRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/sessions';
+};
+
+export type CreateSessionProjectsProjectIdSessionsPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateSessionProjectsProjectIdSessionsPostError =
+  CreateSessionProjectsProjectIdSessionsPostErrors[keyof CreateSessionProjectsProjectIdSessionsPostErrors];
+
+export type CreateSessionProjectsProjectIdSessionsPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: SessionCreateResponse;
+};
+
+export type CreateSessionProjectsProjectIdSessionsPostResponse =
+  CreateSessionProjectsProjectIdSessionsPostResponses[keyof CreateSessionProjectsProjectIdSessionsPostResponses];
+
+export type QuerySessionsProjectsProjectIdSessionsSearchPostData = {
+  body: LogRecordsQueryRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/sessions/search';
+};
+
+export type QuerySessionsProjectsProjectIdSessionsSearchPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QuerySessionsProjectsProjectIdSessionsSearchPostError =
+  QuerySessionsProjectsProjectIdSessionsSearchPostErrors[keyof QuerySessionsProjectsProjectIdSessionsSearchPostErrors];
+
+export type QuerySessionsProjectsProjectIdSessionsSearchPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsQueryResponse;
+};
+
+export type QuerySessionsProjectsProjectIdSessionsSearchPostResponse =
+  QuerySessionsProjectsProjectIdSessionsSearchPostResponses[keyof QuerySessionsProjectsProjectIdSessionsSearchPostResponses];
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostData =
+  {
+    body: LogRecordsPartialQueryRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/sessions/partial_search';
+  };
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostError =
+  QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors[keyof QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostErrors];
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponse =
+  QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses[keyof QueryPartialSessionsProjectsProjectIdSessionsPartialSearchPostResponses];
+
+export type CountSessionsProjectsProjectIdSessionsCountPostData = {
+  body: LogRecordsQueryCountRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/sessions/count';
+};
+
+export type CountSessionsProjectsProjectIdSessionsCountPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CountSessionsProjectsProjectIdSessionsCountPostError =
+  CountSessionsProjectsProjectIdSessionsCountPostErrors[keyof CountSessionsProjectsProjectIdSessionsCountPostErrors];
+
+export type CountSessionsProjectsProjectIdSessionsCountPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsQueryCountResponse;
+};
+
+export type CountSessionsProjectsProjectIdSessionsCountPostResponse =
+  CountSessionsProjectsProjectIdSessionsCountPostResponses[keyof CountSessionsProjectsProjectIdSessionsCountPostResponses];
+
+export type GetSessionProjectsProjectIdSessionsSessionIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Session Id
+     */
+    session_id: string;
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: {
+    /**
+     * Include Presigned Urls
+     */
+    include_presigned_urls?: boolean;
+  };
+  url: '/projects/{project_id}/sessions/{session_id}';
+};
+
+export type GetSessionProjectsProjectIdSessionsSessionIdGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetSessionProjectsProjectIdSessionsSessionIdGetError =
+  GetSessionProjectsProjectIdSessionsSessionIdGetErrors[keyof GetSessionProjectsProjectIdSessionsSessionIdGetErrors];
+
+export type GetSessionProjectsProjectIdSessionsSessionIdGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ExtendedSessionRecordWithChildren;
+};
+
+export type GetSessionProjectsProjectIdSessionsSessionIdGetResponse =
+  GetSessionProjectsProjectIdSessionsSessionIdGetResponses[keyof GetSessionProjectsProjectIdSessionsSessionIdGetResponses];
+
+export type ExportRecordsProjectsProjectIdExportRecordsPostData = {
+  body: LogRecordsExportRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/export_records';
+};
+
+export type ExportRecordsProjectsProjectIdExportRecordsPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ExportRecordsProjectsProjectIdExportRecordsPostError =
+  ExportRecordsProjectsProjectIdExportRecordsPostErrors[keyof ExportRecordsProjectsProjectIdExportRecordsPostErrors];
+
+export type ExportRecordsProjectsProjectIdExportRecordsPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type DeleteTracesProjectsProjectIdTracesDeletePostData = {
+  body: LogRecordsDeleteRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/traces/delete';
+};
+
+export type DeleteTracesProjectsProjectIdTracesDeletePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteTracesProjectsProjectIdTracesDeletePostError =
+  DeleteTracesProjectsProjectIdTracesDeletePostErrors[keyof DeleteTracesProjectsProjectIdTracesDeletePostErrors];
+
+export type DeleteTracesProjectsProjectIdTracesDeletePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsDeleteResponse;
+};
+
+export type DeleteTracesProjectsProjectIdTracesDeletePostResponse =
+  DeleteTracesProjectsProjectIdTracesDeletePostResponses[keyof DeleteTracesProjectsProjectIdTracesDeletePostResponses];
+
+export type DeleteSpansProjectsProjectIdSpansDeletePostData = {
+  body: LogRecordsDeleteRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/spans/delete';
+};
+
+export type DeleteSpansProjectsProjectIdSpansDeletePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteSpansProjectsProjectIdSpansDeletePostError =
+  DeleteSpansProjectsProjectIdSpansDeletePostErrors[keyof DeleteSpansProjectsProjectIdSpansDeletePostErrors];
+
+export type DeleteSpansProjectsProjectIdSpansDeletePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsDeleteResponse;
+};
+
+export type DeleteSpansProjectsProjectIdSpansDeletePostResponse =
+  DeleteSpansProjectsProjectIdSpansDeletePostResponses[keyof DeleteSpansProjectsProjectIdSpansDeletePostResponses];
+
+export type DeleteSessionsProjectsProjectIdSessionsDeletePostData = {
+  body: LogRecordsDeleteRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/sessions/delete';
+};
+
+export type DeleteSessionsProjectsProjectIdSessionsDeletePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteSessionsProjectsProjectIdSessionsDeletePostError =
+  DeleteSessionsProjectsProjectIdSessionsDeletePostErrors[keyof DeleteSessionsProjectsProjectIdSessionsDeletePostErrors];
+
+export type DeleteSessionsProjectsProjectIdSessionsDeletePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: LogRecordsDeleteResponse;
+};
+
+export type DeleteSessionsProjectsProjectIdSessionsDeletePostResponse =
+  DeleteSessionsProjectsProjectIdSessionsDeletePostResponses[keyof DeleteSessionsProjectsProjectIdSessionsDeletePostResponses];
