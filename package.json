@@ -51,6 +51,10 @@
     "@langchain/core": ">=0.3.13",
     "@langchain/openai": ">=0.3.11",
     "@openai/agents": ">=0.4.0",
+    "@opentelemetry/api": ">=1.4.0",
+    "@opentelemetry/sdk-trace-base": ">=1.15.0",
+    "@opentelemetry/exporter-trace-otlp-http": ">=0.41.0",
+    "@opentelemetry/resources": ">=1.15.0",
     "openai": ">=4.0.0"
   },
   "peerDependenciesMeta": {
@@ -63,6 +67,18 @@
     "@openai/agents": {
       "optional": true
     },
+    "@opentelemetry/api": {
+      "optional": true
+    },
+    "@opentelemetry/sdk-trace-base": {
+      "optional": true
+    },
+    "@opentelemetry/exporter-trace-otlp-http": {
+      "optional": true
+    },
+    "@opentelemetry/resources": {
+      "optional": true
+    },
     "openai": {
       "optional": true
     }
@@ -70,6 +86,10 @@
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.88.0",
     "@langchain/core": "^0.3.13",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-trace-base": "^1.25.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.52.0",
+    "@opentelemetry/resources": "^1.25.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/lodash": "^4.17.17",
