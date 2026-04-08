@@ -147,6 +147,12 @@ import {
   GalileoCustomSpan,
   registerGalileoTraceProcessor
 } from './handlers/openai-agents';
+import {
+  GalileoSpanProcessor,
+  GalileoOTLPExporter,
+  addGalileoSpanProcessor,
+  GALILEO_ATTRIBUTES
+} from './handlers/otel';
 import { getSessions, getSpans, getTraces, RecordType } from './utils/search';
 export {
   // Legacy clients
@@ -169,6 +175,11 @@ export {
   GalileoTracingProcessor,
   GalileoCustomSpan,
   registerGalileoTraceProcessor,
+  // OpenTelemetry
+  GalileoSpanProcessor,
+  GalileoOTLPExporter,
+  addGalileoSpanProcessor,
+  GALILEO_ATTRIBUTES,
   // Datasets
   Dataset,
   Datasets,
@@ -299,6 +310,11 @@ export type {
   JobProgress,
   RunExperimentParams
 };
+
+export type {
+  GalileoSpanProcessorConfig,
+  GalileoOTLPExporterConfig
+} from './handlers/otel';
 
 export {
   APIException,
