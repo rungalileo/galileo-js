@@ -112,6 +112,9 @@ jobs:
         id: trigger
         env:
           GH_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          E2E_BRANCH: ${{ inputs.e2e_branch || 'main' }}
+          RC_TAG: ${{ needs.create-release-candidate.outputs.rc_tag }}
+          CALLBACK_RUN_ID: ${{ github.run_id }}
         run: |
           # Snapshot the latest run ID before triggering, so we can find our new run
           # by looking for an ID greater than this. Avoids clock-skew issues with
@@ -126,10 +129,10 @@ jobs:
           # Trigger the workflow
           gh workflow run run-ts-sdk-release-gate.yaml \
             --repo rungalileo/e2e-testing \
-            --ref "${{ inputs.e2e_branch || 'main' }}" \
-            -f galileo_js_version="${{ needs.create-release-candidate.outputs.rc_tag }}" \
-            -f e2e_branch="${{ inputs.e2e_branch || 'main' }}" \
-            -f callback_run_id="${{ github.run_id }}"
+            --ref "$E2E_BRANCH" \
+            -f galileo_js_version="$RC_TAG" \
+            -f e2e_branch="$E2E_BRANCH" \
+            -f callback_run_id="$CALLBACK_RUN_ID"
 
           echo "Triggered e2e workflow. Waiting for run to appear..."
           sleep 10
