@@ -70,7 +70,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Validate next version
-        if: steps.next_version.outputs.new_release_published != 'true'
+        if: steps.next_version.outputs.new_release_version == ''
         run: |
           echo "::error::semantic-release dry-run did not produce a next version. Are there releasable commits?"
           exit 1
