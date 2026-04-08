@@ -284,7 +284,7 @@ jobs:
   # ─── Notify success on Slack (e2e passed, release dispatched) ───
   notify-success:
     needs: [create-release-candidate, run-e2e-gate, release]
-    if: needs.run-e2e-gate.outputs.e2e_result == 'success' && inputs.skip_release != true
+    if: needs.run-e2e-gate.outputs.e2e_result == 'success' && needs.release.result == 'success' && inputs.skip_release != true
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack success notification
