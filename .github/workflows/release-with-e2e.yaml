@@ -227,11 +227,12 @@ jobs:
       - name: Trigger existing release workflow
         env:
           GH_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          RELEASE_REF: ${{ inputs.galileo_branch || github.ref_name }}
         run: |
           echo "E2E gate passed — dispatching Package Release workflow"
           gh workflow run release.yaml \
             --repo rungalileo/galileo-js \
-            --ref "${{ inputs.galileo_branch || github.ref_name }}"
+            --ref "$RELEASE_REF"
 
           echo "## ✅ Release Dispatched" >> $GITHUB_STEP_SUMMARY
           echo "- **RC tested:** ${{ needs.create-release-candidate.outputs.rc_version }}" >> $GITHUB_STEP_SUMMARY
