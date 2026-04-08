@@ -235,7 +235,11 @@ jobs:
           E2E_RESULT="${{ needs.run-e2e-gate.outputs.e2e_result }}"
           E2E_RUN_ID="${{ needs.run-e2e-gate.outputs.e2e_run_id }}"
           GALILEO_JS_RUN="https://github.com/rungalileo/galileo-js/actions/runs/${{ github.run_id }}"
-          E2E_RUN="https://github.com/rungalileo/e2e-testing/actions/runs/${E2E_RUN_ID}"
+          if [ -n "$E2E_RUN_ID" ]; then
+            E2E_RUN="https://github.com/rungalileo/e2e-testing/actions/runs/${E2E_RUN_ID}"
+          else
+            E2E_RUN="https://github.com/rungalileo/e2e-testing/actions/workflows/run-ts-sdk-release-gate.yaml"
+          fi
 
           # Build Slack message using Block Kit JSON
           BLOCKS=$(cat <<'BLOCKS_EOF'
