@@ -655,10 +655,9 @@ export class GalileoCallback
     tags?: string[],
     metadata?: Record<string, any>
   ): Promise<void> {
-    const invocationParams = extraParams?.invocation_params as Record<
-      string,
-      unknown
-    >;
+    const invocationParams = extraParams?.invocation_params as
+      | Record<string, unknown>
+      | undefined;
     const model =
       invocationParams?.model || invocationParams?._type || 'undefined-type';
     const temperature = invocationParams?.temperature || 0.0;
