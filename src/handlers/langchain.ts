@@ -114,14 +114,14 @@ export class GalileoCallback
   }
 
   /**
-   * Shared name resolution helper (Python: _get_node_name).
-   * Resolution order: serialized.name → serialized.id[-1] → params.name →
-   * params.metadata.name → nodeType capitalised.
+   * Resolve a node name from serialized data, runName, or metadata.
+   * Falls back to capitalised nodeType.
    */
   private static _getNodeName(
     nodeType: string,
     serialized?: Serialized | null,
-    params?: Record<string, unknown>
+    runName?: string,
+    metadata?: Record<string, unknown>
   ): string {
     try {
       if (serialized?.name && serialized.name.length > 0) {
@@ -131,11 +131,10 @@ export class GalileoCallback
       if (Array.isArray(idArr) && idArr.length > 0) {
         return String(idArr[idArr.length - 1]);
       }
-      const paramsName = params?.name;
-      if (typeof paramsName === 'string' && paramsName.length > 0) {
-        return paramsName;
+      if (typeof runName === 'string' && runName.length > 0) {
+        return runName;
       }
-      const metaName = (params?.metadata as Record<string, unknown>)?.name;
+      const metaName = metadata?.name;
       if (typeof metaName === 'string' && metaName.length > 0) {
         return metaName;
       }
@@ -507,7 +506,9 @@ export class GalileoCallback
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    runType?: string,
+    runName?: string
   ): Promise<void> {
     // If the node is tagged with hidden, don't log it
     if (tags && tags.includes('langsmith:hidden')) {
@@ -518,7 +519,12 @@ export class GalileoCallback
     updateRootToAgent(parentRunId, metadata, this._nodes);
 
     let nodeType: LANGCHAIN_NODE_TYPE = 'chain';
-    let nodeName = GalileoCallback._getNodeName('chain', chain, metadata);
+    let nodeName = GalileoCallback._getNodeName(
+      'chain',
+      chain,
+      runName,
+      metadata
+    );
     let nodeInput: unknown = {};
 
     // Case-insensitive detection of LangGraph / agent nodes
@@ -599,14 +605,15 @@ export class GalileoCallback
     parentRunId?: string,
     extraParams?: Record<string, unknown>,
     tags?: string[],
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    runName?: string
   ): Promise<void> {
     const invocationParams = extraParams?.invocation_params as
       | Record<string, unknown>
       | undefined;
     const model = invocationParams?.model_name as string | undefined;
     const temperature = invocationParams?.temperature as number | undefined;
-    const name = GalileoCallback._getNodeName('llm', llm, extraParams);
+    const name = GalileoCallback._getNodeName('llm', llm, runName, metadata);
 
     this._startNode('llm', parentRunId, runId, {
       name,
@@ -653,7 +660,8 @@ export class GalileoCallback
     parentRunId?: string,
     extraParams?: Record<string, unknown>,
     tags?: string[],
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    runName?: string
   ): Promise<void> {
     const invocationParams = extraParams?.invocation_params as
       | Record<string, unknown>
@@ -664,7 +672,7 @@ export class GalileoCallback
     const tools = invocationParams?.tools as
       | Record<string, unknown>[]
       | undefined;
-    const name = GalileoCallback._getNodeName('chat', llm, extraParams);
+    const name = GalileoCallback._getNodeName('chat', llm, runName, metadata);
 
     // Serialize messages safely, preserving tool_calls when present
     let serializedMessages;
@@ -784,14 +792,15 @@ export class GalileoCallback
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    runName?: string
   ): Promise<void> {
     // Note: Python's on_tool_start checks for a structured inputs dict via **kwargs
     // and uses it over the flat input_str. The JS @langchain/core callback interface
     // does not expose an equivalent parameter, so we always use the flat `input`
     // string here. This is a known JS/Python divergence; revisit if a future
     // @langchain/core version adds an `inputs` parameter.
-    const name = GalileoCallback._getNodeName('tool', tool, metadata);
+    const name = GalileoCallback._getNodeName('tool', tool, runName, metadata);
     this._startNode('tool', parentRunId, runId, {
       name,
       input,
@@ -856,9 +865,15 @@ export class GalileoCallback
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    runName?: string
   ): Promise<void> {
-    const name = GalileoCallback._getNodeName('retriever', retriever, metadata);
+    const name = GalileoCallback._getNodeName(
+      'retriever',
+      retriever,
+      runName,
+      metadata
+    );
     this._startNode('retriever', parentRunId, runId, {
       name,
       input: query,
