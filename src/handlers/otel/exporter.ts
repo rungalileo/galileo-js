@@ -31,8 +31,9 @@ const sdkLogger = getSdkLogger();
 export class GalileoOTLPExporter implements SpanExporterLike {
   private _innerExporter: SpanExporterLike;
   private _headers: Record<string, string>;
-  private _ResourceClass: (new (attrs: Record<string, unknown>) => unknown) | null =
-    null;
+  private _ResourceClass:
+    | (new (attrs: Record<string, unknown>) => unknown)
+    | null = null;
 
   readonly project: string;
   readonly logstream: string;
@@ -42,8 +43,7 @@ export class GalileoOTLPExporter implements SpanExporterLike {
     // (handles consoleUrl→apiUrl rewriting, env var fallbacks, etc.)
     const galileoConfig = GalileoConfig.get();
     const apiUrl = config?.apiUrl ?? galileoConfig.getApiUrl();
-    const apiKey =
-      config?.apiKey ?? galileoConfig.getAuthCredentials().apiKey;
+    const apiKey = config?.apiKey ?? galileoConfig.getAuthCredentials().apiKey;
 
     if (!apiKey) {
       throw new Error(
@@ -51,8 +51,7 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       );
     }
 
-    this.project =
-      config?.project ?? galileoConfig.projectName ?? 'default';
+    this.project = config?.project ?? galileoConfig.projectName ?? 'default';
     this.logstream =
       config?.logstream ?? galileoConfig.logStreamName ?? 'default';
 
