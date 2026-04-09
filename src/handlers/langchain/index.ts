@@ -9,77 +9,24 @@ import { BaseMessage, ToolMessage } from '@langchain/core/messages';
 import { ChainValues } from '@langchain/core/utils/types';
 import { AgentFinish } from '@langchain/core/agents';
 import { DocumentInterface } from '@langchain/core/documents';
-import { GalileoSingleton } from '../singleton';
-import { GalileoLogger } from '../utils/galileo-logger';
-import { toStringValue, toStringRecord } from '../utils/serialization';
+import { GalileoSingleton } from '../../singleton';
+import { GalileoLogger } from '../../utils/galileo-logger';
+import { toStringValue, toStringRecord } from '../../utils/serialization';
 import { getSdkLogger } from 'galileo-generated';
 import { Serialized } from '@langchain/core/load/serializable.js';
-import type { LogTracesIngestRequest } from '../types/logging/trace.types';
+import type { LogTracesIngestRequest } from '../../types/logging/trace.types';
+import { Node, LANGCHAIN_NODE_TYPE, rootNodeContext } from './node';
+import {
+  getNodeName,
+  getAgentName,
+  findToolMessage,
+  updateRootToAgent
+} from './utils';
+import { logNodeTree } from './tree-logger';
+
+export { rootNodeContext } from './node';
 
 const sdkLogger = getSdkLogger();
-
-type LANGCHAIN_NODE_TYPE =
-  | 'agent'
-  | 'chain'
-  | 'chat'
-  | 'llm'
-  | 'retriever'
-  | 'tool';
-
-/**
- * A node in the LangChain trace.
- */
-class Node {
-  nodeType: LANGCHAIN_NODE_TYPE;
-  spanParams: Record<string, any>;
-  runId: string;
-  parentRunId?: string;
-  children: string[] = [];
-
-  constructor(
-    nodeType: LANGCHAIN_NODE_TYPE,
-    spanParams: Record<string, any>,
-    runId: string,
-    parentRunId?: string
-  ) {
-    this.nodeType = nodeType;
-    this.spanParams = spanParams;
-    this.runId = runId;
-    this.parentRunId = parentRunId;
-  }
-}
-
-// Root node tracking
-let _rootNode: Node | null = null;
-
-export const rootNodeContext = {
-  get: (): Node | null => _rootNode,
-  set: (value: Node | null): void => {
-    _rootNode = value;
-  }
-};
-
-/**
- * Retroactively upgrade a root-level chain node to agent type when any of its
- * children carry langgraph_* metadata keys.
- */
-function updateRootToAgent(
-  parentRunId: string | undefined,
-  metadata: Record<string, unknown> | undefined,
-  nodes: Record<string, Node>
-): void {
-  if (!parentRunId) return;
-  if (!metadata) return;
-  const hasLangGraphKey = Object.keys(metadata).some((k) =>
-    k.startsWith('langgraph_')
-  );
-  if (!hasLangGraphKey) return;
-  const parentNode = nodes[parentRunId];
-  if (!parentNode) return;
-  if (parentNode.nodeType === 'chain' && parentNode.parentRunId === undefined) {
-    parentNode.nodeType = 'agent';
-  }
-}
 
 /**
  * Langchain callback handler for logging traces to the Galileo platform.
@@ -111,70 +58,6 @@ export class GalileoCallback
     }
     this._startNewTrace = startNewTrace;
     this._flushOnChainEnd = flushOnChainEnd;
-  }
-
-  /**
-   * Resolve a node name from serialized data, runName, or metadata.
-   * Falls back to capitalised nodeType.
-   */
-  private static _getNodeName(
-    nodeType: string,
-    serialized?: Serialized | null,
-    runName?: string,
-    metadata?: Record<string, unknown>
-  ): string {
-    try {
-      if (serialized?.name && serialized.name.length > 0) {
-        return serialized.name;
-      }
-      const idArr = serialized?.id;
-      if (Array.isArray(idArr) && idArr.length > 0) {
-        return String(idArr[idArr.length - 1]);
-      }
-      if (typeof runName === 'string' && runName.length > 0) {
-        return runName;
-      }
-      const metaName = metadata?.name;
-      if (typeof metaName === 'string' && metaName.length > 0) {
-        return metaName;
-      }
-      return nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
-    } catch {
-      return nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
-    }
-  }
-
-  /**
-   * Build a hierarchical agent name from the parent node (Python: get_agent_name).
-   */
-  private _getAgentName(
-    parentRunId: string | undefined,
-    defaultName: string
-  ): string {
-    if (parentRunId !== undefined && this._nodes[parentRunId]) {
-      return `${this._nodes[parentRunId].spanParams.name}:${defaultName}`;
-    }
-    return defaultName;
-  }
-
-  /**
-   * Detect a ToolMessage inside a tool output, including LangGraph Command objects
-   * that carry a messages array (Python: _find_tool_message).
-   */
-  private static _findToolMessage(output: unknown): ToolMessage | null {
-    if (output instanceof ToolMessage) return output;
-    const update = (output as Record<string, unknown>)?.update;
-    if (
-      typeof update === 'object' &&
-      update !== null &&
-      Array.isArray((update as Record<string, unknown>).messages)
-    ) {
-      const messages = (update as Record<string, unknown>)
-        .messages as unknown[];
-      const last = messages.length === 0 ? null : messages[messages.length - 1];
-      if (last instanceof ToolMessage) return last;
-    }
-    return null;
   }
 
   /**
@@ -222,7 +105,7 @@ export class GalileoCallback
         });
       }
 
-      this._logNodeTree(rootNode);
+      logNodeTree(rootNode, this._nodes, this._galileoLogger);
 
       // Conclude the trace with the root node's output
       const rootOutput = rootNode.spanParams.output || '';
@@ -245,159 +128,6 @@ export class GalileoCallback
   }
 
   /**
-   * Log a node and its children recursively.
-   */
-  private _logNodeTree(node: Node): void {
-    let isWorkflowSpan = false;
-    const input = node.spanParams.input || '';
-    const inputAsString =
-      typeof input === 'string' ? input : toStringValue(input);
-    const output = node.spanParams.output || '';
-    const outputAsString =
-      typeof output === 'string' ? output : toStringValue(output);
-    const name = node.spanParams.name;
-    const tags = node.spanParams.tags;
-    const durationNs = node.spanParams.durationNs as number | undefined;
-    const createdAt = node.spanParams.createdAt as Date | undefined;
-    const statusCode = node.spanParams.statusCode as number | undefined;
-
-    let metadata: Record<string, string> | undefined = undefined;
-    if (node.spanParams.metadata) {
-      try {
-        metadata = toStringRecord(
-          node.spanParams.metadata as Record<string, unknown>
-        );
-      } catch (e) {
-        sdkLogger.warn('Unable to convert metadata to a string dictionary', e);
-      }
-    }
-
-    // Extract step number from metadata
-    let stepNumber: number | undefined = undefined;
-    if (metadata) {
-      const langgraphStep = metadata['langgraph_step'];
-      if (langgraphStep !== undefined) {
-        try {
-          stepNumber = parseInt(langgraphStep, 10);
-          if (isNaN(stepNumber)) {
-            sdkLogger.warn(
-              `Invalid step number: ${langgraphStep}, not a valid integer`
-            );
-            stepNumber = undefined;
-          }
-        } catch (e) {
-          sdkLogger.warn(
-            `Invalid step number: ${langgraphStep}, exception raised ${e}`
-          );
-          stepNumber = undefined;
-        }
-      }
-    }
-
-    // Log the current node based on its type
-    if (node.nodeType === 'agent') {
-      this._galileoLogger.addAgentSpan({
-        input: inputAsString,
-        output: outputAsString,
-        name,
-        metadata,
-        tags,
-        durationNs,
-        createdAt,
-        statusCode,
-        stepNumber
-      });
-      isWorkflowSpan = true;
-    } else if (node.nodeType === 'chain') {
-      this._galileoLogger.addWorkflowSpan({
-        input: inputAsString,
-        output: outputAsString,
-        name,
-        metadata,
-        tags,
-        durationNs,
-        createdAt,
-        statusCode,
-        stepNumber
-      });
-      isWorkflowSpan = true;
-    } else if (node.nodeType === 'llm' || node.nodeType === 'chat') {
-      this._galileoLogger.addLlmSpan({
-        input,
-        output,
-        model: node.spanParams.model,
-        temperature: node.spanParams.temperature,
-        tools: 'tools' in node.spanParams ? node.spanParams.tools : undefined,
-        name,
-        metadata,
-        tags,
-        numInputTokens: node.spanParams.numInputTokens,
-        numOutputTokens: node.spanParams.numOutputTokens,
-        totalTokens: node.spanParams.totalTokens,
-        timeToFirstTokenNs: node.spanParams.timeToFirstTokenNs,
-        durationNs,
-        createdAt,
-        statusCode,
-        stepNumber
-      });
-    } else if (node.nodeType === 'retriever') {
-      this._galileoLogger.addRetrieverSpan({
-        input: inputAsString,
-        output,
-        name,
-        metadata,
-        tags,
-        durationNs,
-        createdAt,
-        statusCode,
-        stepNumber
-      });
-    } else if (node.nodeType === 'tool') {
-      const toolSpan = this._galileoLogger.addToolSpan({
-        input: inputAsString,
-        output: outputAsString,
-        name,
-        metadata,
-        tags,
-        toolCallId: node.spanParams.toolCallId as string | undefined,
-        durationNs,
-        createdAt,
-        statusCode,
-        stepNumber
-      });
-      if (node.children.length > 0) {
-        // Push tool span as parent so agent-as-tool child spans nest correctly
-        this._galileoLogger.pushParent(toolSpan);
-        isWorkflowSpan = true;
-      }
-    } else {
-      sdkLogger.warn(`Unknown node type: ${node.nodeType}`);
-    }
-
-    // Process all child nodes
-    let lastChild: Node | null = null;
-    for (const childId of node.children) {
-      const childNode = this._nodes[childId];
-      if (childNode) {
-        this._logNodeTree(childNode);
-        lastChild = childNode;
-      } else {
-        sdkLogger.debug(`Child node ${childId} not found`);
-      }
-    }
-
-    // Conclude workflow/agent span. Use the last child's output if necessary
-    if (isWorkflowSpan) {
-      const finalOutput =
-        output || (lastChild ? lastChild.spanParams.output || '' : '');
-      this._galileoLogger.conclude({
-        output: toStringValue(finalOutput),
-        statusCode
-      });
-    }
-  }
-
-  /**
    * Start a new node in the chain.
    * Records startTime and createdAt for all nodes automatically.
    */
@@ -416,11 +146,11 @@ export class GalileoCallback
       );
     }
 
-    // Always record startTime and createdAt for duration tracking.
+    // Set startTime and createdAt as defaults; callers may override.
     const nodeParams: Record<string, any> = {
-      ...params,
       startTime: performance.now(),
-      createdAt: new Date()
+      createdAt: new Date(),
+      ...params
     };
 
     // Create new node
@@ -519,19 +249,14 @@ export class GalileoCallback
     updateRootToAgent(parentRunId, metadata, this._nodes);
 
     let nodeType: LANGCHAIN_NODE_TYPE = 'chain';
-    let nodeName = GalileoCallback._getNodeName(
-      'chain',
-      chain,
-      runName,
-      metadata
-    );
+    let nodeName = getNodeName('chain', chain, runName, metadata);
     let nodeInput: unknown = {};
 
     // Case-insensitive detection of LangGraph / agent nodes
     const lowerName = nodeName.toLowerCase();
     if (lowerName === 'langgraph' || lowerName === 'agent') {
       nodeType = 'agent';
-      nodeName = this._getAgentName(parentRunId, 'Agent');
+      nodeName = getAgentName(this._nodes, parentRunId, 'Agent');
     }
 
     if (typeof inputs === 'string') {
@@ -599,7 +324,7 @@ export class GalileoCallback
       | undefined;
     const model = invocationParams?.model_name as string | undefined;
     const temperature = invocationParams?.temperature as number | undefined;
-    const name = GalileoCallback._getNodeName('llm', llm, runName, metadata);
+    const name = getNodeName('llm', llm, runName, metadata);
 
     this._startNode('llm', parentRunId, runId, {
       name,
@@ -654,7 +379,7 @@ export class GalileoCallback
     const tools = invocationParams?.tools as
       | Record<string, unknown>[]
       | undefined;
-    const name = GalileoCallback._getNodeName('chat', llm, runName, metadata);
+    const name = getNodeName('chat', llm, runName, metadata);
 
     // Serialize messages safely, preserving tool_calls when present
     let serializedMessages;
@@ -778,7 +503,7 @@ export class GalileoCallback
     // does not expose an equivalent parameter, so we always use the flat `input`
     // string here. This is a known JS/Python divergence; revisit if a future
     // @langchain/core version adds an `inputs` parameter.
-    const name = GalileoCallback._getNodeName('tool', tool, runName, metadata);
+    const name = getNodeName('tool', tool, runName, metadata);
     this._startNode('tool', parentRunId, runId, {
       name,
       input,
@@ -796,7 +521,7 @@ export class GalileoCallback
 
     // Check for ToolMessage (covers response_format="content_and_artifact" indirectly
     // and LangGraph Command objects carrying a ToolMessage)
-    const toolMessage = GalileoCallback._findToolMessage(output);
+    const toolMessage = findToolMessage(output);
     if (toolMessage !== null) {
       serializedOutput = toStringValue(toolMessage.content);
       await this._endNode(runId, {
@@ -842,12 +567,7 @@ export class GalileoCallback
     metadata?: Record<string, any>,
     runName?: string
   ): Promise<void> {
-    const name = GalileoCallback._getNodeName(
-      'retriever',
-      retriever,
-      runName,
-      metadata
-    );
+    const name = getNodeName('retriever', retriever, runName, metadata);
     this._startNode('retriever', parentRunId, runId, {
       name,
       input: query,

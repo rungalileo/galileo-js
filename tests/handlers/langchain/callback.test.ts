@@ -1,5 +1,8 @@
-import { GalileoCallback, rootNodeContext } from '../../src/handlers/langchain';
-import { GalileoLogger } from '../../src/utils/galileo-logger';
+import {
+  GalileoCallback,
+  rootNodeContext
+} from '../../../src/handlers/langchain';
+import { GalileoLogger } from '../../../src/utils/galileo-logger';
 import { AgentFinish } from '@langchain/core/agents';
 import {
   BaseMessage,
@@ -11,13 +14,13 @@ import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
 import { ChainValues } from '@langchain/core/utils/types';
 import { DocumentInterface, Document } from '@langchain/core/documents';
-import { StepType } from '../../src/types/logging/step.types';
+import { StepType } from '../../../src/types/logging/step.types';
 import {
   AgentSpan,
   LlmSpan,
   ToolSpan,
   WorkflowSpan
-} from '../../src/types/logging/span.types';
+} from '../../../src/types/logging/span.types';
 
 // Mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -28,7 +31,7 @@ const mockGetLogStreams = jest.fn();
 const mockGetLogStreamByName = jest.fn();
 const mockIngestTraces = jest.fn();
 
-jest.mock('../../src/api-client', () => {
+jest.mock('../../../src/api-client', () => {
   return {
     GalileoApiClient: Object.assign(
       jest.fn().mockImplementation(() => {
