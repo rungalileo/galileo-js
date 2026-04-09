@@ -182,9 +182,7 @@ describe('GalileoOTLPExporter', () => {
     // Then: Resource was created without logstream (experiment takes priority)
     const resourceCallArgs = MockResource.mock.calls[0][0];
     expect(resourceCallArgs[GALILEO_ATTRIBUTES.EXPERIMENT_ID]).toBe('exp-456');
-    expect(
-      resourceCallArgs[GALILEO_ATTRIBUTES.LOGSTREAM_NAME]
-    ).toBeUndefined();
+    expect(resourceCallArgs[GALILEO_ATTRIBUTES.LOGSTREAM_NAME]).toBeUndefined();
   });
 
   test('test export includes dataset attributes in resource', () => {
