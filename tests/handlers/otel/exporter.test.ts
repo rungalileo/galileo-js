@@ -1,6 +1,7 @@
 import { GalileoOTLPExporter } from '../../../src/handlers/otel/exporter';
 import { GALILEO_ATTRIBUTES } from '../../../src/handlers/otel/types';
 import { GalileoConfig } from 'galileo-generated';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 
 // Mock OTel dependencies
 const mockExport = jest.fn();
@@ -82,8 +83,6 @@ describe('GalileoOTLPExporter', () => {
     expect(exporter.logstream).toBe('my-logstream');
 
     // Then: OTLPTraceExporter was created with correct endpoint and headers
-    const OTLPTraceExporter =
-      require('@opentelemetry/exporter-trace-otlp-http').OTLPTraceExporter;
     expect(OTLPTraceExporter).toHaveBeenCalledWith({
       url: 'https://custom.galileo.ai/otel/traces',
       headers: {
@@ -103,8 +102,6 @@ describe('GalileoOTLPExporter', () => {
     });
 
     // Then: endpoint has no double slash
-    const OTLPTraceExporter =
-      require('@opentelemetry/exporter-trace-otlp-http').OTLPTraceExporter;
     expect(OTLPTraceExporter).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'https://custom.galileo.ai/otel/traces'
