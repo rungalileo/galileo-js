@@ -166,7 +166,9 @@ describe('GalileoCallback', () => {
 
       expect(callback['_nodes'][runId]).toBeDefined();
       expect(callback['_nodes'][runId].nodeType).toBe('chain');
-      expect(callback['_nodes'][runId].spanParams.input).toEqual(inputs);
+      expect(callback['_nodes'][runId].spanParams.input).toEqual(
+        JSON.stringify(inputs)
+      );
 
       const outputs = { result: 'test answer' };
       await callback.handleChainEnd(outputs, runId);
@@ -195,7 +197,9 @@ describe('GalileoCallback', () => {
 
       expect(callback['_nodes'][runId]).toBeDefined();
       expect(callback['_nodes'][runId].nodeType).toBe('chain');
-      expect(callback['_nodes'][runId].spanParams.input).toEqual(inputs);
+      expect(callback['_nodes'][runId].spanParams.input).toEqual(
+        JSON.stringify(inputs)
+      );
 
       // Update inputs
       inputs = { query: 'test question' };
@@ -2157,7 +2161,7 @@ describe('GalileoCallback', () => {
         expect(callback['_nodes'][runId].spanParams.input).toBe(msg);
       });
 
-      it('test handleChainStart filters non-string values from object input', async () => {
+      it('test handleChainStart serializes all object input values', async () => {
         const runId = createId();
         await callback.handleChainStart(
           { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
@@ -2165,13 +2169,11 @@ describe('GalileoCallback', () => {
           runId
         );
 
-        const input = callback['_nodes'][runId].spanParams.input as Record<
-          string,
-          unknown
-        >;
-        expect(input.query).toBe('test');
-        expect(input.valid).toBe('value');
-        expect(input.count).toBeUndefined();
+        const input = callback['_nodes'][runId].spanParams.input as string;
+        const parsed = JSON.parse(input);
+        expect(parsed.query).toBe('test');
+        expect(parsed.valid).toBe('value');
+        expect(parsed.count).toBe(42);
       });
     });
 

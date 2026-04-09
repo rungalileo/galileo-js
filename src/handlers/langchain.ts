@@ -8,7 +8,7 @@ import { LLMResult } from '@langchain/core/outputs';
 import { BaseMessage, ToolMessage } from '@langchain/core/messages';
 import { ChainValues } from '@langchain/core/utils/types';
 import { AgentFinish } from '@langchain/core/agents';
-import { Document, DocumentInterface } from '@langchain/core/documents';
+import { DocumentInterface } from '@langchain/core/documents';
 import { GalileoSingleton } from '../singleton';
 import { GalileoLogger } from '../utils/galileo-logger';
 import { toStringValue, toStringRecord } from '../utils/serialization';
@@ -61,7 +61,7 @@ export const rootNodeContext = {
 
 /**
  * Retroactively upgrade a root-level chain node to agent type when any of its
- * children carry langgraph_* metadata keys (Python: update_root_to_agent).
+ * children carry langgraph_* metadata keys.
  */
 function updateRootToAgent(
   parentRunId: string | undefined,
@@ -538,22 +538,8 @@ export class GalileoCallback
       nodeInput = { input: inputs };
     } else if (inputs instanceof BaseMessage) {
       nodeInput = inputs;
-    } else if (typeof inputs === 'object') {
-      nodeInput = Object.fromEntries(
-        Object.entries(inputs).filter(
-          ([key, value]: [string, unknown]) => key && typeof value === 'string'
-        )
-      );
-    } else if (
-      (Array.isArray(inputs) as boolean) &&
-      (inputs as Document[]).every((v: unknown) => v instanceof Document)
-    ) {
-      nodeInput = Object.fromEntries(
-        (inputs as Document[]).map((value: Document, index: number) => [
-          String(index),
-          value.pageContent
-        ])
-      );
+    } else {
+      nodeInput = toStringValue(inputs);
     }
 
     this._startNode(nodeType, parentRunId, runId, {
@@ -621,11 +607,7 @@ export class GalileoCallback
       tags,
       model,
       temperature,
-      metadata: metadata
-        ? Object.fromEntries(
-            Object.entries(metadata).map(([k, v]) => [k, String(v)])
-          )
-        : undefined,
+      metadata: metadata ? toStringRecord(metadata) : undefined,
       timeToFirstTokenNs: null
     });
   }
@@ -708,11 +690,7 @@ export class GalileoCallback
       tools,
       model,
       temperature,
-      metadata: metadata
-        ? Object.fromEntries(
-            Object.entries(metadata).map(([k, v]) => [k, String(v)])
-          )
-        : undefined,
+      metadata: metadata ? toStringRecord(metadata) : undefined,
       timeToFirstTokenNs: null
     });
   }
@@ -805,11 +783,7 @@ export class GalileoCallback
       name,
       input,
       tags,
-      metadata: metadata
-        ? Object.fromEntries(
-            Object.entries(metadata).map(([k, v]) => [k, String(v)])
-          )
-        : undefined
+      metadata: metadata ? toStringRecord(metadata) : undefined
     });
   }
 
