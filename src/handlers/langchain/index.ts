@@ -236,7 +236,7 @@ export class GalileoCallback
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     runType?: string,
     runName?: string
   ): Promise<void> {
@@ -316,7 +316,7 @@ export class GalileoCallback
     parentRunId?: string,
     extraParams?: Record<string, unknown>,
     tags?: string[],
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     runName?: string
   ): Promise<void> {
     const invocationParams = extraParams?.invocation_params as
@@ -367,7 +367,7 @@ export class GalileoCallback
     parentRunId?: string,
     extraParams?: Record<string, unknown>,
     tags?: string[],
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     runName?: string
   ): Promise<void> {
     const invocationParams = extraParams?.invocation_params as
@@ -495,7 +495,7 @@ export class GalileoCallback
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     runName?: string
   ): Promise<void> {
     // Note: Python's on_tool_start checks for a structured inputs dict via **kwargs
@@ -564,7 +564,7 @@ export class GalileoCallback
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     runName?: string
   ): Promise<void> {
     const name = getNodeName('retriever', retriever, runName, metadata);
