@@ -1,0 +1,333 @@
+name: Release with E2E Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      e2e_branch:
+        description: 'Branch of e2e-testing to run tests against (default: main)'
+        required: false
+        type: string
+        default: 'main'
+      galileo_branch:
+        description: 'Branch of galileo-js to release from (default: triggering ref)'
+        required: false
+        type: string
+        default: ''
+      skip_release:
+        description: 'If true, only run e2e tests without releasing (monitoring mode)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-with-e2e
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # ─── Step 1: Determine the next version and create RC ───
+  create-release-candidate:
+    runs-on: ubuntu-latest
+    outputs:
+      rc_version: ${{ steps.rc.outputs.rc_version }}
+      expected_version: ${{ steps.rc.outputs.expected_version }}
+      rc_tag: ${{ steps.rc.outputs.rc_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.galileo_branch || github.ref }}
+          fetch-depth: 0 # Full history needed for semantic-release dry-run
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine next version (semantic-release dry-run)
+        id: next_version
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          dry_run: true
+          ci: false
+          extra_plugins: |
+            @semantic-release/commit-analyzer
+            @semantic-release/release-notes-generator
+            @semantic-release/changelog
+            @semantic-release/npm
+            @semantic-release/git
+            @semantic-release/github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Validate next version
+        if: steps.next_version.outputs.new_release_version == ''
+        run: |
+          echo "::error::semantic-release dry-run did not produce a next version. Are there releasable commits?"
+          exit 1
+
+      - name: Compute RC version
+        id: rc
+        run: |
+          NEXT="${{ steps.next_version.outputs.new_release_version }}"
+          # Check for existing RC tags for this version
+          EXISTING_RCS=$(git tag -l "v${NEXT}-rc.*" | wc -l)
+          RC_NUM=$((EXISTING_RCS + 1))
+          RC_VERSION="${NEXT}-rc.${RC_NUM}"
+          RC_TAG="v${RC_VERSION}"
+
+          echo "expected_version=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "rc_version=$RC_VERSION" >> "$GITHUB_OUTPUT"
+          echo "rc_tag=$RC_TAG" >> "$GITHUB_OUTPUT"
+
+          echo "## Release Candidate" >> $GITHUB_STEP_SUMMARY
+          echo "- **Expected version:** $NEXT" >> $GITHUB_STEP_SUMMARY
+          echo "- **RC version:** $RC_VERSION (tag: $RC_TAG)" >> $GITHUB_STEP_SUMMARY
+          echo "- **RC number:** $RC_NUM" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create RC tag
+        run: |
+          git tag "${{ steps.rc.outputs.rc_tag }}"
+          git push origin "${{ steps.rc.outputs.rc_tag }}"
+          echo "Tagged ${{ steps.rc.outputs.rc_tag }} — e2e-testing will install from git+https://github.com/rungalileo/galileo-js.git#${{ steps.rc.outputs.rc_tag }}"
+
+  # ─── Step 2: Trigger e2e-testing and wait for result ───
+  run-e2e-gate:
+    needs: create-release-candidate
+    runs-on: ubuntu-latest
+    outputs:
+      e2e_result: ${{ steps.poll.outputs.result }}
+      e2e_run_id: ${{ steps.trigger.outputs.run_id }}
+    steps:
+      - name: Trigger e2e-testing workflow
+        id: trigger
+        env:
+          GH_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          E2E_BRANCH: ${{ inputs.e2e_branch || 'main' }}
+          RC_TAG: ${{ needs.create-release-candidate.outputs.rc_tag }}
+          CALLBACK_RUN_ID: ${{ github.run_id }}
+        run: |
+          # Snapshot the latest run ID before triggering, so we can find our new run
+          # by looking for an ID greater than this. Avoids clock-skew issues with
+          # timestamp-based filtering.
+          LATEST_BEFORE=$(gh run list \
+            --repo rungalileo/e2e-testing \
+            --workflow run-ts-sdk-release-gate.yaml \
+            --json databaseId \
+            --jq '.[0].databaseId // 0')
+          echo "Latest existing run ID: $LATEST_BEFORE"
+
+          # Trigger the workflow
+          gh workflow run run-ts-sdk-release-gate.yaml \
+            --repo rungalileo/e2e-testing \
+            --ref "$E2E_BRANCH" \
+            -f galileo_js_version="$RC_TAG" \
+            -f e2e_branch="$E2E_BRANCH" \
+            -f callback_run_id="$CALLBACK_RUN_ID"
+
+          echo "Triggered e2e workflow. Waiting for run to appear..."
+          sleep 10
+
+          # Find the new run and verify it matches our callback_run_id.
+          # First narrow candidates by databaseId > snapshot, branch, and event,
+          # then confirm via the workflow's callback_run_id input.
+          RUN_ID=""
+          for i in $(seq 1 12); do
+            CANDIDATES=$(gh run list \
+              --repo rungalileo/e2e-testing \
+              --workflow run-ts-sdk-release-gate.yaml \
+              --json databaseId,headBranch,event \
+              --jq "[.[] | select(.databaseId > $LATEST_BEFORE and .headBranch == \"$E2E_BRANCH\" and .event == \"workflow_dispatch\")] | sort_by(-.databaseId) | .[].databaseId")
+
+            for CANDIDATE in $CANDIDATES; do
+              # Verify this run was triggered by us via callback_run_id
+              CANDIDATE_CALLBACK=$(gh run view "$CANDIDATE" \
+                --repo rungalileo/e2e-testing \
+                --json jobs --jq '.jobs[0].steps[0].name // empty' 2>/dev/null || true)
+              # The inputs aren't exposed via gh run view --json, so check the run's
+              # display title or use the API to inspect workflow_dispatch inputs directly.
+              CANDIDATE_INPUTS=$(gh api \
+                "repos/rungalileo/e2e-testing/actions/runs/$CANDIDATE" \
+                --jq '.inputs.callback_run_id // empty' 2>/dev/null || true)
+              if [ "$CANDIDATE_INPUTS" = "$CALLBACK_RUN_ID" ]; then
+                RUN_ID="$CANDIDATE"
+                echo "Found verified e2e run: $RUN_ID (callback_run_id matches)"
+                echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+                break 2
+              else
+                echo "Run $CANDIDATE callback_run_id='$CANDIDATE_INPUTS' does not match '$CALLBACK_RUN_ID', skipping"
+              fi
+            done
+
+            echo "Waiting for matching run to appear (attempt $i/12)..."
+            sleep 10
+          done
+
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::Could not find the triggered e2e-testing workflow run matching callback_run_id=$CALLBACK_RUN_ID"
+            exit 1
+          fi
+
+      - name: Poll for e2e result
+        id: poll
+        env:
+          GH_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+        run: |
+          RUN_ID="${{ steps.trigger.outputs.run_id }}"
+          echo "Polling e2e run $RUN_ID for completion..."
+
+          # Poll every 60s for up to 50 minutes.
+          # e2e-testing run-ts-tests has timeout-minutes: 40, plus ~3 min for
+          # resolve-components + gate-result + queue time ≈ 43 min ceiling.
+          # 50 iterations gives comfortable headroom.
+          for i in $(seq 1 50); do
+            RESULT=$(gh run view "$RUN_ID" \
+              --repo rungalileo/e2e-testing \
+              --json status,conclusion)
+            STATUS=$(echo "$RESULT" | jq -r '.status')
+            CONCLUSION=$(echo "$RESULT" | jq -r '.conclusion // empty')
+
+            echo "Attempt $i/50: status=$STATUS conclusion=$CONCLUSION"
+
+            if [ "$STATUS" = "completed" ]; then
+              echo "result=$CONCLUSION" >> "$GITHUB_OUTPUT"
+              echo "E2E tests completed with conclusion: $CONCLUSION"
+
+              echo "## E2E Gate Result" >> $GITHUB_STEP_SUMMARY
+              if [ "$CONCLUSION" = "success" ]; then
+                echo "✅ **PASSED** — e2e tests succeeded" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "❌ **FAILED** — e2e tests conclusion: $CONCLUSION" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "[View e2e run](https://github.com/rungalileo/e2e-testing/actions/runs/$RUN_ID)" >> $GITHUB_STEP_SUMMARY
+              exit 0
+            fi
+            sleep 60
+          done
+
+          echo "::error::E2E tests timed out after 50 minutes"
+          echo "result=timed_out" >> "$GITHUB_OUTPUT"
+          exit 1
+
+  # ─── Step 3a: Dispatch existing release workflow (only if e2e passed and release not skipped) ───
+  release:
+    needs: [create-release-candidate, run-e2e-gate]
+    if: needs.run-e2e-gate.outputs.e2e_result == 'success' && inputs.skip_release != true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger existing release workflow
+        env:
+          GH_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          RELEASE_REF: ${{ inputs.galileo_branch || github.ref_name }}
+        run: |
+          echo "E2E gate passed — dispatching Package Release workflow"
+          gh workflow run release.yaml \
+            --repo rungalileo/galileo-js \
+            --ref "$RELEASE_REF"
+
+          echo "## ✅ Release Dispatched" >> $GITHUB_STEP_SUMMARY
+          echo "- **RC tested:** ${{ needs.create-release-candidate.outputs.rc_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Expected version:** ${{ needs.create-release-candidate.outputs.expected_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release workflow:** [Package Release](https://github.com/rungalileo/galileo-js/actions/workflows/release.yaml)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The existing \`release.yaml\` workflow handles the actual release (semantic-release, npm, GitHub)." >> $GITHUB_STEP_SUMMARY
+
+  # ─── Step 3b: Slack notification on failure ───
+  # Fires when e2e tests fail OR when the e2e gate job itself errors/times out.
+  # Does NOT fire if create-release-candidate fails (no RC = nothing to report).
+  notify-failure:
+    needs: [create-release-candidate, run-e2e-gate]
+    if: always() && needs.create-release-candidate.result == 'success' && needs.run-e2e-gate.outputs.e2e_result != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.E2E_TESTS_SLACK_BOT_TOKEN }}
+        run: |
+          RC_VERSION="${{ needs.create-release-candidate.outputs.rc_version }}"
+          EXPECTED="${{ needs.create-release-candidate.outputs.expected_version }}"
+          E2E_RESULT="${{ needs.run-e2e-gate.outputs.e2e_result }}"
+          E2E_RUN_ID="${{ needs.run-e2e-gate.outputs.e2e_run_id }}"
+          GALILEO_JS_RUN="https://github.com/rungalileo/galileo-js/actions/runs/${{ github.run_id }}"
+          if [ -n "$E2E_RUN_ID" ]; then
+            E2E_RUN="https://github.com/rungalileo/e2e-testing/actions/runs/${E2E_RUN_ID}"
+          else
+            E2E_RUN="https://github.com/rungalileo/e2e-testing/actions/workflows/run-ts-sdk-release-gate.yaml"
+          fi
+
+          # Build Slack message using Block Kit JSON
+          BLOCKS=$(cat <<'BLOCKS_EOF'
+          [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "❌ TS SDK Release Gate Failed",
+                "emoji": true
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Release candidate:* `RC_VERSION_PLACEHOLDER`\n*Target version:* `EXPECTED_PLACEHOLDER`\n*E2E result:* E2E_RESULT_PLACEHOLDER\n\nThe release candidate failed the E2E test gate. The release has been halted.\n\n⚠️ This failure may be caused by changes in galileo-js _or_ by e2e tests that need updating to match new SDK behavior.\n\n<GALILEO_JS_RUN_PLACEHOLDER|View release workflow> • <E2E_RUN_PLACEHOLDER|View e2e test run>"
+              }
+            }
+          ]
+          BLOCKS_EOF
+          )
+
+          # Substitute placeholders
+          BLOCKS=$(echo "$BLOCKS" | sed \
+            -e "s|RC_VERSION_PLACEHOLDER|$RC_VERSION|g" \
+            -e "s|EXPECTED_PLACEHOLDER|$EXPECTED|g" \
+            -e "s|E2E_RESULT_PLACEHOLDER|$E2E_RESULT|g" \
+            -e "s|GALILEO_JS_RUN_PLACEHOLDER|$GALILEO_JS_RUN|g" \
+            -e "s|E2E_RUN_PLACEHOLDER|$E2E_RUN|g")
+
+          # Send to #pod-api-sdk via Slack API
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"channel\": \"#pod-api-sdk\",
+              \"text\": \"❌ TS SDK Release Gate Failed for galileo@${RC_VERSION}\",
+              \"blocks\": $BLOCKS
+            }" | jq .
+
+  # ─── Notify success on Slack (e2e passed, release dispatched) ───
+  notify-success:
+    needs: [create-release-candidate, run-e2e-gate, release]
+    if: needs.run-e2e-gate.outputs.e2e_result == 'success' && needs.release.result == 'success' && inputs.skip_release != true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack success notification
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.E2E_TESTS_SLACK_BOT_TOKEN }}
+        run: |
+          EXPECTED="${{ needs.create-release-candidate.outputs.expected_version }}"
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"channel\": \"#pod-api-sdk\",
+              \"text\": \"✅ galileo-js v${EXPECTED} — E2E gate passed, release dispatched\",
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \"✅ *galileo-js v${EXPECTED}* — E2E gate passed, release dispatched\\n<https://github.com/rungalileo/galileo-js/actions/workflows/release.yaml|View release workflow> • <https://github.com/rungalileo/galileo-js/actions/runs/${{ github.run_id }}|View e2e gate run>\"
+                  }
+                }
+              ]
+            }" | jq .
