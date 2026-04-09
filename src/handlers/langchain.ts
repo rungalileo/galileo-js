@@ -419,9 +419,9 @@ export class GalileoCallback
 
     // Always record startTime and createdAt for duration tracking.
     const nodeParams: Record<string, any> = {
+      ...params,
       startTime: performance.now(),
-      createdAt: new Date(),
-      ...params
+      createdAt: new Date()
     };
 
     // Create new node
