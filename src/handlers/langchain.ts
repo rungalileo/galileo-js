@@ -172,7 +172,7 @@ export class GalileoCallback
     ) {
       const messages = (update as Record<string, unknown>)
         .messages as unknown[];
-      const last = messages[messages.length - 1];
+      const last = messages.length === 0 ? null : messages[messages.length - 1];
       if (last instanceof ToolMessage) return last;
     }
     return null;
