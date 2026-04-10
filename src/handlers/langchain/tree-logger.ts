@@ -14,10 +14,10 @@ export function logNodeTree(
   logger: GalileoLogger
 ): void {
   let isWorkflowSpan = false;
-  const input = node.spanParams.input || '';
+  const input = node.spanParams.input ?? '';
   const inputAsString =
     typeof input === 'string' ? input : toStringValue(input);
-  const output = node.spanParams.output || '';
+  const output = node.spanParams.output ?? '';
   const outputAsString =
     typeof output === 'string' ? output : toStringValue(output);
   const name = node.spanParams.name;
@@ -154,7 +154,7 @@ export function logNodeTree(
   // Conclude workflow/agent span. Use the last child's output if necessary
   if (isWorkflowSpan) {
     const finalOutput =
-      output || (lastChild ? lastChild.spanParams.output || '' : '');
+      output ?? (lastChild ? (lastChild.spanParams.output ?? '') : '');
     logger.conclude({
       output: toStringValue(finalOutput),
       statusCode

@@ -99,7 +99,7 @@ export class GalileoCallback
         }
 
         this._galileoLogger.startTrace({
-          input: toStringValue(rootNode.spanParams.input || ''),
+          input: toStringValue(rootNode.spanParams.input ?? ''),
           name: rootNode.spanParams.name as string | undefined,
           metadata: traceMetadata
         });
@@ -108,7 +108,7 @@ export class GalileoCallback
       logNodeTree(rootNode, this._nodes, this._galileoLogger);
 
       // Conclude the trace with the root node's output
-      const rootOutput = rootNode.spanParams.output || '';
+      const rootOutput = rootNode.spanParams.output ?? '';
 
       if (this._startNewTrace) {
         this._galileoLogger.conclude({
