@@ -58,10 +58,9 @@ jobs:
         with:
           dry_run: true
           ci: false
-          extra_plugins: |
-            @semantic-release/commit-analyzer
         env:
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          SEMANTIC_RELEASE_VERSION_ONLY: 'true'
 
       - name: Validate next version
         if: steps.next_version.outputs.new_release_version == ''
@@ -228,12 +227,10 @@ jobs:
             --repo rungalileo/galileo-js \
             --ref "$RELEASE_REF"
 
-          echo "## ✅ Release Dispatched" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Dispatched" >> $GITHUB_STEP_SUMMARY
           echo "- **RC tested:** ${{ needs.create-release-candidate.outputs.rc_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Expected version:** ${{ needs.create-release-candidate.outputs.expected_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Release workflow:** [Package Release](https://github.com/rungalileo/galileo-js/actions/workflows/release.yaml)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The existing \`release.yaml\` workflow handles the actual release (semantic-release, npm, GitHub)." >> $GITHUB_STEP_SUMMARY
 
   # ─── Step 3b: Slack notification on failure ───
   # Fires when e2e tests fail OR when the e2e gate job itself errors/times out.
