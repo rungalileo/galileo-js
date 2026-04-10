@@ -60,14 +60,8 @@ jobs:
           ci: false
           extra_plugins: |
             @semantic-release/commit-analyzer
-            @semantic-release/release-notes-generator
-            @semantic-release/changelog
-            @semantic-release/npm
-            @semantic-release/git
-            @semantic-release/github
         env:
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Validate next version
         if: steps.next_version.outputs.new_release_version == ''
