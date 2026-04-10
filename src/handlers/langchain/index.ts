@@ -374,8 +374,8 @@ export class GalileoCallback
       | Record<string, unknown>
       | undefined;
     const model =
-      invocationParams?.model || invocationParams?._type || 'undefined-type';
-    const temperature = invocationParams?.temperature || 0.0;
+      invocationParams?.model ?? invocationParams?._type ?? 'undefined-type';
+    const temperature = invocationParams?.temperature ?? 0.0;
     const tools = invocationParams?.tools as
       | Record<string, unknown>[]
       | undefined;
