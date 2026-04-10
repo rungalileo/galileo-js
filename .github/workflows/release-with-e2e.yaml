@@ -109,16 +109,6 @@ jobs:
           RC_TAG: ${{ needs.create-release-candidate.outputs.rc_tag }}
           CALLBACK_RUN_ID: ${{ github.run_id }}
         run: |
-          # Snapshot the latest run ID before triggering, so we can find our new run
-          # by looking for an ID greater than this. Avoids clock-skew issues with
-          # timestamp-based filtering.
-          LATEST_BEFORE=$(gh run list \
-            --repo rungalileo/e2e-testing \
-            --workflow run-ts-sdk-release-gate.yaml \
-            --json databaseId \
-            --jq '.[0].databaseId // 0')
-          echo "Latest existing run ID: $LATEST_BEFORE"
-
           # Trigger the workflow
           gh workflow run run-ts-sdk-release-gate.yaml \
             --repo rungalileo/e2e-testing \
@@ -130,43 +120,31 @@ jobs:
           echo "Triggered e2e workflow. Waiting for run to appear..."
           sleep 10
 
-          # Find the new run and verify it matches our callback_run_id.
-          # First narrow candidates by databaseId > snapshot, branch, and event,
-          # then confirm via the workflow's callback_run_id input.
+          # Find the triggered run by matching callback_run_id in the display title.
+          # The e2e workflow's run-name embeds "callback:<run_id>" so we can identify
+          # exactly which run was triggered by us. The GitHub REST API does not return
+          # workflow_dispatch inputs, so display_title is the only reliable way.
           RUN_ID=""
-          for i in $(seq 1 12); do
-            CANDIDATES=$(gh run list \
+          for i in $(seq 1 18); do
+            RUN_ID=$(gh run list \
               --repo rungalileo/e2e-testing \
               --workflow run-ts-sdk-release-gate.yaml \
-              --json databaseId,headBranch,event \
-              --jq "[.[] | select(.databaseId > $LATEST_BEFORE and .headBranch == \"$E2E_BRANCH\" and .event == \"workflow_dispatch\")] | sort_by(-.databaseId) | .[].databaseId")
+              --limit 50 \
+              --json databaseId,displayTitle \
+              --jq "[.[] | select(.displayTitle | contains(\"callback:$CALLBACK_RUN_ID\"))] | .[0].databaseId // empty")
 
-            for CANDIDATE in $CANDIDATES; do
-              # Verify this run was triggered by us via callback_run_id
-              CANDIDATE_CALLBACK=$(gh run view "$CANDIDATE" \
-                --repo rungalileo/e2e-testing \
-                --json jobs --jq '.jobs[0].steps[0].name // empty' 2>/dev/null || true)
-              # The inputs aren't exposed via gh run view --json, so check the run's
-              # display title or use the API to inspect workflow_dispatch inputs directly.
-              CANDIDATE_INPUTS=$(gh api \
-                "repos/rungalileo/e2e-testing/actions/runs/$CANDIDATE" \
-                --jq '.inputs.callback_run_id // empty' 2>/dev/null || true)
-              if [ "$CANDIDATE_INPUTS" = "$CALLBACK_RUN_ID" ]; then
-                RUN_ID="$CANDIDATE"
-                echo "Found verified e2e run: $RUN_ID (callback_run_id matches)"
-                echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-                break 2
-              else
-                echo "Run $CANDIDATE callback_run_id='$CANDIDATE_INPUTS' does not match '$CALLBACK_RUN_ID', skipping"
-              fi
-            done
+            if [ -n "$RUN_ID" ]; then
+              echo "Found verified e2e run: $RUN_ID (callback_run_id in display title)"
+              echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+              break
+            fi
 
-            echo "Waiting for matching run to appear (attempt $i/12)..."
+            echo "Waiting for matching run to appear (attempt $i/18)..."
             sleep 10
           done
 
           if [ -z "$RUN_ID" ]; then
-            echo "::error::Could not find the triggered e2e-testing workflow run matching callback_run_id=$CALLBACK_RUN_ID"
+            echo "::error::Could not find the triggered e2e-testing workflow run matching callback_run_id=$CALLBACK_RUN_ID in display title"
             exit 1
           fi
 
