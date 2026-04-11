@@ -25,6 +25,24 @@ then:
 
 Note: if you would like to point to an environment other than app.galileo.ai, you'll need to set the GALILEO_CONSOLE_URL environment variable.
 
+### Optional Peer Dependencies
+
+Galileo integrates with several LLM frameworks via optional peer dependencies. Install only the ones you need:
+
+```bash
+# For LangChain integration
+npm install @langchain/core
+
+# For LangChain OpenAI models
+npm install @langchain/core @langchain/openai
+
+# For OpenAI direct integration
+npm install openai
+
+# For OpenAI Agents SDK
+npm install @openai/agents
+```
+
 ### Usage
 
 #### Logging
@@ -151,6 +169,28 @@ logger.conclude({
 // Upload the trace to Galileo. Since logger was used
 // directly, no additional config necessary for flush
 const flushedTraces = await logger.flush();
+```
+
+#### LangChain Integration
+
+Use `GalileoCallback` to automatically log LangChain traces. Requires `@langchain/core` as a peer dependency.
+
+```bash
+npm install @langchain/core @langchain/openai
+```
+
+```js
+import { GalileoCallback, init, flush } from 'galileo';
+import { ChatOpenAI } from '@langchain/openai';
+
+await init({ projectName: 'my-project' });
+
+const model = new ChatOpenAI({ model: 'gpt-4o' });
+const callback = new GalileoCallback();
+
+const response = await model.invoke('Say hello!', { callbacks: [callback] });
+
+await flush();
 ```
 
 #### Datasets

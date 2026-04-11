@@ -405,7 +405,11 @@ export interface ToolSpanOptions extends Omit<
   toolCallId?: string;
 }
 
-export class ToolSpan extends BaseStep {
+export interface SerializedToolSpan extends SerializedStepWithChildSpans {
+  toolCallId?: string;
+}
+
+export class ToolSpan extends StepWithChildSpans {
   type: StepType = StepType.tool;
   input: string;
   redactedInput?: string;
@@ -414,56 +418,44 @@ export class ToolSpan extends BaseStep {
   toolCallId?: string;
 
   constructor(data: ToolSpanOptions) {
-    // Convert JsonValue input to string for BaseStepOptions compatibility
-    super(StepType.tool, {
-      ...data,
-      input:
-        typeof data.input === 'string'
-          ? data.input
-          : JSON.stringify(data.input),
-      redactedInput: data.redactedInput
-        ? typeof data.redactedInput === 'string'
-          ? data.redactedInput
-          : JSON.stringify(data.redactedInput)
-        : undefined,
-      output:
-        typeof data.output === 'string'
-          ? data.output
-          : JSON.stringify(data.output),
-      redactedOutput: data.redactedOutput
-        ? typeof data.redactedOutput === 'string'
-          ? data.redactedOutput
-          : JSON.stringify(data.redactedOutput)
-        : undefined
-    });
-
-    // Convert JsonValue to string for storage
-    this.input =
+    // Convert JsonValue input/output to string for StepWithChildSpansOptions compatibility
+    const stringInput =
       typeof data.input === 'string' ? data.input : JSON.stringify(data.input);
-    this.redactedInput =
-      typeof data.redactedInput === 'string'
+    const stringRedactedInput = data.redactedInput
+      ? typeof data.redactedInput === 'string'
         ? data.redactedInput
-        : data.redactedInput !== undefined
-          ? JSON.stringify(data.redactedInput)
-          : undefined;
-    this.output =
+        : JSON.stringify(data.redactedInput)
+      : undefined;
+    const stringOutput =
       typeof data.output === 'string'
         ? data.output
         : JSON.stringify(data.output);
-    this.redactedOutput =
-      typeof data.redactedOutput === 'string'
-        ? (data.redactedOutput ?? '')
-        : data.redactedOutput !== undefined
-          ? JSON.stringify(data.redactedOutput)
-          : undefined;
+    const stringRedactedOutput = data.redactedOutput
+      ? typeof data.redactedOutput === 'string'
+        ? data.redactedOutput
+        : JSON.stringify(data.redactedOutput)
+      : undefined;
+
+    super(StepType.tool, {
+      ...data,
+      input: stringInput,
+      redactedInput: stringRedactedInput,
+      output: stringOutput,
+      redactedOutput: stringRedactedOutput
+    });
+
+    this.input = stringInput;
+    this.redactedInput = stringRedactedInput;
+    this.output = stringOutput;
+    this.redactedOutput = stringRedactedOutput;
     this.toolCallId = data.toolCallId;
   }
 
-  toJSON(): SerializedStep {
+  toJSON(): SerializedToolSpan {
     return {
       ...super.toJSON(),
       toolCallId: this.toolCallId
-    } as SerializedStep;
+    };
   }
 }
 

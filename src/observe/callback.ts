@@ -1,30 +1,55 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AxiosError } from 'axios';
-import { ChainValues } from '@langchain/core/utils/types';
-import { LLMResult } from '@langchain/core/outputs';
 
-import {
-  BaseCallbackHandler,
-  NewTokenIndices
-} from '@langchain/core/callbacks/base';
-import { BaseMessage } from '@langchain/core/messages';
-import { ChatPromptValue } from '@langchain/core/prompt_values';
-import { Document, DocumentInterface } from '@langchain/core/documents';
-import { encoding_for_model, TiktokenModel } from 'tiktoken/init';
-import { Serialized } from '@langchain/core/dist/load/serializable.js';
+// Type-only imports — erased at runtime, safe when @langchain/core is not installed
+import type { ChainValues } from '@langchain/core/utils/types';
+import type { LLMResult } from '@langchain/core/outputs';
+import type { NewTokenIndices } from '@langchain/core/callbacks/base';
+import type { BaseMessage } from '@langchain/core/messages';
+import type { DocumentInterface } from '@langchain/core/documents';
+import type { Serialized } from '@langchain/core/dist/load/serializable.js';
+import type { AgentFinish } from '@langchain/core/dist/agents.js';
+
 import {
   TransactionLoggingMethod,
   TransactionRecord,
   TransactionRecordBatch
 } from '../types/transaction.types';
 import { version } from '../../package.json';
-import { AgentFinish } from '@langchain/core/dist/agents.js';
 import GalileoObserveApiClient from './api-client';
 import { NodeType } from '../types/legacy-step.types';
+
+// Runtime imports — guarded for optional @langchain/core and tiktoken peer dependencies.
+/* eslint-disable @typescript-eslint/no-var-requires */
+let _BaseCallbackHandler: any;
+let _BaseMessage: any;
+let _ChatPromptValue: any;
+let _Document: any;
+let _encoding_for_model: any;
+let _langchainAvailable = false;
+
+try {
+  _BaseCallbackHandler =
+    require('@langchain/core/callbacks/base').BaseCallbackHandler;
+  _BaseMessage = require('@langchain/core/messages').BaseMessage;
+  _ChatPromptValue = require('@langchain/core/prompt_values').ChatPromptValue;
+  _Document = require('@langchain/core/documents').Document;
+  _langchainAvailable = true;
+} catch {
+  _BaseCallbackHandler = class LangChainNotAvailable {};
+}
+
+try {
+  _encoding_for_model = require('tiktoken/init').encoding_for_model;
+} catch {
+  // tiktoken not installed — token counting will fall back to zeros
+}
+/* eslint-enable @typescript-eslint/no-var-requires */
 
 /**
  * @deprecated This class is no longer actively maintained. Please use `GalileoCallback` instead.
  */
-export default class GalileoObserveCallback extends BaseCallbackHandler {
+export default class GalileoObserveCallback extends (_BaseCallbackHandler as typeof import('@langchain/core/callbacks/base').BaseCallbackHandler) {
   public name = 'GalileoObserveCallback';
   private api_client: GalileoObserveApiClient;
 
@@ -34,6 +59,12 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
   public project_name: string;
 
   constructor(project_name: string, version?: string) {
+    if (!_langchainAvailable) {
+      throw new Error(
+        'GalileoObserveCallback requires @langchain/core to be installed.\n' +
+          'Install it with: npm install @langchain/core'
+      );
+    }
     super();
     this.version = version;
     this.project_name = project_name;
@@ -202,14 +233,14 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       num_total_tokens = usage.totalTokens as number | undefined;
     } else {
       try {
-        const encoding = encoding_for_model(
-          this.records[node_id].model as TiktokenModel
+        const encoding = _encoding_for_model(
+          this.records[node_id].model as string
         );
         num_input_tokens = encoding.encode(
           this.records[node_id].input_text
         ).length;
         num_output_tokens = encoding.encode(output_text).length;
-        num_total_tokens = num_input_tokens + num_output_tokens;
+        num_total_tokens = (num_input_tokens ?? 0) + (num_output_tokens ?? 0);
       } catch (error) {
         num_input_tokens = 0;
         num_output_tokens = 0;
@@ -256,7 +287,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       parentRunId
     );
 
-    const chat_messages = new ChatPromptValue(messages[0]);
+    const chat_messages = new _ChatPromptValue(messages[0]);
     const invocation_params = extraParams?.invocation_params as Record<
       string,
       unknown
@@ -327,7 +358,7 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
 
     if (typeof inputs === 'string') {
       node_input = { input: inputs };
-    } else if (inputs instanceof BaseMessage) {
+    } else if (_BaseMessage && inputs instanceof _BaseMessage) {
       node_input = inputs;
     } else if (typeof inputs === 'object') {
       node_input = Object.fromEntries(
@@ -338,13 +369,17 @@ export default class GalileoObserveCallback extends BaseCallbackHandler {
       );
     } else if (
       (Array.isArray(inputs) as boolean) &&
-      (inputs as Document[]).every((v: unknown) => v instanceof Document)
+      (inputs as DocumentInterface[]).every(
+        (v: unknown) => _Document && v instanceof _Document
+      )
     ) {
       node_input = Object.fromEntries(
-        (inputs as Document[]).map((value: Document, index: number) => [
-          String(index),
-          value.pageContent
-        ])
+        (inputs as DocumentInterface[]).map(
+          (value: DocumentInterface, index: number) => [
+            String(index),
+            value.pageContent
+          ]
+        )
       );
     }
 
