@@ -1,19 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  BaseCallbackHandler,
+
+// Type-only imports — erased at runtime, safe when @langchain/core is not installed
+import type {
   CallbackHandlerMethods,
   NewTokenIndices
 } from '@langchain/core/callbacks/base';
-import { LLMResult } from '@langchain/core/outputs';
-import { BaseMessage, ToolMessage } from '@langchain/core/messages';
-import { ChainValues } from '@langchain/core/utils/types';
-import { AgentFinish } from '@langchain/core/agents';
-import { DocumentInterface } from '@langchain/core/documents';
+import type { LLMResult } from '@langchain/core/outputs';
+import type { BaseMessage } from '@langchain/core/messages';
+import type { ChainValues } from '@langchain/core/utils/types';
+import type { AgentFinish } from '@langchain/core/agents';
+import type { DocumentInterface } from '@langchain/core/documents';
+import type { Serialized } from '@langchain/core/load/serializable.js';
+
+// Internal imports
 import { GalileoSingleton } from '../../singleton';
 import { GalileoLogger } from '../../utils/galileo-logger';
 import { toStringValue, toStringRecord } from '../../utils/serialization';
 import { getSdkLogger } from 'galileo-generated';
-import { Serialized } from '@langchain/core/load/serializable.js';
 import type { LogTracesIngestRequest } from '../../types/logging/trace.types';
 import { Node, LANGCHAIN_NODE_TYPE, rootNodeContext } from './node';
 import {
@@ -28,11 +31,36 @@ export { rootNodeContext } from './node';
 
 const sdkLogger = getSdkLogger();
 
+// Runtime imports — guarded for optional @langchain/core peer dependency.
+// Values used at runtime (extends, instanceof) must be loaded via require().
+/* eslint-disable @typescript-eslint/no-var-requires */
+let _BaseCallbackHandler: unknown;
+let _BaseMessage: any;
+let _ToolMessage: any;
+let _langchainAvailable = false;
+
+try {
+  _BaseCallbackHandler =
+    require('@langchain/core/callbacks/base').BaseCallbackHandler;
+  const messages = require('@langchain/core/messages');
+  _BaseMessage = messages.BaseMessage;
+  _ToolMessage = messages.ToolMessage;
+  _langchainAvailable = true;
+} catch {
+  // @langchain/core is not installed — provide a stub base class.
+  // GalileoCallback will throw a clear error at construction time.
+  _BaseCallbackHandler = class LangChainNotAvailable {};
+}
+/* eslint-enable @typescript-eslint/no-var-requires */
+
 /**
  * Langchain callback handler for logging traces to the Galileo platform.
+ *
+ * Requires `@langchain/core` to be installed as a peer dependency.
+ * Install it with: `npm install @langchain/core`
  */
 export class GalileoCallback
-  extends BaseCallbackHandler
+  extends (_BaseCallbackHandler as typeof import('@langchain/core/callbacks/base').BaseCallbackHandler)
   implements CallbackHandlerMethods
 {
   _galileoLogger: GalileoLogger;
@@ -48,6 +76,12 @@ export class GalileoCallback
     flushOnChainEnd: boolean = true,
     ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
   ) {
+    if (!_langchainAvailable) {
+      throw new Error(
+        'GalileoCallback requires @langchain/core to be installed.\n' +
+          'Install it with: npm install @langchain/core'
+      );
+    }
     super();
     if (galileoLogger) {
       this._galileoLogger = galileoLogger;
@@ -135,7 +169,7 @@ export class GalileoCallback
     nodeType: LANGCHAIN_NODE_TYPE,
     parentRunId: string | undefined,
     runId: string,
-    params: Record<string, any>
+    params: Record<string, unknown>
   ): Node {
     const nodeId = runId;
     const parentNodeId = parentRunId;
@@ -147,7 +181,7 @@ export class GalileoCallback
     }
 
     // Set startTime and createdAt as defaults; callers may override.
-    const nodeParams: Record<string, any> = {
+    const nodeParams: Record<string, unknown> = {
       startTime: performance.now(),
       createdAt: new Date(),
       ...params
@@ -182,7 +216,7 @@ export class GalileoCallback
    */
   private async _endNode(
     runId: string,
-    params: Record<string, any>
+    params: Record<string, unknown>
   ): Promise<void> {
     const nodeId = runId;
     const node = this._nodes[nodeId];
@@ -194,8 +228,10 @@ export class GalileoCallback
 
     // Compute durationNs before merging params
     if (node.spanParams.startTime !== undefined) {
-      node.spanParams.durationNs =
+      const durationNs =
         (performance.now() - (node.spanParams.startTime as number)) * 1e6;
+      // OpenAPI schema expects safe integers for nanosecond fields.
+      node.spanParams.durationNs = Math.max(0, Math.round(durationNs));
     }
 
     // Update node parameters
@@ -261,7 +297,7 @@ export class GalileoCallback
 
     if (typeof inputs === 'string') {
       nodeInput = { input: inputs };
-    } else if (inputs instanceof BaseMessage) {
+    } else if (_BaseMessage && inputs instanceof _BaseMessage) {
       nodeInput = inputs;
     } else {
       nodeInput = toStringValue(inputs);
@@ -354,8 +390,12 @@ export class GalileoCallback
     if (node.spanParams.timeToFirstTokenNs === null) {
       const startTime = node.spanParams.startTime;
       if (startTime !== undefined) {
-        node.spanParams.timeToFirstTokenNs =
-          (performance.now() - startTime) * 1e6; // Convert ms to ns
+        const timeToFirstTokenNs = (performance.now() - startTime) * 1e6;
+        // OpenAPI schema expects safe integers for nanosecond fields.
+        node.spanParams.timeToFirstTokenNs = Math.max(
+          0,
+          Math.round(timeToFirstTokenNs)
+        );
       }
     }
   }
@@ -535,7 +575,7 @@ export class GalileoCallback
     // Handle [content, artifact] tuple outputs (response_format="content_and_artifact")
     if (Array.isArray(output) && output.length >= 1) {
       // Check if the first element is itself a ToolMessage
-      if (output[0] instanceof ToolMessage) {
+      if (_ToolMessage && output[0] instanceof _ToolMessage) {
         serializedOutput = toStringValue(output[0].content);
         await this._endNode(runId, {
           output: serializedOutput,

@@ -1,6 +1,17 @@
-import { ToolMessage } from '@langchain/core/messages';
-import { Serialized } from '@langchain/core/load/serializable.js';
+import type { ToolMessage } from '@langchain/core/messages';
+import type { Serialized } from '@langchain/core/load/serializable.js';
 import { Node } from './node';
+
+// Runtime import — ToolMessage is used for instanceof checks.
+// Guarded so the module loads safely when @langchain/core is not installed.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _ToolMessage: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  _ToolMessage = require('@langchain/core/messages').ToolMessage;
+} catch {
+  // @langchain/core not installed — instanceof checks will safely return false
+}
 
 /**
  * Resolve a node name from serialized data, runName, or metadata.
@@ -52,7 +63,8 @@ export function getAgentName(
  * that carry a messages array.
  */
 export function findToolMessage(output: unknown): ToolMessage | null {
-  if (output instanceof ToolMessage) return output;
+  if (_ToolMessage && output instanceof _ToolMessage)
+    return output as ToolMessage;
   const update = (output as Record<string, unknown>)?.update;
   if (
     typeof update === 'object' &&
@@ -61,7 +73,8 @@ export function findToolMessage(output: unknown): ToolMessage | null {
   ) {
     const messages = (update as Record<string, unknown>).messages as unknown[];
     const last = messages.length === 0 ? null : messages[messages.length - 1];
-    if (last instanceof ToolMessage) return last;
+    if (_ToolMessage && last instanceof _ToolMessage)
+      return last as ToolMessage;
   }
   return null;
 }
