@@ -68,6 +68,7 @@
     }
   },
   "devDependencies": {
+    "@langchain/core": "^0.3.13",
     "@hey-api/openapi-ts": "^0.88.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.6",
