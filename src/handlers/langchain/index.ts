@@ -99,24 +99,26 @@ export class GalileoCallback
    * Uses try/finally to guarantee node state is always cleared even on error.
    */
   private async _commit(): Promise<void> {
-    if (Object.keys(this._nodes).length === 0) {
-      sdkLogger.warn('No nodes to commit');
-      return;
-    }
-
-    const root = rootNodeContext.get();
-    if (root === null) {
-      sdkLogger.warn('Unable to add nodes to trace: Root node not set');
-      return;
-    }
-
-    const rootNode = this._nodes[root.runId];
-    if (rootNode === undefined) {
-      sdkLogger.warn('Unable to add nodes to trace: Root node does not exist');
-      return;
-    }
-
     try {
+      if (Object.keys(this._nodes).length === 0) {
+        sdkLogger.warn('No nodes to commit');
+        return;
+      }
+
+      const root = rootNodeContext.get();
+      if (root === null) {
+        sdkLogger.warn('Unable to add nodes to trace: Root node not set');
+        return;
+      }
+
+      const rootNode = this._nodes[root.runId];
+      if (rootNode === undefined) {
+        sdkLogger.warn(
+          'Unable to add nodes to trace: Root node does not exist'
+        );
+        return;
+      }
+
       if (this._startNewTrace) {
         let traceMetadata: Record<string, string> | undefined;
         if (rootNode.spanParams.metadata) {
@@ -246,7 +248,8 @@ export class GalileoCallback
 
   /**
    * Shared error handler for all callback error methods.
-   * Extracts HTTP status from the error's response if available, falls back to 400.
+   * Extracts HTTP status from the error's response if available, falls back to 500
+   * (unknown/internal error) when no HTTP status is present.
    */
   private async _handleError(err: Error, runId: string): Promise<void> {
     const errRecord = err as unknown as Record<string, unknown>;
@@ -256,7 +259,7 @@ export class GalileoCallback
       response !== null &&
       typeof (response as Record<string, unknown>).status === 'number'
         ? ((response as Record<string, unknown>).status as number)
-        : 400;
+        : 500;
 
     await this._endNode(runId, {
       output: `Error: ${err.name}: ${err.message}`,

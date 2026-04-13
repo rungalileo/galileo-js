@@ -1884,7 +1884,7 @@ describe('GalileoCallback', () => {
         const traces = callback._galileoLogger.traces;
         expect(traces).toHaveLength(1);
         const span = traces[0].spans[0] as WorkflowSpan;
-        expect(span.statusCode).toBe(400);
+        expect(span.statusCode).toBe(500);
       });
     });
 
