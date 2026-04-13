@@ -225,6 +225,7 @@ jobs:
           RC_VERSION="${{ needs.create-release-candidate.outputs.rc_version }}"
           EXPECTED="${{ needs.create-release-candidate.outputs.expected_version }}"
           E2E_RESULT="${{ needs.run-e2e-gate.outputs.e2e_result }}"
+          E2E_RESULT="${E2E_RESULT:-"job_failed"}"
           E2E_RUN_ID="${{ needs.run-e2e-gate.outputs.e2e_run_id }}"
           GALILEO_JS_RUN="https://github.com/rungalileo/galileo-js/actions/runs/${{ github.run_id }}"
           if [ -n "$E2E_RUN_ID" ]; then
@@ -264,14 +265,22 @@ jobs:
             -e "s|E2E_RUN_PLACEHOLDER|$E2E_RUN|g")
 
           # Send to #pod-api-sdk via Slack API
-          curl -s -X POST https://slack.com/api/chat.postMessage \
+          RESPONSE=$(curl -sf -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{
               \"channel\": \"#pod-api-sdk\",
               \"text\": \"❌ TS SDK Release Gate Failed for galileo@${RC_VERSION}\",
               \"blocks\": $BLOCKS
-            }" | jq .
+            }")
+          echo "$RESPONSE" | jq .
+
+          # Slack API returns HTTP 200 even on errors — check the ok field
+          if [ "$(echo "$RESPONSE" | jq -r '.ok')" != "true" ]; then
+            ERROR=$(echo "$RESPONSE" | jq -r '.error // "unknown error"')
+            echo "::error::Slack notification failed: $ERROR"
+            exit 1
+          fi
 
   # ─── Notify success on Slack (e2e passed, release dispatched) ───
   notify-success:
@@ -284,7 +293,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.E2E_TESTS_SLACK_BOT_TOKEN }}
         run: |
           EXPECTED="${{ needs.create-release-candidate.outputs.expected_version }}"
-          curl -s -X POST https://slack.com/api/chat.postMessage \
+          RESPONSE=$(curl -sf -X POST https://slack.com/api/chat.postMessage \
             -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{
@@ -299,4 +308,12 @@ jobs:
                   }
                 }
               ]
-            }" | jq .
+            }")
+          echo "$RESPONSE" | jq .
+
+          # Slack API returns HTTP 200 even on errors — check the ok field
+          if [ "$(echo "$RESPONSE" | jq -r '.ok')" != "true" ]; then
+            ERROR=$(echo "$RESPONSE" | jq -r '.error // "unknown error"')
+            echo "::error::Slack notification failed: $ERROR"
+            exit 1
+          fi
