@@ -32,7 +32,6 @@
   "license": "Apache-2.0",
   "homepage": "https://www.galileo.ai/",
   "dependencies": {
-    "@langchain/core": "^0.3.13",
     "@types/cli-progress": "^3.11.6",
     "axios": "^1.12.2",
     "cli-progress": "^3.12.0",
@@ -46,14 +45,21 @@
     "ts-case-convert": "^2.1.0"
   },
   "optionalDependencies": {
-    "@langchain/openai": "^0.3.11",
     "tiktoken": "^1.0.13"
   },
   "peerDependencies": {
+    "@langchain/core": ">=0.3.13",
+    "@langchain/openai": ">=0.3.11",
     "@openai/agents": ">=0.4.0",
     "openai": ">=4.0.0"
   },
   "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    },
+    "@langchain/openai": {
+      "optional": true
+    },
     "@openai/agents": {
       "optional": true
     },
@@ -62,6 +68,7 @@
     }
   },
   "devDependencies": {
+    "@langchain/core": "^0.3.13",
     "@hey-api/openapi-ts": "^0.88.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.6",

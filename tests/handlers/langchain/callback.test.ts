@@ -1,13 +1,26 @@
-import { GalileoCallback, rootNodeContext } from '../../src/handlers/langchain';
-import { GalileoLogger } from '../../src/utils/galileo-logger';
+import {
+  GalileoCallback,
+  rootNodeContext
+} from '../../../src/handlers/langchain';
+import { GalileoLogger } from '../../../src/utils/galileo-logger';
 import { AgentFinish } from '@langchain/core/agents';
-import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
+import {
+  BaseMessage,
+  AIMessage,
+  HumanMessage,
+  ToolMessage
+} from '@langchain/core/messages';
 import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
+import { ChainValues } from '@langchain/core/utils/types';
 import { DocumentInterface, Document } from '@langchain/core/documents';
-import { AxiosError } from 'axios';
-import { StepType } from '../../src/types/logging/step.types';
-import { LlmSpan, WorkflowSpan } from '../../src/types/logging/span.types';
+import { StepType } from '../../../src/types/logging/step.types';
+import {
+  AgentSpan,
+  LlmSpan,
+  ToolSpan,
+  WorkflowSpan
+} from '../../../src/types/logging/span.types';
 
 // Mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
@@ -18,7 +31,7 @@ const mockGetLogStreams = jest.fn();
 const mockGetLogStreamByName = jest.fn();
 const mockIngestTraces = jest.fn();
 
-jest.mock('../../src/api-client', () => {
+jest.mock('../../../src/api-client', () => {
   return {
     GalileoApiClient: Object.assign(
       jest.fn().mockImplementation(() => {
@@ -156,7 +169,9 @@ describe('GalileoCallback', () => {
 
       expect(callback['_nodes'][runId]).toBeDefined();
       expect(callback['_nodes'][runId].nodeType).toBe('chain');
-      expect(callback['_nodes'][runId].spanParams.input).toEqual(inputs);
+      expect(callback['_nodes'][runId].spanParams.input).toEqual(
+        JSON.stringify(inputs)
+      );
 
       const outputs = { result: 'test answer' };
       await callback.handleChainEnd(outputs, runId);
@@ -185,7 +200,9 @@ describe('GalileoCallback', () => {
 
       expect(callback['_nodes'][runId]).toBeDefined();
       expect(callback['_nodes'][runId].nodeType).toBe('chain');
-      expect(callback['_nodes'][runId].spanParams.input).toEqual(inputs);
+      expect(callback['_nodes'][runId].spanParams.input).toEqual(
+        JSON.stringify(inputs)
+      );
 
       // Update inputs
       inputs = { query: 'test question' };
@@ -238,8 +255,8 @@ describe('GalileoCallback', () => {
         })
       );
       expect(trace.spans.length).toBe(1);
-      const span = trace.spans[0] as WorkflowSpan;
-      expect(span.type).toBe(StepType.workflow);
+      const span = trace.spans[0] as AgentSpan;
+      expect(span.type).toBe(StepType.agent);
       expect(span.input).toBe(JSON.stringify({ input: 'test input' }));
       expect(span.output).toBe(
         JSON.stringify({
@@ -871,7 +888,7 @@ describe('GalileoCallback', () => {
         outputArgs: {
           outputs: { result: 'answer' }
         },
-        expectedType: StepType.workflow
+        expectedType: StepType.agent
       }
     ];
 
@@ -1341,10 +1358,9 @@ describe('GalileoCallback', () => {
         );
 
         // End with error
-        const error = {
-          message: 'Chain execution failed',
+        const error = Object.assign(new Error('Chain execution failed'), {
           response: { status: 500 }
-        } as unknown as AxiosError;
+        });
 
         await callback.handleChainError(error, runId);
 
@@ -1364,10 +1380,9 @@ describe('GalileoCallback', () => {
         );
 
         // End with error
-        const error = {
-          message: 'LLM request failed',
+        const error = Object.assign(new Error('LLM request failed'), {
           response: { status: 503 }
-        } as unknown as AxiosError;
+        });
 
         await callback.handleLLMError(error, runId);
 
@@ -1386,10 +1401,9 @@ describe('GalileoCallback', () => {
         );
 
         // End with error
-        const error = {
-          message: 'Tool execution failed',
+        const error = Object.assign(new Error('Tool execution failed'), {
           response: { status: 400 }
-        } as unknown as AxiosError;
+        });
 
         await callback.handleToolError(error, runId);
 
@@ -1408,15 +1422,859 @@ describe('GalileoCallback', () => {
         );
 
         // End with error
-        const error = {
-          message: 'Retriever failed',
+        const error = Object.assign(new Error('Retriever failed'), {
           response: { status: 502 }
-        } as unknown as AxiosError;
+        });
 
         await callback.handleRetrieverError(error, runId);
 
         const traces = callback._galileoLogger.traces;
         expect(traces).toHaveLength(1);
+      });
+    });
+  });
+
+  describe('FIX-4 Coverage', () => {
+    describe('_getNodeName fallback resolution', () => {
+      it('test _getNodeName uses serialized.id array fallback when name absent', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            lc: 1,
+            type: 'secret',
+            id: ['path', 'to', 'ActualClassName']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        expect(callback['_nodes'][runId].spanParams.name).toBe(
+          'ActualClassName'
+        );
+      });
+
+      it('test _getNodeName uses capitalized nodeType catch-all when all sources absent', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          { lc: 1, type: 'secret', id: [] } as Serialized,
+          { query: 'test' },
+          runId,
+          undefined,
+          undefined,
+          {}
+        );
+
+        expect(callback['_nodes'][runId].spanParams.name).toBe('Chain');
+      });
+    });
+
+    describe('updateRootToAgent', () => {
+      it('test updateRootToAgent upgrades root chain to agent on langgraph_ metadata key', async () => {
+        const rootId = createId();
+        const childId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'MyChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          rootId
+        );
+
+        expect(callback['_nodes'][rootId].nodeType).toBe('chain');
+
+        await callback.handleChainStart(
+          {
+            name: 'ChildChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'child' },
+          childId,
+          rootId,
+          undefined,
+          { langgraph_step: '1' }
+        );
+
+        expect(callback['_nodes'][rootId].nodeType).toBe('agent');
+      });
+    });
+
+    describe('case-insensitive agent detection', () => {
+      it('test handleChainStart detects agent with lowercase langgraph name', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'langgraph',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        expect(callback['_nodes'][runId].nodeType).toBe('agent');
+      });
+    });
+
+    describe('_getAgentName hierarchical naming', () => {
+      it('test _getAgentName returns parent:child name format', async () => {
+        const parentId = createId();
+        const childId = createId();
+
+        // Create parent agent node directly
+        callback['_startNode']('agent', undefined, parentId, {
+          name: 'OuterAgent',
+          input: 'test'
+        });
+        rootNodeContext.set(callback['_nodes'][parentId]);
+
+        // Start child that triggers agent detection via name 'Agent'
+        await callback.handleChainStart(
+          { name: 'Agent', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          childId,
+          parentId
+        );
+
+        expect(callback['_nodes'][childId].spanParams.name).toBe(
+          'OuterAgent:Agent'
+        );
+      });
+    });
+
+    describe('_findToolMessage', () => {
+      it('test handleToolEnd captures content and toolCallId from direct ToolMessage', async () => {
+        const parentId = createId();
+        const toolId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleToolStart(
+          { name: 'myTool', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          'tool input',
+          toolId,
+          parentId
+        );
+
+        const toolMessage = new ToolMessage({
+          content: 'tool result',
+          tool_call_id: 'call_abc'
+        });
+        await callback.handleToolEnd(toolMessage, toolId);
+
+        expect(callback['_nodes'][toolId].spanParams.output).toBe(
+          'tool result'
+        );
+        expect(callback['_nodes'][toolId].spanParams.toolCallId).toBe(
+          'call_abc'
+        );
+      });
+
+      it('test handleToolEnd captures content and toolCallId from LangGraph Command', async () => {
+        const parentId = createId();
+        const toolId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleToolStart(
+          { name: 'myTool', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          'tool input',
+          toolId,
+          parentId
+        );
+
+        const toolMessage = new ToolMessage({
+          content: 'command result',
+          tool_call_id: 'call_xyz'
+        });
+        const commandOutput = { update: { messages: [toolMessage] } };
+        await callback.handleToolEnd(commandOutput, toolId);
+
+        expect(callback['_nodes'][toolId].spanParams.output).toBe(
+          'command result'
+        );
+        expect(callback['_nodes'][toolId].spanParams.toolCallId).toBe(
+          'call_xyz'
+        );
+      });
+
+      it('test handleToolEnd captures content and toolCallId from array-of-ToolMessage', async () => {
+        const parentId = createId();
+        const toolId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleToolStart(
+          { name: 'myTool', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          'tool input',
+          toolId,
+          parentId
+        );
+
+        const toolMessage = new ToolMessage({
+          content: 'array result',
+          tool_call_id: 'call_arr'
+        });
+        await callback.handleToolEnd([toolMessage], toolId);
+
+        expect(callback['_nodes'][toolId].spanParams.output).toBe(
+          'array result'
+        );
+        expect(callback['_nodes'][toolId].spanParams.toolCallId).toBe(
+          'call_arr'
+        );
+      });
+    });
+
+    describe('tool output handling', () => {
+      it('test tuple tool output serializes first element only', async () => {
+        const parentId = createId();
+        const toolId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleToolStart(
+          { name: 'myTool', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          'tool input',
+          toolId,
+          parentId
+        );
+
+        await callback.handleToolEnd(
+          ['content-value', { artifact: true }],
+          toolId
+        );
+
+        expect(callback['_nodes'][toolId].spanParams.output).toBe(
+          'content-value'
+        );
+      });
+    });
+
+    describe('duration and timestamp tracking', () => {
+      it('test durationNs is a positive number in the committed span', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        await callback.handleChainEnd({ result: 'answer' }, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as WorkflowSpan;
+        expect(typeof span.metrics.durationNs).toBe('number');
+        expect(span.metrics.durationNs).toBeGreaterThan(0);
+      });
+
+      it('test createdAt is a Date instance on freshly started node', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        expect(callback['_nodes'][runId].spanParams.createdAt).toBeInstanceOf(
+          Date
+        );
+      });
+    });
+
+    describe('multi-provider token extraction', () => {
+      it('test handleLLMEnd extracts OpenAI camelCase tokenUsage', async () => {
+        const parentId = createId();
+        const runId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleLLMStart(undefined, ['prompt'], runId, parentId, {
+          invocation_params: { model_name: 'gpt-4' }
+        });
+
+        const llmResult: LLMResult = {
+          generations: [[{ text: 'response', generationInfo: {} }]],
+          llmOutput: {
+            tokenUsage: {
+              promptTokens: 10,
+              completionTokens: 20,
+              totalTokens: 30
+            }
+          }
+        };
+        await callback.handleLLMEnd(llmResult, runId);
+
+        expect(callback['_nodes'][runId].spanParams.numInputTokens).toBe(10);
+        expect(callback['_nodes'][runId].spanParams.numOutputTokens).toBe(20);
+        expect(callback['_nodes'][runId].spanParams.totalTokens).toBe(30);
+      });
+
+      it('test handleLLMEnd extracts snake_case token_usage', async () => {
+        const parentId = createId();
+        const runId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleLLMStart(undefined, ['prompt'], runId, parentId, {
+          invocation_params: { model_name: 'vertex-ai' }
+        });
+
+        const llmResult = {
+          generations: [[{ text: 'response', generationInfo: {} }]],
+          llmOutput: {
+            token_usage: {
+              prompt_tokens: 5,
+              completion_tokens: 15,
+              total_tokens: 20
+            }
+          }
+        } as unknown as LLMResult;
+        await callback.handleLLMEnd(llmResult, runId);
+
+        expect(callback['_nodes'][runId].spanParams.numInputTokens).toBe(5);
+        expect(callback['_nodes'][runId].spanParams.numOutputTokens).toBe(15);
+        expect(callback['_nodes'][runId].spanParams.totalTokens).toBe(20);
+      });
+
+      it('test handleLLMEnd falls back to usage_metadata on generation message', async () => {
+        const parentId = createId();
+        const runId = createId();
+
+        await callback.handleChainStart(
+          { name: 'chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          parentId
+        );
+        await callback.handleLLMStart(undefined, ['prompt'], runId, parentId, {
+          invocation_params: { model_name: 'claude-3' }
+        });
+
+        const llmResult = {
+          generations: [
+            [
+              {
+                text: 'response',
+                generationInfo: {},
+                message: {
+                  usage_metadata: {
+                    input_tokens: 8,
+                    output_tokens: 12,
+                    total_tokens: 20
+                  }
+                }
+              }
+            ]
+          ],
+          llmOutput: {}
+        } as unknown as LLMResult;
+        await callback.handleLLMEnd(llmResult, runId);
+
+        expect(callback['_nodes'][runId].spanParams.numInputTokens).toBe(8);
+        expect(callback['_nodes'][runId].spanParams.numOutputTokens).toBe(12);
+        expect(callback['_nodes'][runId].spanParams.totalTokens).toBe(20);
+      });
+    });
+
+    describe('statusCode tracking', () => {
+      it('test statusCode is 200 on successful chain end', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        await callback.handleChainEnd({ result: 'answer' }, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as WorkflowSpan;
+        expect(span.statusCode).toBe(200);
+      });
+
+      it('test statusCode reflects error response status from handleChainError', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        const error = Object.assign(new Error('Bad request'), {
+          response: { status: 422 }
+        });
+        await callback.handleChainError(error, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as WorkflowSpan;
+        expect(span.statusCode).toBe(422);
+      });
+
+      it('test statusCode defaults to 400 when error has no response', async () => {
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        const error = new Error('Connection refused');
+        await callback.handleChainError(error, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as WorkflowSpan;
+        expect(span.statusCode).toBe(500);
+      });
+    });
+
+    describe('tool_calls extraction in chat messages', () => {
+      it('test handleChatModelStart preserves tool_calls from AIMessage', async () => {
+        const chainRunId = createId();
+        const chatRunId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          chainRunId
+        );
+
+        const aiMsg = new AIMessage({
+          content: 'I will search for that.',
+          tool_calls: [
+            { name: 'search', args: { q: 'LangChain' }, id: 'call_123' }
+          ]
+        });
+
+        await callback.handleChatModelStart(
+          { name: 'gpt-4', lc: 1, type: 'secret', id: ['gpt-4'] } as Serialized,
+          [[aiMsg]],
+          chatRunId,
+          chainRunId
+        );
+
+        const node = callback['_nodes'][chatRunId];
+        const input = node.spanParams.input;
+        expect(input).toHaveLength(1);
+        expect(input[0].content).toBe('I will search for that.');
+        expect(input[0].role).toBe('ai');
+        expect(input[0].tool_calls).toEqual([
+          expect.objectContaining({
+            name: 'search',
+            args: { q: 'LangChain' },
+            id: 'call_123'
+          })
+        ]);
+      });
+
+      it('test handleChatModelStart omits tool_calls when empty', async () => {
+        const chainRunId = createId();
+        const chatRunId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          chainRunId
+        );
+
+        const humanMsg = new HumanMessage('Hello');
+
+        await callback.handleChatModelStart(
+          { name: 'gpt-4', lc: 1, type: 'secret', id: ['gpt-4'] } as Serialized,
+          [[humanMsg]],
+          chatRunId,
+          chainRunId
+        );
+
+        const node = callback['_nodes'][chatRunId];
+        const input = node.spanParams.input;
+        expect(input).toHaveLength(1);
+        expect(input[0].content).toBe('Hello');
+        expect(input[0].role).toBe('human');
+        expect(input[0].tool_calls).toBeUndefined();
+      });
+    });
+
+    describe('ingestionHook constructor', () => {
+      it('test ingestionHook is called on flush with trace request', async () => {
+        const hook = jest.fn().mockResolvedValue(undefined);
+        const hookCallback = new GalileoCallback(undefined, true, true, hook);
+
+        const runId = createId();
+        await hookCallback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+        await hookCallback.handleChainEnd({ result: 'answer' }, runId);
+
+        expect(hook).toHaveBeenCalledTimes(1);
+        expect(hook).toHaveBeenCalledWith(
+          expect.objectContaining({ traces: expect.any(Array) })
+        );
+      });
+    });
+
+    describe('try/finally cleanup', () => {
+      it('test nodes and rootNodeContext are cleared even when flush throws', async () => {
+        jest
+          .spyOn(galileoLogger, 'flush')
+          .mockRejectedValueOnce(new Error('flush failed'));
+
+        const flushCallback = new GalileoCallback(galileoLogger, true, true);
+
+        const runId = createId();
+        await flushCallback.handleChainStart(
+          {
+            name: 'TestChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId
+        );
+        // _commit() re-throws after finally; catch it to inspect state
+        try {
+          await flushCallback.handleChainEnd({ result: 'answer' }, runId);
+        } catch {
+          // expected
+        }
+
+        expect(flushCallback['_nodes']).toEqual({});
+        expect(rootNodeContext.get()).toBeNull();
+      });
+    });
+
+    describe('startTrace receives name and metadata', () => {
+      it('test startTrace is called with root node name and metadata', async () => {
+        const spy = jest.spyOn(galileoLogger, 'startTrace');
+
+        const runId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'MyChainName',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId,
+          undefined,
+          undefined,
+          { session_id: 'abc123' }
+        );
+        await callback.handleChainEnd({ result: 'answer' }, runId);
+
+        expect(spy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'MyChainName',
+            metadata: { session_id: 'abc123' }
+          })
+        );
+      });
+    });
+
+    describe('PARITY-2: tool span with children (agent-as-tool)', () => {
+      it('test LLM child span is nested under tool span when tool has children', async () => {
+        const chainRunId = createId();
+        const toolRunId = createId();
+        const llmRunId = createId();
+
+        // Start root chain
+        await callback.handleChainStart(
+          {
+            name: 'RootChain',
+            lc: 1,
+            type: 'secret',
+            id: ['RootChain']
+          } as Serialized,
+          { query: 'test' },
+          chainRunId
+        );
+
+        // Start tool as child of chain
+        await callback.handleToolStart(
+          {
+            name: 'SearchTool',
+            lc: 1,
+            type: 'secret',
+            id: ['SearchTool']
+          } as Serialized,
+          'search query',
+          toolRunId,
+          chainRunId
+        );
+
+        // Start LLM as child of tool (agent-as-tool pattern)
+        await callback.handleChatModelStart(
+          { name: 'gpt-4', lc: 1, type: 'secret', id: ['gpt-4'] } as Serialized,
+          [[new HumanMessage('hello')]],
+          llmRunId,
+          toolRunId
+        );
+        await callback.handleLLMEnd(
+          {
+            generations: [[{ text: 'llm-response', generationInfo: {} }]]
+          } as LLMResult,
+          llmRunId
+        );
+
+        // End tool
+        await callback.handleToolEnd('tool-output', toolRunId);
+
+        // End root chain
+        await callback.handleChainEnd({ result: 'done' }, chainRunId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const rootSpan = traces[0].spans[0] as WorkflowSpan;
+        expect(rootSpan.type).toBe(StepType.workflow);
+
+        // Tool span is child of root chain
+        expect(rootSpan.spans).toHaveLength(1);
+        const toolSpan = rootSpan.spans[0] as ToolSpan;
+        expect(toolSpan.type).toBe(StepType.tool);
+
+        // LLM span is nested under tool span
+        expect(toolSpan.spans).toHaveLength(1);
+        const llmSpan = toolSpan.spans[0] as LlmSpan;
+        expect(llmSpan.type).toBe(StepType.llm);
+      });
+    });
+
+    describe('langsmith:hidden tag', () => {
+      it('test handleChainStart skips node creation for langsmith:hidden tag', async () => {
+        const runId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'HiddenChain',
+            lc: 1,
+            type: 'secret',
+            id: ['test']
+          } as Serialized,
+          { query: 'test' },
+          runId,
+          undefined,
+          ['langsmith:hidden']
+        );
+
+        expect(callback['_nodes'][runId]).toBeUndefined();
+      });
+    });
+
+    describe('chain input type branches', () => {
+      it('test handleChainStart wraps string input as object', async () => {
+        const runId = createId();
+        await callback.handleChainStart(
+          { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          'plain string input' as unknown as ChainValues,
+          runId
+        );
+
+        expect(callback['_nodes'][runId].spanParams.input).toEqual({
+          input: 'plain string input'
+        });
+      });
+
+      it('test handleChainStart passes BaseMessage through directly', async () => {
+        const runId = createId();
+        const msg = new HumanMessage('Hello from user');
+        await callback.handleChainStart(
+          { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          msg as unknown as ChainValues,
+          runId
+        );
+
+        expect(callback['_nodes'][runId].spanParams.input).toBe(msg);
+      });
+
+      it('test handleChainStart serializes all object input values', async () => {
+        const runId = createId();
+        await callback.handleChainStart(
+          { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test', count: 42, valid: 'value' },
+          runId
+        );
+
+        const input = callback['_nodes'][runId].spanParams.input as string;
+        const parsed = JSON.parse(input);
+        expect(parsed.query).toBe('test');
+        expect(parsed.valid).toBe('value');
+        expect(parsed.count).toBe(42);
+      });
+    });
+
+    describe('handleLLMNewToken timing', () => {
+      it('test timeToFirstTokenNs is set only on first token', async () => {
+        const chainRunId = createId();
+        const llmRunId = createId();
+
+        await callback.handleChainStart(
+          { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          chainRunId
+        );
+        await callback.handleLLMStart(
+          { name: 'llm', lc: 1, type: 'secret', id: ['llm'] } as Serialized,
+          ['prompt'],
+          llmRunId,
+          chainRunId
+        );
+
+        // First token sets the time
+        await callback.handleLLMNewToken(
+          'first',
+          { prompt: 0, completion: 0 },
+          llmRunId
+        );
+        const firstTokenTime =
+          callback['_nodes'][llmRunId].spanParams.timeToFirstTokenNs;
+        expect(firstTokenTime).toBeGreaterThan(0);
+
+        // Second token should NOT overwrite
+        await callback.handleLLMNewToken(
+          'second',
+          { prompt: 0, completion: 1 },
+          llmRunId
+        );
+        const secondTokenTime =
+          callback['_nodes'][llmRunId].spanParams.timeToFirstTokenNs;
+        expect(secondTokenTime).toBe(firstTokenTime);
+      });
+
+      it('test handleLLMNewToken silently ignores missing node', async () => {
+        // Should not throw for nonexistent runId
+        await expect(
+          callback.handleLLMNewToken(
+            'token',
+            { prompt: 0, completion: 0 },
+            'nonexistent-id'
+          )
+        ).resolves.toBeUndefined();
+      });
+    });
+
+    describe('handleLLMEnd edge cases', () => {
+      it('test handleLLMEnd handles empty generations array', async () => {
+        const chainRunId = createId();
+        const llmRunId = createId();
+
+        await callback.handleChainStart(
+          { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          chainRunId
+        );
+        await callback.handleLLMStart(
+          { name: 'llm', lc: 1, type: 'secret', id: ['llm'] } as Serialized,
+          ['prompt'],
+          llmRunId,
+          chainRunId
+        );
+
+        const llmResult = {
+          generations: [],
+          llmOutput: {}
+        } as unknown as LLMResult;
+
+        // Should not throw
+        await expect(
+          callback.handleLLMEnd(llmResult, llmRunId)
+        ).resolves.toBeUndefined();
+      });
+    });
+
+    describe('error handler output format', () => {
+      it('test error output includes error name and message', async () => {
+        const runId = createId();
+        await callback.handleChainStart(
+          { name: 'Chain', lc: 1, type: 'secret', id: ['test'] } as Serialized,
+          { query: 'test' },
+          runId
+        );
+
+        const error = new TypeError('invalid argument');
+        await callback.handleChainError(error, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as WorkflowSpan;
+        expect(span.output).toBe('Error: TypeError: invalid argument');
       });
     });
   });
