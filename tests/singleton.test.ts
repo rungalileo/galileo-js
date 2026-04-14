@@ -396,7 +396,7 @@ describe('Singleton utility functions', () => {
       });
     });
 
-    it('test startSession passes metadata to logger', async () => {
+    test('test startSession passes metadata to logger', async () => {
       const logger = getLogger();
       const metadata = { brand_id: 'acme', tier: 'premium' };
       const id = await startSession({
@@ -890,7 +890,7 @@ describe('Singleton utility functions', () => {
         });
       });
 
-      it('test init passes metadata to startSession', async () => {
+      test('test init passes metadata to startSession', async () => {
         const metadata = { brand_id: 'acme', tier: 'premium' };
         await init({
           projectName: 'test-project',
