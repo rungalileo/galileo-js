@@ -178,3 +178,74 @@ afterAll(() => server.close());
 - ESLint: no-unused-vars, prefer-const, no-undef. Prettier for formatting. Export public API via `src/index.ts`.
 - Keep backward compatibility for legacy clients (GalileoObserve*, GalileoEvaluate*). Prefer simple, focused functions.
 - **Semantic release:** Commit format drives version—`fix:`, `feat:`, etc. → patch/minor; `BREAKING CHANGE:` → major. Follow convention for PRs.
+
+## `galileo-generated` Dependency
+
+`galileo-generated` is an auto-generated OpenAPI client library for the Galileo backend. It provides four categories of functionality consumed in several source files:
+
+### 1. SDK Logger — `getSdkLogger()`
+
+The most pervasive import. `getSdkLogger()` returns a shared logger instance used for internal SDK diagnostics (debug, info, warn, error). Every file that needs to log calls `const sdkLogger = getSdkLogger()` at module scope and uses it throughout.
+
+The SDK also re-exports logger control functions from `galileo-generated` via `src/index.ts` so end users can manage SDK logging:
+
+- `enableLogging()` — turn on SDK diagnostic output
+- `disableLogging()` — suppress SDK diagnostic output
+- `setCustomLogger()` — replace the default logger with a user-provided one
+- `resetSdkLogger()` — restore the default logger
+
+**Files importing `getSdkLogger`** (18 files):
+
+| Layer      | Files                                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core utils | `src/utils/galileo-logger.ts`, `src/utils/metrics.ts`, `src/utils/retry-utils.ts`, `src/utils/span.ts`, `src/utils/task-handler.ts`, `src/utils/job-progress.ts`          |
+| Wrappers   | `src/wrappers.ts`, `src/workflow.ts`                                                                                                                                      |
+| Entities   | `src/entities/experiments.ts`                                                                                                                                             |
+| API client | `src/api-client/galileo-client.ts`, `src/api-client/services/trace-service.ts`, `src/api-client/services/scorer-service.ts`, `src/api-client/services/dataset-service.ts` |
+| Handlers   | `src/handlers/openai/index.ts`, `src/handlers/openai-agents/index.ts`, `src/handlers/langchain/index.ts`, `src/handlers/langchain/tree-logger.ts`                         |
+| Legacy     | `src/legacy-api-client.ts`, `src/evaluate/api-client.ts`, `src/evaluate/workflow.ts`, `src/observe/workflow.ts`                                                           |
+
+### 2. Generated API Client — `GalileoGenerated`
+
+A typed HTTP client class generated from the Galileo OpenAPI spec. Instantiated as a module-level singleton (`const galileoGenerated = new GalileoGenerated()`) in the two service files that use it. Provides namespaced methods for direct API calls:
+
+| File                                         | Usage                                                                                                      |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/api-client/services/trace-service.ts`   | `galileoGenerated.trace.logTracesProjectsProjectIdTracesPost()` — bulk-ingest traces into a project        |
+| `src/api-client/services/dataset-service.ts` | `galileoGenerated.datasets.updateDatasetContentDatasetsDatasetIdContentPatch()` — append rows to a dataset |
+
+These are the only two places the generated client is used directly. All other API calls go through the hand-written `BaseClient` (axios-based) methods.
+
+### 3. Configuration — `GalileoConfig` / `GalileoConfigInput`
+
+`GalileoConfig` is a singleton configuration class that holds API URL, auth credentials, and project type settings. It is read — not written — by the SDK internals:
+
+| File                               | Usage                                                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `src/api-client/galileo-client.ts` | `GalileoConfig.get()` during `init()` — reads `getApiUrl()` and `getAuthCredentials()` to configure the API client and auth service |
+| `src/index.ts`                     | Re-exports `GalileoConfig` and `type GalileoConfigInput` as part of the public API so users can configure the SDK                   |
+
+### 4. OpenAPI Types — Span Schemas and Ingest Types
+
+`galileo-generated` is the canonical source for OpenAPI-derived TypeScript types that represent API request/response shapes. These are imported as **type-only** imports and re-exported through the SDK's own type modules:
+
+| File                                         | Types Imported                                                                                                                                                                                                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/types/logging/trace.types.ts`           | **Span schemas:** `AgentSpan`, `WorkflowSpan`, `LlmSpan`, `RetrieverSpan`, `ToolSpan` — the wire-format shapes for each span type                                                                                                                              |
+| `src/types/logging/trace.types.ts`           | **Extended records:** `ExtendedAgentSpanRecordWithChildren`, `ExtendedWorkflowSpanRecordWithChildren`, `ExtendedLlmSpanRecord`, `ExtendedToolSpanRecordWithChildren`, `ExtendedRetrieverSpanRecordWithChildren` — enriched span records returned by query APIs |
+| `src/types/logging/trace.types.ts`           | **Ingest types:** `LogTracesIngestRequest`, `LogTracesIngestResponse` — re-exported directly for use by the trace service                                                                                                                                      |
+| `src/api-client/services/dataset-service.ts` | `DatasetAppendRow` — row shape for the dataset content-append endpoint                                                                                                                                                                                         |
+| `src/api-client/galileo-client.ts`           | `DatasetAppendRow` — same type, imported for the client's append method signature                                                                                                                                                                              |
+
+These types are aliased and re-exported via `src/types/logging/trace.types.ts` so the rest of the SDK imports them from the local type module rather than directly from `galileo-generated`. The `ExtendedSpanRecord` and `SpanSchema` union types that the SDK defines are composed entirely from these generated types.
+
+### Summary of Import Patterns
+
+| What                                                                   | Import                                                      | Where Used                                | Purpose                                                             |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| `getSdkLogger`                                                         | `import { getSdkLogger } from 'galileo-generated'`          | 18 files across all layers                | Internal SDK diagnostic logging                                     |
+| `enableLogging`, `disableLogging`, `setCustomLogger`, `resetSdkLogger` | Re-exported from `src/index.ts`                             | Public API surface                        | User control over SDK log output                                    |
+| `GalileoGenerated`                                                     | `import { GalileoGenerated } from 'galileo-generated'`      | `trace-service.ts`, `dataset-service.ts`  | Direct OpenAPI client calls for trace ingest and dataset append     |
+| `GalileoConfig` / `GalileoConfigInput`                                 | `import { GalileoConfig } from 'galileo-generated'`         | `galileo-client.ts`, `index.ts`           | SDK configuration (API URL, auth)                                   |
+| Span/record types                                                      | `import type { AgentSpan, ... } from 'galileo-generated'`   | `trace.types.ts`                          | Wire-format type definitions for spans, traces, and ingest payloads |
+| `DatasetAppendRow`                                                     | `import type { DatasetAppendRow } from 'galileo-generated'` | `dataset-service.ts`, `galileo-client.ts` | Row shape for dataset content mutations                             |
