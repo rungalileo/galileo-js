@@ -32,14 +32,15 @@ import type {
   LogSpanUpdateRequest
 } from '../types/logging/trace.types';
 import { populateLocalMetrics } from '../utils/metrics';
-import type { Payload, ProtectResponse } from '../types/new-api.types';
+import type { Payload, ProtectResponse } from 'galileo-generated';
 import { handleGalileoHttpExceptionsForRetry, withRetry } from './retry-utils';
 import { TaskHandler } from './task-handler';
 import { getSdkLogger } from 'galileo-generated';
 import type {
   GalileoLoggerConfig,
   GalileoLoggerConfigExtended,
-  IGalileoLogger
+  IGalileoLogger,
+  StartSessionOptions
 } from '../types/logging/logger.types';
 
 const sdkLogger = getSdkLogger();
@@ -256,14 +257,7 @@ class GalileoLogger implements IGalileoLogger {
    * @param options.metadata - (Optional) User metadata for the session as key-value string pairs. Only applied when creating a new session.
    * @returns A promise that resolves to the ID of the session (either newly created or existing).
    */
-  async startSession(
-    options: {
-      name?: string;
-      previousSessionId?: string;
-      externalId?: string;
-      metadata?: Record<string, string>;
-    } = {}
-  ): Promise<string> {
+  async startSession(options: StartSessionOptions = {}): Promise<string> {
     await this.client.init({
       projectName: this.projectName,
       logStreamName: this.logStreamName,

@@ -396,6 +396,20 @@ describe('Singleton utility functions', () => {
       });
     });
 
+    it('test startSession passes metadata to logger', async () => {
+      const logger = getLogger();
+      const metadata = { brand_id: 'acme', tier: 'premium' };
+      const id = await startSession({
+        name: 'meta-session',
+        metadata
+      });
+      expect(id).toBe('session-id');
+      expect(logger.startSession).toHaveBeenCalledWith({
+        name: 'meta-session',
+        metadata
+      });
+    });
+
     it('setSession should call logger.setSessionId', () => {
       const logger = getLogger();
       setSession('session-123');
@@ -873,6 +887,24 @@ describe('Singleton utility functions', () => {
           name: 'session',
           previousSessionId: 'prev',
           externalId: 'ext'
+        });
+      });
+
+      it('test init passes metadata to startSession', async () => {
+        const metadata = { brand_id: 'acme', tier: 'premium' };
+        await init({
+          projectName: 'test-project',
+          startNewSession: true,
+          sessionName: 'session',
+          metadata
+        });
+
+        const mockLogger = (GalileoLogger as unknown as jest.Mock).mock.results[
+          (GalileoLogger as unknown as jest.Mock).mock.results.length - 1
+        ].value;
+        expect(mockLogger.startSession).toHaveBeenCalledWith({
+          name: 'session',
+          metadata
         });
       });
     });

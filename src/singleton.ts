@@ -1,6 +1,9 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { GalileoLogger } from './utils/galileo-logger';
-import type { GalileoLoggerConfig } from './types/logging/logger.types';
+import type {
+  GalileoLoggerConfig,
+  StartSessionOptions
+} from './types/logging/logger.types';
 import type { LocalMetricConfig } from './types/metrics.types';
 import { StepWithChildSpans } from './types/logging/span.types';
 
@@ -375,13 +378,12 @@ const getLoggerFromContext = (): GalileoLogger => {
  * @param options.name - (Optional) The session name.
  * @param options.previousSessionId - (Optional) The previous session ID to link to.
  * @param options.externalId - (Optional) External ID for the session.
+ * @param options.metadata - (Optional) User metadata for the session as key-value string pairs. Only applied when creating a new session.
  * @returns A promise that resolves to the session ID.
  */
-export const startSession = async (options?: {
-  name?: string;
-  previousSessionId?: string;
-  externalId?: string;
-}): Promise<string> => {
+export const startSession = async (
+  options?: StartSessionOptions
+): Promise<string> => {
   const logger = getLoggerFromContext();
   return logger.startSession(options);
 };
