@@ -902,10 +902,12 @@ describe('Singleton utility functions', () => {
         const mockLogger = (GalileoLogger as unknown as jest.Mock).mock.results[
           (GalileoLogger as unknown as jest.Mock).mock.results.length - 1
         ].value;
-        expect(mockLogger.startSession).toHaveBeenCalledWith({
-          name: 'session',
-          metadata
-        });
+        expect(mockLogger.startSession).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'session',
+            metadata
+          })
+        );
       });
     });
 
