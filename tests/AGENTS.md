@@ -1,6 +1,8 @@
-# Test Standards
+# tests — Standards and Orientation
 
-This document defines the testing standards for the galileo-js SDK. All new and modified tests must follow these conventions.
+This is the canonical reference for writing tests in the galileo-js SDK. All new and modified tests must follow these conventions.
+
+Reference test: `tests/utils/prompt-templates.test.ts` — mirror its structure for any API-level test.
 
 ## Framework and Tooling
 
