@@ -69,7 +69,7 @@ await flush();
 Using `ingestionHook` with `wrapOpenAI` for custom trace handling:
 
 ```js
-import { wrapOpenAI, flush } from 'galileo';
+import { wrapOpenAI } from 'galileo';
 import { OpenAI } from 'openai';
 
 const openai = wrapOpenAI(
@@ -80,12 +80,12 @@ const openai = wrapOpenAI(
   }
 );
 
+// Traces are automatically flushed to the ingestionHook after each call.
+// No need to call flush() — the hook receives the payload directly.
 const result = await openai.chat.completions.create({
   model: 'gpt-5-mini',
   messages: [{ content: 'Say hello world!', role: 'user' }]
 });
-
-await flush();
 ```
 
 Using the `log` function wrapper
