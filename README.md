@@ -66,6 +66,28 @@ console.log(result);
 await flush();
 ```
 
+Using `ingestionHook` with `wrapOpenAI` for custom trace handling:
+
+```js
+import { wrapOpenAI, flush } from 'galileo';
+import { OpenAI } from 'openai';
+
+const openai = wrapOpenAI(
+  new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  undefined, // no custom logger
+  async (request) => {
+    console.log(`Ingesting ${request.traces.length} traces`);
+  }
+);
+
+const result = await openai.chat.completions.create({
+  model: 'gpt-5-mini',
+  messages: [{ content: 'Say hello world!', role: 'user' }]
+});
+
+await flush();
+```
+
 Using the `log` function wrapper
 
 ```js
@@ -191,6 +213,26 @@ const callback = new GalileoCallback();
 const response = await model.invoke('Say hello!', { callbacks: [callback] });
 
 await flush();
+```
+
+#### OpenAI Agents SDK Integration
+
+Use `GalileoTracingProcessor` to log traces from the OpenAI Agents SDK. Requires `@openai/agents` as a peer dependency.
+
+```js
+import { GalileoTracingProcessor } from 'galileo';
+
+// Basic usage
+const processor = new GalileoTracingProcessor();
+
+// With custom ingestion hook
+const processorWithHook = new GalileoTracingProcessor(
+  undefined, // no custom logger
+  true, // flush on trace end
+  async (request) => {
+    console.log(`Ingesting ${request.traces.length} traces`);
+  }
+);
 ```
 
 #### Datasets

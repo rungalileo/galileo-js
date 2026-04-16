@@ -1,6 +1,5 @@
 import {
   Node,
-  rootNodeContext,
   LANGCHAIN_NODE_TYPE
 } from '../../../src/handlers/langchain/node';
 
@@ -48,30 +47,5 @@ describe('Node', () => {
       const node = new Node(type, {}, `run-${type}`);
       expect(node.nodeType).toBe(type);
     }
-  });
-});
-
-describe('rootNodeContext', () => {
-  beforeEach(() => {
-    rootNodeContext.set(null);
-  });
-
-  it('test get returns null by default', () => {
-    expect(rootNodeContext.get()).toBeNull();
-  });
-
-  it('test set and get a node', () => {
-    const node = new Node('chain', {}, 'root-1');
-    rootNodeContext.set(node);
-
-    expect(rootNodeContext.get()).toBe(node);
-  });
-
-  it('test reset to null', () => {
-    const node = new Node('chain', {}, 'root-1');
-    rootNodeContext.set(node);
-    rootNodeContext.set(null);
-
-    expect(rootNodeContext.get()).toBeNull();
   });
 });

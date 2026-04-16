@@ -13,6 +13,7 @@ import {
 } from './output-items';
 import { JsonObject } from 'src/types/base.types';
 import { LlmSpanAllowedInputType } from 'src/types';
+import type { LogTracesIngestRequest } from '../../types/logging/trace.types';
 import { getSdkLogger } from 'galileo-generated';
 const sdkLogger = getSdkLogger();
 
@@ -56,6 +57,7 @@ interface OpenAIType {
  * Wraps an OpenAI instance with logging.
  * @param openAIClient The OpenAI instance to wrap.
  * @param logger The logger to use. Defaults to a new GalileoLogger instance.
+ * @param ingestionHook - Optional async callback invoked with the trace ingest request payload before sending to the Galileo API. Use this to inspect or modify trace data before ingestion. When provided without a logger, a new GalileoLogger is created with this hook.
  * @returns The wrapped OpenAI instance.
  *
  * Usage:
@@ -73,7 +75,8 @@ interface OpenAIType {
  */
 export function wrapOpenAI<T extends OpenAIType>(
   openAIClient: T,
-  logger?: GalileoLogger
+  logger?: GalileoLogger,
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
 ): T {
   const handler: ProxyHandler<T> = {
     get(target, prop: string | symbol) {
@@ -84,7 +87,11 @@ export function wrapOpenAI<T extends OpenAIType>(
         typeof originalMethod === 'object' &&
         originalMethod !== null
       ) {
-        return generateChatCompletionProxy(originalMethod, logger);
+        return generateChatCompletionProxy(
+          originalMethod,
+          logger,
+          ingestionHook
+        );
       }
 
       if (
@@ -92,7 +99,7 @@ export function wrapOpenAI<T extends OpenAIType>(
         typeof originalMethod === 'object' &&
         originalMethod !== null
       ) {
-        return generateResponseApiProxy(originalMethod, logger);
+        return generateResponseApiProxy(originalMethod, logger, ingestionHook);
       }
 
       return originalMethod;
@@ -104,7 +111,8 @@ export function wrapOpenAI<T extends OpenAIType>(
 
 function generateChatCompletionProxy<T extends OpenAIType>(
   originalMethod: T[keyof T] & object,
-  logger: GalileoLogger | undefined
+  logger: GalileoLogger | undefined,
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
 ): T {
   return new Proxy(originalMethod, {
     get(chatTarget: any, chatProp: string | symbol) {
@@ -125,7 +133,11 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 const OpenAISdkOptions = args.slice(1);
                 const startTime = new Date();
                 if (!logger) {
-                  logger = GalileoSingleton.getInstance().getClient();
+                  if (ingestionHook) {
+                    logger = new GalileoLogger({ ingestionHook });
+                  } else {
+                    logger = GalileoSingleton.getInstance().getClient();
+                  }
                 }
 
                 const normalizedInput = convertInputToMessages(
@@ -229,7 +241,8 @@ function generateChatCompletionProxy<T extends OpenAIType>(
 
 function generateResponseApiProxy<T extends OpenAIType>(
   originalMethod: T[keyof T] & object,
-  logger: GalileoLogger | undefined
+  logger: GalileoLogger | undefined,
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
 ): T {
   return new Proxy(originalMethod, {
     get(responsesTarget: any, responsesProp: string | symbol) {
@@ -244,7 +257,11 @@ function generateResponseApiProxy<T extends OpenAIType>(
           const OpenAISdkOptions = args.slice(1);
           const startTime = new Date();
           if (!logger) {
-            logger = GalileoSingleton.getInstance().getClient();
+            if (ingestionHook) {
+              logger = new GalileoLogger({ ingestionHook });
+            } else {
+              logger = GalileoSingleton.getInstance().getClient();
+            }
           }
 
           const normalizedInput = convertInputToMessages(requestData.input);
@@ -379,6 +396,7 @@ function processErrorSpan(
  *
  * @param azureOpenAIClient The AzureOpenAI instance to wrap
  * @param logger Optional GalileoLogger instance. If not provided, uses the singleton instance.
+ * @param ingestionHook - Optional async callback invoked with the trace ingest request payload before sending to the Galileo API. Use this to inspect or modify trace data before ingestion. When provided without a logger, a new GalileoLogger is created with this hook.
  * @returns The wrapped Azure OpenAI instance
  *
  */

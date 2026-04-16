@@ -30,13 +30,3 @@ export class Node {
     this.parentRunId = parentRunId;
   }
 }
-
-// Root node tracking
-let _rootNode: Node | null = null;
-
-export const rootNodeContext = {
-  get: (): Node | null => _rootNode,
-  set: (value: Node | null): void => {
-    _rootNode = value;
-  }
-};
