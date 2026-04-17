@@ -32,10 +32,13 @@ node examples/logger/workflow.js     # Run an example
 
 - **GalileoApiClient** (`src/api-client/galileo-client.ts`): Main API client. Call `init({ projectName })` or `init({ projectId })` before using project-scoped methods. Services: AuthService, ProjectService, LogStreamService, TraceService, DatasetService, ExperimentService, ScorerService, and others in `src/api-client/services/`. Shared HTTP via `BaseClient` (axios).
 
-### Wrappers and Types
+### Wrappers, Handlers, and Types
 
 - **log()** (`src/wrappers.ts`): Wraps a function to log its execution as a span; integrates with singleton.
-- **wrapOpenAI()** (`src/openai.ts`): Wraps an OpenAI client to auto-log LLM calls.
+- **Handlers** (`src/handlers/`): Integration adapters that instrument third-party SDKs and emit Galileo spans.
+  - `src/handlers/openai/` — `wrapOpenAI()` / `wrapAzureOpenAI()` (Proxy-based instrumentation of the OpenAI SDK). See [`src/handlers/openai/AGENTS.md`](src/handlers/openai/AGENTS.md).
+  - `src/handlers/openai-agents/` — `GalileoTracingProcessor` for `@openai/agents-core`. See [`src/handlers/openai-agents/AGENTS.md`](src/handlers/openai-agents/AGENTS.md).
+  - `src/handlers/langchain/` — `GalileoCallback` for LangChain / LangGraph. See [`src/handlers/langchain/AGENTS.md`](src/handlers/langchain/AGENTS.md).
 - **Types** (`src/types/`): Trace/span/step types (`logging/trace.types.ts`, `logging/span.types.ts`, `logging/step.types.ts`), dataset/experiment types, etc.
 
 ### Data Flow
@@ -45,13 +48,15 @@ node examples/logger/workflow.js     # Run an example
 
 ### Key Directories
 
-- `src/utils/` – GalileoLogger, serialization, retry, errors
+- `src/utils/` – GalileoLogger, serialization, retry, errors, metrics, task-handler
 - `src/singleton.ts` – GalileoSingleton and global init/getLogger/flush
 - `src/api-client/` – GalileoApiClient, services, BaseClient
-- `src/wrappers.ts`, `src/openai.ts` – log(), wrapOpenAI()
+- `src/wrappers.ts` – `log()` function
+- `src/handlers/` – Integration adapters: `openai/`, `openai-agents/`, `langchain/` (each has its own AGENTS.md)
 - `src/types/` – TypeScript types for logging, datasets, experiments, etc.
-- `src/entities/` – High-level entities (experiments, datasets, scorers, …)
-- `tests/` – Jest tests (\*.test.ts), `tests/common.ts` (MSW handlers, TEST_HOST, mockProject)
+- `src/entities/` – High-level entities: experiments, datasets, scorers, log-streams, runs (see `src/entities/AGENTS.md`)
+- `tests/` – Jest tests (\*.test.ts), `tests/common.ts` (MSW handlers, TEST_HOST, mockProject). See `tests/AGENTS.md` for conventions.
+- `docs/` – Reference documentation (e.g. `docs/experiments-reference.md`)
 - `examples/` – Example scripts
 - `scripts/` – Build/transform scripts
 
@@ -127,38 +132,9 @@ try {
 
 ## Testing
 
-- Jest with ts-jest. Tests in `tests/`, file naming `*.test.ts`. Run single test: `npx jest tests/path/to/test.test.ts`.
-- **HTTP mocking:** MSW 2.x. Use `http`, `HttpResponse` from `msw`, `setupServer` from `msw/node`. Shared `commonHandlers`, `TEST_HOST`, `mockProject` from `tests/common.ts`.
-- **Structure:** Imports → example constants (e.g. `EXAMPLE_PROMPT_TEMPLATE`) → handlers → `handlers = [...commonHandlers, ...]` → `setupServer(...handlers)` with `beforeAll` (set `GALILEO_CONSOLE_URL`, `GALILEO_API_KEY`, `server.listen()`), `afterEach(server.resetHandlers)`, `afterAll(server.close())` → test cases.
-- **Naming:** Tests as `test('test [action] [resource] [condition]', ...)`. Handlers like `createPromptTemplateHandler`. Example constants `EXAMPLE_[RESOURCE]`.
-- **Reference:** `tests/utils/prompt-templates.test.ts` is the canonical example.
-
-### Key Fixtures / MSW Setup
-
-```typescript
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
-import { commonHandlers, TEST_HOST, mockProject } from '../common';
-
-const createPromptTemplateHandler = jest
-  .fn()
-  .mockImplementation(() => HttpResponse.json(EXAMPLE_PROMPT_TEMPLATE));
-const handlers = [
-  ...commonHandlers,
-  http.post(
-    `${TEST_HOST}/projects/${mockProject.id}/prompt_templates`,
-    createPromptTemplateHandler
-  )
-];
-const server = setupServer(...handlers);
-beforeAll(() => {
-  process.env.GALILEO_CONSOLE_URL = TEST_HOST;
-  process.env.GALILEO_API_KEY = 'test-key';
-  server.listen();
-});
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-```
+- Jest with ts-jest. Tests live in `tests/` mirroring `src/`, named `*.test.ts`. Run a single file: `npx jest tests/path/to/test.test.ts`.
+- Canonical reference test: `tests/utils/prompt-templates.test.ts`.
+- **Full conventions, MSW patterns, mocking, lifecycle hooks, import rules, and the new-test checklist are in [`tests/AGENTS.md`](tests/AGENTS.md).** Read that before writing or modifying tests.
 
 ## Configuration
 
@@ -178,3 +154,31 @@ afterAll(() => server.close());
 - ESLint: no-unused-vars, prefer-const, no-undef. Prettier for formatting. Export public API via `src/index.ts`.
 - Keep backward compatibility for legacy clients (GalileoObserve*, GalileoEvaluate*). Prefer simple, focused functions.
 - **Semantic release:** Commit format drives version—`fix:`, `feat:`, etc. → patch/minor; `BREAKING CHANGE:` → major. Follow convention for PRs.
+
+## `galileo-generated` Dependency
+
+`galileo-generated` is the auto-generated OpenAPI client for the Galileo backend. It exposes four things the SDK consumes — know what lives where, then grep for the import when you need specifics:
+
+| Export                                                                                             | Where to look                                                                                             | Purpose                                                                                                                              |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `getSdkLogger()`                                                                                   | Module-scope import in any file that does internal logging                                                | Shared diagnostic logger (`debug`/`info`/`warn`/`error`). Pattern: `const sdkLogger = getSdkLogger()` near the top of the file.      |
+| `enableLogging` / `disableLogging` / `setCustomLogger` / `resetSdkLogger`                          | Re-exported from `src/index.ts`                                                                           | Public API for users to control SDK log output.                                                                                      |
+| `GalileoGenerated` (typed HTTP client)                                                             | `src/api-client/services/trace-service.ts` and `dataset-service.ts` only                                  | Direct OpenAPI calls for **trace ingest** and **dataset row append**. All other API work goes through the hand-written `BaseClient`. |
+| `GalileoConfig` / `GalileoConfigInput`                                                             | Read by `src/api-client/galileo-client.ts` during `init()`; re-exported via `src/index.ts`                | Singleton configuration: API URL + auth credentials + project type.                                                                  |
+| Span schemas, extended records, ingest types (`AgentSpan`, `LlmSpan`, `LogTracesIngestRequest`, …) | Type-only imports in `src/types/logging/trace.types.ts`, which aliases/re-exports for the rest of the SDK | Wire-format shapes. The SDK's `ExtendedSpanRecord` / `SpanSchema` union types are composed from these.                               |
+| `DatasetAppendRow`                                                                                 | `src/api-client/services/dataset-service.ts`, `src/api-client/galileo-client.ts`                          | Row shape for dataset content-append.                                                                                                |
+
+**Rule of thumb:** never import from `galileo-generated` directly in new code outside the boundaries above. Go through the local re-export (`src/types/logging/trace.types.ts` for types, `src/index.ts` for public API) so refactors stay confined.
+
+## Further Reading
+
+Nested `AGENTS.md` files carry the deep dives for individual subsystems. Read them before making non-trivial changes in that directory.
+
+| Path                                                                           | Covers                                                                                                                      |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [`src/handlers/openai/AGENTS.md`](src/handlers/openai/AGENTS.md)               | `wrapOpenAI` / `wrapAzureOpenAI`: Proxy-based Chat Completions + Responses API instrumentation, streaming, tool extractors. |
+| [`src/handlers/openai-agents/AGENTS.md`](src/handlers/openai-agents/AGENTS.md) | `GalileoTracingProcessor` for `@openai/agents-core`: node-tree build-up, end-time refresh, custom spans.                    |
+| [`src/handlers/langchain/AGENTS.md`](src/handlers/langchain/AGENTS.md)         | `GalileoCallback`: LangChain / LangGraph callback handler, node lifecycle, tool-message dispatch.                           |
+| [`src/entities/AGENTS.md`](src/entities/AGENTS.md)                             | Entities layer — experiments orchestrator, dataset loading, metrics categorisation, tags.                                   |
+| [`tests/AGENTS.md`](tests/AGENTS.md)                                           | Test standards: Jest + MSW 2.x, naming, fixtures, mocking, lifecycle hooks, import rules, checklist.                        |
+| [`docs/experiments-reference.md`](docs/experiments-reference.md)               | Full `runExperiment` reference: 12 scenarios, 12-entry error catalogue, metric categorisation, defaults.                    |
