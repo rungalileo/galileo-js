@@ -16,7 +16,7 @@ import type {
   LlmSpanAllowedOutputType,
   RetrieverSpanAllowedOutputType
 } from './step.types';
-import type { AgentType, Payload, ProtectResponse } from '../new-api.types';
+import type { AgentType, Payload, ProtectResponse } from 'galileo-generated';
 import type { JsonObject } from '../base.types';
 export interface GalileoLoggerConfig {
   projectName?: string;
@@ -79,6 +79,20 @@ export interface IGalileoLoggerCore {
 }
 
 /**
+ * Options for starting a new session.
+ */
+export interface StartSessionOptions {
+  /** (Optional) The name of the session. Only applied when creating a new session. */
+  name?: string;
+  /** (Optional) The ID of a previous session to link to. Creates a reference only; does not inherit metadata. Only applied when creating a new session. */
+  previousSessionId?: string;
+  /** (Optional) An external identifier for the session. If a session with this external ID already exists, it will be reused instead of creating a new session. */
+  externalId?: string;
+  /** (Optional) User metadata for the session as key-value string pairs. Only applied when creating a new session. */
+  metadata?: Record<string, string>;
+}
+
+/**
  * Session management operations.
  * Handles session creation, retrieval, and lifecycle management.
  */
@@ -97,12 +111,7 @@ export interface IGalileoLoggerSession {
    * @param options.metadata - (Optional) User metadata for the session as key-value string pairs. Only applied when creating a new session.
    * @returns A promise that resolves to the ID of the session (either newly created or existing).
    */
-  startSession(options?: {
-    name?: string;
-    previousSessionId?: string;
-    externalId?: string;
-    metadata?: Record<string, string>;
-  }): Promise<string>;
+  startSession(options?: StartSessionOptions): Promise<string>;
 
   /**
    * Sets the session ID for the logger.

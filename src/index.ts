@@ -300,6 +300,8 @@ export type {
   RunExperimentParams
 };
 
+export type { StartSessionOptions } from './types/logging/logger.types';
+
 export {
   APIException,
   ExperimentAPIException,
