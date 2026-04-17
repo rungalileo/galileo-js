@@ -4,6 +4,7 @@ import { GalileoSingleton } from '../../singleton';
 import { calculateDurationNs } from '../../utils/utils';
 import { toStringRecord } from '../../utils/serialization';
 import type { JsonObject } from '../../types/base.types';
+import type { LogTracesIngestRequest } from '../../types/logging/trace.types';
 import { AgentType } from '../../types/new-api.types';
 import { type Node, createNode } from './node';
 import { mapSpanType, mapSpanName, GALILEO_CUSTOM_TYPE } from './span-mapping';
@@ -125,6 +126,8 @@ function extractAgentType(
  * - Falls back to trace name if no meaningful input is captured
  */
 export class GalileoTracingProcessor implements TracingProcessor {
+  private readonly _galileoLogger: GalileoLogger;
+  private readonly _flushOnTraceEnd: boolean;
   private _nodes = new Map<string, Node>();
   private _lastOutput: unknown = null;
   private _lastStatusCode: number | null = null;
@@ -133,13 +136,23 @@ export class GalileoTracingProcessor implements TracingProcessor {
 
   /**
    * Creates a new GalileoTracingProcessor.
-   * @param _galileoLogger - (Optional) The GalileoLogger instance to use. Defaults to singleton logger.
-   * @param _flushOnTraceEnd - (Optional) Whether to flush the logger after each trace ends. Defaults to true.
+   * @param galileoLogger - (Optional) The GalileoLogger instance to use. Defaults to singleton logger.
+   * @param flushOnTraceEnd - (Optional) Whether to flush the logger after each trace ends. Defaults to true.
+   * @param ingestionHook - (Optional) Async callback invoked with the trace ingest request payload before sending to the API. When provided without a galileoLogger, a new GalileoLogger is created with this hook.
    */
   constructor(
-    private readonly _galileoLogger: GalileoLogger = GalileoSingleton.getInstance().getClient(),
-    private readonly _flushOnTraceEnd: boolean = true
+    galileoLogger?: GalileoLogger,
+    flushOnTraceEnd: boolean = true,
+    ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
   ) {
+    if (galileoLogger) {
+      this._galileoLogger = galileoLogger;
+    } else if (ingestionHook) {
+      this._galileoLogger = new GalileoLogger({ ingestionHook });
+    } else {
+      this._galileoLogger = GalileoSingleton.getInstance().getClient();
+    }
+    this._flushOnTraceEnd = flushOnTraceEnd;
     // Lazily check for @openai/agents-core package only when processor is instantiated
     if (!GalileoTracingProcessor._depCheckDone) {
       GalileoTracingProcessor._depCheckDone = true;
@@ -568,15 +581,18 @@ export class GalileoTracingProcessor implements TracingProcessor {
  * Requires @openai/agents-core to be installed.
  * @param galileoLogger - (Optional) The GalileoLogger instance to use.
  * @param flushOnTraceEnd - (Optional) Whether to flush after each trace ends.
+ * @param ingestionHook - (Optional) Async callback invoked with the trace ingest request before sending to the API.
  * @returns The created GalileoTracingProcessor instance.
  */
 export async function registerGalileoTraceProcessor(options?: {
   galileoLogger?: GalileoLogger;
   flushOnTraceEnd?: boolean;
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void;
 }): Promise<GalileoTracingProcessor> {
   const processor = new GalileoTracingProcessor(
     options?.galileoLogger,
-    options?.flushOnTraceEnd
+    options?.flushOnTraceEnd,
+    options?.ingestionHook
   );
 
   const { addTraceProcessor } = (await import(

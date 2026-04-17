@@ -1227,6 +1227,8 @@ class GalileoLogger implements IGalileoLogger {
 
   /**
    * Flushes all traces to the server. Concludes any active traces before flushing.
+   * When an ingestionHook is configured, traces are sent to the hook instead of the
+   * API and client initialization is skipped (no API credentials required).
    * @returns A promise that resolves to an array of flushed traces.
    */
   async flush(): Promise<Trace[]> {
@@ -1254,14 +1256,18 @@ class GalileoLogger implements IGalileoLogger {
         });
       }
 
-      await this.client.init({
-        projectName: this.projectName,
-        projectId: this.projectId,
-        logStreamName: this.logStreamName,
-        logStreamId: this.logStreamId,
-        experimentId: this.experimentId,
-        sessionId: this.sessionId
-      });
+      // Skip API client initialization when using ingestionHook — the hook
+      // replaces the backend entirely, so no credentials or project setup needed.
+      if (!this.ingestionHook) {
+        await this.client.init({
+          projectName: this.projectName,
+          projectId: this.projectId,
+          logStreamName: this.logStreamName,
+          logStreamId: this.logStreamId,
+          experimentId: this.experimentId,
+          sessionId: this.sessionId
+        });
+      }
 
       // Compute local metrics if configured
       if (this.localMetrics && this.localMetrics.length > 0) {

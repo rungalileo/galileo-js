@@ -125,6 +125,7 @@ import {
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
+import type { LogTracesIngestRequest } from './types/logging/trace.types';
 import { GalileoLogger } from './utils/galileo-logger';
 import {
   init,
@@ -291,6 +292,7 @@ export type {
   LogRecordsFilter,
   LogRecordsExportRequest,
   LogRecordsMetricsQueryRequest,
+  LogTracesIngestRequest,
   DatasetRow,
   DatasetContent,
   DatasetFormat,

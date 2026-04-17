@@ -18,7 +18,7 @@ import { GalileoLogger } from '../../utils/galileo-logger';
 import { toStringValue, toStringRecord } from '../../utils/serialization';
 import { getSdkLogger } from 'galileo-generated';
 import type { LogTracesIngestRequest } from '../../types/logging/trace.types';
-import { Node, LANGCHAIN_NODE_TYPE, rootNodeContext } from './node';
+import { Node, LANGCHAIN_NODE_TYPE } from './node';
 import {
   getNodeName,
   getAgentName,
@@ -26,8 +26,6 @@ import {
   updateRootToAgent
 } from './utils';
 import { logNodeTree } from './tree-logger';
-
-export { rootNodeContext } from './node';
 
 const sdkLogger = getSdkLogger();
 
@@ -66,6 +64,7 @@ export class GalileoCallback
   _galileoLogger: GalileoLogger;
   _startNewTrace: boolean;
   _flushOnChainEnd: boolean;
+  _rootNode: Node | null = null;
   _nodes: Record<string, Node> = {};
 
   public name = 'GalileoCallback';
@@ -105,7 +104,7 @@ export class GalileoCallback
         return;
       }
 
-      const root = rootNodeContext.get();
+      const root = this._rootNode;
       if (root === null) {
         sdkLogger.warn('Unable to add nodes to trace: Root node not set');
         return;
@@ -159,7 +158,7 @@ export class GalileoCallback
     } finally {
       // Always clear state, even if an exception occurs
       this._nodes = {};
-      rootNodeContext.set(null);
+      this._rootNode = null;
     }
   }
 
@@ -194,9 +193,9 @@ export class GalileoCallback
     this._nodes[nodeId] = node;
 
     // Set as root node if needed
-    if (!rootNodeContext.get()) {
+    if (!this._rootNode) {
       sdkLogger.debug(`Setting root node to ${nodeId}`);
-      rootNodeContext.set(node);
+      this._rootNode = node;
     }
 
     // Add to parent's children if parent exists
@@ -240,7 +239,7 @@ export class GalileoCallback
     Object.assign(node.spanParams, params);
 
     // Check if this is the root node and commit if so
-    const root = rootNodeContext.get();
+    const root = this._rootNode;
     if (root && node.runId === root.runId) {
       await this._commit();
     }

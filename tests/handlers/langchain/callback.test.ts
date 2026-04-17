@@ -1,7 +1,4 @@
-import {
-  GalileoCallback,
-  rootNodeContext
-} from '../../../src/handlers/langchain';
+import { GalileoCallback } from '../../../src/handlers/langchain';
 import { GalileoLogger } from '../../../src/utils/galileo-logger';
 import { AgentFinish } from '@langchain/core/agents';
 import {
@@ -70,8 +67,6 @@ describe('GalileoCallback', () => {
 
     galileoLogger = new GalileoLogger();
     callback = new GalileoCallback(galileoLogger, true, false);
-
-    rootNodeContext.set(null);
   });
 
   describe('Initialization', () => {
@@ -1254,9 +1249,6 @@ describe('GalileoCallback', () => {
       it('should handle missing root node gracefully', async () => {
         const runId = createId();
 
-        // Reset root node context
-        rootNodeContext.set(null);
-
         await callback.handleChainStart(
           {
             name: 'TestChain',
@@ -1279,8 +1271,6 @@ describe('GalileoCallback', () => {
       it('should handle node not in nodes map', async () => {
         const runId = createId();
         const parentId = createId();
-
-        rootNodeContext.set(null);
 
         // Start a chain to set as root
         await callback.handleChainStart(
@@ -1535,7 +1525,7 @@ describe('GalileoCallback', () => {
           name: 'OuterAgent',
           input: 'test'
         });
-        rootNodeContext.set(callback['_nodes'][parentId]);
+        callback['_rootNode'] = callback['_nodes'][parentId];
 
         // Start child that triggers agent detection via name 'Agent'
         await callback.handleChainStart(
@@ -2017,7 +2007,7 @@ describe('GalileoCallback', () => {
         }
 
         expect(flushCallback['_nodes']).toEqual({});
-        expect(rootNodeContext.get()).toBeNull();
+        expect(flushCallback['_rootNode']).toBeNull();
       });
     });
 

@@ -13,6 +13,7 @@ import {
 } from './output-items';
 import { JsonObject } from 'src/types/base.types';
 import { LlmSpanAllowedInputType } from 'src/types';
+import type { LogTracesIngestRequest } from '../../types/logging/trace.types';
 import { getSdkLogger } from 'galileo-generated';
 const sdkLogger = getSdkLogger();
 
@@ -56,6 +57,7 @@ interface OpenAIType {
  * Wraps an OpenAI instance with logging.
  * @param openAIClient The OpenAI instance to wrap.
  * @param logger The logger to use. Defaults to a new GalileoLogger instance.
+ * @param ingestionHook - Optional async callback invoked with the trace ingest request payload before sending to the Galileo API. Use this to inspect or modify trace data before ingestion. When provided without a logger, a new GalileoLogger is created with this hook and traces are automatically flushed to the hook after each completed call. No explicit flush() is needed.
  * @returns The wrapped OpenAI instance.
  *
  * Usage:
@@ -73,7 +75,8 @@ interface OpenAIType {
  */
 export function wrapOpenAI<T extends OpenAIType>(
   openAIClient: T,
-  logger?: GalileoLogger
+  logger?: GalileoLogger,
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
 ): T {
   const handler: ProxyHandler<T> = {
     get(target, prop: string | symbol) {
@@ -84,7 +87,11 @@ export function wrapOpenAI<T extends OpenAIType>(
         typeof originalMethod === 'object' &&
         originalMethod !== null
       ) {
-        return generateChatCompletionProxy(originalMethod, logger);
+        return generateChatCompletionProxy(
+          originalMethod,
+          logger,
+          ingestionHook
+        );
       }
 
       if (
@@ -92,7 +99,7 @@ export function wrapOpenAI<T extends OpenAIType>(
         typeof originalMethod === 'object' &&
         originalMethod !== null
       ) {
-        return generateResponseApiProxy(originalMethod, logger);
+        return generateResponseApiProxy(originalMethod, logger, ingestionHook);
       }
 
       return originalMethod;
@@ -104,7 +111,8 @@ export function wrapOpenAI<T extends OpenAIType>(
 
 function generateChatCompletionProxy<T extends OpenAIType>(
   originalMethod: T[keyof T] & object,
-  logger: GalileoLogger | undefined
+  logger: GalileoLogger | undefined,
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
 ): T {
   return new Proxy(originalMethod, {
     get(chatTarget: any, chatProp: string | symbol) {
@@ -124,8 +132,14 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 const [requestData] = args;
                 const OpenAISdkOptions = args.slice(1);
                 const startTime = new Date();
+                let selfManagedFlush = false;
                 if (!logger) {
-                  logger = GalileoSingleton.getInstance().getClient();
+                  if (ingestionHook) {
+                    logger = new GalileoLogger({ ingestionHook });
+                    selfManagedFlush = true;
+                  } else {
+                    logger = GalileoSingleton.getInstance().getClient();
+                  }
                 }
 
                 const normalizedInput = convertInputToMessages(
@@ -159,6 +173,9 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                       startTime,
                       normalizedInput
                     );
+                    if (selfManagedFlush) {
+                      await logger.flush();
+                    }
                   }
                   throw error;
                 }
@@ -172,7 +189,8 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                     logger,
                     startTime,
                     !isParentTraceValid, // Complete trace only if we started it (no parent)
-                    false // Chat Completions API, not Responses API
+                    false, // Chat Completions API, not Responses API
+                    selfManagedFlush // Auto-flush when proxy created the logger
                   );
                 }
 
@@ -213,6 +231,9 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                     output: JSON.stringify(output),
                     durationNs
                   });
+                  if (selfManagedFlush) {
+                    await logger.flush();
+                  }
                 }
 
                 return response;
@@ -229,7 +250,8 @@ function generateChatCompletionProxy<T extends OpenAIType>(
 
 function generateResponseApiProxy<T extends OpenAIType>(
   originalMethod: T[keyof T] & object,
-  logger: GalileoLogger | undefined
+  logger: GalileoLogger | undefined,
+  ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void
 ): T {
   return new Proxy(originalMethod, {
     get(responsesTarget: any, responsesProp: string | symbol) {
@@ -243,8 +265,14 @@ function generateResponseApiProxy<T extends OpenAIType>(
           const [requestData] = args;
           const OpenAISdkOptions = args.slice(1);
           const startTime = new Date();
+          let selfManagedFlush = false;
           if (!logger) {
-            logger = GalileoSingleton.getInstance().getClient();
+            if (ingestionHook) {
+              logger = new GalileoLogger({ ingestionHook });
+              selfManagedFlush = true;
+            } else {
+              logger = GalileoSingleton.getInstance().getClient();
+            }
           }
 
           const normalizedInput = convertInputToMessages(requestData.input);
@@ -275,6 +303,9 @@ function generateResponseApiProxy<T extends OpenAIType>(
                 startTime,
                 normalizedInput
               );
+              if (selfManagedFlush) {
+                await logger.flush();
+              }
             }
             throw error;
           }
@@ -288,7 +319,8 @@ function generateResponseApiProxy<T extends OpenAIType>(
               logger,
               startTime,
               !isParentTraceValid, // Complete trace only if we started it (no parent)
-              true // Responses API stream
+              true, // Responses API stream
+              selfManagedFlush // Auto-flush when proxy created the logger
             );
           } else {
             // Safely extract output items with fallback for invalid/unexpected response formats
@@ -324,6 +356,9 @@ function generateResponseApiProxy<T extends OpenAIType>(
                 output: JSON.stringify(consolidatedOutput),
                 durationNs: calculateDurationNs(startTime)
               });
+              if (selfManagedFlush) {
+                await logger.flush();
+              }
             }
 
             return response;
@@ -379,6 +414,7 @@ function processErrorSpan(
  *
  * @param azureOpenAIClient The AzureOpenAI instance to wrap
  * @param logger Optional GalileoLogger instance. If not provided, uses the singleton instance.
+ * @param ingestionHook - Optional async callback invoked with the trace ingest request payload before sending to the Galileo API. Use this to inspect or modify trace data before ingestion. When provided without a logger, a new GalileoLogger is created with this hook and traces are automatically flushed to the hook after each completed call. No explicit flush() is needed.
  * @returns The wrapped Azure OpenAI instance
  *
  */
@@ -443,7 +479,8 @@ class StreamWrapper implements AsyncIterable<any> {
     private logger: GalileoLogger,
     private startTime: Date,
     private shouldCompleteTrace: boolean,
-    isResponsesApiStream: boolean = false
+    isResponsesApiStream: boolean = false,
+    private shouldAutoFlush: boolean = false
   ) {
     this.iterator = this.stream[Symbol.asyncIterator]();
     this.isResponsesApi = isResponsesApiStream;
@@ -471,26 +508,26 @@ class StreamWrapper implements AsyncIterable<any> {
             return result;
           } else {
             // Stream is done, finalize logging
-            this.finalize();
+            await this.finalize();
             return result;
           }
         } catch (error) {
           sdkLogger.error('Error in stream processing:', error);
           this.streamError =
             error instanceof Error ? error : new Error(String(error));
-          this.finalize();
+          await this.finalize();
           throw error;
         }
       },
       return: async (value: any): Promise<IteratorResult<any>> => {
-        this.finalize();
+        await this.finalize();
         return { done: true, value };
       },
       throw: async (error: any): Promise<IteratorResult<any>> => {
         sdkLogger.error('Error in stream processing:', error);
         this.streamError =
           error instanceof Error ? error : new Error(String(error));
-        this.finalize();
+        await this.finalize();
         throw error;
       }
     };
@@ -645,7 +682,7 @@ class StreamWrapper implements AsyncIterable<any> {
     return hasResponseEventType || hasOutputArray;
   }
 
-  private finalize() {
+  private async finalize() {
     if (this.finalized) return;
     this.finalized = true;
 
@@ -653,9 +690,9 @@ class StreamWrapper implements AsyncIterable<any> {
     const startTimeForMetrics = this.completionStartTime || this.startTime;
 
     if (this.isResponsesApi) {
-      this.finalizeResponsesApi(startTimeForMetrics, endTime);
+      await this.finalizeResponsesApi(startTimeForMetrics, endTime);
     } else {
-      this.finalizeChatCompletionApi(startTimeForMetrics, endTime);
+      await this.finalizeChatCompletionApi(startTimeForMetrics, endTime);
     }
   }
 
@@ -678,7 +715,7 @@ class StreamWrapper implements AsyncIterable<any> {
    * This is the authoritative source - we don't need to merge with any incrementally
    * collected data because the API provides everything we need in this final event.
    */
-  private finalizeResponsesApi(startTimeForMetrics: Date, endTime: Date) {
+  private async finalizeResponsesApi(startTimeForMetrics: Date, endTime: Date) {
     const extracted = extractRequestParameters(
       this.requestData as Record<string, unknown>
     );
@@ -710,6 +747,9 @@ class StreamWrapper implements AsyncIterable<any> {
           output: JSON.stringify({ content: `Error: ${errorMessage}` }),
           durationNs: calculateDurationNs(this.startTime, endTime)
         });
+        if (this.shouldAutoFlush) {
+          await this.logger.flush();
+        }
       }
     } else {
       // Process input items first
@@ -779,11 +819,17 @@ class StreamWrapper implements AsyncIterable<any> {
           output: JSON.stringify(consolidatedOutput),
           durationNs: calculateDurationNs(startTimeForMetrics, endTime)
         });
+        if (this.shouldAutoFlush) {
+          await this.logger.flush();
+        }
       }
     }
   }
 
-  private finalizeChatCompletionApi(startTimeForMetrics: Date, endTime: Date) {
+  private async finalizeChatCompletionApi(
+    startTimeForMetrics: Date,
+    endTime: Date
+  ) {
     const extracted = extractRequestParameters(
       this.requestData as Record<string, unknown>
     );
@@ -823,6 +869,9 @@ class StreamWrapper implements AsyncIterable<any> {
           output: JSON.stringify({ content: `Error: ${errorMessage}` }),
           durationNs: calculateDurationNs(this.startTime, endTime)
         });
+        if (this.shouldAutoFlush) {
+          await this.logger.flush();
+        }
       }
     } else {
       const finalOutput =
@@ -878,6 +927,9 @@ class StreamWrapper implements AsyncIterable<any> {
           output: JSON.stringify(finalOutput),
           durationNs: calculateDurationNs(this.startTime, endTime)
         });
+        if (this.shouldAutoFlush) {
+          await this.logger.flush();
+        }
       }
     }
   }
