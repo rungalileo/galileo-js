@@ -16,7 +16,10 @@
     "@rungalileo/galileo": "file:..",
     "dotenv": "^16.4.5",
     "openai": "^6.26.0",
-    "typecript": "^0.0.1-security",
+    "typescript": "^6.0.3",
     "zod": "^4.0.0"
+  },
+  "overrides": {
+    "@browserbasehq/stagehand": "^3.2.1"
   }
 }
