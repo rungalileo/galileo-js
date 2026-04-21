@@ -33,9 +33,9 @@
   "homepage": "https://www.galileo.ai/",
   "dependencies": {
     "@types/cli-progress": "^3.11.6",
-    "axios": "^1.12.2",
+    "axios": "^1.15.1",
     "cli-progress": "^3.12.0",
-    "form-data": "^4.0.1",
+    "form-data": "^4.0.5",
     "galileo-generated": "^0.2.11",
     "jsonwebtoken": "^9.0.2",
     "openapi-fetch": "^0.13.3",
@@ -68,8 +68,8 @@
     }
   },
   "devDependencies": {
-    "@langchain/core": "^0.3.13",
     "@hey-api/openapi-ts": "^0.88.0",
+    "@langchain/core": "^0.3.13",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/lodash": "^4.17.17",
