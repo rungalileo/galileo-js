@@ -82,6 +82,48 @@ function skipIfDisabledAsync<T, Args extends unknown[]>(
   };
 }
 
+/**
+ * Higher-order function that wraps a method to skip execution if the logger has been terminated.
+ * @param fn The original method
+ * @param defaultValueFn A function that returns the default value when the logger is terminated
+ */
+function skipIfTerminated<T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => T,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => T {
+  return function (this: GalileoLogger, ...args: Args): T {
+    if (this.terminated) {
+      sdkLogger.warn(
+        'Logger has been terminated, skipping execution of',
+        fn.name
+      );
+      return defaultValueFn(args);
+    }
+    return fn.apply(this, args);
+  };
+}
+
+/**
+ * Higher-order function that wraps an async method to skip execution if the logger has been terminated.
+ * @param fn The original async method
+ * @param defaultValueFn A function that returns the default value when the logger is terminated
+ */
+function skipIfTerminatedAsync<T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => Promise<T> {
+  return async function (this: GalileoLogger, ...args: Args): Promise<T> {
+    if (this.terminated) {
+      sdkLogger.warn(
+        'Logger has been terminated, skipping execution of',
+        fn.name
+      );
+      return defaultValueFn(args);
+    }
+    return await fn.apply(this, args);
+  };
+}
+
 class GalileoLogger implements IGalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
@@ -102,6 +144,16 @@ class GalileoLogger implements IGalileoLogger {
   private loggingDisabled: boolean = false;
   private taskHandler?: TaskHandler;
   private isTerminating = false;
+  private _terminated = false;
+  private onTerminate?: (logger: IGalileoLogger) => void;
+
+  /**
+   * Whether terminate() has completed on this logger. Once true, subsequent mutating calls no-op
+   * with a warning and the logger has been deregistered from the singleton (if applicable).
+   */
+  get terminated(): boolean {
+    return this._terminated;
+  }
 
   /**
    * Static factory method to create and initialize a logger.
@@ -177,6 +229,7 @@ class GalileoLogger implements IGalileoLogger {
     this.validateConfiguration();
     this.initializeLoggerState();
     this.wrapMethodsForDisabledLogging();
+    this.wrapMethodsForTerminated();
     this.registerCleanupHandlers();
   }
 
@@ -1312,9 +1365,12 @@ class GalileoLogger implements IGalileoLogger {
 
   /**
    * Terminates the logger. In batch mode, flushes all traces. In streaming mode, waits for all tasks to complete.
+   * After termination, subsequent mutating calls no-op with a warning, and loggers created through the
+   * singleton are removed from the singleton's registry. Calling terminate() again is a no-op.
    * @returns A promise that resolves when termination is complete.
    */
   async terminate(): Promise<void> {
+    if (this._terminated) return;
     try {
       if (this.mode !== 'streaming') {
         await this.flush();
@@ -1346,6 +1402,16 @@ class GalileoLogger implements IGalileoLogger {
     } catch (error) {
       sdkLogger.error('Error in terminate():', error);
       throw error;
+    } finally {
+      this._terminated = true;
+      try {
+        this.onTerminate?.(this);
+      } catch (hookError) {
+        sdkLogger.error(
+          'Error in onTerminate callback during terminate():',
+          hookError
+        );
+      }
     }
   }
 
@@ -1358,6 +1424,7 @@ class GalileoLogger implements IGalileoLogger {
     this.projectId = config.projectId;
     this.logStreamId = config.logStreamId;
     this.ingestionHook = config.ingestionHook;
+    this.onTerminate = config.onTerminate;
 
     this.mode = config.mode || config.experimental?.mode || 'batch';
   }
@@ -1467,6 +1534,83 @@ class GalileoLogger implements IGalileoLogger {
     this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
     this.initTrace = skipIfDisabledAsync(this.initTrace, () => undefined);
     this.initSpan = skipIfDisabledAsync(this.initSpan, () => undefined);
+  }
+
+  private wrapMethodsForTerminated(): void {
+    const emptySpanData = {
+      input: '',
+      redactedInput: undefined,
+      output: '',
+      redactedOutput: undefined
+    };
+
+    this.addChildSpanToParent = skipIfTerminated(
+      this.addChildSpanToParent,
+      () => undefined
+    );
+
+    this.startTrace = skipIfTerminated(
+      this.startTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addSingleLlmSpanTrace = skipIfTerminated(
+      this.addSingleLlmSpanTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addSingleRetrieverSpanTrace = skipIfTerminated(
+      this.addSingleRetrieverSpanTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addSingleToolSpanTrace = skipIfTerminated(
+      this.addSingleToolSpanTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addSingleWorkflowSpanTrace = skipIfTerminated(
+      this.addSingleWorkflowSpanTrace,
+      () => new Trace(emptySpanData)
+    );
+
+    this.addLlmSpan = skipIfTerminated(
+      this.addLlmSpan,
+      () => new LlmSpan(emptySpanData)
+    );
+
+    this.addRetrieverSpan = skipIfTerminated(
+      this.addRetrieverSpan,
+      () => new RetrieverSpan(emptySpanData)
+    );
+
+    this.addToolSpan = skipIfTerminated(
+      this.addToolSpan,
+      () => new ToolSpan(emptySpanData)
+    );
+
+    this.addProtectSpan = skipIfTerminated(
+      this.addProtectSpan,
+      () => new ToolSpan(emptySpanData)
+    );
+
+    this.addWorkflowSpan = skipIfTerminated(
+      this.addWorkflowSpan,
+      () => new WorkflowSpan(emptySpanData)
+    );
+
+    this.addAgentSpan = skipIfTerminated(
+      this.addAgentSpan,
+      () => new AgentSpan(emptySpanData)
+    );
+
+    this.conclude = skipIfTerminated(this.conclude, () => undefined);
+    this.flush = skipIfTerminatedAsync(this.flush, () => []);
+    this.startSession = skipIfTerminatedAsync(this.startSession, () => '');
+    this.setSessionId = skipIfTerminated(this.setSessionId, () => undefined);
+    this.clearSession = skipIfTerminated(this.clearSession, () => undefined);
+    this.initTrace = skipIfTerminatedAsync(this.initTrace, () => undefined);
+    this.initSpan = skipIfTerminatedAsync(this.initSpan, () => undefined);
   }
 
   private registerCleanupHandlers(): void {

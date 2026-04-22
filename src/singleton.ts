@@ -182,7 +182,15 @@ export class GalileoSingleton {
         process.env.GALILEO_LOG_STREAM_NAME,
       experimentId: options.experimentId ?? context?.experimentId,
       localMetrics: options.localMetrics,
-      mode: options.mode
+      mode: options.mode,
+      onTerminate: (terminated) => {
+        if (this.galileoLoggers.get(key) === terminated) {
+          this.galileoLoggers.delete(key);
+        }
+        if (this.lastAvailableLogger === terminated) {
+          this.lastAvailableLogger = null;
+        }
+      }
     };
 
     const logger = new GalileoLogger(config);
@@ -222,12 +230,9 @@ export class GalileoSingleton {
 
     const logger = this.galileoLoggers.get(key);
     if (logger) {
+      // terminate() triggers the onTerminate callback which removes the entry
+      // from galileoLoggers and clears lastAvailableLogger if needed.
       await logger.terminate();
-      this.galileoLoggers.delete(key);
-
-      if (this.lastAvailableLogger === logger) {
-        this.lastAvailableLogger = null;
-      }
     }
   }
 
@@ -236,10 +241,11 @@ export class GalileoSingleton {
    * @returns A promise that resolves when all loggers are reset
    */
   public async resetAll(): Promise<void> {
-    const resetPromises = Array.from(this.galileoLoggers.values()).map(
-      (logger) => logger.terminate()
-    );
-    await Promise.all(resetPromises);
+    // Snapshot values first — terminate() mutates galileoLoggers via the onTerminate callback.
+    const loggers = Array.from(this.galileoLoggers.values());
+    await Promise.all(loggers.map((logger) => logger.terminate()));
+    // Defensive backstop: clear any loggers that lacked an onTerminate hook
+    // (e.g., ones added via the legacy setClient path prior to this change).
     this.galileoLoggers.clear();
     this.lastAvailableLogger = null;
   }
