@@ -30,7 +30,6 @@ const sdkLogger = getSdkLogger();
  */
 export class GalileoOTLPExporter implements SpanExporterLike {
   private _innerExporter: SpanExporterLike;
-  private _headers: Record<string, string>;
   private _ResourceClass:
     | (new (attrs: Record<string, unknown>) => unknown)
     | null = null;
@@ -39,8 +38,6 @@ export class GalileoOTLPExporter implements SpanExporterLike {
   readonly logstream: string;
 
   constructor(config?: GalileoOTLPExporterConfig) {
-    // Use GalileoConfig singleton for consistent URL/credential resolution
-    // (handles consoleUrl→apiUrl rewriting, env var fallbacks, etc.)
     const galileoConfig = GalileoConfig.get();
     const apiUrl = config?.apiUrl ?? galileoConfig.getApiUrl();
     const apiKey = config?.apiKey ?? galileoConfig.getAuthCredentials().apiKey;
@@ -56,11 +53,6 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       config?.logstream ?? galileoConfig.logStreamName ?? 'default';
 
     const endpoint = `${apiUrl.replace(/\/$/, '')}/otel/traces`;
-    this._headers = {
-      'Galileo-API-Key': apiKey,
-      project: this.project,
-      logstream: this.logstream
-    };
 
     let OTLPTraceExporter: new (
       config: Record<string, unknown>
@@ -76,7 +68,6 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       );
     }
 
-    // Cache Resource class at construction time, not per-export
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const resourcesMod = require('@opentelemetry/resources');
@@ -90,7 +81,11 @@ export class GalileoOTLPExporter implements SpanExporterLike {
 
     this._innerExporter = new OTLPTraceExporter({
       url: endpoint,
-      headers: this._headers
+      headers: {
+        'Galileo-API-Key': apiKey,
+        project: this.project,
+        logstream: this.logstream
+      }
     });
   }
 
@@ -168,6 +163,7 @@ export class GalileoOTLPExporter implements SpanExporterLike {
           const newResource = span.resource.merge(
             new this._ResourceClass(resourceAttrs)
           );
+          // _resource is an internal property on OTel SDK's Span (verified against @opentelemetry/sdk-trace-base ^1.x)
           if ('_resource' in span) {
             (span as { _resource?: unknown })._resource = newResource;
           }
@@ -177,7 +173,6 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       }
     }
 
-    // Update headers for this batch
     if (spans.length > 0) {
       const lastSpan = spans[spans.length - 1];
       const batchProject = lastSpan.attributes[
@@ -187,17 +182,25 @@ export class GalileoOTLPExporter implements SpanExporterLike {
         GALILEO_ATTRIBUTES.LOGSTREAM_NAME
       ] as string | undefined;
 
-      if (batchProject) this._headers['project'] = batchProject;
-      if (batchLogstream) this._headers['logstream'] = batchLogstream;
+      const innerHeaders = (
+        this._innerExporter as unknown as {
+          headers: Record<string, string>;
+        }
+      ).headers;
+
+      if (batchProject) innerHeaders['project'] = batchProject;
 
       if (isExperiment) {
         const experimentId = lastSpan.attributes[
           GALILEO_ATTRIBUTES.EXPERIMENT_ID
         ] as string | undefined;
         if (experimentId) {
-          this._headers['experimentid'] = experimentId;
+          innerHeaders['experimentid'] = experimentId;
         }
-        delete this._headers['logstream'];
+        delete innerHeaders['logstream'];
+      } else {
+        if (batchLogstream) innerHeaders['logstream'] = batchLogstream;
+        delete innerHeaders['experimentid'];
       }
     }
 
