@@ -7,13 +7,20 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 const mockExport = jest.fn();
 const mockExporterShutdown = jest.fn().mockResolvedValue(undefined);
 const mockExporterForceFlush = jest.fn().mockResolvedValue(undefined);
+let mockInnerHeaders: Record<string, string> = {};
 
 jest.mock('@opentelemetry/exporter-trace-otlp-http', () => ({
-  OTLPTraceExporter: jest.fn().mockImplementation(() => ({
-    export: mockExport,
-    shutdown: mockExporterShutdown,
-    forceFlush: mockExporterForceFlush
-  }))
+  OTLPTraceExporter: jest
+    .fn()
+    .mockImplementation((config: { headers: Record<string, string> }) => {
+      mockInnerHeaders = { ...config.headers };
+      return {
+        export: mockExport,
+        shutdown: mockExporterShutdown,
+        forceFlush: mockExporterForceFlush,
+        headers: mockInnerHeaders
+      };
+    })
 }));
 
 const MockResource = jest
@@ -54,7 +61,7 @@ describe('GalileoOTLPExporter', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset the GalileoConfig singleton so env var changes take effect
+    mockInnerHeaders = {};
     GalileoConfig.reset();
     process.env = {
       ...originalEnv,
@@ -244,5 +251,51 @@ describe('GalileoOTLPExporter', () => {
 
     // Then: inner exporter is still called
     expect(mockExport).toHaveBeenCalledWith([], callback);
+  });
+
+  test('test export updates inner exporter headers for experiment mode', () => {
+    // Given: an exporter
+    const exporter = new GalileoOTLPExporter({
+      project: 'my-project',
+      logstream: 'my-logstream'
+    });
+    const span = createMockSpan({
+      [GALILEO_ATTRIBUTES.PROJECT_NAME]: 'exp-project',
+      [GALILEO_ATTRIBUTES.EXPERIMENT_ID]: 'exp-789'
+    });
+    const callback = jest.fn();
+
+    // When: exporting spans with experiment ID
+    exporter.export([span], callback);
+
+    // Then: inner exporter headers are updated with experiment ID and logstream is removed
+    expect(mockInnerHeaders['experimentid']).toBe('exp-789');
+    expect(mockInnerHeaders['project']).toBe('exp-project');
+    expect(mockInnerHeaders['logstream']).toBeUndefined();
+  });
+
+  test('test export cleans up experiment headers for non-experiment batch', () => {
+    // Given: an exporter that previously exported an experiment batch
+    const exporter = new GalileoOTLPExporter({
+      project: 'my-project',
+      logstream: 'my-logstream'
+    });
+    const experimentSpan = createMockSpan({
+      [GALILEO_ATTRIBUTES.PROJECT_NAME]: 'exp-project',
+      [GALILEO_ATTRIBUTES.EXPERIMENT_ID]: 'exp-789'
+    });
+    exporter.export([experimentSpan], jest.fn());
+
+    // When: exporting a non-experiment batch
+    const normalSpan = createMockSpan({
+      [GALILEO_ATTRIBUTES.PROJECT_NAME]: 'normal-project',
+      [GALILEO_ATTRIBUTES.LOGSTREAM_NAME]: 'normal-logstream'
+    });
+    exporter.export([normalSpan], jest.fn());
+
+    // Then: experiment ID is cleaned up and logstream is restored
+    expect(mockInnerHeaders['experimentid']).toBeUndefined();
+    expect(mockInnerHeaders['logstream']).toBe('normal-logstream');
+    expect(mockInnerHeaders['project']).toBe('normal-project');
   });
 });

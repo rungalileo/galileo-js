@@ -44,7 +44,7 @@ export const GALILEO_ATTRIBUTES = {
 // At runtime, actual OTel objects are passed in.
 
 export interface SpanLike {
-  setAttribute(key: string, value: string): unknown;
+  setAttribute(key: string, value: string | number | boolean): unknown;
 }
 
 export interface ReadableSpanLike {
