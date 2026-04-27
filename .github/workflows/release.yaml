@@ -55,7 +55,7 @@ jobs:
           git config --global user.email ci@rungalileo.io
           git config --global user.name "galileo-automation"
 
-      - name: Semantic Release (bump version + publish + Github release)
+      - name: Semantic Release (bump version + npm publish + Github release)
         uses: cycjimmy/semantic-release-action@v4
         with:
           ci: false
