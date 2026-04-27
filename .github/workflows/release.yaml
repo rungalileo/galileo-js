@@ -55,13 +55,13 @@ jobs:
           git config --global user.email ci@rungalileo.io
           git config --global user.name "galileo-automation"
 
-      - name: Semantic Release (bump version + publish + Github release)
+      - name: Semantic Release (bump version + npm publish + Github release)
         uses: cycjimmy/semantic-release-action@v4
         with:
           ci: false
+          semantic_version: 25
           extra_plugins: |
             @semantic-release/changelog
             @semantic-release/git
-            @semantic-release/npm@>=13.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
