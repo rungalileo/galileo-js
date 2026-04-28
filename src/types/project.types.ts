@@ -8,7 +8,6 @@ export type ProjectTypes = components['schemas']['ProjectType'];
 // Add missing values from API to ensure satisfies validation passes
 export const ProjectTypes = {
   evaluate: 'prompt_evaluation',
-  observe: 'llm_monitor',
   genAI: 'gen_ai',
   protect: 'protect'
 } as const satisfies Record<string, ProjectTypes>;

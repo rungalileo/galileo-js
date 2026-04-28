@@ -1,8 +1,5 @@
 import GalileoEvaluateApiClient from './evaluate/api-client';
 import GalileoEvaluateWorkflow from './evaluate/workflow';
-import GalileoObserveApiClient from './observe/api-client';
-import GalileoObserveCallback from './observe/callback';
-import GalileoObserveWorkflow from './observe/workflow';
 import { GalileoApiClient } from './api-client';
 import { GalileoConfig, type GalileoConfigInput } from 'galileo-generated';
 import {
@@ -150,10 +147,6 @@ import {
 } from './handlers/openai-agents';
 import { getSessions, getSpans, getTraces, RecordType } from './utils/search';
 export {
-  // Legacy clients
-  GalileoObserveApiClient,
-  GalileoObserveCallback,
-  GalileoObserveWorkflow,
   GalileoEvaluateApiClient,
   GalileoEvaluateWorkflow,
   // Galileo 2.0 client and methods

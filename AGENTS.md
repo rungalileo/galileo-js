@@ -152,7 +152,7 @@ try {
 
 - Use TypeScript strict mode. No `any`; use proper types. Use ES module `import`, not `require()` for implementation.
 - ESLint: no-unused-vars, prefer-const, no-undef. Prettier for formatting. Export public API via `src/index.ts`.
-- Keep backward compatibility for legacy clients (GalileoObserve*, GalileoEvaluate*). Prefer simple, focused functions.
+- Keep backward compatibility for legacy clients (GalileoEvaluate\*). Prefer simple, focused functions.
 - **Semantic release:** Commit format drives version—`fix:`, `feat:`, etc. → patch/minor; `BREAKING CHANGE:` → major. Follow convention for PRs.
 
 ## `galileo-generated` Dependency
