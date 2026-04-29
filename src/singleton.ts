@@ -183,14 +183,8 @@ export class GalileoSingleton {
       experimentId: options.experimentId ?? context?.experimentId,
       localMetrics: options.localMetrics,
       mode: options.mode,
-      onTerminate: (terminated) => {
-        if (this.galileoLoggers.get(key) === terminated) {
-          this.galileoLoggers.delete(key);
-        }
-        if (this.lastAvailableLogger === terminated) {
-          this.lastAvailableLogger = null;
-        }
-      }
+      onTerminate: (terminated) =>
+        this.cleanupLogger(key, terminated as GalileoLogger)
     };
 
     const logger = new GalileoLogger(config);
@@ -212,6 +206,21 @@ export class GalileoSingleton {
   }
 
   /**
+   * Removes a logger from internal tracking. Idempotent — only removes the
+   * map entry / clears lastAvailableLogger if they still reference the given
+   * logger, so it can be safely called from both the onTerminate hook and the
+   * reset() backstop.
+   */
+  private cleanupLogger(key: string, logger: GalileoLogger): void {
+    if (this.galileoLoggers.get(key) === logger) {
+      this.galileoLoggers.delete(key);
+    }
+    if (this.lastAvailableLogger === logger) {
+      this.lastAvailableLogger = null;
+    }
+  }
+
+  /**
    * Resets (terminates and removes) a GalileoLogger instance.
    * @param options - Configuration options to identify which logger to reset
    * @param options.projectName - (Optional) The project name
@@ -230,15 +239,12 @@ export class GalileoSingleton {
 
     const logger = this.galileoLoggers.get(key);
     if (logger) {
-      // terminate() triggers the onTerminate callback which removes the entry
-      // from galileoLoggers and clears lastAvailableLogger if needed.
+      // terminate() triggers the onTerminate callback which calls cleanupLogger().
+      // The defensive call below is a backstop for cases where onTerminate doesn't
+      // fire (legacy setClient() loggers, or terminate() short-circuited by
+      // skipIfDisabledAsync when GALILEO_DISABLE_LOGGING is set).
       await logger.terminate();
-      if (this.galileoLoggers.get(key) === logger) {
-        this.galileoLoggers.delete(key);
-      }
-      if (this.lastAvailableLogger === logger) {
-        this.lastAvailableLogger = null;
-      }
+      this.cleanupLogger(key, logger);
     }
   }
 
