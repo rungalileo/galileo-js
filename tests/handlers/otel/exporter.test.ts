@@ -3,24 +3,34 @@ import { GALILEO_ATTRIBUTES } from '../../../src/handlers/otel/types';
 import { GalileoConfig } from 'galileo-generated';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 
-// Mock OTel dependencies
+// Mock OTel dependencies — source tries proto first, falls back to http
 const mockExport = jest.fn();
 const mockExporterShutdown = jest.fn().mockResolvedValue(undefined);
 const mockExporterForceFlush = jest.fn().mockResolvedValue(undefined);
 let mockInnerHeaders: Record<string, string> = {};
 
+const mockExporterFactory = jest
+  .fn()
+  .mockImplementation((config: { headers: Record<string, string> }) => {
+    mockInnerHeaders = { ...config.headers };
+    return {
+      export: mockExport,
+      shutdown: mockExporterShutdown,
+      forceFlush: mockExporterForceFlush,
+      headers: mockInnerHeaders
+    };
+  });
+
+jest.mock(
+  '@opentelemetry/exporter-trace-otlp-proto',
+  () => ({
+    OTLPTraceExporter: mockExporterFactory
+  }),
+  { virtual: true }
+);
+
 jest.mock('@opentelemetry/exporter-trace-otlp-http', () => ({
-  OTLPTraceExporter: jest
-    .fn()
-    .mockImplementation((config: { headers: Record<string, string> }) => {
-      mockInnerHeaders = { ...config.headers };
-      return {
-        export: mockExport,
-        shutdown: mockExporterShutdown,
-        forceFlush: mockExporterForceFlush,
-        headers: mockInnerHeaders
-      };
-    })
+  OTLPTraceExporter: mockExporterFactory
 }));
 
 const MockResource = jest
@@ -51,8 +61,7 @@ function createMockSpan(
   return {
     name: 'test-span',
     attributes,
-    resource,
-    _resource: resource
+    resource
   };
 }
 
@@ -90,7 +99,7 @@ describe('GalileoOTLPExporter', () => {
     expect(exporter.logstream).toBe('my-logstream');
 
     // Then: OTLPTraceExporter was created with correct endpoint and headers
-    expect(OTLPTraceExporter).toHaveBeenCalledWith({
+    expect(mockExporterFactory).toHaveBeenCalledWith({
       url: 'https://custom.galileo.ai/otel/traces',
       headers: {
         'Galileo-API-Key': 'my-key',
@@ -109,7 +118,7 @@ describe('GalileoOTLPExporter', () => {
     });
 
     // Then: endpoint has no double slash
-    expect(OTLPTraceExporter).toHaveBeenCalledWith(
+    expect(mockExporterFactory).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'https://custom.galileo.ai/otel/traces'
       })

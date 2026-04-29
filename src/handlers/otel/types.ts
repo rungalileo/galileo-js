@@ -50,8 +50,7 @@ export interface SpanLike {
 export interface ReadableSpanLike {
   readonly name: string;
   readonly attributes: Record<string, unknown>;
-  readonly resource: { merge(other: unknown): unknown };
-  _resource?: unknown;
+  resource: { merge(other: unknown): unknown };
 }
 
 export interface ExportResultLike {

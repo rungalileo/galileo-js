@@ -59,13 +59,19 @@ export class GalileoOTLPExporter implements SpanExporterLike {
     ) => SpanExporterLike;
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('@opentelemetry/exporter-trace-otlp-http');
+      const mod = require('@opentelemetry/exporter-trace-otlp-proto');
       OTLPTraceExporter = mod.OTLPTraceExporter;
     } catch {
-      throw new Error(
-        '@opentelemetry/exporter-trace-otlp-http is not installed. ' +
-          'Install it with: npm install @opentelemetry/exporter-trace-otlp-http'
-      );
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const mod = require('@opentelemetry/exporter-trace-otlp-http');
+        OTLPTraceExporter = mod.OTLPTraceExporter;
+      } catch {
+        throw new Error(
+          '@opentelemetry/exporter-trace-otlp-proto (or @opentelemetry/exporter-trace-otlp-http) is not installed. ' +
+            'Install it with: npm install @opentelemetry/exporter-trace-otlp-proto'
+        );
+      }
     }
 
     try {
@@ -99,31 +105,34 @@ export class GalileoOTLPExporter implements SpanExporterLike {
     spans: ReadableSpanLike[],
     resultCallback: (result: ExportResultLike) => void
   ): void {
-    let isExperiment = false;
+    let batchExperimentId: string | undefined;
 
     for (const span of spans) {
       const attrs = span.attributes;
-      const project = attrs[GALILEO_ATTRIBUTES.PROJECT_NAME] as
-        | string
-        | undefined;
-      const logstream = attrs[GALILEO_ATTRIBUTES.LOGSTREAM_NAME] as
-        | string
-        | undefined;
-      const sessionId = attrs[GALILEO_ATTRIBUTES.SESSION_ID] as
-        | string
-        | undefined;
-      const experimentId = attrs[GALILEO_ATTRIBUTES.EXPERIMENT_ID] as
-        | string
-        | undefined;
-      const datasetInput = attrs[GALILEO_ATTRIBUTES.DATASET_INPUT] as
-        | string
-        | undefined;
-      const datasetOutput = attrs[GALILEO_ATTRIBUTES.DATASET_OUTPUT] as
-        | string
-        | undefined;
-      const datasetMetadata = attrs[GALILEO_ATTRIBUTES.DATASET_METADATA] as
-        | string
-        | undefined;
+      const rawProject = attrs[GALILEO_ATTRIBUTES.PROJECT_NAME];
+      const project = typeof rawProject === 'string' ? rawProject : undefined;
+      const rawLogstream = attrs[GALILEO_ATTRIBUTES.LOGSTREAM_NAME];
+      const logstream =
+        typeof rawLogstream === 'string' ? rawLogstream : undefined;
+      const rawSessionId = attrs[GALILEO_ATTRIBUTES.SESSION_ID];
+      const sessionId =
+        typeof rawSessionId === 'string' ? rawSessionId : undefined;
+      const rawExperimentId = attrs[GALILEO_ATTRIBUTES.EXPERIMENT_ID];
+      const experimentId =
+        typeof rawExperimentId === 'string' ? rawExperimentId : undefined;
+      const rawDatasetInput = attrs[GALILEO_ATTRIBUTES.DATASET_INPUT];
+      const datasetInput =
+        typeof rawDatasetInput === 'string' ? rawDatasetInput : undefined;
+      const rawDatasetOutput = attrs[GALILEO_ATTRIBUTES.DATASET_OUTPUT];
+      const datasetOutput =
+        typeof rawDatasetOutput === 'string' ? rawDatasetOutput : undefined;
+      const rawDatasetMetadata = attrs[GALILEO_ATTRIBUTES.DATASET_METADATA];
+      const datasetMetadata =
+        typeof rawDatasetMetadata === 'string' ? rawDatasetMetadata : undefined;
+
+      if (experimentId) {
+        batchExperimentId = experimentId;
+      }
 
       const resourceAttrs: Record<string, string> = {};
       let hasResourceAttrs = false;
@@ -142,7 +151,6 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       }
       if (experimentId) {
         resourceAttrs[GALILEO_ATTRIBUTES.EXPERIMENT_ID] = experimentId;
-        isExperiment = true;
         hasResourceAttrs = true;
       }
       if (datasetInput) {
@@ -163,9 +171,9 @@ export class GalileoOTLPExporter implements SpanExporterLike {
           const newResource = span.resource.merge(
             new this._ResourceClass(resourceAttrs)
           );
-          // _resource is an internal property on OTel SDK's Span (verified against @opentelemetry/sdk-trace-base ^1.x)
-          if ('_resource' in span) {
-            (span as { _resource?: unknown })._resource = newResource;
+          // OTel SDK's Span exposes `resource` as a public property in the TS API (verified against @opentelemetry/sdk-trace-base ^1.x)
+          if ('resource' in span) {
+            (span as { resource?: unknown }).resource = newResource;
           }
         } catch (err) {
           sdkLogger.warn('Failed to merge resource attributes:', err);
@@ -175,12 +183,14 @@ export class GalileoOTLPExporter implements SpanExporterLike {
 
     if (spans.length > 0) {
       const lastSpan = spans[spans.length - 1];
-      const batchProject = lastSpan.attributes[
-        GALILEO_ATTRIBUTES.PROJECT_NAME
-      ] as string | undefined;
-      const batchLogstream = lastSpan.attributes[
-        GALILEO_ATTRIBUTES.LOGSTREAM_NAME
-      ] as string | undefined;
+      const rawBatchProject =
+        lastSpan.attributes[GALILEO_ATTRIBUTES.PROJECT_NAME];
+      const batchProject =
+        typeof rawBatchProject === 'string' ? rawBatchProject : undefined;
+      const rawBatchLogstream =
+        lastSpan.attributes[GALILEO_ATTRIBUTES.LOGSTREAM_NAME];
+      const batchLogstream =
+        typeof rawBatchLogstream === 'string' ? rawBatchLogstream : undefined;
 
       const innerHeaders = (
         this._innerExporter as unknown as {
@@ -188,18 +198,13 @@ export class GalileoOTLPExporter implements SpanExporterLike {
         }
       ).headers;
 
-      if (batchProject) innerHeaders['project'] = batchProject;
+      innerHeaders['project'] = batchProject ?? this.project;
 
-      if (isExperiment) {
-        const experimentId = lastSpan.attributes[
-          GALILEO_ATTRIBUTES.EXPERIMENT_ID
-        ] as string | undefined;
-        if (experimentId) {
-          innerHeaders['experimentid'] = experimentId;
-        }
+      if (batchExperimentId) {
+        innerHeaders['experimentid'] = batchExperimentId;
         delete innerHeaders['logstream'];
       } else {
-        if (batchLogstream) innerHeaders['logstream'] = batchLogstream;
+        innerHeaders['logstream'] = batchLogstream ?? this.logstream;
         delete innerHeaders['experimentid'];
       }
     }
