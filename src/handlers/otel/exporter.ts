@@ -166,14 +166,24 @@ export class GalileoOTLPExporter implements SpanExporterLike {
         }
       ).headers;
 
-      innerHeaders['project'] = batchProject ?? this.project;
+      if (
+        innerHeaders &&
+        typeof innerHeaders === 'object' &&
+        !Object.isFrozen(innerHeaders)
+      ) {
+        innerHeaders['project'] = batchProject ?? this.project;
 
-      if (batchExperimentId) {
-        innerHeaders['experimentid'] = batchExperimentId;
-        delete innerHeaders['logstream'];
+        if (batchExperimentId) {
+          innerHeaders['experimentid'] = batchExperimentId;
+          delete innerHeaders['logstream'];
+        } else {
+          innerHeaders['logstream'] = batchLogstream ?? this.logstream;
+          delete innerHeaders['experimentid'];
+        }
       } else {
-        innerHeaders['logstream'] = batchLogstream ?? this.logstream;
-        delete innerHeaders['experimentid'];
+        sdkLogger.warn(
+          'Could not update inner exporter headers — the OTLPTraceExporter implementation may have changed.'
+        );
       }
     }
 

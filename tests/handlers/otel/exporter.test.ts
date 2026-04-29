@@ -306,4 +306,55 @@ describe('GalileoOTLPExporter', () => {
     expect(mockInnerHeaders['logstream']).toBe('normal-logstream');
     expect(mockInnerHeaders['project']).toBe('normal-project');
   });
+
+  test('test export warns when inner exporter headers are not accessible', () => {
+    // Given: an exporter whose inner exporter has no headers property
+    const exporter = new GalileoOTLPExporter();
+    const origFactory = mockExporterFactory.getMockImplementation()!;
+    mockExporterFactory.mockImplementationOnce(
+      (config: { headers: Record<string, string> }) => {
+        const inner = origFactory(config);
+        delete (inner as Record<string, unknown>).headers;
+        return inner;
+      }
+    );
+    const noHeadersExporter = new GalileoOTLPExporter();
+
+    const span = createMockSpan({
+      [GALILEO_ATTRIBUTES.PROJECT_NAME]: 'some-project'
+    });
+    const callback = jest.fn();
+
+    // When: exporting spans
+    noHeadersExporter.export([span], callback);
+
+    // Then: export still proceeds (delegates to inner exporter)
+    expect(mockExport).toHaveBeenCalledWith([span], callback);
+  });
+
+  test('test export warns when inner exporter headers are frozen', () => {
+    // Given: an exporter whose inner exporter has frozen headers
+    const origFactory = mockExporterFactory.getMockImplementation()!;
+    mockExporterFactory.mockImplementationOnce(
+      (config: { headers: Record<string, string> }) => {
+        const inner = origFactory(config);
+        (inner as Record<string, unknown>).headers = Object.freeze({
+          ...config.headers
+        });
+        return inner;
+      }
+    );
+    const frozenExporter = new GalileoOTLPExporter();
+
+    const span = createMockSpan({
+      [GALILEO_ATTRIBUTES.PROJECT_NAME]: 'some-project'
+    });
+    const callback = jest.fn();
+
+    // When: exporting spans
+    frozenExporter.export([span], callback);
+
+    // Then: export still proceeds without throwing
+    expect(mockExport).toHaveBeenCalledWith([span], callback);
+  });
 });
