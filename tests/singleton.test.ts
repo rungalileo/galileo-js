@@ -1629,4 +1629,74 @@ describe('Singleton utility functions', () => {
       expect(instance['lastAvailableLogger']).toBe(last);
     });
   });
+
+  describe('reset() defensive backstop', () => {
+    test('test reset cleans up logger registered via setClient (no onTerminate hook)', async () => {
+      const mockLogger = {
+        flush: jest.fn().mockResolvedValue([]),
+        terminate: jest.fn().mockResolvedValue(undefined),
+        startSession: jest.fn().mockResolvedValue('session-id')
+      } as unknown as GalileoLogger;
+
+      const singleton = GalileoSingleton.getInstance();
+      singleton.setClient(mockLogger);
+      expect(getAllLoggers().size).toBe(1);
+      expect(singleton.getClient()).toBe(mockLogger);
+
+      await reset();
+
+      expect(mockLogger.terminate).toHaveBeenCalled();
+      expect(getAllLoggers().size).toBe(0);
+      expect(singleton['lastAvailableLogger']).toBeNull();
+    });
+
+    test('test reset cleans up logger when terminate suppresses onTerminate (disabled logging)', async () => {
+      const logger = getLogger({
+        projectName: 'disabled-proj',
+        logstream: 'disabled-stream'
+      });
+
+      // Simulate GALILEO_DISABLE_LOGGING: skipIfDisabledAsync wraps terminate()
+      // and returns immediately, so the finally block never sets _terminated
+      // and onTerminate never fires.
+      (logger.terminate as jest.Mock).mockImplementation(async () => undefined);
+
+      expect(getAllLoggers().size).toBe(1);
+      expect(GalileoSingleton.getInstance()['lastAvailableLogger']).toBe(
+        logger
+      );
+
+      await reset({
+        projectName: 'disabled-proj',
+        logstream: 'disabled-stream'
+      });
+
+      expect(logger.terminate).toHaveBeenCalled();
+      expect(getAllLoggers().size).toBe(0);
+      expect(GalileoSingleton.getInstance()['lastAvailableLogger']).toBeNull();
+    });
+
+    test('test reset backstop is idempotent when onTerminate already cleaned up', async () => {
+      const logger1 = getLogger({
+        projectName: 'idempotent',
+        logstream: 'stream-1'
+      });
+      const logger2 = getLogger({
+        projectName: 'idempotent',
+        logstream: 'stream-2'
+      });
+      expect(getAllLoggers().size).toBe(2);
+
+      // logger1 has onTerminate installed (created via getLogger), so the
+      // hook removes it; the backstop sees `get(key) === logger` is false
+      // and skips. logger2 must remain untouched.
+      await reset({ projectName: 'idempotent', logstream: 'stream-1' });
+
+      expect(logger1.terminate).toHaveBeenCalledTimes(1);
+      expect(getAllLoggers().size).toBe(1);
+      expect(GalileoSingleton.getInstance()['lastAvailableLogger']).toBe(
+        logger2
+      );
+    });
+  });
 });

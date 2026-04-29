@@ -233,6 +233,12 @@ export class GalileoSingleton {
       // terminate() triggers the onTerminate callback which removes the entry
       // from galileoLoggers and clears lastAvailableLogger if needed.
       await logger.terminate();
+      if (this.galileoLoggers.get(key) === logger) {
+        this.galileoLoggers.delete(key);
+      }
+      if (this.lastAvailableLogger === logger) {
+        this.lastAvailableLogger = null;
+      }
     }
   }
 
