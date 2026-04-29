@@ -1,7 +1,6 @@
 import { GalileoOTLPExporter } from '../../../src/handlers/otel/exporter';
 import { GALILEO_ATTRIBUTES } from '../../../src/handlers/otel/types';
 import { GalileoConfig } from 'galileo-generated';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 
 // Mock OTel dependencies — source tries proto first, falls back to http
 const mockExport = jest.fn();

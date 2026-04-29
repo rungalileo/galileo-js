@@ -9,6 +9,14 @@ import { GalileoConfig, getSdkLogger } from 'galileo-generated';
 
 const sdkLogger = getSdkLogger();
 
+function strAttr(
+  attrs: Record<string, unknown>,
+  key: string
+): string | undefined {
+  const v = attrs[key];
+  return typeof v === 'string' ? v : undefined;
+}
+
 /**
  * OpenTelemetry OTLP span exporter preconfigured for Galileo platform integration.
  *
@@ -106,75 +114,45 @@ export class GalileoOTLPExporter implements SpanExporterLike {
     resultCallback: (result: ExportResultLike) => void
   ): void {
     let batchExperimentId: string | undefined;
+    let batchProject: string | undefined;
+    let batchLogstream: string | undefined;
 
     for (const span of spans) {
       const attrs = span.attributes;
-      const rawProject = attrs[GALILEO_ATTRIBUTES.PROJECT_NAME];
-      const project = typeof rawProject === 'string' ? rawProject : undefined;
-      const rawLogstream = attrs[GALILEO_ATTRIBUTES.LOGSTREAM_NAME];
-      const logstream =
-        typeof rawLogstream === 'string' ? rawLogstream : undefined;
-      const rawSessionId = attrs[GALILEO_ATTRIBUTES.SESSION_ID];
-      const sessionId =
-        typeof rawSessionId === 'string' ? rawSessionId : undefined;
-      const rawExperimentId = attrs[GALILEO_ATTRIBUTES.EXPERIMENT_ID];
-      const experimentId =
-        typeof rawExperimentId === 'string' ? rawExperimentId : undefined;
-      const rawDatasetInput = attrs[GALILEO_ATTRIBUTES.DATASET_INPUT];
-      const datasetInput =
-        typeof rawDatasetInput === 'string' ? rawDatasetInput : undefined;
-      const rawDatasetOutput = attrs[GALILEO_ATTRIBUTES.DATASET_OUTPUT];
-      const datasetOutput =
-        typeof rawDatasetOutput === 'string' ? rawDatasetOutput : undefined;
-      const rawDatasetMetadata = attrs[GALILEO_ATTRIBUTES.DATASET_METADATA];
-      const datasetMetadata =
-        typeof rawDatasetMetadata === 'string' ? rawDatasetMetadata : undefined;
+      const project = strAttr(attrs, GALILEO_ATTRIBUTES.PROJECT_NAME);
+      const logstream = strAttr(attrs, GALILEO_ATTRIBUTES.LOGSTREAM_NAME);
+      const sessionId = strAttr(attrs, GALILEO_ATTRIBUTES.SESSION_ID);
+      const experimentId = strAttr(attrs, GALILEO_ATTRIBUTES.EXPERIMENT_ID);
+      const datasetInput = strAttr(attrs, GALILEO_ATTRIBUTES.DATASET_INPUT);
+      const datasetOutput = strAttr(attrs, GALILEO_ATTRIBUTES.DATASET_OUTPUT);
+      const datasetMetadata = strAttr(
+        attrs,
+        GALILEO_ATTRIBUTES.DATASET_METADATA
+      );
 
-      if (experimentId) {
-        batchExperimentId = experimentId;
-      }
+      if (experimentId) batchExperimentId = experimentId;
+      batchProject = project ?? batchProject;
+      batchLogstream = logstream ?? batchLogstream;
 
       const resourceAttrs: Record<string, string> = {};
-      let hasResourceAttrs = false;
-
-      if (project) {
-        resourceAttrs[GALILEO_ATTRIBUTES.PROJECT_NAME] = project;
-        hasResourceAttrs = true;
-      }
-      if (logstream && !experimentId) {
+      if (project) resourceAttrs[GALILEO_ATTRIBUTES.PROJECT_NAME] = project;
+      if (logstream && !experimentId)
         resourceAttrs[GALILEO_ATTRIBUTES.LOGSTREAM_NAME] = logstream;
-        hasResourceAttrs = true;
-      }
-      if (sessionId) {
-        resourceAttrs[GALILEO_ATTRIBUTES.SESSION_ID] = sessionId;
-        hasResourceAttrs = true;
-      }
-      if (experimentId) {
+      if (sessionId) resourceAttrs[GALILEO_ATTRIBUTES.SESSION_ID] = sessionId;
+      if (experimentId)
         resourceAttrs[GALILEO_ATTRIBUTES.EXPERIMENT_ID] = experimentId;
-        hasResourceAttrs = true;
-      }
-      if (datasetInput) {
+      if (datasetInput)
         resourceAttrs[GALILEO_ATTRIBUTES.DATASET_INPUT] = datasetInput;
-        hasResourceAttrs = true;
-      }
-      if (datasetOutput) {
+      if (datasetOutput)
         resourceAttrs[GALILEO_ATTRIBUTES.DATASET_OUTPUT] = datasetOutput;
-        hasResourceAttrs = true;
-      }
-      if (datasetMetadata) {
+      if (datasetMetadata)
         resourceAttrs[GALILEO_ATTRIBUTES.DATASET_METADATA] = datasetMetadata;
-        hasResourceAttrs = true;
-      }
 
-      if (hasResourceAttrs && this._ResourceClass) {
+      if (Object.keys(resourceAttrs).length > 0 && this._ResourceClass) {
         try {
-          const newResource = span.resource.merge(
+          (span as { resource: unknown }).resource = span.resource.merge(
             new this._ResourceClass(resourceAttrs)
           );
-          // OTel SDK's Span exposes `resource` as a public property in the TS API (verified against @opentelemetry/sdk-trace-base ^1.x)
-          if ('resource' in span) {
-            (span as { resource?: unknown }).resource = newResource;
-          }
         } catch (err) {
           sdkLogger.warn('Failed to merge resource attributes:', err);
         }
@@ -182,16 +160,6 @@ export class GalileoOTLPExporter implements SpanExporterLike {
     }
 
     if (spans.length > 0) {
-      const lastSpan = spans[spans.length - 1];
-      const rawBatchProject =
-        lastSpan.attributes[GALILEO_ATTRIBUTES.PROJECT_NAME];
-      const batchProject =
-        typeof rawBatchProject === 'string' ? rawBatchProject : undefined;
-      const rawBatchLogstream =
-        lastSpan.attributes[GALILEO_ATTRIBUTES.LOGSTREAM_NAME];
-      const batchLogstream =
-        typeof rawBatchLogstream === 'string' ? rawBatchLogstream : undefined;
-
       const innerHeaders = (
         this._innerExporter as unknown as {
           headers: Record<string, string>;
