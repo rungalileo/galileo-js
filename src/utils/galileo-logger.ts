@@ -124,6 +124,16 @@ function skipIfTerminatedAsync<T, Args extends unknown[]>(
   };
 }
 
+type SyncGuard = <T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => T,
+  defaultValueFn: (args: Args) => T
+) => (this: GalileoLogger, ...args: Args) => T;
+
+type AsyncGuard = <T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
+  defaultValueFn: (args: Args) => T
+) => (this: GalileoLogger, ...args: Args) => Promise<T>;
+
 class GalileoLogger implements IGalileoLogger {
   private projectName?: string;
   private logStreamName?: string;
@@ -1459,7 +1469,7 @@ class GalileoLogger implements IGalileoLogger {
     }
   }
 
-  private wrapMethodsForDisabledLogging(): void {
+  private applySharedGuards(guard: SyncGuard, asyncGuard: AsyncGuard): void {
     const emptySpanData = {
       input: '',
       redactedInput: undefined,
@@ -1467,150 +1477,64 @@ class GalileoLogger implements IGalileoLogger {
       redactedOutput: undefined
     };
 
-    this.addChildSpanToParent = skipIfDisabled(
+    this.addChildSpanToParent = guard(
       this.addChildSpanToParent,
       () => undefined
     );
-
-    this.startTrace = skipIfDisabled(
-      this.startTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addSingleLlmSpanTrace = skipIfDisabled(
+    this.startTrace = guard(this.startTrace, () => new Trace(emptySpanData));
+    this.addSingleLlmSpanTrace = guard(
       this.addSingleLlmSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addSingleRetrieverSpanTrace = skipIfDisabled(
+    this.addSingleRetrieverSpanTrace = guard(
       this.addSingleRetrieverSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addSingleToolSpanTrace = skipIfDisabled(
+    this.addSingleToolSpanTrace = guard(
       this.addSingleToolSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addSingleWorkflowSpanTrace = skipIfDisabled(
+    this.addSingleWorkflowSpanTrace = guard(
       this.addSingleWorkflowSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addLlmSpan = skipIfDisabled(
-      this.addLlmSpan,
-      () => new LlmSpan(emptySpanData)
-    );
-
-    this.addRetrieverSpan = skipIfDisabled(
+    this.addLlmSpan = guard(this.addLlmSpan, () => new LlmSpan(emptySpanData));
+    this.addRetrieverSpan = guard(
       this.addRetrieverSpan,
       () => new RetrieverSpan(emptySpanData)
     );
-
-    this.addToolSpan = skipIfDisabled(
+    this.addToolSpan = guard(
       this.addToolSpan,
       () => new ToolSpan(emptySpanData)
     );
-
-    this.addProtectSpan = skipIfDisabled(
+    this.addProtectSpan = guard(
       this.addProtectSpan,
       () => new ToolSpan(emptySpanData)
     );
-
-    this.addWorkflowSpan = skipIfDisabled(
+    this.addWorkflowSpan = guard(
       this.addWorkflowSpan,
       () => new WorkflowSpan(emptySpanData)
     );
-
-    this.addAgentSpan = skipIfDisabled(
+    this.addAgentSpan = guard(
       this.addAgentSpan,
       () => new AgentSpan(emptySpanData)
     );
+    this.conclude = guard(this.conclude, () => undefined);
+    this.flush = asyncGuard(this.flush, () => []);
+    this.startSession = asyncGuard(this.startSession, () => '');
+    this.clearSession = guard(this.clearSession, () => undefined);
+    this.initTrace = asyncGuard(this.initTrace, () => undefined);
+    this.initSpan = asyncGuard(this.initSpan, () => undefined);
+  }
 
-    this.conclude = skipIfDisabled(this.conclude, () => undefined);
-    this.flush = skipIfDisabledAsync(this.flush, () => []);
+  private wrapMethodsForDisabledLogging(): void {
+    this.applySharedGuards(skipIfDisabled, skipIfDisabledAsync);
     this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
-    this.startSession = skipIfDisabledAsync(this.startSession, () => '');
-    this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
-    this.initTrace = skipIfDisabledAsync(this.initTrace, () => undefined);
-    this.initSpan = skipIfDisabledAsync(this.initSpan, () => undefined);
   }
 
   private wrapMethodsForTerminated(): void {
-    const emptySpanData = {
-      input: '',
-      redactedInput: undefined,
-      output: '',
-      redactedOutput: undefined
-    };
-
-    this.addChildSpanToParent = skipIfTerminated(
-      this.addChildSpanToParent,
-      () => undefined
-    );
-
-    this.startTrace = skipIfTerminated(
-      this.startTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addSingleLlmSpanTrace = skipIfTerminated(
-      this.addSingleLlmSpanTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addSingleRetrieverSpanTrace = skipIfTerminated(
-      this.addSingleRetrieverSpanTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addSingleToolSpanTrace = skipIfTerminated(
-      this.addSingleToolSpanTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addSingleWorkflowSpanTrace = skipIfTerminated(
-      this.addSingleWorkflowSpanTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addLlmSpan = skipIfTerminated(
-      this.addLlmSpan,
-      () => new LlmSpan(emptySpanData)
-    );
-
-    this.addRetrieverSpan = skipIfTerminated(
-      this.addRetrieverSpan,
-      () => new RetrieverSpan(emptySpanData)
-    );
-
-    this.addToolSpan = skipIfTerminated(
-      this.addToolSpan,
-      () => new ToolSpan(emptySpanData)
-    );
-
-    this.addProtectSpan = skipIfTerminated(
-      this.addProtectSpan,
-      () => new ToolSpan(emptySpanData)
-    );
-
-    this.addWorkflowSpan = skipIfTerminated(
-      this.addWorkflowSpan,
-      () => new WorkflowSpan(emptySpanData)
-    );
-
-    this.addAgentSpan = skipIfTerminated(
-      this.addAgentSpan,
-      () => new AgentSpan(emptySpanData)
-    );
-
-    this.conclude = skipIfTerminated(this.conclude, () => undefined);
-    this.flush = skipIfTerminatedAsync(this.flush, () => []);
-    this.startSession = skipIfTerminatedAsync(this.startSession, () => '');
+    this.applySharedGuards(skipIfTerminated, skipIfTerminatedAsync);
     this.setSessionId = skipIfTerminated(this.setSessionId, () => undefined);
-    this.clearSession = skipIfTerminated(this.clearSession, () => undefined);
-    this.initTrace = skipIfTerminatedAsync(this.initTrace, () => undefined);
-    this.initSpan = skipIfTerminatedAsync(this.initSpan, () => undefined);
   }
 
   private registerCleanupHandlers(): void {
