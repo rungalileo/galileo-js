@@ -183,8 +183,8 @@ export class GalileoSingleton {
       experimentId: options.experimentId ?? context?.experimentId,
       localMetrics: options.localMetrics,
       mode: options.mode,
-      onTerminate: (terminated) =>
-        this.cleanupLogger(key, terminated as GalileoLogger)
+      onTerminate: (terminatedLogger) =>
+        this.cleanupLogger(key, terminatedLogger as GalileoLogger)
     };
 
     const logger = new GalileoLogger(config);
