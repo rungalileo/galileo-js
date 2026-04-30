@@ -150,8 +150,7 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 if (!isParentTraceValid) {
                   logger!.startTrace({
                     input: JSON.stringify(normalizedInput),
-                    output: undefined,
-                    name: 'openai-client-generation'
+                    output: undefined
                   });
                 }
 
@@ -168,7 +167,6 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                     processErrorSpan(
                       error,
                       logger,
-                      'openai-completion-generation',
                       requestData as Record<string, unknown>,
                       startTime,
                       normalizedInput
@@ -211,7 +209,6 @@ function generateChatCompletionProxy<T extends OpenAIType>(
                 logger.addLlmSpan({
                   input: normalizedInput,
                   output,
-                  name: 'openai-completion-generation',
                   model: (requestData.model as string) || 'unknown',
                   numInputTokens: usage.inputTokens,
                   numOutputTokens: usage.outputTokens,
@@ -281,8 +278,7 @@ function generateResponseApiProxy<T extends OpenAIType>(
           if (!isParentTraceValid) {
             logger.startTrace({
               input: JSON.stringify(normalizedInput),
-              output: undefined,
-              name: 'openai-responses-generation'
+              output: undefined
             });
           }
 
@@ -298,7 +294,6 @@ function generateResponseApiProxy<T extends OpenAIType>(
               processErrorSpan(
                 error,
                 logger,
-                'openai-responses-generation',
                 requestData as Record<string, unknown>,
                 startTime,
                 normalizedInput
@@ -373,7 +368,6 @@ function generateResponseApiProxy<T extends OpenAIType>(
 function processErrorSpan(
   error: unknown,
   logger: GalileoLogger,
-  name: string,
   requestData: Record<string, unknown>,
   startTime: Date,
   input: LlmSpanAllowedInputType
@@ -392,7 +386,6 @@ function processErrorSpan(
   logger.addLlmSpan({
     input,
     output: { content: `Error: ${errorMessage}` },
-    name,
     model: (requestData.model as string) || 'unknown',
     numInputTokens: 0,
     numOutputTokens: 0,
@@ -728,7 +721,6 @@ class StreamWrapper implements AsyncIterable<any> {
       this.logger.addLlmSpan({
         input: convertInputToMessages(this.requestData.input),
         output: { content: `Error: ${errorMessage}` },
-        name: 'openai-responses-generation',
         model: this.requestData.model || 'unknown',
         numInputTokens: 0,
         numOutputTokens: 0,
@@ -849,7 +841,6 @@ class StreamWrapper implements AsyncIterable<any> {
       this.logger.addLlmSpan({
         input: normalizedInput,
         output: { content: `Error: ${errorMessage}` },
-        name: 'openai-client-generation',
         model: this.requestData.model || 'unknown',
         numInputTokens: 0,
         numOutputTokens: 0,
@@ -907,7 +898,6 @@ class StreamWrapper implements AsyncIterable<any> {
       this.logger.addLlmSpan({
         input: normalizedInput,
         output: finalOutput,
-        name: 'openai-client-generation',
         model: this.requestData.model || 'unknown',
         numInputTokens: usage.inputTokens,
         numOutputTokens: usage.outputTokens,

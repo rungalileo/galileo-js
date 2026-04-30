@@ -260,7 +260,6 @@ export function processOutputItems(
     input: normalizedInput as LlmSpanAllowedInputType,
     output: output as LlmSpanAllowedOutputType,
     model: model || 'unknown',
-    name: 'openai-responses-generation',
     tools: tools as JsonObject[] | undefined,
     statusCode,
     numInputTokens: parsedUsage.inputTokens,
