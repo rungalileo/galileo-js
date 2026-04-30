@@ -3815,5 +3815,21 @@ describe('GalileoLogger', () => {
       await expect(standalone.terminate()).resolves.toBeUndefined();
       expect(standalone.terminated).toBe(true);
     });
+
+    it('test guard wrappers preserve original method names through both wrap layers', () => {
+      // Both wrapMethodsForDisabledLogging and wrapMethodsForTerminated wrap each
+      // method, so the final reference is a wrapper of a wrapper. Without
+      // Object.defineProperty(name) on each guard, fn.name would be "" by the
+      // time the terminated guard logs its warning. Assert the original name
+      // survives the chain.
+      const standalone = new GalileoLogger({ mode: 'batch' });
+
+      expect(standalone.addLlmSpan.name).toBe('addLlmSpan');
+      expect(standalone.addWorkflowSpan.name).toBe('addWorkflowSpan');
+      expect(standalone.startTrace.name).toBe('startTrace');
+      expect(standalone.flush.name).toBe('flush');
+      expect(standalone.terminate.name).toBe('terminate');
+      expect(standalone.setSessionId.name).toBe('setSessionId');
+    });
   });
 });

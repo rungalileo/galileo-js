@@ -55,13 +55,16 @@ function skipIfDisabled<T, Args extends unknown[]>(
   fn: (this: GalileoLogger, ...args: Args) => T,
   defaultValueFn: (args: Args) => T
 ): (this: GalileoLogger, ...args: Args) => T {
-  return function (this: GalileoLogger, ...args: Args): T {
+  const fnName = fn.name || 'unknown';
+  const wrapper = function (this: GalileoLogger, ...args: Args): T {
     if (this.isLoggingDisabled()) {
-      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
+      sdkLogger.warn('Logging is disabled, skipping execution of', fnName);
       return defaultValueFn(args);
     }
     return fn.apply(this, args);
   };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
 }
 
 /**
@@ -73,13 +76,19 @@ function skipIfDisabledAsync<T, Args extends unknown[]>(
   fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
   defaultValueFn: (args: Args) => T
 ): (this: GalileoLogger, ...args: Args) => Promise<T> {
-  return async function (this: GalileoLogger, ...args: Args): Promise<T> {
+  const fnName = fn.name || 'unknown';
+  const wrapper = async function (
+    this: GalileoLogger,
+    ...args: Args
+  ): Promise<T> {
     if (this.isLoggingDisabled()) {
-      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
+      sdkLogger.warn('Logging is disabled, skipping execution of', fnName);
       return defaultValueFn(args);
     }
     return await fn.apply(this, args);
   };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
 }
 
 /**
@@ -91,16 +100,19 @@ function skipIfTerminated<T, Args extends unknown[]>(
   fn: (this: GalileoLogger, ...args: Args) => T,
   defaultValueFn: (args: Args) => T
 ): (this: GalileoLogger, ...args: Args) => T {
-  return function (this: GalileoLogger, ...args: Args): T {
+  const fnName = fn.name || 'unknown';
+  const wrapper = function (this: GalileoLogger, ...args: Args): T {
     if (this.terminated) {
       sdkLogger.warn(
         'Logger has been terminated, skipping execution of',
-        fn.name
+        fnName
       );
       return defaultValueFn(args);
     }
     return fn.apply(this, args);
   };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
 }
 
 /**
@@ -112,16 +124,22 @@ function skipIfTerminatedAsync<T, Args extends unknown[]>(
   fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
   defaultValueFn: (args: Args) => T
 ): (this: GalileoLogger, ...args: Args) => Promise<T> {
-  return async function (this: GalileoLogger, ...args: Args): Promise<T> {
+  const fnName = fn.name || 'unknown';
+  const wrapper = async function (
+    this: GalileoLogger,
+    ...args: Args
+  ): Promise<T> {
     if (this.terminated) {
       sdkLogger.warn(
         'Logger has been terminated, skipping execution of',
-        fn.name
+        fnName
       );
       return defaultValueFn(args);
     }
     return await fn.apply(this, args);
   };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
 }
 
 type SyncGuard = <T, Args extends unknown[]>(
