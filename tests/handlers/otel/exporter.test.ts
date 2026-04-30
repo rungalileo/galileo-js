@@ -309,6 +309,7 @@ describe('GalileoOTLPExporter', () => {
 
   test('test export warns when inner exporter headers are not accessible', () => {
     // Given: an exporter whose inner exporter has no headers property
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const exporter = new GalileoOTLPExporter();
     const origFactory = mockExporterFactory.getMockImplementation()!;
     mockExporterFactory.mockImplementationOnce(
