@@ -1547,7 +1547,10 @@ class GalileoLogger implements IGalileoLogger {
 
   private wrapMethodsForDisabledLogging(): void {
     this.applySharedGuards(skipIfDisabled, skipIfDisabledAsync);
-    this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
+    // terminate() is intentionally NOT wrapped: when logging is disabled the
+    // inner flush() / taskHandler work is already a no-op, but _terminated
+    // and the onTerminate hook still need to fire so the singleton can
+    // deregister the logger. See PR #573 (sc-52517) comment thread.
   }
 
   private wrapMethodsForTerminated(): void {

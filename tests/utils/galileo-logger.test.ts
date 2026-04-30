@@ -3334,6 +3334,29 @@ describe('GalileoLogger', () => {
       it('should resolve without error when logging is disabled', async () => {
         await expect(logger.terminate()).resolves.toBeUndefined();
       });
+
+      it('should still flip terminated to true when logging is disabled', async () => {
+        // terminate() must run its lifecycle bookkeeping even when logging is
+        // disabled, so the singleton can deregister the logger via onTerminate.
+        // The inner flush()/taskHandler work is independently no-op'd by the
+        // disabled guard.
+        expect(logger.terminated).toBe(false);
+        await logger.terminate();
+        expect(logger.terminated).toBe(true);
+      });
+
+      it('should still fire onTerminate when logging is disabled', async () => {
+        const onTerminate = jest.fn();
+        const loggerWithHook = new GalileoLogger({
+          mode: 'batch',
+          onTerminate
+        });
+
+        await loggerWithHook.terminate();
+
+        expect(onTerminate).toHaveBeenCalledTimes(1);
+        expect(onTerminate).toHaveBeenCalledWith(loggerWithHook);
+      });
     });
 
     describe('startSession() with disabled logging', () => {

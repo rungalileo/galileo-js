@@ -1650,15 +1650,17 @@ describe('Singleton utility functions', () => {
       expect(singleton['lastAvailableLogger']).toBeNull();
     });
 
-    test('test reset cleans up logger when terminate suppresses onTerminate (disabled logging)', async () => {
+    test('test reset cleans up logger when terminate completes without firing onTerminate (defensive)', async () => {
       const logger = getLogger({
-        projectName: 'disabled-proj',
-        logstream: 'disabled-stream'
+        projectName: 'no-hook',
+        logstream: 'no-hook-stream'
       });
 
-      // Simulate GALILEO_DISABLE_LOGGING: skipIfDisabledAsync wraps terminate()
-      // and returns immediately, so the finally block never sets _terminated
-      // and onTerminate never fires.
+      // Simulate any path where terminate() completes without invoking the
+      // onTerminate hook (e.g. a future regression, a user-supplied logger
+      // mocking terminate, or a custom subclass). The reset() backstop must
+      // still drop the entry from galileoLoggers and null out
+      // lastAvailableLogger.
       (logger.terminate as jest.Mock).mockImplementation(async () => undefined);
 
       expect(getAllLoggers().size).toBe(1);
@@ -1667,8 +1669,8 @@ describe('Singleton utility functions', () => {
       );
 
       await reset({
-        projectName: 'disabled-proj',
-        logstream: 'disabled-stream'
+        projectName: 'no-hook',
+        logstream: 'no-hook-stream'
       });
 
       expect(logger.terminate).toHaveBeenCalled();
