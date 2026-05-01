@@ -241,8 +241,7 @@ export class GalileoSingleton {
     if (logger) {
       // terminate() triggers the onTerminate callback which calls cleanupLogger().
       // The defensive call below is a backstop for cases where onTerminate doesn't
-      // fire (legacy setClient() loggers, or terminate() short-circuited by
-      // skipIfDisabledAsync when GALILEO_DISABLE_LOGGING is set).
+      // fire (e.g. legacy setClient() loggers that lack the hook).
       await logger.terminate();
       this.cleanupLogger(key, logger);
     }
