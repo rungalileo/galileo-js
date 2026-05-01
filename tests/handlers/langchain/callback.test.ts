@@ -2267,5 +2267,135 @@ describe('GalileoCallback', () => {
         expect(span.output).toBe('Error: TypeError: invalid argument');
       });
     });
+
+    describe('orphan-end log discrimination (sc-36763)', () => {
+      // Spies on the shared `getSdkLogger()` singleton — the same instance
+      // captured at module load by the langchain handler.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { getSdkLogger } = require('galileo-generated');
+      const sdkLogger = getSdkLogger();
+      let warnSpy: jest.SpyInstance;
+      let debugSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        warnSpy = jest.spyOn(sdkLogger, 'warn').mockImplementation(() => {});
+        debugSpy = jest.spyOn(sdkLogger, 'debug').mockImplementation(() => {});
+      });
+
+      afterEach(() => {
+        warnSpy.mockRestore();
+        debugSpy.mockRestore();
+      });
+
+      it('test late handleChainEnd after handleAgentEnd on same root run_id is debug-logged, not warned', async () => {
+        // Reproduces the LangChain quirk from sc-36763: handleAgentEnd and
+        // handleChainEnd both fire for the same root run_id; the agent_end
+        // commits the trace and clears state, then the late chain_end
+        // arrives with no node. This MUST NOT surface as a warning.
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'hello' },
+          runId
+        );
+
+        await callback.handleAgentEnd(
+          {
+            returnValues: { output: 'hi' },
+            log: 'log'
+          } as AgentFinish,
+          runId
+        );
+
+        // First end finalized the trace.
+        expect(callback['_galileoLogger'].traces).toHaveLength(1);
+        expect(callback['_nodes']).toEqual({});
+        expect(callback['_lastCommittedRoot']).toEqual({
+          runId,
+          nodeType: 'agent'
+        });
+
+        warnSpy.mockClear();
+        debugSpy.mockClear();
+
+        // Late duplicate from LangChain.
+        await callback.handleChainEnd({ result: 'hi' }, runId);
+
+        expect(warnSpy).not.toHaveBeenCalled();
+        expect(debugSpy).toHaveBeenCalledTimes(1);
+        const debugMsg = debugSpy.mock.calls[0][0] as string;
+        expect(debugMsg).toContain('handleChainEnd');
+        expect(debugMsg).toContain(runId);
+        expect(debugMsg).toContain('already finalized');
+        expect(debugMsg).toContain("'agent'");
+      });
+
+      it('test handleChainEnd for an unknown run_id (no prior commit) warns with the callback name', async () => {
+        // Genuinely orphan end — no matching start, no recent commit.
+        const runId = createId();
+
+        await callback.handleChainEnd({ result: 'oops' }, runId);
+
+        expect(debugSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const warnMsg = warnSpy.mock.calls[0][0] as string;
+        expect(warnMsg).toContain('handleChainEnd');
+        expect(warnMsg).toContain(runId);
+        expect(warnMsg).toContain('no node exists');
+      });
+
+      it('test handleLLMEnd for an unknown run_id warns and identifies the callback', async () => {
+        const runId = createId();
+
+        await callback.handleLLMEnd(
+          {
+            generations: [[{ text: 'x', generationInfo: {} }]]
+          } as LLMResult,
+          runId
+        );
+
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const warnMsg = warnSpy.mock.calls[0][0] as string;
+        expect(warnMsg).toContain('handleLLMEnd');
+        expect(warnMsg).toContain(runId);
+      });
+
+      it('test late handleChainEnd for an unrelated run_id (not the last committed root) still warns', async () => {
+        // After a successful commit, a stray end for a *different* run_id
+        // remains an unexpected orphan and must warn — only the just-
+        // committed root run_id is whitelisted as the LangChain quirk.
+        const rootId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'x' },
+          rootId
+        );
+        await callback.handleAgentEnd(
+          { returnValues: { output: 'y' }, log: 'l' } as AgentFinish,
+          rootId
+        );
+
+        warnSpy.mockClear();
+        debugSpy.mockClear();
+
+        const otherId = createId();
+        await callback.handleChainEnd({ result: 'z' }, otherId);
+
+        expect(debugSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy.mock.calls[0][0]).toContain(otherId);
+      });
+    });
   });
 });
