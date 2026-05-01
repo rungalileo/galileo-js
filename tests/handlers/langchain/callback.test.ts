@@ -11,6 +11,7 @@ import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
 import { ChainValues } from '@langchain/core/utils/types';
 import { DocumentInterface, Document } from '@langchain/core/documents';
+import { getSdkLogger } from 'galileo-generated';
 import { StepType } from '../../../src/types/logging/step.types';
 import {
   AgentSpan,
@@ -2271,8 +2272,6 @@ describe('GalileoCallback', () => {
     describe('orphan-end log discrimination (sc-36763)', () => {
       // Spies on the shared `getSdkLogger()` singleton — the same instance
       // captured at module load by the langchain handler.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { getSdkLogger } = require('galileo-generated');
       const sdkLogger = getSdkLogger();
       let warnSpy: jest.SpyInstance;
       let debugSpy: jest.SpyInstance;
@@ -2287,7 +2286,7 @@ describe('GalileoCallback', () => {
         debugSpy.mockRestore();
       });
 
-      it('test late handleChainEnd after handleAgentEnd on same root run_id is debug-logged, not warned', async () => {
+      it('should debug-log (not warn) late handleChainEnd after handleAgentEnd on same root run_id', async () => {
         // Reproduces the LangChain quirk from sc-36763: handleAgentEnd and
         // handleChainEnd both fire for the same root run_id; the agent_end
         // commits the trace and clears state, then the late chain_end
@@ -2336,7 +2335,7 @@ describe('GalileoCallback', () => {
         expect(debugMsg).toContain("'agent'");
       });
 
-      it('test handleChainEnd for an unknown run_id (no prior commit) warns with the callback name', async () => {
+      it('should warn with the callback name when handleChainEnd fires for an unknown run_id (no prior commit)', async () => {
         // Genuinely orphan end — no matching start, no recent commit.
         const runId = createId();
 
@@ -2350,7 +2349,7 @@ describe('GalileoCallback', () => {
         expect(warnMsg).toContain('no node exists');
       });
 
-      it('test handleLLMEnd for an unknown run_id warns and identifies the callback', async () => {
+      it('should warn and identify the callback when handleLLMEnd fires for an unknown run_id', async () => {
         const runId = createId();
 
         await callback.handleLLMEnd(
@@ -2366,7 +2365,7 @@ describe('GalileoCallback', () => {
         expect(warnMsg).toContain(runId);
       });
 
-      it('test late handleChainEnd for an unrelated run_id (not the last committed root) still warns', async () => {
+      it('should still warn for late handleChainEnd on an unrelated run_id (not the last committed root)', async () => {
         // After a successful commit, a stray end for a *different* run_id
         // remains an unexpected orphan and must warn — only the just-
         // committed root run_id is whitelisted as the LangChain quirk.
