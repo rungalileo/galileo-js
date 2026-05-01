@@ -11,6 +11,7 @@ import { LLMResult } from '@langchain/core/outputs';
 import { Serialized } from '@langchain/core/load/serializable';
 import { ChainValues } from '@langchain/core/utils/types';
 import { DocumentInterface, Document } from '@langchain/core/documents';
+import { getSdkLogger } from 'galileo-generated';
 import { StepType } from '../../../src/types/logging/step.types';
 import {
   AgentSpan,
@@ -2265,6 +2266,186 @@ describe('GalileoCallback', () => {
         expect(traces).toHaveLength(1);
         const span = traces[0].spans[0] as WorkflowSpan;
         expect(span.output).toBe('Error: TypeError: invalid argument');
+      });
+    });
+
+    describe('orphan-end log discrimination (sc-36763)', () => {
+      // Spies on the shared `getSdkLogger()` singleton — the same instance
+      // captured at module load by the langchain handler.
+      const sdkLogger = getSdkLogger();
+      let warnSpy: jest.SpyInstance;
+      let debugSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        warnSpy = jest.spyOn(sdkLogger, 'warn').mockImplementation(() => {});
+        debugSpy = jest.spyOn(sdkLogger, 'debug').mockImplementation(() => {});
+      });
+
+      afterEach(() => {
+        warnSpy.mockRestore();
+        debugSpy.mockRestore();
+      });
+
+      it('should debug-log (not warn) late handleChainEnd after handleAgentEnd on same root run_id', async () => {
+        // Reproduces the LangChain quirk from sc-36763: handleAgentEnd and
+        // handleChainEnd both fire for the same root run_id; the agent_end
+        // commits the trace and clears state, then the late chain_end
+        // arrives with no node. This MUST NOT surface as a warning.
+        const runId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'hello' },
+          runId
+        );
+
+        await callback.handleAgentEnd(
+          {
+            returnValues: { output: 'hi' },
+            log: 'log'
+          } as AgentFinish,
+          runId
+        );
+
+        // First end finalized the trace.
+        expect(callback['_galileoLogger'].traces).toHaveLength(1);
+        expect(callback['_nodes']).toEqual({});
+        expect(callback['_lastCommittedRoot']).toEqual({
+          runId,
+          nodeType: 'agent'
+        });
+
+        warnSpy.mockClear();
+        debugSpy.mockClear();
+
+        // Late duplicate from LangChain.
+        await callback.handleChainEnd({ result: 'hi' }, runId);
+
+        expect(warnSpy).not.toHaveBeenCalled();
+        expect(debugSpy).toHaveBeenCalledTimes(1);
+        const debugMsg = debugSpy.mock.calls[0][0] as string;
+        expect(debugMsg).toContain('handleChainEnd');
+        expect(debugMsg).toContain(runId);
+        expect(debugMsg).toContain('already finalized');
+        expect(debugMsg).toContain("'agent'");
+      });
+
+      it('should warn with the callback name when handleChainEnd fires for an unknown run_id (no prior commit)', async () => {
+        // Genuinely orphan end — no matching start, no recent commit.
+        const runId = createId();
+
+        await callback.handleChainEnd({ result: 'oops' }, runId);
+
+        expect(debugSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const warnMsg = warnSpy.mock.calls[0][0] as string;
+        expect(warnMsg).toContain('handleChainEnd');
+        expect(warnMsg).toContain(runId);
+        expect(warnMsg).toContain('no node exists');
+      });
+
+      it('should warn and identify the callback when handleLLMEnd fires for an unknown run_id', async () => {
+        const runId = createId();
+
+        await callback.handleLLMEnd(
+          {
+            generations: [[{ text: 'x', generationInfo: {} }]]
+          } as LLMResult,
+          runId
+        );
+
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const warnMsg = warnSpy.mock.calls[0][0] as string;
+        expect(warnMsg).toContain('handleLLMEnd');
+        expect(warnMsg).toContain(runId);
+      });
+
+      it('should still warn for late handleChainEnd on an unrelated run_id (not the last committed root)', async () => {
+        // After a successful commit, a stray end for a *different* run_id
+        // remains an unexpected orphan and must warn — only the just-
+        // committed root run_id is whitelisted as the LangChain quirk.
+        const rootId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'x' },
+          rootId
+        );
+        await callback.handleAgentEnd(
+          { returnValues: { output: 'y' }, log: 'l' } as AgentFinish,
+          rootId
+        );
+
+        warnSpy.mockClear();
+        debugSpy.mockClear();
+
+        const otherId = createId();
+        await callback.handleChainEnd({ result: 'z' }, otherId);
+
+        expect(debugSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy.mock.calls[0][0]).toContain(otherId);
+      });
+
+      it('should leave _lastCommittedRoot unset when _commit throws, so a late end still warns', async () => {
+        // If startTrace/logNodeTree/flush throws, the trace was never
+        // finalized — `_lastCommittedRoot` must NOT be updated, so a later
+        // duplicate end for the same run_id surfaces as a warn (real failure)
+        // rather than a debug ("already finalized") false negative.
+        const startTraceSpy = jest
+          .spyOn(callback['_galileoLogger'], 'startTrace')
+          .mockImplementation(() => {
+            throw new Error('startTrace failed');
+          });
+
+        const runId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'hello' },
+          runId
+        );
+
+        await expect(
+          callback.handleAgentEnd(
+            { returnValues: { output: 'hi' }, log: 'log' } as AgentFinish,
+            runId
+          )
+        ).rejects.toThrow('startTrace failed');
+
+        // State is still cleared (finally), but the failed commit is NOT
+        // recorded as the last committed root.
+        expect(callback['_nodes']).toEqual({});
+        expect(callback['_rootNode']).toBeNull();
+        expect(callback['_lastCommittedRoot']).toBeNull();
+
+        warnSpy.mockClear();
+        debugSpy.mockClear();
+        startTraceSpy.mockRestore();
+
+        // A late duplicate end for the same run_id must warn — the prior
+        // commit aborted, so this is a genuine orphan from the caller's view.
+        await callback.handleChainEnd({ result: 'hi' }, runId);
+
+        expect(debugSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const warnMsg = warnSpy.mock.calls[0][0] as string;
+        expect(warnMsg).toContain('handleChainEnd');
+        expect(warnMsg).toContain(runId);
+        expect(warnMsg).toContain('no node exists');
       });
     });
   });

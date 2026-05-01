@@ -28,10 +28,8 @@ import type { RunExperimentParams } from './types/experiment.types';
 import {
   addRowsToDataset,
   createDataset,
-  createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
-  convertDatasetContentToRecords,
   getRecordsForDataset,
   getDatasetRecordsFromArray,
   getDatasets,
@@ -48,7 +46,6 @@ import {
 } from './utils/datasets';
 import {
   createCustomLlmMetric,
-  createCustomCodeMetric,
   deleteMetric,
   createMetricConfigs,
   populateLocalMetrics,
@@ -63,7 +60,6 @@ import {
   createLlmScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
-  createRunScorerSettings,
   validateCodeScorer
 } from './utils/scorers';
 import { Scorers, ScorerSettings } from './entities/scorers';
@@ -73,10 +69,7 @@ import {
   getJobProgress,
   logScorerJobsStatus,
   getRunScorerJobs,
-  getScorerJobs,
   getScorerJobsStatus,
-  PollJobOptions,
-  JobProgressLogger,
   getJob
 } from './utils/job-progress';
 import {
@@ -98,9 +91,7 @@ import {
   getProjectWithEnvFallbacks,
   deleteProject,
   listProjectUserCollaborators,
-  addProjectUserCollaborators,
   updateProjectUserCollaborator,
-  removeProjectUserCollaborator,
   shareProjectWithUser,
   unshareProjectWithUser
 } from './utils/projects';
@@ -116,9 +107,7 @@ import {
   getExperiments,
   createExperiment,
   getExperiment,
-  runExperiment,
-  updateExperiment,
-  deleteExperiment
+  runExperiment
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
@@ -183,9 +172,7 @@ export {
   getDataset,
   deleteDataset,
   addRowsToDataset,
-  createDatasetRecord,
   deserializeInputFromString,
-  convertDatasetContentToRecords,
   getRecordsForDataset,
   getDatasetRecordsFromArray,
   getDatasetMetadata,
@@ -209,8 +196,6 @@ export {
   createExperiment,
   getExperiment,
   runExperiment,
-  updateExperiment,
-  deleteExperiment,
   // Experiment entities
   ExperimentTags,
   Experiments,
@@ -222,9 +207,7 @@ export {
   getProjectWithEnvFallbacks,
   deleteProject,
   listProjectUserCollaborators,
-  addProjectUserCollaborators,
   updateProjectUserCollaborator,
-  removeProjectUserCollaborator,
   shareProjectWithUser,
   unshareProjectWithUser,
   // Log streams
@@ -249,7 +232,6 @@ export {
   galileoContext,
   // Metrics
   createCustomLlmMetric,
-  createCustomCodeMetric,
   getMetrics,
   deleteMetric,
   createMetricConfigs,
@@ -265,17 +247,13 @@ export {
   createLlmScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
-  createRunScorerSettings,
   validateCodeScorer,
   // Jobs (legacy)
-  getScorerJobs,
   getScorerJobsStatus,
   // Job Progress (new standardized API)
   getJobProgress,
   logScorerJobsStatus,
   getRunScorerJobs,
-  PollJobOptions,
-  JobProgressLogger,
   getJob,
   // Jobs class
   Jobs,
@@ -315,7 +293,6 @@ export type {
 
 export {
   APIException,
-  ExperimentAPIException,
   DatasetAPIException,
   ProjectAPIException
 } from './utils/errors';
