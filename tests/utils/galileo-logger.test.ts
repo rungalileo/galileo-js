@@ -3334,6 +3334,29 @@ describe('GalileoLogger', () => {
       it('should resolve without error when logging is disabled', async () => {
         await expect(logger.terminate()).resolves.toBeUndefined();
       });
+
+      it('should still flip terminated to true when logging is disabled', async () => {
+        // terminate() must run its lifecycle bookkeeping even when logging is
+        // disabled, so the singleton can deregister the logger via onTerminate.
+        // The inner flush()/taskHandler work is independently no-op'd by the
+        // disabled guard.
+        expect(logger.terminated).toBe(false);
+        await logger.terminate();
+        expect(logger.terminated).toBe(true);
+      });
+
+      it('should still fire onTerminate when logging is disabled', async () => {
+        const onTerminate = jest.fn();
+        const loggerWithHook = new GalileoLogger({
+          mode: 'batch',
+          onTerminate
+        });
+
+        await loggerWithHook.terminate();
+
+        expect(onTerminate).toHaveBeenCalledTimes(1);
+        expect(onTerminate).toHaveBeenCalledWith(loggerWithHook);
+      });
     });
 
     describe('startSession() with disabled logging', () => {
@@ -3648,6 +3671,188 @@ describe('GalileoLogger', () => {
         await logger.terminate();
         expect(logger['taskHandler']?.allTasksCompleted()).toBe(true);
       });
+    });
+  });
+
+  describe('Termination State', () => {
+    let mockClient: MockGalileoApiClient;
+
+    beforeEach(() => {
+      logger = new GalileoLogger({ mode: 'batch' });
+      mockClient = logger['client'] as unknown as MockGalileoApiClient;
+      mockClient.init = jest.fn().mockResolvedValue(undefined);
+      mockClient.ingestTraces = jest.fn().mockResolvedValue(undefined);
+    });
+
+    it('test terminated getter flips to true after terminate()', async () => {
+      expect(logger.terminated).toBe(false);
+      await logger.terminate();
+      expect(logger.terminated).toBe(true);
+    });
+
+    it('test terminate() is idempotent (flush called only once)', async () => {
+      const flushSpy = jest
+        .spyOn(GalileoLogger.prototype, 'flush')
+        .mockResolvedValue([]);
+      logger = new GalileoLogger({ mode: 'batch' });
+
+      await logger.terminate();
+      await logger.terminate();
+      await logger.terminate();
+
+      expect(flushSpy).toHaveBeenCalledTimes(1);
+      flushSpy.mockRestore();
+    });
+
+    it('test invokes onTerminate callback with itself after flush completes', async () => {
+      const onTerminate = jest.fn();
+      logger = new GalileoLogger({ mode: 'batch', onTerminate });
+
+      await logger.terminate();
+
+      expect(onTerminate).toHaveBeenCalledTimes(1);
+      expect(onTerminate).toHaveBeenCalledWith(logger);
+    });
+
+    it('test onTerminate callback errors are caught and do not propagate', async () => {
+      const onTerminate = jest.fn(() => {
+        throw new Error('callback boom');
+      });
+      logger = new GalileoLogger({ mode: 'batch', onTerminate });
+
+      await expect(logger.terminate()).resolves.toBeUndefined();
+      expect(logger.terminated).toBe(true);
+    });
+
+    it('test startTrace is no-op after terminate', async () => {
+      await logger.terminate();
+      const trace = logger.startTrace({ input: 'x' });
+      expect(trace).toBeInstanceOf(Trace);
+      expect(logger['traces']).toEqual([]);
+    });
+
+    it('test addLlmSpan returns empty span after terminate without mutating parent', async () => {
+      const trace = logger.startTrace({ input: 'x' });
+      await logger.terminate();
+      const span = logger.addLlmSpan({ input: 'in', output: 'out' });
+      expect(span).toBeInstanceOf(LlmSpan);
+      // Guard returned an empty stand-in; the trace must not have gained the span.
+      expect(trace.spans).toHaveLength(0);
+    });
+
+    it('test addWorkflowSpan returns empty span after terminate without mutating parent', async () => {
+      const trace = logger.startTrace({ input: 'x' });
+      await logger.terminate();
+      const span = logger.addWorkflowSpan({ input: 'in' });
+      expect(span).toBeInstanceOf(WorkflowSpan);
+      expect(trace.spans).toHaveLength(0);
+    });
+
+    it('test addAgentSpan returns empty span after terminate', async () => {
+      logger.startTrace({ input: 'x' });
+      await logger.terminate();
+      const span = logger.addAgentSpan({ input: 'in' });
+      expect(span).toBeInstanceOf(AgentSpan);
+    });
+
+    it('test addToolSpan returns empty span after terminate', async () => {
+      logger.startTrace({ input: 'x' });
+      await logger.terminate();
+      const span = logger.addToolSpan({ input: 'in' });
+      expect(span).toBeInstanceOf(ToolSpan);
+    });
+
+    it('test addRetrieverSpan returns empty span after terminate', async () => {
+      logger.startTrace({ input: 'x' });
+      await logger.terminate();
+      const span = logger.addRetrieverSpan({
+        input: 'in',
+        output: [new Document({ content: 'c' })]
+      });
+      expect(span).toBeInstanceOf(RetrieverSpan);
+    });
+
+    it('test addSingleLlmSpanTrace returns empty trace after terminate', async () => {
+      await logger.terminate();
+      const trace = logger.addSingleLlmSpanTrace({
+        input: 'in',
+        output: 'out'
+      });
+      expect(trace).toBeInstanceOf(Trace);
+      expect(logger['traces']).toEqual([]);
+    });
+
+    it('test conclude is no-op after terminate', async () => {
+      logger.startTrace({ input: 'x' });
+      await logger.terminate();
+      expect(() => logger.conclude({ output: 'y' })).not.toThrow();
+    });
+
+    it('test flush is no-op after terminate (no API call)', async () => {
+      await logger.terminate();
+      mockClient.ingestTraces.mockClear();
+
+      const result = await logger.flush();
+      expect(result).toEqual([]);
+      expect(mockClient.ingestTraces).not.toHaveBeenCalled();
+    });
+
+    it('test startSession is no-op after terminate', async () => {
+      await logger.terminate();
+      const id = await logger.startSession({ name: 's' });
+      expect(id).toBe('');
+    });
+
+    it('test setSessionId is no-op after terminate', async () => {
+      await logger.terminate();
+      logger.setSessionId('any');
+      expect(logger.currentSessionId()).toBeUndefined();
+    });
+
+    it('test clearSession is no-op after terminate', async () => {
+      await logger.terminate();
+      expect(() => logger.clearSession()).not.toThrow();
+    });
+
+    it('test guarded method returns instead of throwing after terminate', async () => {
+      await logger.terminate();
+      // Without the guard, addLlmSpan would throw ("no active parent") since the trace
+      // was not created. The guard must short-circuit before that check and return the
+      // typed stand-in — asserting the call does not throw is the behavioral contract.
+      expect(() =>
+        logger.addLlmSpan({ input: 'a', output: 'b' })
+      ).not.toThrow();
+    });
+
+    it('test still flushes pending traces during terminate (batch)', async () => {
+      logger.startTrace({ input: 'x' });
+      logger.addLlmSpan({ input: 'in', output: 'out' });
+
+      await logger.terminate();
+
+      expect(mockClient.ingestTraces).toHaveBeenCalledTimes(1);
+    });
+
+    it('test direct-instantiation logger (no singleton) terminates cleanly', async () => {
+      const standalone = new GalileoLogger({ mode: 'batch' });
+      await expect(standalone.terminate()).resolves.toBeUndefined();
+      expect(standalone.terminated).toBe(true);
+    });
+
+    it('test guard wrappers preserve original method names through both wrap layers', () => {
+      // Both wrapMethodsForDisabledLogging and wrapMethodsForTerminated wrap each
+      // method, so the final reference is a wrapper of a wrapper. Without
+      // Object.defineProperty(name) on each guard, fn.name would be "" by the
+      // time the terminated guard logs its warning. Assert the original name
+      // survives the chain.
+      const standalone = new GalileoLogger({ mode: 'batch' });
+
+      expect(standalone.addLlmSpan.name).toBe('addLlmSpan');
+      expect(standalone.addWorkflowSpan.name).toBe('addWorkflowSpan');
+      expect(standalone.startTrace.name).toBe('startTrace');
+      expect(standalone.flush.name).toBe('flush');
+      expect(standalone.terminate.name).toBe('terminate');
+      expect(standalone.setSessionId.name).toBe('setSessionId');
     });
   });
 });

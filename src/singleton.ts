@@ -182,7 +182,9 @@ export class GalileoSingleton {
         process.env.GALILEO_LOG_STREAM_NAME,
       experimentId: options.experimentId ?? context?.experimentId,
       localMetrics: options.localMetrics,
-      mode: options.mode
+      mode: options.mode,
+      onTerminate: (terminatedLogger) =>
+        this.cleanupLogger(key, terminatedLogger as GalileoLogger)
     };
 
     const logger = new GalileoLogger(config);
@@ -204,6 +206,21 @@ export class GalileoSingleton {
   }
 
   /**
+   * Removes a logger from internal tracking. Idempotent — only removes the
+   * map entry / clears lastAvailableLogger if they still reference the given
+   * logger, so it can be safely called from both the onTerminate hook and the
+   * reset() backstop.
+   */
+  private cleanupLogger(key: string, logger: GalileoLogger): void {
+    if (this.galileoLoggers.get(key) === logger) {
+      this.galileoLoggers.delete(key);
+    }
+    if (this.lastAvailableLogger === logger) {
+      this.lastAvailableLogger = null;
+    }
+  }
+
+  /**
    * Resets (terminates and removes) a GalileoLogger instance.
    * @param options - Configuration options to identify which logger to reset
    * @param options.projectName - (Optional) The project name
@@ -222,12 +239,11 @@ export class GalileoSingleton {
 
     const logger = this.galileoLoggers.get(key);
     if (logger) {
+      // terminate() triggers the onTerminate callback which calls cleanupLogger().
+      // The defensive call below is a backstop for cases where onTerminate doesn't
+      // fire (e.g. legacy setClient() loggers that lack the hook).
       await logger.terminate();
-      this.galileoLoggers.delete(key);
-
-      if (this.lastAvailableLogger === logger) {
-        this.lastAvailableLogger = null;
-      }
+      this.cleanupLogger(key, logger);
     }
   }
 
@@ -236,10 +252,11 @@ export class GalileoSingleton {
    * @returns A promise that resolves when all loggers are reset
    */
   public async resetAll(): Promise<void> {
-    const resetPromises = Array.from(this.galileoLoggers.values()).map(
-      (logger) => logger.terminate()
-    );
-    await Promise.all(resetPromises);
+    // Snapshot values first — terminate() mutates galileoLoggers via the onTerminate callback.
+    const loggers = Array.from(this.galileoLoggers.values());
+    await Promise.all(loggers.map((logger) => logger.terminate()));
+    // Defensive backstop: clear any loggers that lacked an onTerminate hook
+    // (e.g., ones added via the legacy setClient path prior to this change).
     this.galileoLoggers.clear();
     this.lastAvailableLogger = null;
   }

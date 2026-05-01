@@ -55,13 +55,16 @@ function skipIfDisabled<T, Args extends unknown[]>(
   fn: (this: GalileoLogger, ...args: Args) => T,
   defaultValueFn: (args: Args) => T
 ): (this: GalileoLogger, ...args: Args) => T {
-  return function (this: GalileoLogger, ...args: Args): T {
+  const fnName = fn.name || 'unknown';
+  const wrapper = function (this: GalileoLogger, ...args: Args): T {
     if (this.isLoggingDisabled()) {
-      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
+      sdkLogger.warn('Logging is disabled, skipping execution of', fnName);
       return defaultValueFn(args);
     }
     return fn.apply(this, args);
   };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
 }
 
 /**
@@ -73,14 +76,81 @@ function skipIfDisabledAsync<T, Args extends unknown[]>(
   fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
   defaultValueFn: (args: Args) => T
 ): (this: GalileoLogger, ...args: Args) => Promise<T> {
-  return async function (this: GalileoLogger, ...args: Args): Promise<T> {
+  const fnName = fn.name || 'unknown';
+  const wrapper = async function (
+    this: GalileoLogger,
+    ...args: Args
+  ): Promise<T> {
     if (this.isLoggingDisabled()) {
-      sdkLogger.warn('Logging is disabled, skipping execution of', fn.name);
+      sdkLogger.warn('Logging is disabled, skipping execution of', fnName);
       return defaultValueFn(args);
     }
     return await fn.apply(this, args);
   };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
 }
+
+/**
+ * Higher-order function that wraps a method to skip execution if the logger has been terminated.
+ * @param fn The original method
+ * @param defaultValueFn A function that returns the default value when the logger is terminated
+ */
+function skipIfTerminated<T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => T,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => T {
+  const fnName = fn.name || 'unknown';
+  const wrapper = function (this: GalileoLogger, ...args: Args): T {
+    if (this.terminated) {
+      sdkLogger.warn(
+        'Logger has been terminated, skipping execution of',
+        fnName
+      );
+      return defaultValueFn(args);
+    }
+    return fn.apply(this, args);
+  };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
+}
+
+/**
+ * Higher-order function that wraps an async method to skip execution if the logger has been terminated.
+ * @param fn The original async method
+ * @param defaultValueFn A function that returns the default value when the logger is terminated
+ */
+function skipIfTerminatedAsync<T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
+  defaultValueFn: (args: Args) => T
+): (this: GalileoLogger, ...args: Args) => Promise<T> {
+  const fnName = fn.name || 'unknown';
+  const wrapper = async function (
+    this: GalileoLogger,
+    ...args: Args
+  ): Promise<T> {
+    if (this.terminated) {
+      sdkLogger.warn(
+        'Logger has been terminated, skipping execution of',
+        fnName
+      );
+      return defaultValueFn(args);
+    }
+    return await fn.apply(this, args);
+  };
+  Object.defineProperty(wrapper, 'name', { value: fnName, configurable: true });
+  return wrapper;
+}
+
+type SyncGuard = <T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => T,
+  defaultValueFn: (args: Args) => T
+) => (this: GalileoLogger, ...args: Args) => T;
+
+type AsyncGuard = <T, Args extends unknown[]>(
+  fn: (this: GalileoLogger, ...args: Args) => Promise<T>,
+  defaultValueFn: (args: Args) => T
+) => (this: GalileoLogger, ...args: Args) => Promise<T>;
 
 class GalileoLogger implements IGalileoLogger {
   private projectName?: string;
@@ -102,6 +172,16 @@ class GalileoLogger implements IGalileoLogger {
   private loggingDisabled: boolean = false;
   private taskHandler?: TaskHandler;
   private isTerminating = false;
+  private _terminated = false;
+  private onTerminate?: (logger: IGalileoLogger) => void;
+
+  /**
+   * Whether terminate() has completed on this logger. Once true, subsequent mutating calls no-op
+   * with a warning and the logger has been deregistered from the singleton (if applicable).
+   */
+  get terminated(): boolean {
+    return this._terminated;
+  }
 
   /**
    * Static factory method to create and initialize a logger.
@@ -177,6 +257,7 @@ class GalileoLogger implements IGalileoLogger {
     this.validateConfiguration();
     this.initializeLoggerState();
     this.wrapMethodsForDisabledLogging();
+    this.wrapMethodsForTerminated();
     this.registerCleanupHandlers();
   }
 
@@ -1312,9 +1393,12 @@ class GalileoLogger implements IGalileoLogger {
 
   /**
    * Terminates the logger. In batch mode, flushes all traces. In streaming mode, waits for all tasks to complete.
+   * After termination, subsequent mutating calls no-op with a warning, and loggers created through the
+   * singleton are removed from the singleton's registry. Calling terminate() again is a no-op.
    * @returns A promise that resolves when termination is complete.
    */
   async terminate(): Promise<void> {
+    if (this._terminated) return;
     try {
       if (this.mode !== 'streaming') {
         await this.flush();
@@ -1346,6 +1430,16 @@ class GalileoLogger implements IGalileoLogger {
     } catch (error) {
       sdkLogger.error('Error in terminate():', error);
       throw error;
+    } finally {
+      this._terminated = true;
+      try {
+        this.onTerminate?.(this);
+      } catch (hookError) {
+        sdkLogger.error(
+          'Error in onTerminate callback during terminate():',
+          hookError
+        );
+      }
     }
   }
 
@@ -1358,6 +1452,7 @@ class GalileoLogger implements IGalileoLogger {
     this.projectId = config.projectId;
     this.logStreamId = config.logStreamId;
     this.ingestionHook = config.ingestionHook;
+    this.onTerminate = config.onTerminate;
 
     this.mode = config.mode || config.experimental?.mode || 'batch';
   }
@@ -1392,7 +1487,7 @@ class GalileoLogger implements IGalileoLogger {
     }
   }
 
-  private wrapMethodsForDisabledLogging(): void {
+  private applySharedGuards(guard: SyncGuard, asyncGuard: AsyncGuard): void {
     const emptySpanData = {
       input: '',
       redactedInput: undefined,
@@ -1400,73 +1495,67 @@ class GalileoLogger implements IGalileoLogger {
       redactedOutput: undefined
     };
 
-    this.addChildSpanToParent = skipIfDisabled(
+    this.addChildSpanToParent = guard(
       this.addChildSpanToParent,
       () => undefined
     );
-
-    this.startTrace = skipIfDisabled(
-      this.startTrace,
-      () => new Trace(emptySpanData)
-    );
-
-    this.addSingleLlmSpanTrace = skipIfDisabled(
+    this.startTrace = guard(this.startTrace, () => new Trace(emptySpanData));
+    this.addSingleLlmSpanTrace = guard(
       this.addSingleLlmSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addSingleRetrieverSpanTrace = skipIfDisabled(
+    this.addSingleRetrieverSpanTrace = guard(
       this.addSingleRetrieverSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addSingleToolSpanTrace = skipIfDisabled(
+    this.addSingleToolSpanTrace = guard(
       this.addSingleToolSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addSingleWorkflowSpanTrace = skipIfDisabled(
+    this.addSingleWorkflowSpanTrace = guard(
       this.addSingleWorkflowSpanTrace,
       () => new Trace(emptySpanData)
     );
-
-    this.addLlmSpan = skipIfDisabled(
-      this.addLlmSpan,
-      () => new LlmSpan(emptySpanData)
-    );
-
-    this.addRetrieverSpan = skipIfDisabled(
+    this.addLlmSpan = guard(this.addLlmSpan, () => new LlmSpan(emptySpanData));
+    this.addRetrieverSpan = guard(
       this.addRetrieverSpan,
       () => new RetrieverSpan(emptySpanData)
     );
-
-    this.addToolSpan = skipIfDisabled(
+    this.addToolSpan = guard(
       this.addToolSpan,
       () => new ToolSpan(emptySpanData)
     );
-
-    this.addProtectSpan = skipIfDisabled(
+    this.addProtectSpan = guard(
       this.addProtectSpan,
       () => new ToolSpan(emptySpanData)
     );
-
-    this.addWorkflowSpan = skipIfDisabled(
+    this.addWorkflowSpan = guard(
       this.addWorkflowSpan,
       () => new WorkflowSpan(emptySpanData)
     );
-
-    this.addAgentSpan = skipIfDisabled(
+    this.addAgentSpan = guard(
       this.addAgentSpan,
       () => new AgentSpan(emptySpanData)
     );
+    this.conclude = guard(this.conclude, () => undefined);
+    this.flush = asyncGuard(this.flush, () => []);
+    this.startSession = asyncGuard(this.startSession, () => '');
+    this.clearSession = guard(this.clearSession, () => undefined);
+    this.initTrace = asyncGuard(this.initTrace, () => undefined);
+    this.initSpan = asyncGuard(this.initSpan, () => undefined);
+  }
 
-    this.conclude = skipIfDisabled(this.conclude, () => undefined);
-    this.flush = skipIfDisabledAsync(this.flush, () => []);
-    this.terminate = skipIfDisabledAsync(this.terminate, () => undefined);
-    this.startSession = skipIfDisabledAsync(this.startSession, () => '');
-    this.clearSession = skipIfDisabled(this.clearSession, () => undefined);
-    this.initTrace = skipIfDisabledAsync(this.initTrace, () => undefined);
-    this.initSpan = skipIfDisabledAsync(this.initSpan, () => undefined);
+  private wrapMethodsForDisabledLogging(): void {
+    this.applySharedGuards(skipIfDisabled, skipIfDisabledAsync);
+    // terminate() is intentionally NOT wrapped: when logging is disabled the
+    // inner flush() / taskHandler work is already a no-op, but _terminated
+    // and the onTerminate hook still need to fire so the singleton can
+    // deregister the logger. See PR #573 (sc-52517) comment thread.
+  }
+
+  private wrapMethodsForTerminated(): void {
+    this.applySharedGuards(skipIfTerminated, skipIfTerminatedAsync);
+    this.setSessionId = skipIfTerminated(this.setSessionId, () => undefined);
   }
 
   private registerCleanupHandlers(): void {

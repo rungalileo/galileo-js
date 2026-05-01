@@ -22,14 +22,31 @@ jest.mock('../src/utils/galileo-logger', () => {
   return {
     ...actual,
     GalileoLogger: jest.fn().mockImplementation((config) => {
-      const mockLogger = {
+      const mockLogger: {
+        projectName?: string;
+        logStreamName?: string;
+        experimentId?: string;
+        localMetrics?: unknown;
+        mode?: string;
+        terminated: boolean;
+        flush: jest.Mock;
+        terminate: jest.Mock;
+        startSession: jest.Mock;
+        setSessionId: jest.Mock;
+        clearSession: jest.Mock;
+      } = {
         projectName: config?.projectName,
         logStreamName: config?.logStreamName,
         experimentId: config?.experimentId,
         localMetrics: config?.localMetrics,
         mode: config?.mode,
+        terminated: false,
         flush: jest.fn().mockResolvedValue([]),
-        terminate: jest.fn().mockResolvedValue(undefined),
+        terminate: jest.fn().mockImplementation(async () => {
+          if (mockLogger.terminated) return;
+          mockLogger.terminated = true;
+          config?.onTerminate?.(mockLogger);
+        }),
         startSession: jest.fn().mockResolvedValue('session-id'),
         setSessionId: jest.fn(),
         clearSession: jest.fn()
@@ -1520,6 +1537,167 @@ describe('Singleton utility functions', () => {
         expect.objectContaining({
           logStreamName: 'primary-var'
         })
+      );
+    });
+  });
+
+  describe('Logger self-deregistration via terminate()', () => {
+    test('test direct terminate() removes logger from singleton map', async () => {
+      const logger = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-a'
+      });
+      expect(getAllLoggers().size).toBe(1);
+
+      await logger.terminate();
+
+      expect(getAllLoggers().size).toBe(0);
+    });
+
+    test('test direct terminate() nullifies lastAvailableLogger when it matched', async () => {
+      const logger = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-b'
+      });
+
+      await logger.terminate();
+
+      // getClient falls back to getLogger() when lastAvailableLogger is null —
+      // a fresh default instance would be created, confirming the field was cleared.
+      const instance = GalileoSingleton.getInstance();
+      expect(instance['lastAvailableLogger']).toBeNull();
+    });
+
+    test('test subsequent getLogger() with same key returns a fresh instance after terminate', async () => {
+      const logger = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-c'
+      });
+
+      await logger.terminate();
+
+      const fresh = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-c'
+      });
+      expect(fresh).not.toBe(logger);
+    });
+
+    test('test singleton reset() still works and does not double-remove', async () => {
+      const logger = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-d'
+      });
+
+      await expect(
+        reset({ projectName: 'direct-term', logstream: 'stream-d' })
+      ).resolves.not.toThrow();
+      expect(logger.terminate).toHaveBeenCalledTimes(1);
+      expect(getAllLoggers().size).toBe(0);
+    });
+
+    test('test singleton resetAll() still works end-to-end', async () => {
+      const l1 = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-e'
+      });
+      const l2 = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-f'
+      });
+
+      await resetAll();
+
+      expect(l1.terminate).toHaveBeenCalled();
+      expect(l2.terminate).toHaveBeenCalled();
+      expect(getAllLoggers().size).toBe(0);
+    });
+
+    test('test lastAvailableLogger unaffected when a non-last logger is terminated', async () => {
+      const first = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-g'
+      });
+      const last = getLogger({
+        projectName: 'direct-term',
+        logstream: 'stream-h'
+      });
+
+      await first.terminate();
+
+      const instance = GalileoSingleton.getInstance();
+      expect(instance['lastAvailableLogger']).toBe(last);
+    });
+  });
+
+  describe('reset() defensive backstop', () => {
+    test('test reset cleans up logger registered via setClient (no onTerminate hook)', async () => {
+      const mockLogger = {
+        flush: jest.fn().mockResolvedValue([]),
+        terminate: jest.fn().mockResolvedValue(undefined),
+        startSession: jest.fn().mockResolvedValue('session-id')
+      } as unknown as GalileoLogger;
+
+      const singleton = GalileoSingleton.getInstance();
+      singleton.setClient(mockLogger);
+      expect(getAllLoggers().size).toBe(1);
+      expect(singleton.getClient()).toBe(mockLogger);
+
+      await reset();
+
+      expect(mockLogger.terminate).toHaveBeenCalled();
+      expect(getAllLoggers().size).toBe(0);
+      expect(singleton['lastAvailableLogger']).toBeNull();
+    });
+
+    test('test reset cleans up logger when terminate completes without firing onTerminate (defensive)', async () => {
+      const logger = getLogger({
+        projectName: 'no-hook',
+        logstream: 'no-hook-stream'
+      });
+
+      // Simulate any path where terminate() completes without invoking the
+      // onTerminate hook (e.g. a future regression, a user-supplied logger
+      // mocking terminate, or a custom subclass). The reset() backstop must
+      // still drop the entry from galileoLoggers and null out
+      // lastAvailableLogger.
+      (logger.terminate as jest.Mock).mockImplementation(async () => undefined);
+
+      expect(getAllLoggers().size).toBe(1);
+      expect(GalileoSingleton.getInstance()['lastAvailableLogger']).toBe(
+        logger
+      );
+
+      await reset({
+        projectName: 'no-hook',
+        logstream: 'no-hook-stream'
+      });
+
+      expect(logger.terminate).toHaveBeenCalled();
+      expect(getAllLoggers().size).toBe(0);
+      expect(GalileoSingleton.getInstance()['lastAvailableLogger']).toBeNull();
+    });
+
+    test('test reset backstop is idempotent when onTerminate already cleaned up', async () => {
+      const logger1 = getLogger({
+        projectName: 'idempotent',
+        logstream: 'stream-1'
+      });
+      const logger2 = getLogger({
+        projectName: 'idempotent',
+        logstream: 'stream-2'
+      });
+      expect(getAllLoggers().size).toBe(2);
+
+      // logger1 has onTerminate installed (created via getLogger), so the
+      // hook removes it; the backstop sees `get(key) === logger` is false
+      // and skips. logger2 must remain untouched.
+      await reset({ projectName: 'idempotent', logstream: 'stream-1' });
+
+      expect(logger1.terminate).toHaveBeenCalledTimes(1);
+      expect(getAllLoggers().size).toBe(1);
+      expect(GalileoSingleton.getInstance()['lastAvailableLogger']).toBe(
+        logger2
       );
     });
   });

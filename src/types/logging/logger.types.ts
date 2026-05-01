@@ -29,6 +29,11 @@ export interface GalileoLoggerConfig {
   logStreamId?: string;
   ingestionHook?: (request: LogTracesIngestRequest) => Promise<void> | void;
   experimental?: { mode?: string };
+  /**
+   * @internal Callback invoked when terminate() completes. Used by GalileoSingleton to
+   * deregister the logger from its internal map and clear lastAvailableLogger if needed.
+   */
+  onTerminate?: (logger: IGalileoLogger) => void;
 }
 
 export interface GalileoLoggerConfigExtended extends GalileoLoggerConfig {
@@ -449,9 +454,18 @@ export interface IGalileoLoggerBatch {
 
   /**
    * Terminates the logger. In batch mode, flushes all traces. In streaming mode, waits for all tasks to complete.
+   * After termination, subsequent calls to mutating methods are no-ops that emit a warning, and a
+   * singleton-managed logger is removed from the singleton's registry.
+   * Calling terminate() more than once is a no-op on subsequent calls.
    * @returns A promise that resolves when termination is complete.
    */
   terminate(): Promise<void>;
+
+  /**
+   * Whether terminate() has completed on this logger. Once true, the logger will no-op on
+   * further mutating calls and has been deregistered from the singleton (if applicable).
+   */
+  readonly terminated: boolean;
 }
 
 /**
