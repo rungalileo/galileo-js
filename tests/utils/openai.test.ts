@@ -137,7 +137,7 @@ describe('OpenAI Wrapper', () => {
     expect(startTraceCall.input).toBe(
       '[{"role":"user","content":"Say hello world!"}]'
     );
-    expect(startTraceCall.name).toBe('openai-client-generation');
+    expect(startTraceCall.name).toBeUndefined();
     expect(startTraceCall.output).toBeUndefined();
     // Check createdAt separately since it's added by the mock
     if (startTraceCall.createdAt === undefined) {
@@ -148,7 +148,6 @@ describe('OpenAI Wrapper', () => {
       createdAt: mockDate,
       input: requestData.messages,
       output: [mockResponse.choices[0].message],
-      name: 'openai-completion-generation',
       model: 'gpt-4o',
       numInputTokens: 10,
       numOutputTokens: 5,
@@ -208,7 +207,7 @@ describe('OpenAI Wrapper', () => {
     expect(startTraceCall.input).toBe(
       '[{"role":"user","content":"Say hello world!"}]'
     );
-    expect(startTraceCall.name).toBe('openai-client-generation');
+    expect(startTraceCall.name).toBeUndefined();
     expect(startTraceCall.output).toBeUndefined();
     // Check createdAt separately since it's added by the mock
     if (startTraceCall.createdAt === undefined) {
@@ -222,7 +221,7 @@ describe('OpenAI Wrapper', () => {
       content: 'Hello world!',
       role: 'assistant'
     });
-    expect(addLlmSpanCall.name).toBe('openai-client-generation');
+    expect(addLlmSpanCall.name).toBeUndefined();
     expect(addLlmSpanCall.model).toBe('gpt-4o');
     expect(addLlmSpanCall.numInputTokens).toBe(0);
     expect(addLlmSpanCall.numOutputTokens).toBe(0);
@@ -488,12 +487,12 @@ describe('OpenAI Wrapper', () => {
       expect.objectContaining({
         input: requestData.messages,
         output: { content: 'Error: API Error' },
-        name: 'openai-completion-generation',
         statusCode: 500,
         numInputTokens: 0,
         numOutputTokens: 0
       })
     );
+    expect(mockLogger.addLlmSpan.mock.calls[0][0].name).toBeUndefined();
     expect(mockLogger.conclude).toHaveBeenCalledWith({
       output: 'Error: API Error',
       durationNs: 1_000_000
@@ -573,12 +572,12 @@ describe('OpenAI Wrapper', () => {
     expect(mockLogger.addLlmSpan).toHaveBeenCalledWith(
       expect.objectContaining({
         metadata: expect.any(Object),
-        name: 'openai-completion-generation',
         model: 'gpt-4o'
       })
     );
     const addLlmSpanCall = mockLogger.addLlmSpan.mock.calls[0][0];
     expect(addLlmSpanCall.metadata).toEqual({});
+    expect(addLlmSpanCall.name).toBeUndefined();
   });
 
   describe('Streaming Responses API', () => {
@@ -640,7 +639,7 @@ describe('OpenAI Wrapper', () => {
       // Verify processOutputItems was called (via addLlmSpan)
       expect(mockLogger.addLlmSpan).toHaveBeenCalled();
       const addLlmSpanCall = mockLogger.addLlmSpan.mock.calls[0][0];
-      expect(addLlmSpanCall.name).toBe('openai-responses-generation');
+      expect(addLlmSpanCall.name).toBeUndefined();
     });
 
     test('should accumulate output items from multiple chunks', async () => {
@@ -1075,12 +1074,12 @@ describe('OpenAI Wrapper', () => {
         expect.objectContaining({
           input: requestData.messages, // ← Message[] object (not string)
           output: { content: 'Error: Rate limit exceeded' },
-          name: 'openai-completion-generation',
           statusCode: 500, // Default when error status not extracted
           numInputTokens: 0,
           numOutputTokens: 0
         })
       );
+      expect(mockLogger.addLlmSpan.mock.calls[0][0].name).toBeUndefined();
     });
 
     test('Responses API error logs Message[] input (not string)', async () => {
@@ -1122,11 +1121,11 @@ describe('OpenAI Wrapper', () => {
       const addLlmSpanCall = mockLogger.addLlmSpan.mock.calls[0][0];
       expect(addLlmSpanCall).toMatchObject({
         output: { content: 'Error: Authentication failed' },
-        name: 'openai-responses-generation',
         statusCode: 500, // Default when error status not extracted
         numInputTokens: 0,
         numOutputTokens: 0
       });
+      expect(addLlmSpanCall.name).toBeUndefined();
 
       // Verify input is Message[] (converted from input)
       expect(Array.isArray(addLlmSpanCall.input)).toBe(true);
