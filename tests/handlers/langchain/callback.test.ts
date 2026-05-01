@@ -2395,6 +2395,58 @@ describe('GalileoCallback', () => {
         expect(warnSpy).toHaveBeenCalledTimes(1);
         expect(warnSpy.mock.calls[0][0]).toContain(otherId);
       });
+
+      it('should leave _lastCommittedRoot unset when _commit throws, so a late end still warns', async () => {
+        // If startTrace/logNodeTree/flush throws, the trace was never
+        // finalized — `_lastCommittedRoot` must NOT be updated, so a later
+        // duplicate end for the same run_id surfaces as a warn (real failure)
+        // rather than a debug ("already finalized") false negative.
+        const startTraceSpy = jest
+          .spyOn(callback['_galileoLogger'], 'startTrace')
+          .mockImplementation(() => {
+            throw new Error('startTrace failed');
+          });
+
+        const runId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'hello' },
+          runId
+        );
+
+        await expect(
+          callback.handleAgentEnd(
+            { returnValues: { output: 'hi' }, log: 'log' } as AgentFinish,
+            runId
+          )
+        ).rejects.toThrow('startTrace failed');
+
+        // State is still cleared (finally), but the failed commit is NOT
+        // recorded as the last committed root.
+        expect(callback['_nodes']).toEqual({});
+        expect(callback['_rootNode']).toBeNull();
+        expect(callback['_lastCommittedRoot']).toBeNull();
+
+        warnSpy.mockClear();
+        debugSpy.mockClear();
+        startTraceSpy.mockRestore();
+
+        // A late duplicate end for the same run_id must warn — the prior
+        // commit aborted, so this is a genuine orphan from the caller's view.
+        await callback.handleChainEnd({ result: 'hi' }, runId);
+
+        expect(debugSpy).not.toHaveBeenCalled();
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const warnMsg = warnSpy.mock.calls[0][0] as string;
+        expect(warnMsg).toContain('handleChainEnd');
+        expect(warnMsg).toContain(runId);
+        expect(warnMsg).toContain('no node exists');
+      });
     });
   });
 });

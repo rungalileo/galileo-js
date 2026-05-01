@@ -104,10 +104,6 @@ export class GalileoCallback
    * Uses try/finally to guarantee node state is always cleared even on error.
    */
   private async _commit(): Promise<void> {
-    let committedRoot: {
-      runId: string;
-      nodeType: LANGCHAIN_NODE_TYPE;
-    } | null = null;
     try {
       if (Object.keys(this._nodes).length === 0) {
         sdkLogger.warn('No nodes to commit');
@@ -127,10 +123,6 @@ export class GalileoCallback
         );
         return;
       }
-
-      // Remember the root we're about to commit so `_endNode` can
-      // recognise late post-commit callbacks for this run_id.
-      committedRoot = { runId: rootNode.runId, nodeType: rootNode.nodeType };
 
       if (this._startNewTrace) {
         let traceMetadata: Record<string, string> | undefined;
@@ -169,13 +161,19 @@ export class GalileoCallback
       if (this._flushOnChainEnd) {
         await this._galileoLogger.flush();
       }
+
+      // Only record the committed root after the logger calls succeed; if any
+      // of the above throws, leave `_lastCommittedRoot` unchanged so a later
+      // end callback for this run_id still surfaces as a warn (the trace was
+      // never finalized).
+      this._lastCommittedRoot = {
+        runId: rootNode.runId,
+        nodeType: rootNode.nodeType
+      };
     } finally {
       // Always clear state, even if an exception occurs
       this._nodes = {};
       this._rootNode = null;
-      if (committedRoot) {
-        this._lastCommittedRoot = committedRoot;
-      }
     }
   }
 
