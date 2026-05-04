@@ -28,6 +28,7 @@ import type { RunExperimentParams } from './types/experiment.types';
 import {
   addRowsToDataset,
   createDataset,
+  createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
   getRecordsForDataset,
@@ -107,7 +108,9 @@ import {
   getExperiments,
   createExperiment,
   getExperiment,
-  runExperiment
+  runExperiment,
+  updateExperiment,
+  deleteExperiment
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
@@ -168,6 +171,7 @@ export {
   Datasets,
   getDatasets,
   createDataset,
+  createDatasetRecord,
   getDatasetContent,
   getDataset,
   deleteDataset,
@@ -196,6 +200,8 @@ export {
   createExperiment,
   getExperiment,
   runExperiment,
+  updateExperiment,
+  deleteExperiment,
   // Experiment entities
   ExperimentTags,
   Experiments,
