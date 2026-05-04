@@ -12,6 +12,10 @@ on:
 jobs:
   enforce-review:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+    concurrency:
+      group: enforce-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       pull-requests: write
     steps:
@@ -29,22 +33,72 @@ jobs:
               return;
             }
 
-            // Only enforce review requirement on pull_request_review events
-            if (event === 'pull_request') {
-              core.info('PR opened/synchronized - waiting for review, not enforcing yet.');
+            // On opened, no reviews exist yet - pass without enforcing
+            if (event === 'pull_request' && context.payload.action === 'opened') {
+              core.info('PR opened - waiting for review, not enforcing yet.');
               return;
             }
 
-            // From here on, we know it's a pull_request_review event (submitted or dismissed): enforce rule
-            core.info('Review event detected - checking current approval status...');
+            // On synchronize or pull_request_review: check current approval status
+            core.info(`${event}/${context.payload.action} - checking current approval status...`);
 
-            const reviews = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pr.number
-            });
+            // If this is a review submission event, check the review in the payload first
+            if (event === 'pull_request_review') {
+              const submittedReview = context.payload.review;
+              if (submittedReview?.state === 'APPROVED') {
+                const isNonBazReviewer = submittedReview.user?.login !== 'baz-reviewer' && submittedReview.user?.type === 'User';
+                if (isNonBazReviewer) {
+                  core.info(`Approval received from ${submittedReview.user.login} - approval requirement satisfied.`);
+                  return;
+                }
+              }
+              if (submittedReview?.state === 'DISMISSED') {
+                core.info('Review dismissed - will check if other approvals exist.');
+              }
+            }
 
-            const approvals = reviews.data.filter(r => r.state === 'APPROVED');
+            // Fetch reviews with retry for eventual consistency.
+            // On pull_request_review events, retry until we see a valid approval — not just
+            // any review — because a stale dismissed review would otherwise cause an immediate
+            // break before the newly submitted APPROVED review propagates through the API.
+            let reviews;
+            let attempts = 0;
+            while (attempts < 3) {
+              const result = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+              reviews = result.data;
+
+              const hasApproval = reviews.some(
+                r => r.state === 'APPROVED' &&
+                     r.user?.login !== 'baz-reviewer' &&
+                     r.user?.type === 'User'
+              );
+
+              // For non-review events, stop immediately. For review events, keep retrying
+              // until we see a valid approval (covers eventual consistency after dismiss+re-approve).
+              if (event !== 'pull_request_review' || hasApproval) {
+                break;
+              }
+
+              // Wait before retry
+              attempts++;
+              if (attempts < 3) {
+                core.info(`No valid approval found yet (attempt ${attempts}/3) - retrying...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+
+            const approvals = reviews.filter(r => r.state === 'APPROVED');
+
+            // On synchronize/reopened, if no reviews exist yet, don't block the PR
+            if (event === 'pull_request' && reviews.length === 0) {
+              core.info('No reviews yet - waiting for review, not enforcing.');
+              return;
+            }
+
             const hasNonBazApproval = approvals.some(
               r => r.user?.login &&
                    r.user.login !== 'baz-reviewer' &&
@@ -57,7 +111,7 @@ jobs:
 
   dependabot-ci-failure:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'failure'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure'
     permissions:
       pull-requests: write
     steps:
