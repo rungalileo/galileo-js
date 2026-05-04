@@ -28,11 +28,9 @@ import type { RunExperimentParams } from './types/experiment.types';
 import {
   addRowsToDataset,
   createDataset,
-  createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
   getRecordsForDataset,
-  getDatasetRecordsFromArray,
   getDatasets,
   getDatasetContent,
   getDataset,
@@ -49,7 +47,6 @@ import {
   createCustomLlmMetric,
   deleteMetric,
   createMetricConfigs,
-  populateLocalMetrics,
   getMetrics
 } from './utils/metrics';
 import {
@@ -57,7 +54,6 @@ import {
   getScorerVersion,
   getScorersByLabels,
   getScorersByIds,
-  createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
@@ -68,7 +64,6 @@ import { exportRecords } from './utils/export';
 import { Jobs } from './utils/jobs';
 import {
   getJobProgress,
-  logScorerJobsStatus,
   getRunScorerJobs,
   getScorerJobsStatus,
   getJob
@@ -108,10 +103,7 @@ import {
   getExperiments,
   createExperiment,
   getExperiment,
-  runExperiment,
-  updateExperiment,
-  deleteExperiment,
-  getExperimentColumns
+  runExperiment
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
@@ -179,7 +171,6 @@ export {
   addRowsToDataset,
   deserializeInputFromString,
   getRecordsForDataset,
-  getDatasetRecordsFromArray,
   getDatasetMetadata,
   extendDataset,
   getDatasetVersionHistory,
@@ -201,9 +192,6 @@ export {
   createExperiment,
   getExperiment,
   runExperiment,
-  updateExperiment,
-  deleteExperiment,
-  getExperimentColumns,
   // Experiment entities
   ExperimentTags,
   Experiments,
@@ -243,7 +231,6 @@ export {
   getMetrics,
   deleteMetric,
   createMetricConfigs,
-  populateLocalMetrics,
   // Scorers
   Scorers,
   ScorerSettings,
@@ -251,7 +238,6 @@ export {
   getScorerVersion,
   getScorersByLabels,
   getScorersByIds,
-  createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
@@ -260,7 +246,6 @@ export {
   getScorerJobsStatus,
   // Job Progress (new standardized API)
   getJobProgress,
-  logScorerJobsStatus,
   getRunScorerJobs,
   getJob,
   // Jobs class

@@ -2,11 +2,12 @@ import {
   createExperiment,
   getExperiment,
   getExperiments,
-  runExperiment,
-  updateExperiment,
-  deleteExperiment,
-  getExperimentColumns
+  runExperiment
 } from '../../src';
+import {
+  updateExperiment,
+  deleteExperiment
+} from '../../src/utils/experiments';
 import type {
   ExperimentResponseType,
   ExperimentUpdateRequest,

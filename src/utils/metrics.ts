@@ -657,6 +657,7 @@ export const createMetricConfigs = async (
  *
  * @param step - The trace or span to populate metrics on
  * @param localMetrics - List of local metric configurations to apply
+ * @internal Used by GalileoLogger.flush; not part of the public API.
  */
 export const populateLocalMetrics = (
   step: Trace | Span,

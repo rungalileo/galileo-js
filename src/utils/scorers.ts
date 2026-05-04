@@ -143,6 +143,7 @@ export const createRunScorerSettings = async ({
  * @param outputType - (Optional) The output type for the scorer.
  * @param inputType - (Optional) The input type for the scorer.
  * @returns A promise that resolves to the created scorer.
+ * @internal Used by metrics.ts; not part of the public API. Use Scorers.create() instead.
  */
 export const createScorer = async (
   name: string,

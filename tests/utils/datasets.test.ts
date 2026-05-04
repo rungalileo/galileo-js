@@ -4,7 +4,6 @@ import { GalileoConfig } from 'galileo-generated';
 import {
   addRowsToDataset,
   createDataset,
-  createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
   extendDataset,
@@ -16,9 +15,12 @@ import {
   getDatasetVersion,
   listDatasetProjects,
   getRecordsForDataset,
-  getDatasetRecordsFromArray,
   convertDatasetRowToRecord
 } from '../../src';
+import {
+  createDatasetRecord,
+  getDatasetRecordsFromArray
+} from '../../src/utils/datasets';
 import { commonHandlers, TEST_HOST } from '../common';
 import {
   DatasetDBType,

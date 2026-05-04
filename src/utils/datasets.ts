@@ -249,6 +249,8 @@ export function deserializeInputFromString(
  * @param options.datasetId - (Optional) The ID of the dataset.
  * @param options.datasetName - (Optional) The name of the dataset.
  * @returns A promise that resolves to the list of dataset records.
+ * @deprecated Use `Datasets.getRecordsForDataset()` static method instead.
+ * Will be removed in a future release.
  */
 export async function getRecordsForDataset(options: {
   datasetId?: string;
@@ -261,6 +263,7 @@ export async function getRecordsForDataset(options: {
  * Converts an array of raw record objects into dataset records.
  * @param recordsArray - The raw records to convert.
  * @returns The list of dataset records created from the raw records.
+ * @internal Used by Datasets.loadDatasetAndRecords; not part of the public API.
  */
 export function getDatasetRecordsFromArray(
   recordsArray: Record<string, unknown>[]
