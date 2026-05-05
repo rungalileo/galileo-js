@@ -2447,6 +2447,54 @@ describe('GalileoCallback', () => {
         expect(warnMsg).toContain(runId);
         expect(warnMsg).toContain('no node exists');
       });
+
+      it('should reset _lastCommittedRoot when a new trace starts on a reused callback instance', async () => {
+        // After a successful commit, `_lastCommittedRoot` is retained so
+        // late post-commit callbacks for that run_id can be debug-logged.
+        // But once a fresh trace begins on the same callback instance, the
+        // stale value must be cleared — otherwise a genuinely orphaned end
+        // that happens to collide with the previous root's run_id would be
+        // silently downgraded to debug.
+        const firstRunId = createId();
+
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'first' },
+          firstRunId
+        );
+
+        await callback.handleAgentEnd(
+          { returnValues: { output: 'done' }, log: 'log' } as AgentFinish,
+          firstRunId
+        );
+
+        expect(callback['_lastCommittedRoot']).toEqual({
+          runId: firstRunId,
+          nodeType: 'agent'
+        });
+
+        // A new trace begins on the same callback instance.
+        const secondRunId = createId();
+        await callback.handleChainStart(
+          {
+            name: 'agent',
+            lc: 1,
+            type: 'secret',
+            id: ['agent']
+          } as Serialized,
+          { input: 'second' },
+          secondRunId
+        );
+
+        // Stale committed-root identity must be dropped the moment a new
+        // root is established.
+        expect(callback['_lastCommittedRoot']).toBeNull();
+      });
     });
   });
 });

@@ -211,6 +211,7 @@ export class GalileoCallback
     if (!this._rootNode) {
       sdkLogger.debug(`Setting root node to ${nodeId}`);
       this._rootNode = node;
+      this._lastCommittedRoot = null;
     }
 
     // Add to parent's children if parent exists
