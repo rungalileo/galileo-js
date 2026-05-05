@@ -839,7 +839,7 @@ describe('GalileoLogger', () => {
     });
 
     it('should throw error when concluding without an active trace', () => {
-      expect(() => logger.conclude({})).toThrow(
+      expect(() => logger.conclude()).toThrow(
         'No existing workflow to conclude'
       );
     });
