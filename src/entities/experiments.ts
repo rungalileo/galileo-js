@@ -52,28 +52,6 @@ export class Experiments {
   }
 
   /**
-   * ts-case-convert treats UUID hyphens as word separators, mangling keys like
-   * "a14a1c2f-23f0-4aad-8eee-cc09d2a42287" → "a14a1c2f23f04aad8eeeCc09d2a42287".
-   * Detect 32-char hex strings (UUIDs with hyphens stripped) and restore them.
-   */
-  private _restoreUuidKeys(
-    metrics: Record<string, unknown> | null | undefined
-  ): Record<string, unknown> | null | undefined {
-    if (!metrics) return metrics;
-    const HEX32 = /^[0-9a-f]{32}$/i;
-    return Object.fromEntries(
-      Object.entries(metrics).map(([key, val]) => {
-        const lower = key.toLowerCase();
-        if (HEX32.test(lower)) {
-          const uuid = `${lower.slice(0, 8)}-${lower.slice(8, 12)}-${lower.slice(12, 16)}-${lower.slice(16, 20)}-${lower.slice(20)}`;
-          return [uuid, val];
-        }
-        return [key, val];
-      })
-    );
-  }
-
-  /**
    * Enriches an experiment response with `metricAggregates` (alias for
    * `structuredAggregateMetrics`) and a runtime deprecation warning on `aggregateMetrics`.
    */
@@ -82,10 +60,7 @@ export class Experiments {
   ): ExperimentResponseType {
     const enriched = {
       ...response,
-      metricAggregates:
-        (this._restoreUuidKeys(
-          response.structuredAggregateMetrics as Record<string, unknown>
-        ) as ExperimentResponseType['metricAggregates']) ?? undefined
+      metricAggregates: response.structuredAggregateMetrics ?? undefined
     };
     Object.defineProperty(enriched, 'aggregateMetrics', {
       get() {
