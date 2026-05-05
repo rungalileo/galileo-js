@@ -66,12 +66,6 @@ export class GalileoCallback
   _flushOnChainEnd: boolean;
   _rootNode: Node | null = null;
   _nodes: Record<string, Node> = {};
-  // Identity of the most recently committed root, retained after `_nodes`
-  // is cleared so `_endNode` can distinguish late post-commit callbacks
-  // (a known LangChain quirk — see `_endNode` below) from genuinely
-  // orphaned end events.
-  _lastCommittedRoot: { runId: string; nodeType: LANGCHAIN_NODE_TYPE } | null =
-    null;
 
   public name = 'GalileoCallback';
 
@@ -104,10 +98,6 @@ export class GalileoCallback
    * Uses try/finally to guarantee node state is always cleared even on error.
    */
   private async _commit(): Promise<void> {
-    let committedRoot: {
-      runId: string;
-      nodeType: LANGCHAIN_NODE_TYPE;
-    } | null = null;
     try {
       if (Object.keys(this._nodes).length === 0) {
         sdkLogger.warn('No nodes to commit');
@@ -127,10 +117,6 @@ export class GalileoCallback
         );
         return;
       }
-
-      // Remember the root we're about to commit so `_endNode` can
-      // recognise late post-commit callbacks for this run_id.
-      committedRoot = { runId: rootNode.runId, nodeType: rootNode.nodeType };
 
       if (this._startNewTrace) {
         let traceMetadata: Record<string, string> | undefined;
@@ -173,9 +159,6 @@ export class GalileoCallback
       // Always clear state, even if an exception occurs
       this._nodes = {};
       this._rootNode = null;
-      if (committedRoot) {
-        this._lastCommittedRoot = committedRoot;
-      }
     }
   }
 
@@ -234,39 +217,13 @@ export class GalileoCallback
    */
   private async _endNode(
     runId: string,
-    params: Record<string, unknown>,
-    callbackName: string = '_endNode'
+    params: Record<string, unknown>
   ): Promise<void> {
     const nodeId = runId;
     const node = this._nodes[nodeId];
 
     if (!node) {
-      const lastRoot = this._lastCommittedRoot;
-      if (lastRoot && lastRoot.runId === runId) {
-        // LangChain occasionally emits a `handleChainEnd` *after* a
-        // `handleAgentEnd` for the same root run_id. The first end
-        // matched the root and triggered `_commit`, which cleared
-        // `_nodes`; the trace has already been logged. Subsequent late
-        // end callbacks for the same root id are duplicates and safe
-        // to ignore — emit at debug only.
-        sdkLogger.debug(
-          `${callbackName}: ignoring late callback for run_id ${runId} — ` +
-            `the trace rooted at this run was already finalized as a ` +
-            `'${lastRoot.nodeType}' span. This is expected when LangChain ` +
-            `emits handleAgentEnd and handleChainEnd for the same root run_id.`
-        );
-      } else {
-        // Anything else is a genuinely unexpected end without a matching
-        // start: an orphan end (start callback never fired or was filtered
-        // out by `langsmith:hidden`), or state cleared by a concurrent
-        // commit on a callback instance shared across runs.
-        sdkLogger.warn(
-          `${callbackName}: no node exists for run_id ${runId}. ` +
-            `The matching start callback was not received (orphan end), or ` +
-            `the node was cleared by a concurrent commit on this callback ` +
-            `instance.`
-        );
-      }
+      sdkLogger.warn(`No node exists for run_id ${nodeId}`);
       return;
     }
 
@@ -293,11 +250,7 @@ export class GalileoCallback
    * Extracts HTTP status from the error's response if available, falls back to 500
    * (unknown/internal error) when no HTTP status is present.
    */
-  private async _handleError(
-    err: Error,
-    runId: string,
-    callbackName: string = '_handleError'
-  ): Promise<void> {
+  private async _handleError(err: Error, runId: string): Promise<void> {
     const errRecord = err as unknown as Record<string, unknown>;
     const response = errRecord.response;
     const status =
@@ -307,14 +260,10 @@ export class GalileoCallback
         ? ((response as Record<string, unknown>).status as number)
         : 500;
 
-    await this._endNode(
-      runId,
-      {
-        output: `Error: ${err.name}: ${err.message}`,
-        statusCode: status
-      },
-      callbackName
-    );
+    await this._endNode(runId, {
+      output: `Error: ${err.name}: ${err.message}`,
+      statusCode: status
+    });
   }
 
   // LangChain callback methods
@@ -365,7 +314,7 @@ export class GalileoCallback
   }
 
   public async handleChainError(err: Error, runId: string): Promise<void> {
-    await this._handleError(err, runId, 'handleChainError');
+    await this._handleError(err, runId);
   }
 
   public async handleChainEnd(
@@ -381,29 +330,21 @@ export class GalileoCallback
   ): Promise<void> {
     // In async scenarios, the input is sent in handleChainEnd, so we need to handle it here
     const input = kwargs?.inputs;
-    await this._endNode(
-      runId,
-      {
-        output: toStringValue(outputs),
-        statusCode: 200,
-        ...(input !== undefined && { input: toStringValue(input) })
-      },
-      'handleChainEnd'
-    );
+    await this._endNode(runId, {
+      output: toStringValue(outputs),
+      statusCode: 200,
+      ...(input !== undefined && { input: toStringValue(input) })
+    });
   }
 
   public async handleAgentEnd(
     finish: AgentFinish,
     runId: string
   ): Promise<void> {
-    await this._endNode(
-      runId,
-      {
-        output: toStringValue(finish),
-        statusCode: 200
-      },
-      'handleAgentEnd'
-    );
+    await this._endNode(runId, {
+      output: toStringValue(finish),
+      statusCode: 200
+    });
   }
 
   public async handleLLMStart(
@@ -435,7 +376,7 @@ export class GalileoCallback
   }
 
   public async handleLLMError(err: Error, runId: string): Promise<void> {
-    await this._handleError(err, runId, 'handleLLMError');
+    await this._handleError(err, runId);
   }
 
   public async handleLLMNewToken(
@@ -581,17 +522,13 @@ export class GalileoCallback
       serializedOutput = String(output.generations);
     }
 
-    await this._endNode(
-      runId,
-      {
-        output: serializedOutput,
-        numInputTokens,
-        numOutputTokens,
-        totalTokens,
-        statusCode: 200
-      },
-      'handleLLMEnd'
-    );
+    await this._endNode(runId, {
+      output: serializedOutput,
+      numInputTokens,
+      numOutputTokens,
+      totalTokens,
+      statusCode: 200
+    });
   }
 
   public async handleToolStart(
@@ -618,7 +555,7 @@ export class GalileoCallback
   }
 
   public async handleToolError(err: Error, runId: string): Promise<void> {
-    await this._handleError(err, runId, 'handleToolError');
+    await this._handleError(err, runId);
   }
 
   public async handleToolEnd(output: unknown, runId: string): Promise<void> {
@@ -629,15 +566,11 @@ export class GalileoCallback
     const toolMessage = findToolMessage(output);
     if (toolMessage !== null) {
       serializedOutput = toStringValue(toolMessage.content);
-      await this._endNode(
-        runId,
-        {
-          output: serializedOutput,
-          toolCallId: toolMessage.tool_call_id,
-          statusCode: 200
-        },
-        'handleToolEnd'
-      );
+      await this._endNode(runId, {
+        output: serializedOutput,
+        toolCallId: toolMessage.tool_call_id,
+        statusCode: 200
+      });
       return;
     }
 
@@ -646,15 +579,11 @@ export class GalileoCallback
       // Check if the first element is itself a ToolMessage
       if (_ToolMessage && output[0] instanceof _ToolMessage) {
         serializedOutput = toStringValue(output[0].content);
-        await this._endNode(
-          runId,
-          {
-            output: serializedOutput,
-            toolCallId: output[0].tool_call_id,
-            statusCode: 200
-          },
-          'handleToolEnd'
-        );
+        await this._endNode(runId, {
+          output: serializedOutput,
+          toolCallId: output[0].tool_call_id,
+          statusCode: 200
+        });
         return;
       }
       serializedOutput = toStringValue(output[0]);
@@ -668,11 +597,7 @@ export class GalileoCallback
       serializedOutput = toStringValue(output);
     }
 
-    await this._endNode(
-      runId,
-      { output: serializedOutput, statusCode: 200 },
-      'handleToolEnd'
-    );
+    await this._endNode(runId, { output: serializedOutput, statusCode: 200 });
   }
 
   public async handleRetrieverStart(
@@ -694,7 +619,7 @@ export class GalileoCallback
   }
 
   public async handleRetrieverError(err: Error, runId: string): Promise<void> {
-    await this._handleError(err, runId, 'handleRetrieverError');
+    await this._handleError(err, runId);
   }
 
   public async handleRetrieverEnd(
@@ -712,10 +637,6 @@ export class GalileoCallback
       serializedResponse = String(documents);
     }
 
-    await this._endNode(
-      runId,
-      { output: serializedResponse, statusCode: 200 },
-      'handleRetrieverEnd'
-    );
+    await this._endNode(runId, { output: serializedResponse, statusCode: 200 });
   }
 }
