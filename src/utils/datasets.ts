@@ -213,6 +213,7 @@ export function createDatasetRecord(
  * @param datasetContent - The dataset rows to convert.
  * @returns The array of values dictionaries for each row.
  * @deprecated Use datasetContent.map(row => row.valuesDict) instead.
+ * @internal Not part of the public API.
  */
 export function convertDatasetContentToRecords(
   datasetContent: DatasetRow[]

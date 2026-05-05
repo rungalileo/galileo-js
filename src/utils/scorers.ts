@@ -96,6 +96,7 @@ export const getScorerVersion = async (
  * @param params.projectName - (Optional) The project name.
  * @param params.scorers - The list of scorer configurations.
  * @returns A promise that resolves when the settings are created.
+ * @internal Used by experiments and metrics; not part of the public API.
  */
 export const createRunScorerSettings = async ({
   experimentId,

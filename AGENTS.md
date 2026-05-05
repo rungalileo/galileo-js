@@ -119,7 +119,11 @@ await logger.flush();
 ### Exception Handling
 
 ```typescript
-import { APIException } from 'galileo'; // or from src/utils/errors
+import {
+  APIException,
+  DatasetAPIException,
+  ProjectAPIException
+} from 'galileo'; // or from src/utils/errors
 
 try {
   await apiClient.someMethod();
