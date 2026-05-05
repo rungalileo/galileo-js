@@ -3,6 +3,7 @@ import {
   type ExperimentResponseType,
   type ExperimentUpdateRequest,
   type ExperimentDatasetRequest,
+  type ExperimentsAvailableColumnsResponse,
   type RunExperimentWithFunctionOutput,
   type RunExperimentParams,
   type RunExperimentOutput,
@@ -51,6 +52,62 @@ export class Experiments {
   }
 
   /**
+   * Enriches an experiment response with `metricAggregates` (alias for
+   * `structuredAggregateMetrics`) and a runtime deprecation warning on `aggregateMetrics`.
+   */
+  private _enrichExperimentResponse(
+    response: ExperimentResponseType
+  ): ExperimentResponseType {
+    const enriched = {
+      ...response,
+      metricAggregates: response.structuredAggregateMetrics ?? undefined
+    };
+    Object.defineProperty(enriched, 'aggregateMetrics', {
+      get() {
+        sdkLogger.warn(
+          'DEPRECATED: aggregateMetrics is deprecated. Use metricAggregates instead, ' +
+            'which returns full statistical aggregates (avg, min, max, p50, p90, p95, p99) ' +
+            'keyed by scorer UUID for scorer-backed metrics or raw string for system metrics ' +
+            "(e.g. 'cost', 'duration_ns')."
+        );
+        return response.aggregateMetrics;
+      },
+      enumerable: true,
+      configurable: true
+    });
+    return enriched;
+  }
+
+  /**
+   * Returns all available columns for the experiment comparison table.
+   *
+   * Scorer-backed metric columns have IDs of the form `"metrics/{scorer-uuid}"`, which maps
+   * directly to the keys in `experiment.metricAggregates`. Use `column.metricKeyAlias` for
+   * the legacy snake_case metric name and `column.label` for the display label.
+   *
+   * @example
+   * const cols = await experiments.getExperimentColumns({ projectName: 'My Project' });
+   * const colMap = Object.fromEntries((cols.columns ?? []).map(c => [c.id, c]));
+   * for (const [metricId, agg] of Object.entries(experiment.metricAggregates ?? {})) {
+   *   const col = colMap[`metrics/${metricId}`];   // undefined for system metrics
+   *   const label = col?.label ?? metricId;
+   *   console.log(`${label}: avg=${agg.avg}`);
+   * }
+   */
+  async getExperimentColumns(options: {
+    projectId?: string;
+    projectName?: string;
+  }): Promise<ExperimentsAvailableColumnsResponse> {
+    const client = await this.ensureClient();
+    await client.init({
+      projectScoped: true,
+      projectId: options.projectId,
+      projectName: options.projectName
+    });
+    return client.getExperimentsAvailableColumns();
+  }
+
+  /**
    * Gets an experiment by ID or name.
    * @param options - The options for getting an experiment.
    * @param options.projectId - (Optional) The unique identifier of the project.
@@ -79,11 +136,15 @@ export class Experiments {
     });
 
     if (options.id) {
-      return await client.getExperiment(options.id);
+      const result = await client.getExperiment(options.id);
+      return result ? this._enrichExperimentResponse(result) : undefined;
     }
 
     const experiments = await client.getExperiments();
-    return experiments.find((experiment) => experiment.name === options.name);
+    const found = experiments.find(
+      (experiment) => experiment.name === options.name
+    );
+    return found ? this._enrichExperimentResponse(found) : undefined;
   }
 
   /**
@@ -131,7 +192,7 @@ export class Experiments {
       );
     }
 
-    return experiment;
+    return this._enrichExperimentResponse(experiment);
   }
 
   /**
@@ -149,7 +210,11 @@ export class Experiments {
   }): Promise<ExperimentResponseType> {
     const client = await this.ensureClient();
     await client.init({ projectId: options.projectId });
-    return await client.updateExperiment(options.id, options.updateRequest);
+    const result = await client.updateExperiment(
+      options.id,
+      options.updateRequest
+    );
+    return this._enrichExperimentResponse(result);
   }
 
   /**

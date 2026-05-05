@@ -2,6 +2,7 @@ import type {
   ExperimentResponseType,
   ExperimentDatasetRequest,
   ExperimentUpdateRequest,
+  ExperimentsAvailableColumnsResponse,
   RunExperimentParams,
   RunExperimentOutput
 } from '../types/experiment.types';
@@ -157,4 +158,30 @@ export async function deleteExperiment(options: {
   }
   const experiments = new Experiments();
   return await experiments.deleteExperiment(options);
+}
+
+/**
+ * Returns available columns for the experiment comparison table.
+ *
+ * Scorer-backed metric columns have IDs of the form `"metrics/{scorer-uuid}"`, which maps
+ * directly to the keys in `experiment.metricAggregates`. Use `column.metricKeyAlias` for
+ * the legacy snake_case metric name and `column.label` for the human-readable display label.
+ * System metrics (e.g. 'cost', 'duration_ns') appear in `metricAggregates` under raw string
+ * keys but do **not** appear in the columns returned here.
+ *
+ * @example
+ * const cols = await getExperimentColumns({ projectName: 'My Project' });
+ * const colMap = Object.fromEntries((cols.columns ?? []).map(c => [c.id, c]));
+ * for (const [metricId, agg] of Object.entries(experiment.metricAggregates ?? {})) {
+ *   const col = colMap[`metrics/${metricId}`];   // undefined for system metrics
+ *   const label = col?.label ?? metricId;
+ *   console.log(`${label}: avg=${agg.avg}`);
+ * }
+ */
+export async function getExperimentColumns(options: {
+  projectId?: string;
+  projectName?: string;
+}): Promise<ExperimentsAvailableColumnsResponse> {
+  const experiments = new Experiments();
+  return experiments.getExperimentColumns(options);
 }

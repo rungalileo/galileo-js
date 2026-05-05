@@ -118,7 +118,8 @@ import {
   getExperiment,
   runExperiment,
   updateExperiment,
-  deleteExperiment
+  deleteExperiment,
+  getExperimentColumns
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
@@ -211,6 +212,7 @@ export {
   runExperiment,
   updateExperiment,
   deleteExperiment,
+  getExperimentColumns,
   // Experiment entities
   ExperimentTags,
   Experiments,

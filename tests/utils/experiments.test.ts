@@ -4,7 +4,8 @@ import {
   getExperiments,
   runExperiment,
   updateExperiment,
-  deleteExperiment
+  deleteExperiment,
+  getExperimentColumns
 } from '../../src';
 import type {
   ExperimentResponseType,
@@ -47,6 +48,7 @@ const mockIngestTraces = jest.fn();
 const mockGetScorerVersion = jest.fn();
 const mockGetGlobalProjectByName = jest.fn();
 const mockListDatasetProjects = jest.fn();
+const mockGetExperimentsAvailableColumns = jest.fn();
 
 jest.mock('../../src/api-client', () => {
   return {
@@ -75,7 +77,8 @@ jest.mock('../../src/api-client', () => {
           getDatasetContent: mockGetDatasetContent,
           ingestTraces: mockIngestTraces,
           getGlobalProjectByName: mockGetGlobalProjectByName,
-          listDatasetProjects: mockListDatasetProjects
+          listDatasetProjects: mockListDatasetProjects,
+          getExperimentsAvailableColumns: mockGetExperimentsAvailableColumns
         };
       }),
       {
@@ -819,6 +822,158 @@ describe('experiments utility', () => {
       ).rejects.toThrow(
         'Experiment id and projectId are required to delete an experiment'
       );
+    });
+  });
+
+  describe('metricAggregates', () => {
+    const scorerUuid = '550e8400-e29b-41d4-a716-446655440000';
+    const mockAgg = { avg: 0.85, count: 8, p90: 0.92 };
+
+    it('should populate metricAggregates from structuredAggregateMetrics on getExperiment', async () => {
+      // Given: API returns an experiment with structuredAggregateMetrics keyed by UUID
+      const experimentWithMetrics = {
+        ...mockExperiment,
+        structuredAggregateMetrics: { [scorerUuid]: mockAgg }
+      };
+      mockGetExperiment.mockResolvedValue(experimentWithMetrics);
+
+      // When: getExperiment is called
+      const result = await getExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: 'test-project'
+      });
+
+      // Then: metricAggregates mirrors structuredAggregateMetrics
+      expect(result?.metricAggregates).toEqual({ [scorerUuid]: mockAgg });
+    });
+
+    it('should populate metricAggregates from structuredAggregateMetrics on createExperiment', async () => {
+      // Given: API returns an experiment with structuredAggregateMetrics
+      const experimentWithMetrics = {
+        ...mockExperiment,
+        structuredAggregateMetrics: {
+          [scorerUuid]: mockAgg,
+          cost: { avg: 0.01 }
+        }
+      };
+      mockCreateExperiment.mockResolvedValue(experimentWithMetrics);
+
+      // When: createExperiment is called
+      const result = await createExperiment('new-experiment', 'test-project');
+
+      // Then: both UUID and system metric keys are present
+      expect(result.metricAggregates).toEqual({
+        [scorerUuid]: mockAgg,
+        cost: { avg: 0.01 }
+      });
+    });
+
+    it('should set metricAggregates to undefined when structuredAggregateMetrics is absent', async () => {
+      // Given: experiment has no structuredAggregateMetrics
+      mockGetExperiment.mockResolvedValue({ ...mockExperiment });
+
+      // When: getExperiment is called
+      const result = await getExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: 'test-project'
+      });
+
+      // Then: metricAggregates is undefined
+      expect(result?.metricAggregates).toBeUndefined();
+    });
+  });
+
+  describe('aggregateMetrics deprecation', () => {
+    it('should still return the original value when aggregateMetrics is accessed (backward-compat)', async () => {
+      // Given: API returns an experiment with aggregateMetrics
+      const experimentWithMetrics = {
+        ...mockExperiment,
+        aggregateMetrics: { average_correctness: 0.9 }
+      };
+      mockGetExperiment.mockResolvedValue(experimentWithMetrics);
+
+      // When: getExperiment is called and aggregateMetrics is accessed
+      const result = await getExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: 'test-project'
+      });
+
+      // Then: the value is still accessible (backward-compatible)
+      // Note: sdkLogger.warn fires internally but is not easily assertable without
+      // mocking the galileo-generated module at module load time.
+      expect(result?.aggregateMetrics).toEqual({ average_correctness: 0.9 });
+    });
+
+    it('should expose aggregateMetrics as a getter (not a plain property)', async () => {
+      // Given: API returns an experiment
+      mockGetExperiment.mockResolvedValue(mockExperiment);
+
+      // When: the enriched experiment is returned
+      const result = await getExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: 'test-project'
+      });
+
+      // Then: aggregateMetrics is defined as a getter on the object
+      const descriptor = Object.getOwnPropertyDescriptor(
+        result,
+        'aggregateMetrics'
+      );
+      expect(descriptor?.get).toBeDefined();
+    });
+  });
+
+  describe('getExperimentColumns', () => {
+    const mockColumns = {
+      columns: [
+        {
+          id: 'metrics/550e8400-e29b-41d4-a716-446655440000',
+          label: 'Correctness',
+          category: 'metric',
+          dataType: 'floating_point',
+          metricKeyAlias: 'correctness'
+        },
+        {
+          id: 'metrics/duration_ns',
+          label: 'Latency',
+          category: 'metric',
+          dataType: 'integer',
+          metricKeyAlias: null
+        }
+      ]
+    };
+
+    it('should return the columns from the API', async () => {
+      // Given: API returns available columns including UUID-keyed metric columns
+      mockGetExperimentsAvailableColumns.mockResolvedValue(mockColumns);
+
+      // When: getExperimentColumns is called
+      const result = await getExperimentColumns({
+        projectName: 'test-project'
+      });
+
+      // Then: the columns are returned and the API was called
+      expect(result).toEqual(mockColumns);
+      expect(mockGetExperimentsAvailableColumns).toHaveBeenCalledTimes(1);
+    });
+
+    it('should expose metricKeyAlias on UUID-keyed columns', async () => {
+      // Given: a column with metricKeyAlias set
+      mockGetExperimentsAvailableColumns.mockResolvedValue(mockColumns);
+
+      // When: getExperimentColumns is called
+      const result = await getExperimentColumns({
+        projectName: 'test-project'
+      });
+
+      // Then: the UUID column has metricKeyAlias and the system metric column has null alias
+      const cols = result.columns ?? [];
+      const uuidCol = cols.find(
+        (c) => c.id === 'metrics/550e8400-e29b-41d4-a716-446655440000'
+      );
+      const sysCol = cols.find((c) => c.id === 'metrics/duration_ns');
+      expect(uuidCol?.metricKeyAlias).toBe('correctness');
+      expect(sysCol?.metricKeyAlias).toBeNull();
     });
   });
 });
