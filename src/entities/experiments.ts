@@ -89,7 +89,7 @@ export class Experiments {
    * const cols = await experiments.getExperimentColumns({ projectName: 'My Project' });
    * const colMap = Object.fromEntries((cols.columns ?? []).map(c => [c.id, c]));
    * for (const [metricId, agg] of Object.entries(experiment.metricAggregates ?? {})) {
-   *   const col = colMap[`metrics/${metricId}`];   // undefined for system metrics
+   *   const col = colMap[`metrics/${metricId}`];   // null metricKeyAlias for system metrics
    *   const label = col?.label ?? metricId;
    *   console.log(`${label}: avg=${agg.avg}`);
    * }

@@ -167,13 +167,14 @@ export async function deleteExperiment(options: {
  * directly to the keys in `experiment.metricAggregates`. Use `column.metricKeyAlias` for
  * the legacy snake_case metric name and `column.label` for the human-readable display label.
  * System metrics (e.g. 'cost', 'duration_ns') appear in `metricAggregates` under raw string
- * keys but do **not** appear in the columns returned here.
+ * keys and may also appear as `metrics/{raw_key}` columns (e.g. `metrics/duration_ns`) with
+ * `metricKeyAlias: null`.
  *
  * @example
  * const cols = await getExperimentColumns({ projectName: 'My Project' });
  * const colMap = Object.fromEntries((cols.columns ?? []).map(c => [c.id, c]));
  * for (const [metricId, agg] of Object.entries(experiment.metricAggregates ?? {})) {
- *   const col = colMap[`metrics/${metricId}`];   // undefined for system metrics
+ *   const col = colMap[`metrics/${metricId}`];
  *   const label = col?.label ?? metricId;
  *   console.log(`${label}: avg=${agg.avg}`);
  * }
