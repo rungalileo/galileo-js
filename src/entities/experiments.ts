@@ -62,7 +62,6 @@ export class Experiments {
   private _enrichExperimentResponse(
     response: ExperimentResponseType
   ): ExperimentResponseType {
-    const self = this;
     const enriched: ExperimentResponseType = {
       ...response,
       metricAggregates: response.structuredAggregateMetrics ?? undefined,
@@ -89,7 +88,7 @@ export class Experiments {
         }
 
         // Label or metricKeyAlias → resolve via experiment_columns
-        const cols = await self.getExperimentColumns({
+        const cols = await this.getExperimentColumns({
           projectId: response.projectId
         });
         const columns = cols.columns ?? [];
