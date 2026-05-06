@@ -20,6 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -65,3 +66,7 @@ jobs:
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: galileo-automation
+          GIT_AUTHOR_EMAIL: ci@rungalileo.io
+          GIT_COMMITTER_NAME: galileo-automation
+          GIT_COMMITTER_EMAIL: ci@rungalileo.io
