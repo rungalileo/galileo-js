@@ -45,6 +45,7 @@ import {
 } from './utils/datasets';
 import {
   createCustomLlmMetric,
+  createCustomCodeMetric,
   deleteMetric,
   createMetricConfigs,
   getMetrics
@@ -64,6 +65,7 @@ import { exportRecords } from './utils/export';
 import { Jobs } from './utils/jobs';
 import {
   getJobProgress,
+  logScorerJobsStatus,
   getRunScorerJobs,
   getScorerJobsStatus,
   getJob
@@ -228,6 +230,7 @@ export {
   galileoContext,
   // Metrics
   createCustomLlmMetric,
+  createCustomCodeMetric,
   getMetrics,
   deleteMetric,
   createMetricConfigs,
@@ -246,6 +249,7 @@ export {
   getScorerJobsStatus,
   // Job Progress (new standardized API)
   getJobProgress,
+  logScorerJobsStatus,
   getRunScorerJobs,
   getJob,
   // Jobs class

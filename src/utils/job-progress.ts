@@ -155,7 +155,6 @@ const logScorerJobsInternal = async (
  * @param projectId The unique identifier of the project.
  * @param runId The unique identifier of the run.
  * @param logger Optional logger interface (defaults to internal SDK logger).
- * @internal Used by getJobProgress; not part of the public API.
  */
 export async function logScorerJobsStatus(
   projectId: string,

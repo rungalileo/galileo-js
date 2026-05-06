@@ -6,7 +6,8 @@ import {
 } from '../../src';
 import {
   updateExperiment,
-  deleteExperiment
+  deleteExperiment,
+  getExperimentColumns
 } from '../../src/utils/experiments';
 import type {
   ExperimentResponseType,
