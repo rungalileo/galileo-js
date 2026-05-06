@@ -306,7 +306,7 @@ describe('experiments utility', () => {
 
       // Verify the correct method was called with the right ID
       expect(mockGetExperiment).toHaveBeenCalledWith(experimentId);
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
     });
 
     it('should fetch experiments and find by name when name is provided', async () => {
@@ -316,7 +316,7 @@ describe('experiments utility', () => {
       // Verify getExperiments was called and the result is correct
       expect(mockGetExperiments).toHaveBeenCalled();
       expect(mockGetExperiment).not.toHaveBeenCalled(); // Should not call getExperiment
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
     });
 
     it('should return undefined when searching by name and no matching experiment is found', async () => {
@@ -345,7 +345,7 @@ describe('experiments utility', () => {
       // Verify only getExperiment was called with the ID
       expect(mockGetExperiment).toHaveBeenCalledWith(experimentId);
       expect(mockGetExperiments).not.toHaveBeenCalled();
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
     });
 
     it('should handle API errors gracefully', async () => {
@@ -394,7 +394,7 @@ describe('experiments utility', () => {
         'Test Experiment',
         undefined
       );
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
     });
     it('should throw an error if name is empty', async () => {
       await expect(createExperiment('', projectName)).rejects.toThrow(
@@ -740,7 +740,7 @@ describe('experiments utility', () => {
         undefined,
         [GalileoMetrics.correctness]
       );
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
       expect(mockCreateExperiment).toHaveBeenCalled();
     });
   });
@@ -755,7 +755,7 @@ describe('experiments utility', () => {
         projectId: commonMockProject.id,
         updateRequest
       });
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
       expect(mockUpdateExperiment).toHaveBeenCalledWith(
         EXAMPLE_EXPERIMENT_ID,
         updateRequest
@@ -771,7 +771,7 @@ describe('experiments utility', () => {
         projectName: commonMockProject.name as string,
         updateRequest
       });
-      expect(result).toEqual(mockExperiment);
+      expect(result).toEqual(expect.objectContaining(mockExperiment));
       expect(mockUpdateExperiment).toHaveBeenCalledWith(
         EXAMPLE_EXPERIMENT_ID,
         updateRequest
@@ -974,6 +974,97 @@ describe('experiments utility', () => {
       const sysCol = cols.find((c) => c.id === 'metrics/duration_ns');
       expect(uuidCol?.metricKeyAlias).toBe('correctness');
       expect(sysCol?.metricKeyAlias).toBeNull();
+    });
+  });
+
+  describe('getMetricAggregate', () => {
+    const scorerUuid = '550e8400-e29b-41d4-a716-446655440000';
+    const mockAgg = { avg: 0.85, count: 8, p90: 0.92 };
+    const mockColumns = {
+      columns: [
+        {
+          id: `metrics/${scorerUuid}`,
+          label: 'Correctness',
+          category: 'metric',
+          dataType: 'floating_point',
+          metricKeyAlias: 'correctness'
+        }
+      ]
+    };
+
+    async function experimentWithMetrics() {
+      const experimentWithMetrics = {
+        ...mockExperiment,
+        projectId: commonMockProject.id,
+        structuredAggregateMetrics: { [scorerUuid]: mockAgg }
+      };
+      mockGetExperiment.mockResolvedValue(experimentWithMetrics);
+      mockGetExperimentsAvailableColumns.mockResolvedValue(mockColumns);
+      return await getExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: 'test-project'
+      });
+    }
+
+    it('should return undefined when metricAggregates is not populated', async () => {
+      // Given: experiment with no structuredAggregateMetrics
+      mockGetExperiment.mockResolvedValue({
+        ...mockExperiment,
+        projectId: commonMockProject.id
+      });
+
+      const result = await getExperiment({
+        id: EXAMPLE_EXPERIMENT_ID,
+        projectName: 'test-project'
+      });
+
+      // When/Then: getMetricAggregate returns undefined
+      expect(await result?.getMetricAggregate?.('Correctness')).toBeUndefined();
+    });
+
+    it('should look up by UUID string directly without calling columns API', async () => {
+      // Given: experiment with UUID-keyed metrics
+      const experiment = await experimentWithMetrics();
+
+      // When: looking up by raw UUID
+      const result = await experiment?.getMetricAggregate?.(scorerUuid);
+
+      // Then: aggregate returned without calling getExperimentsAvailableColumns
+      expect(result).toEqual(mockAgg);
+      expect(mockGetExperimentsAvailableColumns).not.toHaveBeenCalled();
+    });
+
+    it('should look up by GalileoMetrics value (human-readable label)', async () => {
+      // Given: experiment with UUID-keyed metrics and GalileoMetrics.correctness == "Correctness"
+      const experiment = await experimentWithMetrics();
+
+      // When: looking up by GalileoMetrics value (which IS the label string)
+      const result = await experiment?.getMetricAggregate?.('Correctness');
+
+      // Then: aggregate returned via label match
+      expect(result).toEqual(mockAgg);
+    });
+
+    it('should look up by metricKeyAlias as fallback', async () => {
+      // Given: experiment with UUID-keyed metrics
+      const experiment = await experimentWithMetrics();
+
+      // When: looking up by legacy snake_case alias
+      const result = await experiment?.getMetricAggregate?.('correctness');
+
+      // Then: aggregate returned via alias fallback
+      expect(result).toEqual(mockAgg);
+    });
+
+    it('should return undefined for an unknown metric', async () => {
+      // Given: experiment with UUID-keyed metrics
+      const experiment = await experimentWithMetrics();
+
+      // When: looking up a metric that does not exist
+      const result = await experiment?.getMetricAggregate?.('Toxicity');
+
+      // Then: undefined is returned
+      expect(result).toBeUndefined();
     });
   });
 });

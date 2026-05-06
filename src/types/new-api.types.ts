@@ -7940,6 +7940,18 @@ export type ExperimentResponse = {
     [key: string]: MetricAggregates;
   } | null;
   /**
+   * Look up aggregate statistics for a metric by any identifier.
+   * Populated by the SDK via `_enrichExperimentResponse`.
+   *
+   * Accepts (in priority order):
+   * 1. Scorer UUID string — direct lookup in `metricAggregates`
+   * 2. GalileoMetrics value / human-readable label (e.g. "Correctness")
+   * 3. Legacy metric_key_alias (e.g. "correctness") — fallback after label miss
+   */
+  getMetricAggregate?: (
+    metric: string
+  ) => Promise<MetricAggregates | undefined>;
+  /**
    * Aggregate Feedback
    *
    * Aggregate feedback information related to the experiment (traces only)

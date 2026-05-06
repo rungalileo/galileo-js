@@ -14,6 +14,7 @@ import type {
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
+import type { MetricAggregates } from '../types/new-api.types';
 import { Metrics } from '../utils/metrics';
 import { ExperimentTags } from './experiment-tags';
 import type {
@@ -35,6 +36,9 @@ import type { Dataset } from '../entities/datasets';
 import { getSdkLogger } from 'galileo-generated';
 
 const sdkLogger = getSdkLogger();
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Entity class for managing experiments.
@@ -58,9 +62,52 @@ export class Experiments {
   private _enrichExperimentResponse(
     response: ExperimentResponseType
   ): ExperimentResponseType {
-    const enriched = {
+    const self = this;
+    const enriched: ExperimentResponseType = {
       ...response,
-      metricAggregates: response.structuredAggregateMetrics ?? undefined
+      metricAggregates: response.structuredAggregateMetrics ?? undefined,
+      /**
+       * Look up aggregate statistics for a metric by any identifier.
+       *
+       * Accepts (in priority order):
+       * 1. Scorer UUID string — direct lookup in metricAggregates
+       * 2. GalileoMetrics value / human-readable label (e.g. "Correctness")
+       * 3. Legacy metric_key_alias (e.g. "correctness") — fallback after label miss
+       *
+       * Returns undefined if metricAggregates is not yet populated or the metric
+       * is not found.
+       */
+      getMetricAggregate: async (
+        metric: GalileoMetrics | string
+      ): Promise<MetricAggregates | undefined> => {
+        const aggregates = enriched.metricAggregates;
+        if (!aggregates) return undefined;
+
+        // UUID → direct lookup, no column resolution needed
+        if (UUID_RE.test(metric)) {
+          return aggregates[metric];
+        }
+
+        // Label or metricKeyAlias → resolve via experiment_columns
+        const cols = await self.getExperimentColumns({
+          projectId: response.projectId
+        });
+        const columns = cols.columns ?? [];
+        type ColItem = (typeof columns)[number];
+        let aliasMatch: ColItem | undefined;
+        for (const col of columns) {
+          if (col.label === metric) {
+            return aggregates[col.id.replace(/^metrics\//, '')];
+          }
+          if (col.metricKeyAlias === metric && !aliasMatch) {
+            aliasMatch = col;
+          }
+        }
+        if (aliasMatch) {
+          return aggregates[aliasMatch.id.replace(/^metrics\//, '')];
+        }
+        return undefined;
+      }
     };
     Object.defineProperty(enriched, 'aggregateMetrics', {
       get() {
