@@ -52,7 +52,8 @@ export const StepType = {
   llm: 'llm',
   retriever: 'retriever',
   tool: 'tool',
-  agent: 'agent'
+  agent: 'agent',
+  control: 'control'
 } as const satisfies Record<StepType, StepType>;
 
 export interface MetricsOptions {

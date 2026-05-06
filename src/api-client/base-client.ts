@@ -8,7 +8,7 @@ import { decode } from 'jsonwebtoken';
 import type { paths } from '../types/api.types';
 import { Routes } from '../types/routes.types';
 import { getSdkIdentifier } from '../utils/version';
-import { objectToCamel, objectToSnake } from 'ts-case-convert';
+import { objectToSnake, toCamel } from 'ts-case-convert';
 import type { ObjectToSnake, ObjectToCamel } from 'ts-case-convert';
 import {
   GalileoAPIError,
@@ -20,6 +20,20 @@ type ValidatedSnakeCase<T extends object, TTarget> =
   ObjectToSnake<T> extends TTarget ? TTarget : never;
 type ValidatedCamelCase<T extends object, TTarget> =
   ObjectToCamel<T> extends TTarget ? TTarget : never;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function objectToCamelPreservingUuids(obj: unknown): unknown {
+  if (obj === null || obj === undefined || typeof obj !== 'object') return obj;
+  if (obj instanceof Uint8Array || obj instanceof Date) return obj;
+  if (Array.isArray(obj)) return obj.map(objectToCamelPreservingUuids);
+  const result: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    result[UUID_RE.test(k) ? k : toCamel(k)] = objectToCamelPreservingUuids(v);
+  }
+  return result;
+}
 
 export enum RequestMethod {
   GET = 'GET',
@@ -284,7 +298,7 @@ export class BaseClient {
   public convertToCamelCase<T extends object, TTarget>(
     obj: T
   ): ValidatedCamelCase<T, TTarget> {
-    return objectToCamel<T>(obj) as ValidatedCamelCase<T, TTarget>;
+    return objectToCamelPreservingUuids(obj) as ValidatedCamelCase<T, TTarget>;
   }
 
   protected initializeClient(): void {

@@ -3,6 +3,7 @@ import {
   type ExperimentResponseType,
   type ExperimentUpdateRequest,
   type ExperimentDatasetRequest,
+  type ExperimentsAvailableColumnsResponse,
   type RunExperimentWithFunctionOutput,
   type RunExperimentParams,
   type RunExperimentOutput,
@@ -13,6 +14,7 @@ import type {
   LocalMetricConfig,
   Metric
 } from '../types/metrics.types';
+import type { MetricAggregates } from '../types/new-api.types';
 import { Metrics } from '../utils/metrics';
 import { ExperimentTags } from './experiment-tags';
 import type {
@@ -35,6 +37,9 @@ import { getSdkLogger } from 'galileo-generated';
 
 const sdkLogger = getSdkLogger();
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Entity class for managing experiments.
  * Provides high-level methods for creating, getting, updating, deleting, and querying experiments.
@@ -48,6 +53,104 @@ export class Experiments {
       await this.client.init();
     }
     return this.client;
+  }
+
+  /**
+   * Enriches an experiment response with `metricAggregates` (alias for
+   * `structuredAggregateMetrics`) and a runtime deprecation warning on `aggregateMetrics`.
+   */
+  private _enrichExperimentResponse(
+    response: ExperimentResponseType
+  ): ExperimentResponseType {
+    const enriched: ExperimentResponseType = {
+      ...response,
+      metricAggregates: response.structuredAggregateMetrics ?? undefined,
+      /**
+       * Look up aggregate statistics for a metric by any identifier.
+       *
+       * Accepts (in priority order):
+       * 1. Scorer UUID string — direct lookup in metricAggregates
+       * 2. GalileoMetrics value / human-readable label (e.g. "Correctness")
+       * 3. Legacy metric_key_alias (e.g. "correctness") — fallback after label miss
+       *
+       * Returns undefined if metricAggregates is not yet populated or the metric
+       * is not found.
+       */
+      getMetricAggregate: async (
+        metric: GalileoMetrics | string
+      ): Promise<MetricAggregates | undefined> => {
+        const aggregates = enriched.metricAggregates;
+        if (!aggregates) return undefined;
+
+        // UUID → direct lookup, no column resolution needed
+        if (UUID_RE.test(metric)) {
+          return aggregates[metric];
+        }
+
+        // Label or metricKeyAlias → resolve via experiment_columns
+        const cols = await this.getExperimentColumns({
+          projectId: response.projectId
+        });
+        const columns = cols.columns ?? [];
+        type ColItem = (typeof columns)[number];
+        let aliasMatch: ColItem | undefined;
+        for (const col of columns) {
+          if (col.label === metric) {
+            return aggregates[col.id.replace(/^metrics\//, '')];
+          }
+          if (col.metricKeyAlias === metric && !aliasMatch) {
+            aliasMatch = col;
+          }
+        }
+        if (aliasMatch) {
+          return aggregates[aliasMatch.id.replace(/^metrics\//, '')];
+        }
+        return undefined;
+      }
+    };
+    Object.defineProperty(enriched, 'aggregateMetrics', {
+      get() {
+        sdkLogger.warn(
+          'DEPRECATED: aggregateMetrics is deprecated. Use metricAggregates instead, ' +
+            'which returns full statistical aggregates (avg, min, max, p50, p90, p95, p99) ' +
+            'keyed by scorer UUID for scorer-backed metrics or raw string for system metrics ' +
+            "(e.g. 'cost', 'duration_ns')."
+        );
+        return response.aggregateMetrics;
+      },
+      enumerable: true,
+      configurable: true
+    });
+    return enriched;
+  }
+
+  /**
+   * Returns all available columns for the experiment comparison table.
+   *
+   * Scorer-backed metric columns have IDs of the form `"metrics/{scorer-uuid}"`, which maps
+   * directly to the keys in `experiment.metricAggregates`. Use `column.metricKeyAlias` for
+   * the legacy snake_case metric name and `column.label` for the display label.
+   *
+   * @example
+   * const cols = await experiments.getExperimentColumns({ projectName: 'My Project' });
+   * const colMap = Object.fromEntries((cols.columns ?? []).map(c => [c.id, c]));
+   * for (const [metricId, agg] of Object.entries(experiment.metricAggregates ?? {})) {
+   *   const col = colMap[`metrics/${metricId}`];   // null metricKeyAlias for system metrics
+   *   const label = col?.label ?? metricId;
+   *   console.log(`${label}: avg=${agg.avg}`);
+   * }
+   */
+  async getExperimentColumns(options: {
+    projectId?: string;
+    projectName?: string;
+  }): Promise<ExperimentsAvailableColumnsResponse> {
+    const client = await this.ensureClient();
+    await client.init({
+      projectScoped: true,
+      projectId: options.projectId,
+      projectName: options.projectName
+    });
+    return client.getExperimentsAvailableColumns();
   }
 
   /**
@@ -79,11 +182,15 @@ export class Experiments {
     });
 
     if (options.id) {
-      return await client.getExperiment(options.id);
+      const result = await client.getExperiment(options.id);
+      return result ? this._enrichExperimentResponse(result) : undefined;
     }
 
     const experiments = await client.getExperiments();
-    return experiments.find((experiment) => experiment.name === options.name);
+    const found = experiments.find(
+      (experiment) => experiment.name === options.name
+    );
+    return found ? this._enrichExperimentResponse(found) : undefined;
   }
 
   /**
@@ -131,7 +238,7 @@ export class Experiments {
       );
     }
 
-    return experiment;
+    return this._enrichExperimentResponse(experiment);
   }
 
   /**
@@ -149,7 +256,11 @@ export class Experiments {
   }): Promise<ExperimentResponseType> {
     const client = await this.ensureClient();
     await client.init({ projectId: options.projectId });
-    return await client.updateExperiment(options.id, options.updateRequest);
+    const result = await client.updateExperiment(
+      options.id,
+      options.updateRequest
+    );
+    return this._enrichExperimentResponse(result);
   }
 
   /**
