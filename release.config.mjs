@@ -28,7 +28,6 @@ const fullPlugins = [
   [
     '@semantic-release/github',
     {
-      assets: ['dist/**/*'],
       releaseName: 'v${nextRelease.version}'
     }
   ]
