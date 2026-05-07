@@ -865,19 +865,17 @@ class GalileoLogger implements IGalileoLogger {
    * @returns The current parent after concluding, or undefined if all traces/spans were concluded.
    * @throws Error if no trace or span exists to conclude.
    */
-  conclude({
-    output,
-    redactedOutput,
-    durationNs,
-    statusCode,
-    concludeAll
-  }: {
-    output?: string;
-    redactedOutput?: string;
-    durationNs?: number;
-    statusCode?: number;
-    concludeAll?: boolean;
-  }): StepWithChildSpans | undefined {
+  conclude(
+    options: {
+      output?: string;
+      redactedOutput?: string;
+      durationNs?: number;
+      statusCode?: number;
+      concludeAll?: boolean;
+    } = {}
+  ): StepWithChildSpans | undefined {
+    const { output, redactedOutput, durationNs, statusCode, concludeAll } =
+      options;
     if (!concludeAll) {
       return this.concludeCurrentParent({
         output,
