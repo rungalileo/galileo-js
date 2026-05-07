@@ -341,6 +341,7 @@ export const getScorerJobsStatus = async (
  * @param projectId The ID of the project.
  * @param runId The ID of the run.
  * @returns Array of scorer jobs.
+ * @internal Not part of the public API.
  */
 export const getScorerJobs = async (
   projectId: string,

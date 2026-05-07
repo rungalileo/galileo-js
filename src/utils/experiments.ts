@@ -109,6 +109,7 @@ export async function runExperiment<T extends Record<string, unknown>>(
  * @param options.projectName - (Optional) The name of the project.
  * @param options.updateRequest - The experiment update request.
  * @returns A promise that resolves to the updated experiment.
+ * @internal Use the `Experiments` class instead; not part of the public API.
  */
 export async function updateExperiment(options: {
   id: string;
@@ -146,6 +147,7 @@ export async function updateExperiment(options: {
  * @param options.id - The unique identifier of the experiment.
  * @param options.projectId - The unique identifier of the project.
  * @returns A promise that resolves when the experiment is deleted.
+ * @internal Use the `Experiments` class instead; not part of the public API.
  */
 export async function deleteExperiment(options: {
   id: string;

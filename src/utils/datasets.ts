@@ -150,6 +150,7 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
  * @param options.generatedOutput - (Optional) The model-generated output value.
  * @param options.metadata - (Optional) Additional metadata for the record as a string or object.
  * @returns The normalized dataset record.
+ * @internal Used by dataset helpers; not part of the public API.
  */
 export function createDatasetRecord(
   options: DatasetRecordOptions
