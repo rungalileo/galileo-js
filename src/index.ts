@@ -167,7 +167,6 @@ export {
   Datasets,
   getDatasets,
   createDataset,
-  createDatasetRecord,
   getDatasetContent,
   getDataset,
   deleteDataset,
