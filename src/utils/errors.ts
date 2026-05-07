@@ -169,16 +169,6 @@ export class APIException extends Error {
 }
 
 /**
- * Exception raised when experiment operations fail.
- */
-export class ExperimentAPIException extends APIException {
-  constructor(message: string | unknown) {
-    super(message);
-    this.name = 'ExperimentAPIException';
-  }
-}
-
-/**
  * Exception raised when dataset operations fail.
  */
 export class DatasetAPIException extends APIException {

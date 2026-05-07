@@ -190,6 +190,8 @@ class GalileoLogger implements IGalileoLogger {
    * @param config - Logger configuration
    * @returns Promise that resolves to a fully initialized logger
    * @throws Error if config validation fails or trace/span initialization fails
+   * @deprecated Use `new GalileoLogger(config)` directly. For streaming traceId/spanId initialization, call `initTrace`/`initSpan` afterward. Will be made internal in a future release.
+   * @internal
    */
   static async create(
     config: GalileoLoggerConfigExtended = {}
