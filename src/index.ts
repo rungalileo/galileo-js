@@ -105,7 +105,8 @@ import {
   getExperiments,
   createExperiment,
   getExperiment,
-  runExperiment
+  runExperiment,
+  getExperimentColumns
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
@@ -194,6 +195,7 @@ export {
   createExperiment,
   getExperiment,
   runExperiment,
+  getExperimentColumns,
   // Experiment entities
   ExperimentTags,
   Experiments,
