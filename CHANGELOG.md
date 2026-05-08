@@ -1,3 +1,13 @@
+## [2.1.1](https://github.com/rungalileo/galileo-js/compare/v2.1.0...v2.1.1) (2026-05-08)
+
+
+### Bug Fixes
+
+* **conclude:** Updated conclude contract to run without parameters. ([#592](https://github.com/rungalileo/galileo-js/issues/592)) ([4455100](https://github.com/rungalileo/galileo-js/commit/4455100963604eabb23c2e240be972535ce87417))
+* dynamic header hook for OTEL SDK 0.200+ compatibility ([#598](https://github.com/rungalileo/galileo-js/issues/598)) ([2a17688](https://github.com/rungalileo/galileo-js/commit/2a17688046fee5eb7cb3780beb07f4ba5b0415f5))
+* **node:** Updating logging for missing root node (langchain). ([#586](https://github.com/rungalileo/galileo-js/issues/586)) ([2a2242f](https://github.com/rungalileo/galileo-js/commit/2a2242f935458a409e628eb619827a6662e9c24e))
+* **workflow:** Removed conflicting assets field on semantic release. ([#595](https://github.com/rungalileo/galileo-js/issues/595)) ([fc09ed6](https://github.com/rungalileo/galileo-js/commit/fc09ed6d5dc80f9b64a4364fe49cfd8a1e9ebf48))
+
 # [2.1.0](https://github.com/rungalileo/galileo-js/compare/v2.0.0...v2.1.0) (2026-05-06)
 
 ### Bug Fixes
