@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { GalileoOTLPExporter } from '../../../src/handlers/otel/exporter';
 import { GALILEO_ATTRIBUTES } from '../../../src/handlers/otel/types';
 import { GalileoConfig } from 'galileo-generated';
@@ -268,6 +267,7 @@ describe('GalileoOTLPExporter', () => {
       });
 
       delete lastCreatedInner._delegate;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (lastCreatedInner as any).headers = {
         'Galileo-API-Key': 'test-api-key',
         project: 'my-project',
@@ -280,6 +280,7 @@ describe('GalileoOTLPExporter', () => {
       });
       exporter.export([span], jest.fn());
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const headers = (lastCreatedInner as any).headers;
       expect(headers['project']).toBe('legacy-project');
       expect(headers['logstream']).toBe('legacy-logstream');
@@ -292,6 +293,7 @@ describe('GalileoOTLPExporter', () => {
       const exporter = new GalileoOTLPExporter();
 
       delete lastCreatedInner._delegate;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (lastCreatedInner as any).headers;
 
       exporter.export([createMockSpan()], jest.fn());
@@ -306,6 +308,7 @@ describe('GalileoOTLPExporter', () => {
       const exporter = new GalileoOTLPExporter();
 
       delete lastCreatedInner._delegate;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (lastCreatedInner as any).headers;
 
       exporter.export([createMockSpan()], jest.fn());
@@ -320,6 +323,7 @@ describe('GalileoOTLPExporter', () => {
       const exporter = new GalileoOTLPExporter();
 
       delete lastCreatedInner._delegate;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (lastCreatedInner as any).headers = Object.freeze({
         'Galileo-API-Key': 'test-api-key'
       });

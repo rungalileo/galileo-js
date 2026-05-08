@@ -45,6 +45,10 @@ function loadResourceClass():
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require('@opentelemetry/resources').Resource ?? null;
   } catch {
+    sdkLogger.warn(
+      '@opentelemetry/resources is not installed. ' +
+        'Resource attributes will not be merged onto exported spans.'
+    );
     return null;
   }
 }
@@ -183,9 +187,9 @@ export class GalileoOTLPExporter implements SpanExporterLike {
         GALILEO_ATTRIBUTES.DATASET_METADATA
       );
 
-      if (project) batchProject = project;
-      if (logstream) batchLogstream = logstream;
-      if (experimentId) batchExperimentId = experimentId;
+      if (project !== undefined) batchProject = project;
+      if (logstream !== undefined) batchLogstream = logstream;
+      if (experimentId !== undefined) batchExperimentId = experimentId;
 
       // Merge galileo attributes into span resource (matches Python SDK behavior)
       const resourceAttrs: Record<string, string> = {};
