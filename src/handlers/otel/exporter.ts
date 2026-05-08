@@ -17,30 +17,62 @@ function strAttr(
   return typeof v === 'string' ? v : undefined;
 }
 
+function loadOTLPTraceExporter(): new (
+  config: Record<string, unknown>
+) => SpanExporterLike {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('@opentelemetry/exporter-trace-otlp-proto')
+      .OTLPTraceExporter;
+  } catch {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      return require('@opentelemetry/exporter-trace-otlp-http')
+        .OTLPTraceExporter;
+    } catch {
+      throw new Error(
+        '@opentelemetry/exporter-trace-otlp-proto (or @opentelemetry/exporter-trace-otlp-http) is not installed. ' +
+          'Install it with: npm install @opentelemetry/exporter-trace-otlp-proto'
+      );
+    }
+  }
+}
+
+function loadResourceClass():
+  | (new (attrs: Record<string, unknown>) => unknown)
+  | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('@opentelemetry/resources').Resource ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * OpenTelemetry OTLP span exporter preconfigured for Galileo platform integration.
  *
- * This exporter wraps the standard OTLPTraceExporter with Galileo-specific
- * configuration and authentication. It injects Galileo resource attributes
- * and updates HTTP headers per export batch.
- *
- * For most applications, use GalileoSpanProcessor instead, which provides
- * a complete tracing solution including this exporter.
+ * Extends the standard OTLPTraceExporter with Galileo-specific configuration,
+ * authentication, per-batch header overrides, and resource attribute merging.
+ * The class is created dynamically at runtime since the base OTLPTraceExporter
+ * is loaded via require().
  *
  * @example
  * ```typescript
  * import { GalileoOTLPExporter } from 'galileo';
- * import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+ * import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-node';
  *
  * const exporter = new GalileoOTLPExporter({ project: 'my-project' });
- * const processor = new BatchSpanProcessor(exporter);
+ * const processor = new SimpleSpanProcessor(exporter);
  * ```
  */
 export class GalileoOTLPExporter implements SpanExporterLike {
-  private _innerExporter: SpanExporterLike;
+  private _inner: SpanExporterLike;
+  private _headerOverrides: Record<string, string | null> = {};
+  private _hooked = false;
   private _ResourceClass:
     | (new (attrs: Record<string, unknown>) => unknown)
-    | null = null;
+    | null;
 
   readonly project: string;
   readonly logstream: string;
@@ -61,39 +93,10 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       config?.logstream ?? galileoConfig.logStreamName ?? 'default';
 
     const endpoint = `${apiUrl.replace(/\/$/, '')}/otel/traces`;
+    const OTLPTraceExporter = loadOTLPTraceExporter();
+    this._ResourceClass = loadResourceClass();
 
-    let OTLPTraceExporter: new (
-      config: Record<string, unknown>
-    ) => SpanExporterLike;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('@opentelemetry/exporter-trace-otlp-proto');
-      OTLPTraceExporter = mod.OTLPTraceExporter;
-    } catch {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const mod = require('@opentelemetry/exporter-trace-otlp-http');
-        OTLPTraceExporter = mod.OTLPTraceExporter;
-      } catch {
-        throw new Error(
-          '@opentelemetry/exporter-trace-otlp-proto (or @opentelemetry/exporter-trace-otlp-http) is not installed. ' +
-            'Install it with: npm install @opentelemetry/exporter-trace-otlp-proto'
-        );
-      }
-    }
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const resourcesMod = require('@opentelemetry/resources');
-      this._ResourceClass = resourcesMod.Resource ?? null;
-    } catch {
-      sdkLogger.warn(
-        '@opentelemetry/resources is not installed. ' +
-          'Resource attributes will not be merged onto exported spans.'
-      );
-    }
-
-    this._innerExporter = new OTLPTraceExporter({
+    this._inner = new OTLPTraceExporter({
       url: endpoint,
       headers: {
         'Galileo-API-Key': apiKey,
@@ -104,18 +107,68 @@ export class GalileoOTLPExporter implements SpanExporterLike {
   }
 
   /**
-   * Export spans to Galileo, injecting resource attributes from span attributes.
-   *
-   * For each span, reads galileo.* attributes (set by GalileoSpanProcessor.onStart)
-   * and merges them into the span's resource. Also updates HTTP headers per batch.
+   * Replace the static headers function on the inner transport with a
+   * dynamic one that merges per-batch overrides at send time.
    */
+  private _installHeadersHook(): void {
+    if (this._hooked) return;
+    this._hooked = true;
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const exp = this._inner as any;
+
+      const applyOverrides = (base: Record<string, string>) => {
+        const merged = { ...base };
+        for (const [k, v] of Object.entries(this._headerOverrides)) {
+          if (v === null) {
+            delete merged[k];
+          } else {
+            merged[k] = v;
+          }
+        }
+        return merged;
+      };
+
+      // Modern OTEL SDK (0.200+): headers are a function on transport params
+      const params = exp?._delegate?._transport?._transport?._parameters;
+      if (params && typeof params.headers === 'function') {
+        const originalHeadersFn = params.headers.bind(params);
+        params.headers = () => applyOverrides(originalHeadersFn());
+        return;
+      }
+
+      // Legacy OTEL SDK: direct .headers property
+      if (
+        exp.headers &&
+        typeof exp.headers === 'object' &&
+        !Object.isFrozen(exp.headers)
+      ) {
+        const originalHeaders = { ...exp.headers };
+        Object.defineProperty(exp, 'headers', {
+          get: () => applyOverrides(originalHeaders)
+        });
+        return;
+      }
+    } catch {
+      // Transport structure not recognized
+    }
+
+    sdkLogger.warn(
+      'Could not install dynamic headers hook on the inner exporter. ' +
+        'Per-batch header overrides will not be applied.'
+    );
+  }
+
   export(
     spans: ReadableSpanLike[],
     resultCallback: (result: ExportResultLike) => void
   ): void {
-    let batchExperimentId: string | undefined;
+    this._installHeadersHook();
+
     let batchProject: string | undefined;
     let batchLogstream: string | undefined;
+    let batchExperimentId: string | undefined;
 
     for (const span of spans) {
       const attrs = span.attributes;
@@ -130,10 +183,11 @@ export class GalileoOTLPExporter implements SpanExporterLike {
         GALILEO_ATTRIBUTES.DATASET_METADATA
       );
 
+      if (project) batchProject = project;
+      if (logstream) batchLogstream = logstream;
       if (experimentId) batchExperimentId = experimentId;
-      batchProject = project ?? batchProject;
-      batchLogstream = logstream ?? batchLogstream;
 
+      // Merge galileo attributes into span resource (matches Python SDK behavior)
       const resourceAttrs: Record<string, string> = {};
       if (project) resourceAttrs[GALILEO_ATTRIBUTES.PROJECT_NAME] = project;
       if (logstream && !experimentId)
@@ -159,42 +213,33 @@ export class GalileoOTLPExporter implements SpanExporterLike {
       }
     }
 
+    // Update per-batch header overrides.
+    // Always set both logstream and experimentid so the merge fully replaces
+    // construction-time values — they are mutually exclusive for routing.
     if (spans.length > 0) {
-      const innerHeaders = (
-        this._innerExporter as unknown as {
-          headers: Record<string, string>;
-        }
-      ).headers;
+      const overrides: Record<string, string | null> = {
+        project: batchProject ?? this.project
+      };
 
-      if (
-        innerHeaders &&
-        typeof innerHeaders === 'object' &&
-        !Object.isFrozen(innerHeaders)
-      ) {
-        innerHeaders['project'] = batchProject ?? this.project;
-
-        if (batchExperimentId) {
-          innerHeaders['experimentid'] = batchExperimentId;
-          delete innerHeaders['logstream'];
-        } else {
-          innerHeaders['logstream'] = batchLogstream ?? this.logstream;
-          delete innerHeaders['experimentid'];
-        }
+      if (batchExperimentId) {
+        overrides['experimentid'] = batchExperimentId;
+        overrides['logstream'] = null;
       } else {
-        sdkLogger.warn(
-          'Could not update inner exporter headers — the OTLPTraceExporter implementation may have changed.'
-        );
+        overrides['logstream'] = batchLogstream ?? this.logstream;
+        overrides['experimentid'] = null;
       }
+
+      this._headerOverrides = overrides;
     }
 
-    this._innerExporter.export(spans, resultCallback);
+    this._inner.export(spans, resultCallback);
   }
 
   async shutdown(): Promise<void> {
-    return this._innerExporter.shutdown();
+    return this._inner.shutdown();
   }
 
   async forceFlush(): Promise<void> {
-    return this._innerExporter.forceFlush?.();
+    return this._inner.forceFlush?.();
   }
 }
