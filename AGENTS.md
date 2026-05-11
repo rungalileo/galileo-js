@@ -26,7 +26,7 @@ node examples/logger/workflow.js     # Run an example
 ### Logger and Singleton
 
 - **GalileoLogger** (`src/utils/galileo-logger.ts`): Primary logging class. Two modes—**batch** (collect in memory, upload on `flush()`) and **streaming** (ingest via TaskHandler as spans are created). Hierarchical spans: Trace → Workflow/Agent (can have children) → Leaf (LLM, Tool, Retriever). Uses `parentStack` for nesting.
-- **GalileoSingleton** (`src/singleton.ts`): Manages loggers keyed by (project, logstream/experimentId, mode). Global helpers: `init()`, `getLogger()`, `flush()`, `flushAll()`, `reset()`, `resetAll()`. Uses `AsyncLocalStorage` (`experimentContext`, `loggerContext`) for context across async boundaries.
+- **GalileoSingleton** (`src/singleton.ts`): Manages loggers keyed by (project, logStreamName/experimentId, mode). Global helpers: `init()`, `getLogger()`, `flush()`, `flushAll()`, `reset()`, `resetAll()`. Uses `AsyncLocalStorage` (`experimentContext`, `loggerContext`) for context across async boundaries.
 
 ### API Client and Services
 
@@ -73,7 +73,7 @@ node examples/logger/workflow.js     # Run an example
 ```typescript
 import { init, getLogger, flush } from 'galileo';
 
-await init({ projectName: 'my-project', logstream: 'default' });
+await init({ projectName: 'my-project', logStreamName: 'default' });
 const logger = getLogger({ projectName: 'my-project' });
 // ... use logger
 await flush();

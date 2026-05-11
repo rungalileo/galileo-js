@@ -50,7 +50,7 @@ export interface LoggerContext {
 export const loggerContext = new AsyncLocalStorage<LoggerContext>();
 
 /**
- * Options for identifying a logger by its key (project, logstream/experimentId, mode).
+ * Options for identifying a logger by its key (project, logStreamName/experimentId, mode).
  */
 export interface LoggerKeyOptions {
   /** (Optional) The project name */
@@ -58,8 +58,8 @@ export interface LoggerKeyOptions {
   /** (Optional) The project ID */
   projectId?: string;
   /** (Optional) The log stream name (used when experimentId is not provided) */
-  logstream?: string;
-  /** (Optional) The experiment ID (takes precedence over logstream) */
+  logStreamName?: string;
+  /** (Optional) The experiment ID (takes precedence over logStreamName) */
   experimentId?: string;
   /** (Optional) The logger mode (defaults to 'batch') */
   mode?: string;
@@ -104,16 +104,16 @@ export class GalileoSingleton {
   }
 
   /**
-   * Generates a key string based on project, logstream/experimentId, and mode parameters.
+   * Generates a key string based on project, logStreamName/experimentId, and mode parameters.
    * @param projectName - (Optional) The project name
-   * @param logstream - (Optional) The log stream name (used when experimentId is not provided)
-   * @param experimentId - (Optional) The experiment ID (takes precedence over logstream)
+   * @param logStreamName - (Optional) The log stream name (used when experimentId is not provided)
+   * @param experimentId - (Optional) The experiment ID (takes precedence over logStreamName)
    * @param mode - (Optional) The logger mode (defaults to "batch")
    * @returns A string key used for caching
    */
   private static _getKey(
     projectName?: string,
-    logstream?: string,
+    logStreamName?: string,
     experimentId?: string,
     mode?: string
   ): string {
@@ -128,7 +128,7 @@ export class GalileoSingleton {
       process.env.GALILEO_PROJECT_NAME ??
       'default';
     const finalLogStream =
-      logstream ??
+      logStreamName ??
       process.env.GALILEO_LOG_STREAM ??
       process.env.GALILEO_LOG_STREAM_NAME ??
       'default';
@@ -144,8 +144,8 @@ export class GalileoSingleton {
    * Retrieves an existing GalileoLogger or creates a new one if it does not exist.
    * @param options - Configuration options
    * @param options.projectName - (Optional) The project name
-   * @param options.logstream - (Optional) The log stream name (used when experimentId is not provided)
-   * @param options.experimentId - (Optional) The experiment ID (takes precedence over logstream)
+   * @param options.logStreamName - (Optional) The log stream name (used when experimentId is not provided)
+   * @param options.experimentId - (Optional) The experiment ID (takes precedence over logStreamName)
    * @param options.mode - (Optional) The logger mode (defaults to "batch")
    * @param options.localMetrics - (Optional) Local metrics to run on traces/spans (only used when initializing a new logger)
    * @returns An instance of GalileoLogger corresponding to the key
@@ -157,7 +157,7 @@ export class GalileoSingleton {
     // Compute the key based on provided parameters, context, or environment variables
     const key = GalileoSingleton._getKey(
       options.projectName,
-      options.logstream,
+      options.logStreamName,
       options.experimentId,
       options.mode
     );
@@ -177,7 +177,7 @@ export class GalileoSingleton {
         process.env.GALILEO_PROJECT_NAME,
       projectId: options.projectId ?? context?.projectId,
       logStreamName:
-        options.logstream ??
+        options.logStreamName ??
         process.env.GALILEO_LOG_STREAM ??
         process.env.GALILEO_LOG_STREAM_NAME,
       experimentId: options.experimentId ?? context?.experimentId,
@@ -224,7 +224,7 @@ export class GalileoSingleton {
    * Resets (terminates and removes) a GalileoLogger instance.
    * @param options - Configuration options to identify which logger to reset
    * @param options.projectName - (Optional) The project name
-   * @param options.logstream - (Optional) The log stream name
+   * @param options.logStreamName - (Optional) The log stream name
    * @param options.experimentId - (Optional) The experiment ID
    * @param options.mode - (Optional) The logger mode
    * @returns A promise that resolves when the logger is reset
@@ -232,7 +232,7 @@ export class GalileoSingleton {
   public async reset(options: LoggerKeyOptions = {}): Promise<void> {
     const key = GalileoSingleton._getKey(
       options.projectName,
-      options.logstream,
+      options.logStreamName,
       options.experimentId,
       options.mode
     );
@@ -265,7 +265,7 @@ export class GalileoSingleton {
    * Flushes (uploads) a GalileoLogger instance.
    * @param options - Configuration options to identify which logger to flush
    * @param options.projectName - (Optional) The project name
-   * @param options.logstream - (Optional) The log stream name
+   * @param options.logStreamName - (Optional) The log stream name
    * @param options.experimentId - (Optional) The experiment ID
    * @param options.mode - (Optional) The logger mode
    * @returns A promise that resolves when the logger is flushed
@@ -273,7 +273,7 @@ export class GalileoSingleton {
   public async flush(options: LoggerKeyOptions = {}): Promise<void> {
     const key = GalileoSingleton._getKey(
       options.projectName,
-      options.logstream,
+      options.logStreamName,
       options.experimentId,
       options.mode
     );
@@ -319,7 +319,7 @@ export class GalileoSingleton {
  *
  * @param options - Configuration options to initialize the logger
  * @param options.projectName - (Optional) The project name
- * @param options.logstream - (Optional) The log stream name
+ * @param options.logStreamName - (Optional) The log stream name
  * @param options.experimentId - (Optional) The experiment ID
  * @param options.mode - (Optional) The logger mode
  * @param options.localMetrics - (Optional) Local metrics to run on traces/spans (only used when initializing a new logger)
@@ -344,7 +344,8 @@ export const init = async (
   const singleton = GalileoSingleton.getInstance();
   const logger = singleton.getLogger({
     projectName: options.projectName,
-    logstream: options.logstream,
+    projectId: options.projectId,
+    logStreamName: options.logStreamName,
     experimentId: options.experimentId,
     mode: options.mode,
     localMetrics: options.localMetrics
@@ -364,8 +365,8 @@ export const init = async (
  * Retrieves an existing GalileoLogger or creates a new one if it does not exist.
  * @param options - Configuration options
  * @param options.projectName - (Optional) The project name
- * @param options.logstream - (Optional) The log stream name (used when experimentId is not provided)
- * @param options.experimentId - (Optional) The experiment ID (takes precedence over logstream)
+ * @param options.logStreamName - (Optional) The log stream name (used when experimentId is not provided)
+ * @param options.experimentId - (Optional) The experiment ID (takes precedence over logStreamName)
  * @param options.mode - (Optional) The logger mode (defaults to "batch")
  * @param options.localMetrics - (Optional) Local metrics to run on traces/spans (only used when initializing a new logger)
  * @returns An instance of GalileoLogger corresponding to the key
@@ -384,7 +385,7 @@ const getLoggerFromContext = (): GalileoLogger => {
   return GalileoSingleton.getInstance().getLogger({
     projectName: exp?.projectName,
     experimentId: exp?.experimentId,
-    logstream: logStore?.logStreamName ?? exp?.logStreamName
+    logStreamName: logStore?.logStreamName ?? exp?.logStreamName
   });
 };
 
@@ -438,7 +439,7 @@ export const getAllLoggers = () => {
  * Resets (terminates and removes) a specific logger instance.
  * @param options - Configuration options to identify which logger to reset
  * @param options.projectName - (Optional) The project name
- * @param options.logstream - (Optional) The log stream name
+ * @param options.logStreamName - (Optional) The log stream name
  * @param options.experimentId - (Optional) The experiment ID
  * @param options.mode - (Optional) The logger mode
  * @returns A promise that resolves when the logger is reset
@@ -459,7 +460,7 @@ export const resetAll = async () => {
  * Flushes (uploads) traces from a specific logger to the Galileo platform.
  * @param options - Configuration options to identify which logger to flush
  * @param options.projectName - (Optional) The project name
- * @param options.logstream - (Optional) The log stream name
+ * @param options.logStreamName - (Optional) The log stream name
  * @param options.experimentId - (Optional) The experiment ID
  * @param options.mode - (Optional) The logger mode
  * @returns A promise that resolves when the logger is flushed

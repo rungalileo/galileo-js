@@ -108,7 +108,7 @@ const callOpenAI = async (input) => {
 // Optionally initialize the logger if you haven't set GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables
 const config = {
   projectName: 'My Test Project',
-  logstream: 'my-ts-test-log-stream'
+  logStreamName: 'my-ts-test-log-stream'
 };
 await init(config);
 
