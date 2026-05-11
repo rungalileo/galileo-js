@@ -210,19 +210,6 @@ export function createDatasetRecord(
 }
 
 /**
- * Converts dataset rows to their values dictionaries.
- * @param datasetContent - The dataset rows to convert.
- * @returns The array of values dictionaries for each row.
- * @deprecated Use datasetContent.map(row => row.valuesDict) instead.
- * @internal Not part of the public API.
- */
-export function convertDatasetContentToRecords(
-  datasetContent: DatasetRow[]
-): DatasetRow['valuesDict'][] {
-  return datasetContent.map((row) => row.valuesDict);
-}
-
-/**
  * Deserializes a JSON string into an object, with a fallback for non-JSON values.
  * @param value - (Optional) The string value to deserialize.
  * @returns An object parsed from JSON, an object wrapping the raw value, or an empty object.
@@ -242,23 +229,6 @@ export function deserializeInputFromString(
       throw error;
     }
   }
-}
-
-/**
- * Gets dataset records for a dataset identified by ID or name.
- * Delegates to Datasets.getRecordsForDataset() static method.
- * @param options - The options used to locate the dataset.
- * @param options.datasetId - (Optional) The ID of the dataset.
- * @param options.datasetName - (Optional) The name of the dataset.
- * @returns A promise that resolves to the list of dataset records.
- * @deprecated Use `Datasets.getRecordsForDataset()` static method instead.
- * Will be removed in a future release.
- */
-export async function getRecordsForDataset(options: {
-  datasetId?: string;
-  datasetName?: string;
-}): Promise<DatasetRecord[]> {
-  return Datasets.getRecordsForDataset(options);
 }
 
 /**
