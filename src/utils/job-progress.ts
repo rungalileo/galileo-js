@@ -334,19 +334,3 @@ export const getScorerJobsStatus = async (
     client.getJobsForProjectRun(projectId, runId)
   );
 };
-
-/**
- * Gets all scorer jobs for a given project and run.
- * Legacy function for backward compatibility.
- * @param projectId The ID of the project.
- * @param runId The ID of the run.
- * @returns Array of scorer jobs.
- */
-export const getScorerJobs = async (
-  projectId: string,
-  runId: string
-): Promise<JobDbType[]> => {
-  const apiClient = new GalileoApiClient();
-  await apiClient.init({ projectId, runId });
-  return apiClient.getJobsForProjectRun(projectId, runId);
-};

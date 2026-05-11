@@ -28,11 +28,8 @@ import type { RunExperimentParams } from './types/experiment.types';
 import {
   addRowsToDataset,
   createDataset,
-  createDatasetRecord,
   deleteDataset,
   deserializeInputFromString,
-  getRecordsForDataset,
-  getDatasetRecordsFromArray,
   getDatasets,
   getDatasetContent,
   getDataset,
@@ -47,9 +44,9 @@ import {
 } from './utils/datasets';
 import {
   createCustomLlmMetric,
+  createCustomCodeMetric,
   deleteMetric,
   createMetricConfigs,
-  populateLocalMetrics,
   getMetrics
 } from './utils/metrics';
 import {
@@ -57,7 +54,6 @@ import {
   getScorerVersion,
   getScorersByLabels,
   getScorersByIds,
-  createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
@@ -109,8 +105,6 @@ import {
   createExperiment,
   getExperiment,
   runExperiment,
-  updateExperiment,
-  deleteExperiment,
   getExperimentColumns
 } from './utils/experiments';
 import { ExperimentTags } from './entities/experiment-tags';
@@ -172,14 +166,11 @@ export {
   Datasets,
   getDatasets,
   createDataset,
-  createDatasetRecord,
   getDatasetContent,
   getDataset,
   deleteDataset,
   addRowsToDataset,
   deserializeInputFromString,
-  getRecordsForDataset,
-  getDatasetRecordsFromArray,
   getDatasetMetadata,
   extendDataset,
   getDatasetVersionHistory,
@@ -201,8 +192,6 @@ export {
   createExperiment,
   getExperiment,
   runExperiment,
-  updateExperiment,
-  deleteExperiment,
   getExperimentColumns,
   // Experiment entities
   ExperimentTags,
@@ -240,10 +229,10 @@ export {
   galileoContext,
   // Metrics
   createCustomLlmMetric,
+  createCustomCodeMetric,
   getMetrics,
   deleteMetric,
   createMetricConfigs,
-  populateLocalMetrics,
   // Scorers
   Scorers,
   ScorerSettings,
@@ -251,7 +240,6 @@ export {
   getScorerVersion,
   getScorersByLabels,
   getScorersByIds,
-  createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
   deleteScorer,

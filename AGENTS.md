@@ -64,7 +64,7 @@ node examples/logger/workflow.js     # Run an example
 
 - **Span hierarchy:** Trace → Workflow/Agent (nested ok) → Leaf (LLM, Tool, Retriever; no children). Use `addWorkflowSpan()` / `addAgentSpan()` for parents, `conclude()` to pop.
 - **Context:** AsyncLocalStorage in singleton propagates context; logger obtained via `experimentContext.getStore()` / `getLogger()`.
-- **Errors:** API errors via `APIException`, `ExperimentAPIException`, etc. (`src/utils/errors.ts`). Streaming uses retry (exponential backoff) in `src/utils/retry-utils.ts`.
+- **Errors:** API errors via `APIException`, `DatasetAPIException`, `ProjectAPIException` (`src/utils/errors.ts`). Streaming uses retry (exponential backoff) in `src/utils/retry-utils.ts`.
 
 ## Key Patterns
 
@@ -119,7 +119,11 @@ await logger.flush();
 ### Exception Handling
 
 ```typescript
-import { APIException, ExperimentAPIException } from 'galileo'; // or from src/utils/errors
+import {
+  APIException,
+  DatasetAPIException,
+  ProjectAPIException
+} from 'galileo'; // or from src/utils/errors
 
 try {
   await apiClient.someMethod();

@@ -385,6 +385,7 @@ export const listProjectUserCollaborators = async (
  * @param collaborators[].role - (Optional) Role assigned to the user.
  * @param projectId - (Optional) Project ID override when client is not project-scoped.
  * @returns A promise that resolves to the created collaborators.
+ * @internal Use the `Projects` class instead; not part of the public API.
  */
 export const addProjectUserCollaborators = async (
   collaborators: UserCollaboratorCreate[],
@@ -416,6 +417,7 @@ export const updateProjectUserCollaborator = async (
  * @param userId - ID of the collaborator to remove.
  * @param projectId - ID of the project the collaborator belongs to.
  * @returns A promise that resolves when removal succeeds.
+ * @internal Use the `Projects` class instead; not part of the public API.
  */
 export const removeProjectUserCollaborator = async (
   userId: string,

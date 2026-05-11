@@ -4,7 +4,7 @@ import { GalileoConfig } from 'galileo-generated';
 import {
   addRowsToDataset,
   createDataset,
-  createDatasetRecord,
+  Datasets,
   deleteDataset,
   deserializeInputFromString,
   extendDataset,
@@ -15,10 +15,12 @@ import {
   getDatasetVersionHistory,
   getDatasetVersion,
   listDatasetProjects,
-  getRecordsForDataset,
-  getDatasetRecordsFromArray,
   convertDatasetRowToRecord
 } from '../../src';
+import {
+  createDatasetRecord,
+  getDatasetRecordsFromArray
+} from '../../src/utils/datasets';
 import { commonHandlers, TEST_HOST } from '../common';
 import {
   DatasetDBType,
@@ -729,7 +731,7 @@ describe('convertDatasetRowToRecord', () => {
   });
 });
 
-describe('getRecordsForDataset', () => {
+describe('Datasets.getRecordsForDataset', () => {
   it('should get records by dataset id', async () => {
     // Need a dataset row with input field for this to work
     const inputRow: DatasetRow = {
@@ -747,7 +749,7 @@ describe('getRecordsForDataset', () => {
       )
     );
 
-    const records = await getRecordsForDataset({
+    const records = await Datasets.getRecordsForDataset({
       datasetId: EXAMPLE_DATASET.id
     });
     expect(records).toEqual([
