@@ -1,8 +1,11 @@
-# Unreleased
+## Unreleased
 
-### Features
+### BREAKING CHANGES
 
-- **singleton:** `init()`, `getLogger()`, `reset()`, `flush()` now accept `logStreamName` instead of `logstream`. This reverts the parameter renames introduced in PR #373 and restores consistency with `GalileoLoggerConfig.logStreamName`, `enableMetrics({ logStreamName })`, and the env var `GALILEO_LOG_STREAM_NAME`. The new name disambiguates the _name string_ from the `LogStream` entity. **Breaking:** callers must rename the property at call sites — no runtime fallback. OTel handler config (`GalileoOTLPExporterConfig.logstream`) and `GalileoSpanProcessor` are not affected by this change and remain on `logstream` until a separate follow-up.
+- **singleton:** `init()`, `getLogger()`, `reset()`, `flush()` now accept `logStreamName` instead of `logstream`. This reverts the parameter renames introduced in PR #373 and restores consistency with `GalileoLoggerConfig.logStreamName`, `enableMetrics({ logStreamName })`, and the env var `GALILEO_LOG_STREAM_NAME`. The new name disambiguates the _name string_ from the `LogStream` entity. Callers must rename the property at call sites — no runtime fallback. OTel handler config (`GalileoOTLPExporterConfig.logstream`) and `GalileoSpanProcessor` are not affected by this change and remain on `logstream` until a separate follow-up.
+
+### Bug Fixes
+
 - **singleton:** `init()` now forwards `projectId` to `getLogger()` (previously dropped — latent bug).
 
 ## [2.1.1](https://github.com/rungalileo/galileo-js/compare/v2.1.0...v2.1.1) (2026-05-08)
