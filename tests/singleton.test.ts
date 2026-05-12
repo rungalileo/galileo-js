@@ -834,6 +834,17 @@ describe('Singleton utility functions', () => {
           externalId: 'external-id'
         });
       });
+
+      it('should forward projectId to GalileoLogger', async () => {
+        await init({
+          projectId: 'proj-init-123',
+          logStreamName: 'test-stream'
+        });
+
+        expect(GalileoLogger).toHaveBeenCalledWith(
+          expect.objectContaining({ projectId: 'proj-init-123' })
+        );
+      });
     });
 
     describe('Session parameters', () => {
