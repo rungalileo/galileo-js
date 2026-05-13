@@ -241,7 +241,7 @@ export function log<T extends unknown[], R>(
       };
 
       try {
-        // Use getLogger() with current context so the wrapper respects project/experiment/logstream
+        // Use getLogger() with current context so the wrapper respects project/experiment/logStreamName
         // set via experimentContext.run() or init(). If no context exists, use getClient() to
         // retrieve the last logger configured during the ongoing workflow.
         const exp = experimentContext.getStore();
@@ -254,7 +254,7 @@ export function log<T extends unknown[], R>(
           logger = GalileoSingleton.getInstance().getLogger({
             projectName: exp?.projectName,
             experimentId: exp?.experimentId,
-            logstream: exp?.logStreamName
+            logStreamName: exp?.logStreamName
           });
         } else {
           // Fallback to last available logger

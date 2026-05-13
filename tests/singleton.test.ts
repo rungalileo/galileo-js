@@ -69,10 +69,10 @@ describe('Singleton utility functions', () => {
       expect(GalileoLogger).toHaveBeenCalled();
     });
 
-    it('should create logger with project and logstream', () => {
+    it('should create logger with project and logStreamName', () => {
       const logger = getLogger({
         projectName: 'test-project',
-        logstream: 'test-log-stream'
+        logStreamName: 'test-log-stream'
       });
       expect(logger).toBeDefined();
       // Verify the logger was created with correct parameters
@@ -87,11 +87,11 @@ describe('Singleton utility functions', () => {
     it('should return the same logger instance for the same key', () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       const logger2 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       expect(logger1).toBe(logger2);
     });
@@ -99,11 +99,11 @@ describe('Singleton utility functions', () => {
     it('should create different loggers for different keys', () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       const logger2 = getLogger({
         projectName: 'project2',
-        logstream: 'stream2'
+        logStreamName: 'stream2'
       });
       expect(logger1).not.toBe(logger2);
     });
@@ -123,10 +123,10 @@ describe('Singleton utility functions', () => {
       );
     });
 
-    it('should prioritize experimentId over logstream', () => {
+    it('should prioritize experimentId over logStreamName', () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1',
+        logStreamName: 'stream1',
         experimentId: 'experiment1'
       });
       const logger2 = getLogger({
@@ -140,12 +140,12 @@ describe('Singleton utility functions', () => {
     it('should support different modes', () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1',
+        logStreamName: 'stream1',
         mode: 'batch'
       });
       const logger2 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1',
+        logStreamName: 'stream1',
         mode: 'streaming'
       });
       expect(logger1).not.toBe(logger2);
@@ -160,7 +160,7 @@ describe('Singleton utility functions', () => {
       ];
       const logger = getLogger({
         projectName: 'project1',
-        logstream: 'stream1',
+        logStreamName: 'stream1',
         localMetrics: localMetrics
       });
       expect(logger).toBeDefined();
@@ -210,12 +210,12 @@ describe('Singleton utility functions', () => {
     it('should reset a specific logger', async () => {
       const logger = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
 
       await reset({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
 
       expect(logger.terminate).toHaveBeenCalled();
@@ -223,7 +223,7 @@ describe('Singleton utility functions', () => {
       // Getting the same key should create a new logger
       const newLogger = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       expect(newLogger).not.toBe(logger);
     });
@@ -247,11 +247,11 @@ describe('Singleton utility functions', () => {
     it('should reset all loggers', async () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       const logger2 = getLogger({
         projectName: 'project2',
-        logstream: 'stream2'
+        logStreamName: 'stream2'
       });
 
       await resetAll();
@@ -268,12 +268,12 @@ describe('Singleton utility functions', () => {
     it('should flush a specific logger', async () => {
       const logger = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
 
       await flush({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
 
       expect(logger.flush).toHaveBeenCalled();
@@ -283,7 +283,7 @@ describe('Singleton utility functions', () => {
       await expect(
         flush({
           projectName: 'nonexistent',
-          logstream: 'nonexistent'
+          logStreamName: 'nonexistent'
         })
       ).resolves.not.toThrow();
     });
@@ -293,11 +293,11 @@ describe('Singleton utility functions', () => {
     it('should flush all loggers', async () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       const logger2 = getLogger({
         projectName: 'project2',
-        logstream: 'stream2'
+        logStreamName: 'stream2'
       });
 
       await flushAll();
@@ -309,15 +309,15 @@ describe('Singleton utility functions', () => {
 
   describe('getAllLoggers', () => {
     it('should return a copy of all loggers', () => {
-      getLogger({ projectName: 'project1', logstream: 'stream1' });
-      getLogger({ projectName: 'project2', logstream: 'stream2' });
+      getLogger({ projectName: 'project1', logStreamName: 'stream1' });
+      getLogger({ projectName: 'project2', logStreamName: 'stream2' });
 
       const allLoggers = getAllLoggers();
       expect(allLoggers.size).toBe(2);
     });
 
     it('should return a copy that does not affect the original', () => {
-      getLogger({ projectName: 'project1', logstream: 'stream1' });
+      getLogger({ projectName: 'project1', logStreamName: 'stream1' });
 
       const allLoggers = getAllLoggers();
       allLoggers.clear();
@@ -338,13 +338,13 @@ describe('Singleton utility functions', () => {
       });
 
       it('should return default logger even when other loggers exist', () => {
-        getLogger({ projectName: 'project1', logstream: 'stream1' });
+        getLogger({ projectName: 'project1', logStreamName: 'stream1' });
         const defaultLogger = getLogger();
         expect(defaultLogger).toBeDefined();
         // Should be different from the explicitly created logger
         const explicitLogger = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
         expect(defaultLogger).not.toBe(explicitLogger);
       });
@@ -355,11 +355,11 @@ describe('Singleton utility functions', () => {
     it('should handle empty strings', () => {
       const logger1 = getLogger({
         projectName: '',
-        logstream: ''
+        logStreamName: ''
       });
       const logger2 = getLogger({
         projectName: '',
-        logstream: ''
+        logStreamName: ''
       });
       expect(logger1).toBe(logger2);
     });
@@ -369,11 +369,11 @@ describe('Singleton utility functions', () => {
     it('should work with flushAll exported function', async () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       const logger2 = getLogger({
         projectName: 'project2',
-        logstream: 'stream2'
+        logStreamName: 'stream2'
       });
 
       await flushAll();
@@ -385,11 +385,11 @@ describe('Singleton utility functions', () => {
     it('should work with resetAll exported function', async () => {
       const logger1 = getLogger({
         projectName: 'project1',
-        logstream: 'stream1'
+        logStreamName: 'stream1'
       });
       const logger2 = getLogger({
         projectName: 'project2',
-        logstream: 'stream2'
+        logStreamName: 'stream2'
       });
 
       await resetAll();
@@ -553,8 +553,8 @@ describe('Singleton utility functions', () => {
         await experimentContext.run(
           { projectName: 'ctx-project' },
           async () => {
-            const logger1 = getLogger({ logstream: 'stream1' });
-            const logger2 = getLogger({ logstream: 'stream1' });
+            const logger1 = getLogger({ logStreamName: 'stream1' });
+            const logger2 = getLogger({ logStreamName: 'stream1' });
             // Should be the same logger because key includes context projectName
             expect(logger1).toBe(logger2);
           }
@@ -658,7 +658,7 @@ describe('Singleton utility functions', () => {
       it('should return lastAvailableLogger when available', () => {
         const logger1 = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -680,7 +680,7 @@ describe('Singleton utility functions', () => {
       it('should update lastAvailableLogger when creating new logger', () => {
         const logger1 = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -689,7 +689,7 @@ describe('Singleton utility functions', () => {
 
         const logger2 = getLogger({
           projectName: 'project2',
-          logstream: 'stream2'
+          logStreamName: 'stream2'
         });
 
         const client2 = singleton.getClient();
@@ -699,7 +699,7 @@ describe('Singleton utility functions', () => {
       it('should return null lastAvailableLogger after reset()', async () => {
         const logger = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -707,7 +707,7 @@ describe('Singleton utility functions', () => {
 
         await reset({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         // After reset, getClient should create a new logger
@@ -791,7 +791,7 @@ describe('Singleton utility functions', () => {
       it('should create logger without session', async () => {
         await init({
           projectName: 'test-project',
-          logstream: 'test-stream'
+          logStreamName: 'test-stream'
         });
 
         expect(GalileoLogger).toHaveBeenCalled();
@@ -804,7 +804,7 @@ describe('Singleton utility functions', () => {
       it('should create logger with startNewSession: true', async () => {
         await init({
           projectName: 'test-project',
-          logstream: 'test-stream',
+          logStreamName: 'test-stream',
           startNewSession: true
         });
 
@@ -818,7 +818,7 @@ describe('Singleton utility functions', () => {
       it('should call logger.startSession() with correct params', async () => {
         await init({
           projectName: 'test-project',
-          logstream: 'test-stream',
+          logStreamName: 'test-stream',
           startNewSession: true,
           sessionName: 'test-session',
           previousSessionId: 'prev-session-id',
@@ -833,6 +833,17 @@ describe('Singleton utility functions', () => {
           previousSessionId: 'prev-session-id',
           externalId: 'external-id'
         });
+      });
+
+      it('should forward projectId to GalileoLogger', async () => {
+        await init({
+          projectId: 'proj-init-123',
+          logStreamName: 'test-stream'
+        });
+
+        expect(GalileoLogger).toHaveBeenCalledWith(
+          expect.objectContaining({ projectId: 'proj-init-123' })
+        );
       });
     });
 
@@ -1078,10 +1089,10 @@ describe('Singleton utility functions', () => {
 
     describe('Mode defaulting', () => {
       it('should default mode to batch when not provided', () => {
-        const logger1 = getLogger({ projectName: 'p1', logstream: 's1' });
+        const logger1 = getLogger({ projectName: 'p1', logStreamName: 's1' });
         const logger2 = getLogger({
           projectName: 'p1',
-          logstream: 's1',
+          logStreamName: 's1',
           mode: 'batch'
         });
         // Should be the same logger because mode defaults to 'batch'
@@ -1091,12 +1102,12 @@ describe('Singleton utility functions', () => {
       it('should include mode in key generation', () => {
         const logger1 = getLogger({
           projectName: 'p1',
-          logstream: 's1',
+          logStreamName: 's1',
           mode: 'batch'
         });
         const logger2 = getLogger({
           projectName: 'p1',
-          logstream: 's1',
+          logStreamName: 's1',
           mode: 'streaming'
         });
         expect(logger1).not.toBe(logger2);
@@ -1104,10 +1115,10 @@ describe('Singleton utility functions', () => {
     });
 
     describe('Identifier logic', () => {
-      it('should prioritize experimentId over logstream', () => {
+      it('should prioritize experimentId over logStreamName', () => {
         const logger1 = getLogger({
           projectName: 'p1',
-          logstream: 'stream1',
+          logStreamName: 'stream1',
           experimentId: 'exp1'
         });
         const logger2 = getLogger({
@@ -1118,7 +1129,7 @@ describe('Singleton utility functions', () => {
         expect(logger1).toBe(logger2);
       });
 
-      it('should prioritize experimentId from context over logstream from env', async () => {
+      it('should prioritize experimentId from context over logStreamName from env', async () => {
         process.env.GALILEO_LOG_STREAM = 'env-stream';
 
         await experimentContext.run(
@@ -1135,14 +1146,14 @@ describe('Singleton utility functions', () => {
         );
       });
 
-      it('should use logstream when experimentId not provided', () => {
+      it('should use logStreamName when experimentId not provided', () => {
         const logger1 = getLogger({
           projectName: 'p1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
         const logger2 = getLogger({
           projectName: 'p1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
         expect(logger1).toBe(logger2);
       });
@@ -1154,7 +1165,7 @@ describe('Singleton utility functions', () => {
       it('should update lastAvailableLogger when new logger created', () => {
         const logger1 = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1162,7 +1173,7 @@ describe('Singleton utility functions', () => {
 
         const logger2 = getLogger({
           projectName: 'project2',
-          logstream: 'stream2'
+          logStreamName: 'stream2'
         });
 
         expect(singleton.getClient()).toBe(logger2);
@@ -1171,7 +1182,7 @@ describe('Singleton utility functions', () => {
       it('should clear lastAvailableLogger when logger reset', async () => {
         const logger = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1179,7 +1190,7 @@ describe('Singleton utility functions', () => {
 
         await reset({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         // After reset, getClient should create a new logger (not return null)
@@ -1191,7 +1202,7 @@ describe('Singleton utility functions', () => {
       it('should clear lastAvailableLogger when resetAll() called', async () => {
         const logger = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1208,11 +1219,11 @@ describe('Singleton utility functions', () => {
       it('should persist lastAvailableLogger when different logger reset', async () => {
         getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
         const logger2 = getLogger({
           projectName: 'project2',
-          logstream: 'stream2'
+          logStreamName: 'stream2'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1220,7 +1231,7 @@ describe('Singleton utility functions', () => {
 
         await reset({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         // logger2 should still be lastAvailableLogger
@@ -1232,7 +1243,7 @@ describe('Singleton utility functions', () => {
       it('should use tracked logger in getClient()', () => {
         const logger = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1258,7 +1269,7 @@ describe('Singleton utility functions', () => {
       it('should handle undefined params correctly', () => {
         const logger1 = getLogger({
           projectName: undefined,
-          logstream: undefined,
+          logStreamName: undefined,
           experimentId: undefined,
           mode: undefined
         });
@@ -1270,7 +1281,7 @@ describe('Singleton utility functions', () => {
       it('should handle mixed undefined and defined params', () => {
         const logger1 = getLogger({
           projectName: 'project1',
-          logstream: undefined
+          logStreamName: undefined
         });
         const logger2 = getLogger({
           projectName: 'project1'
@@ -1284,11 +1295,11 @@ describe('Singleton utility functions', () => {
       it('should handle empty strings vs undefined differently in key generation', () => {
         const logger1 = getLogger({
           projectName: '',
-          logstream: ''
+          logStreamName: ''
         });
         const logger2 = getLogger({
           projectName: undefined,
-          logstream: undefined
+          logStreamName: undefined
         });
         // Empty strings should create different key than undefined (which uses defaults)
         expect(logger1).not.toBe(logger2);
@@ -1299,15 +1310,15 @@ describe('Singleton utility functions', () => {
       it('should track lastAvailableLogger correctly with multiple loggers', () => {
         getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
         getLogger({
           projectName: 'project2',
-          logstream: 'stream2'
+          logStreamName: 'stream2'
         });
         const logger3 = getLogger({
           projectName: 'project3',
-          logstream: 'stream3'
+          logStreamName: 'stream3'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1317,11 +1328,11 @@ describe('Singleton utility functions', () => {
       it('should update lastAvailableLogger based on reset order', async () => {
         const logger1 = getLogger({
           projectName: 'project1',
-          logstream: 'stream1'
+          logStreamName: 'stream1'
         });
         const logger2 = getLogger({
           projectName: 'project2',
-          logstream: 'stream2'
+          logStreamName: 'stream2'
         });
 
         const singleton = GalileoSingleton.getInstance();
@@ -1329,7 +1340,7 @@ describe('Singleton utility functions', () => {
 
         await reset({
           projectName: 'project2',
-          logstream: 'stream2'
+          logStreamName: 'stream2'
         });
 
         // When logger2 (lastAvailableLogger) is reset, lastAvailableLogger becomes null
@@ -1353,7 +1364,7 @@ describe('Singleton utility functions', () => {
     it('should accept projectId in getLogger options', () => {
       const logger = getLogger({
         projectId: 'proj-123',
-        logstream: 'test-stream'
+        logStreamName: 'test-stream'
       });
 
       expect(logger).toBeDefined();
@@ -1392,7 +1403,7 @@ describe('Singleton utility functions', () => {
     it('should use projectName when projectId not provided', () => {
       const logger = getLogger({
         projectName: 'my-project',
-        logstream: 'stream'
+        logStreamName: 'stream'
       });
 
       expect(logger).toBeDefined();
@@ -1408,7 +1419,7 @@ describe('Singleton utility functions', () => {
       const logger = getLogger({
         projectId: 'proj-789',
         projectName: 'my-project',
-        logstream: 'stream'
+        logStreamName: 'stream'
       });
 
       expect(logger).toBeDefined();
@@ -1452,7 +1463,7 @@ describe('Singleton utility functions', () => {
       delete process.env.GALILEO_LOG_STREAM_NAME;
     });
 
-    it('should use GALILEO_LOG_STREAM when no logstream provided', () => {
+    it('should use GALILEO_LOG_STREAM when no logStreamName provided', () => {
       process.env.GALILEO_LOG_STREAM = 'env-stream';
 
       const logger = getLogger();
@@ -1465,10 +1476,10 @@ describe('Singleton utility functions', () => {
       );
     });
 
-    it('should prefer options.logstream over GALILEO_LOG_STREAM', () => {
+    it('should prefer options.logStreamName over GALILEO_LOG_STREAM', () => {
       process.env.GALILEO_LOG_STREAM = 'env-stream';
 
-      const logger = getLogger({ logstream: 'explicit-stream' });
+      const logger = getLogger({ logStreamName: 'explicit-stream' });
 
       expect(logger).toBeDefined();
       expect(GalileoLogger).toHaveBeenCalledWith(
@@ -1497,10 +1508,10 @@ describe('Singleton utility functions', () => {
       );
     });
 
-    it('should combine GALILEO_PROJECT with explicit logstream', () => {
+    it('should combine GALILEO_PROJECT with explicit logStreamName', () => {
       process.env.GALILEO_PROJECT = 'env-project';
 
-      const logger = getLogger({ logstream: 'explicit-stream' });
+      const logger = getLogger({ logStreamName: 'explicit-stream' });
 
       expect(logger).toBeDefined();
       expect(GalileoLogger).toHaveBeenCalledWith(
@@ -1545,7 +1556,7 @@ describe('Singleton utility functions', () => {
     test('test direct terminate() removes logger from singleton map', async () => {
       const logger = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-a'
+        logStreamName: 'stream-a'
       });
       expect(getAllLoggers().size).toBe(1);
 
@@ -1557,7 +1568,7 @@ describe('Singleton utility functions', () => {
     test('test direct terminate() nullifies lastAvailableLogger when it matched', async () => {
       const logger = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-b'
+        logStreamName: 'stream-b'
       });
 
       await logger.terminate();
@@ -1571,14 +1582,14 @@ describe('Singleton utility functions', () => {
     test('test subsequent getLogger() with same key returns a fresh instance after terminate', async () => {
       const logger = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-c'
+        logStreamName: 'stream-c'
       });
 
       await logger.terminate();
 
       const fresh = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-c'
+        logStreamName: 'stream-c'
       });
       expect(fresh).not.toBe(logger);
     });
@@ -1586,11 +1597,11 @@ describe('Singleton utility functions', () => {
     test('test singleton reset() still works and does not double-remove', async () => {
       const logger = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-d'
+        logStreamName: 'stream-d'
       });
 
       await expect(
-        reset({ projectName: 'direct-term', logstream: 'stream-d' })
+        reset({ projectName: 'direct-term', logStreamName: 'stream-d' })
       ).resolves.not.toThrow();
       expect(logger.terminate).toHaveBeenCalledTimes(1);
       expect(getAllLoggers().size).toBe(0);
@@ -1599,11 +1610,11 @@ describe('Singleton utility functions', () => {
     test('test singleton resetAll() still works end-to-end', async () => {
       const l1 = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-e'
+        logStreamName: 'stream-e'
       });
       const l2 = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-f'
+        logStreamName: 'stream-f'
       });
 
       await resetAll();
@@ -1616,11 +1627,11 @@ describe('Singleton utility functions', () => {
     test('test lastAvailableLogger unaffected when a non-last logger is terminated', async () => {
       const first = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-g'
+        logStreamName: 'stream-g'
       });
       const last = getLogger({
         projectName: 'direct-term',
-        logstream: 'stream-h'
+        logStreamName: 'stream-h'
       });
 
       await first.terminate();
@@ -1653,7 +1664,7 @@ describe('Singleton utility functions', () => {
     test('test reset cleans up logger when terminate completes without firing onTerminate (defensive)', async () => {
       const logger = getLogger({
         projectName: 'no-hook',
-        logstream: 'no-hook-stream'
+        logStreamName: 'no-hook-stream'
       });
 
       // Simulate any path where terminate() completes without invoking the
@@ -1670,7 +1681,7 @@ describe('Singleton utility functions', () => {
 
       await reset({
         projectName: 'no-hook',
-        logstream: 'no-hook-stream'
+        logStreamName: 'no-hook-stream'
       });
 
       expect(logger.terminate).toHaveBeenCalled();
@@ -1681,18 +1692,18 @@ describe('Singleton utility functions', () => {
     test('test reset backstop is idempotent when onTerminate already cleaned up', async () => {
       const logger1 = getLogger({
         projectName: 'idempotent',
-        logstream: 'stream-1'
+        logStreamName: 'stream-1'
       });
       const logger2 = getLogger({
         projectName: 'idempotent',
-        logstream: 'stream-2'
+        logStreamName: 'stream-2'
       });
       expect(getAllLoggers().size).toBe(2);
 
       // logger1 has onTerminate installed (created via getLogger), so the
       // hook removes it; the backstop sees `get(key) === logger` is false
       // and skips. logger2 must remain untouched.
-      await reset({ projectName: 'idempotent', logstream: 'stream-1' });
+      await reset({ projectName: 'idempotent', logStreamName: 'stream-1' });
 
       expect(logger1.terminate).toHaveBeenCalledTimes(1);
       expect(getAllLoggers().size).toBe(1);
