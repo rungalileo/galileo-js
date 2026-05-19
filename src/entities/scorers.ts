@@ -158,6 +158,7 @@ export class Scorers {
     scoreableNodeTypes?: StepType[];
     outputType?: OutputType;
     inputType?: InputType;
+    groundTruth?: boolean;
   }): Promise<ScorerResponse> {
     const client = await this.ensureClient();
     return await client.createScorer(options);

@@ -67,7 +67,8 @@ export class Metrics {
     numJudges = 3,
     description = '',
     tags = [],
-    outputType = OutputType.BOOLEAN
+    outputType = OutputType.BOOLEAN,
+    groundTruth
   }: CreateCustomLlmMetricParams): Promise<BaseScorerVersionResponse> {
     const scoreableNodeTypes = [nodeLevel];
 
@@ -84,7 +85,8 @@ export class Metrics {
       undefined,
       scoreableNodeTypes,
       outputType,
-      undefined
+      undefined,
+      groundTruth
     );
 
     return await createLlmScorerVersion({

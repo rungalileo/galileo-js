@@ -198,4 +198,5 @@ export type createScorerOptions = {
   scoreableNodeTypes?: StepType[];
   outputType?: OutputType;
   inputType?: InputType;
+  groundTruth?: boolean;
 };

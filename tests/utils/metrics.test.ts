@@ -237,7 +237,8 @@ describe('metrics utils', () => {
         defaultVersionId: undefined,
         scoreableNodeTypes: ['trace'],
         outputType: 'categorical',
-        inputType: undefined
+        inputType: undefined,
+        groundTruth: undefined
       });
       expect(mockCreateLlmScorerVersion).toHaveBeenCalledWith(
         EXAMPLE_CUSTOM_SCORER.id,
@@ -266,8 +267,21 @@ describe('metrics utils', () => {
         defaultVersionId: undefined,
         scoreableNodeTypes: ['llm'],
         outputType: 'boolean',
-        inputType: undefined
+        inputType: undefined,
+        groundTruth: undefined
       });
+    });
+
+    it('should forward groundTruth to createScorer when enabled', async () => {
+      await createCustomLlmMetric({
+        name: 'gt_metric',
+        userPrompt: 'Compare against the reference_output.',
+        groundTruth: true
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({ groundTruth: true })
+      );
     });
 
     it('should call createLlmScorerVersion with the correct parameters for object-based API', async () => {

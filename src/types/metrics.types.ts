@@ -101,6 +101,7 @@ export interface CreateCustomLlmMetricParams {
   description?: string;
   tags?: string[];
   outputType?: OutputType;
+  groundTruth?: boolean;
 }
 
 export interface CreateCustomCodeMetricParams {
