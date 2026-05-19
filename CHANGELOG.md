@@ -1,10 +1,9 @@
 ## [2.1.2](https://github.com/rungalileo/galileo-js/compare/v2.1.1...v2.1.2) (2026-05-14)
 
-
 ### Bug Fixes
 
-* **logStreamName:** Updated fields using previous format to logStreamName. ([#600](https://github.com/rungalileo/galileo-js/issues/600)) ([0bc6147](https://github.com/rungalileo/galileo-js/commit/0bc6147987f77be1d1b401f6a556b974568acde1))
-* **utils:** Small refactoring to remove functions not exposed in equivalent Python SDK implementation. ([#590](https://github.com/rungalileo/galileo-js/issues/590)) ([9d7212a](https://github.com/rungalileo/galileo-js/commit/9d7212adb99f5993aa8c4cd61c8a281a4b67e492))
+- **logStreamName:** Updated fields using previous format to logStreamName. ([#600](https://github.com/rungalileo/galileo-js/issues/600)) ([0bc6147](https://github.com/rungalileo/galileo-js/commit/0bc6147987f77be1d1b401f6a556b974568acde1))
+- **utils:** Small refactoring to remove functions not exposed in equivalent Python SDK implementation. ([#590](https://github.com/rungalileo/galileo-js/issues/590)) ([9d7212a](https://github.com/rungalileo/galileo-js/commit/9d7212adb99f5993aa8c4cd61c8a281a4b67e492))
 
 ## Unreleased
 
