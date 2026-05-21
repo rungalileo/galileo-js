@@ -228,8 +228,9 @@ export interface paths {
      *     The `index` and `column_name` fields are treated as keys tied to a specific version of the dataset.
      *     As such, these values are considered immutable identifiers for the dataset's structure.
      *
-     *     For example, if an edit operation changes the name of a column, subsequent edit operations in
-     *     the same request should reference the column using its original name.
+     *     Edits are applied sequentially in list order, and each edit sees the table state left by the
+     *     previous one. For example, after a `rename_column` edit renames `col_a` to `col_b`, any
+     *     subsequent `update_row` in the same request must reference the column as `col_b`, not `col_a`.
      *
      *     The `If-Match` header is used to ensure that updates are only applied if the client's version of the dataset
      *     matches the server's version. This prevents conflicts from simultaneous updates. The `ETag` header in the response
@@ -2411,6 +2412,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/integrations/custom/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a named custom integration */
+    get: operations['get_named_custom_integration_integrations_custom__name__get'];
+    /** Create or update a named custom integration */
+    put: operations['create_or_update_named_custom_integration_integrations_custom__name__put'];
+    post?: never;
+    /** Delete a named custom integration */
+    delete: operations['delete_named_custom_integration_integrations_custom__name__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/integrations/databricks/unity-catalog/sql': {
     parameters: {
       query?: never;
@@ -2808,6 +2828,26 @@ export interface paths {
      * @description Validate a code scorer against dataset rows.
      */
     post: operations['validate_code_scorer_dataset_scorers_code_validate_dataset_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/metrics-testing/{run_id}/health-score': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Compute Health Score Endpoint
+     * @description Compute the health score metric for a metrics testing run.
+     */
+    post: operations['compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3300,6 +3340,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/integrations/costs/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Integration Costs */
+    get: operations['get_integration_costs_integrations_costs_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/integrations/select': {
     parameters: {
       query?: never;
@@ -3336,6 +3393,86 @@ export interface paths {
      *     Creates an opt-out record so no shared integration of this type is used.
      */
     post: operations['disable_integration_integrations_disable_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/definition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get custom integration definition
+     * @description Return the full JSON definition of the custom integration, including decrypted secrets.
+     *
+     *     Only users with edit permission on the integration (its creator and admins)
+     *     are authorized to call this endpoint.
+     */
+    get: operations['get_custom_integration_definition_integrations_custom_definition_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/{name}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Check status of a named custom integration */
+    get: operations['get_named_custom_integration_status_integrations_custom__name__status_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/{name}/definition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get definition of a named custom integration
+     * @description Return the full JSON definition of a named custom integration, including decrypted secrets.
+     */
+    get: operations['get_named_custom_integration_definition_integrations_custom__name__definition_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/llm_integrations/recommended_models': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Recommended Models
+     * @description Get recommended models for all purposes, grouped by integration.
+     */
+    get: operations['get_recommended_models_llm_integrations_recommended_models_get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -4238,10 +4375,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default anthropic
+       * @constant
+       */
+      name?: 'anthropic';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'anthropic';
+      provider: 'anthropic';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4303,7 +4446,7 @@ export interface components {
     /** AvailableIntegrations */
     AvailableIntegrations: {
       /** Integrations */
-      integrations: components['schemas']['IntegrationName'][];
+      integrations: components['schemas']['IntegrationProvider'][];
     };
     /** AwsBedrockIntegration */
     AwsBedrockIntegration: {
@@ -4328,10 +4471,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default aws_bedrock
+       * @constant
+       */
+      name?: 'aws_bedrock';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'aws_bedrock';
+      provider: 'aws_bedrock';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4360,10 +4509,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default aws_sagemaker
+       * @constant
+       */
+      name?: 'aws_sagemaker';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'aws_sagemaker';
+      provider: 'aws_sagemaker';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4459,10 +4614,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default azure
+       * @constant
+       */
+      name?: 'azure';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'azure';
+      provider: 'azure';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4999,6 +5160,8 @@ export interface components {
       copy_from_dataset_version_index?: number | null;
       /** Project Id */
       project_id?: string | null;
+      /** Column Mapping */
+      column_mapping?: string | null;
     };
     /** Body_login_email_login_post */
     Body_login_email_login_post: {
@@ -5513,12 +5676,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -5529,20 +5686,25 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
     };
     /** ColumnMapping */
     ColumnMapping: {
       /** Input */
-      input: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      input?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Output */
-      output: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      output?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Generated Output */
-      generated_output:
+      generated_output?:
         | components['schemas']['ColumnMappingConfig']
         | string[]
         | null;
       /** Metadata */
-      metadata: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      metadata?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Mgt */
       mgt?: {
         [key: string]: components['schemas']['ColumnMappingConfig'];
@@ -5663,6 +5825,28 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ComputeHealthScoreRequest */
+    ComputeHealthScoreRequest: {
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
+      /** @description The scorer's output type, used to dispatch the correct metric. */
+      output_type: components['schemas']['OutputTypeEnum'];
+      /**
+       * Scoreable Node Types
+       * @description The scorer's scoreable_node_types. Determines which record type carries the score.
+       */
+      scoreable_node_types?: components['schemas']['StepType'][];
+      /**
+       * Mgt Overlay
+       * @description Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+       */
+      mgt_overlay?: {
+        [key: string]: string | null;
+      };
+    };
     /**
      * ContentModality
      * @description Classification of content modality
@@ -5738,6 +5922,12 @@ export interface components {
      * @enum {string}
      */
     ControlCheckStage: 'pre' | 'post';
+    /**
+     * ControlResourceAction
+     * @description Actions on Agent Control's org-scoped ``control`` resource.
+     * @enum {string}
+     */
+    ControlResourceAction: 'create' | 'read' | 'update' | 'delete';
     /** ControlResult */
     ControlResult: {
       /** @description Decision/action produced by the control. */
@@ -5931,6 +6121,11 @@ export interface components {
        */
       num_judges?: number | null;
     };
+    /**
+     * CostInterval
+     * @enum {string}
+     */
+    CostInterval: 'hourly' | 'daily' | 'weekly' | 'monthly';
     /**
      * CreateCodeMetricGenerationRequest
      * @description Request to generate scorer code from a user message.
@@ -6158,6 +6353,11 @@ export interface components {
        * @default false
        */
       multijudge_average_boolean_metrics?: boolean;
+      /**
+       * Store Metric Ids
+       * @default false
+       */
+      store_metric_ids?: boolean;
     };
     /** CreateJobResponse */
     CreateJobResponse: {
@@ -6338,6 +6538,11 @@ export interface components {
        * @default false
        */
       multijudge_average_boolean_metrics?: boolean;
+      /**
+       * Store Metric Ids
+       * @default false
+       */
+      store_metric_ids?: boolean;
       /** Message */
       message: string;
       /** Link */
@@ -6404,6 +6609,8 @@ export interface components {
     CreateScorerRequest: {
       /** Name */
       name: string;
+      /** Id */
+      id?: string | null;
       /**
        * Description
        * @default
@@ -6580,10 +6787,15 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default custom
+       */
+      name?: string;
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'custom';
+      provider: 'custom';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -6672,6 +6884,47 @@ export interface components {
       } | null;
       /** Token */
       token?: string | null;
+    };
+    /**
+     * CustomIntegrationDefinition
+     * @description Response schema for the full JSON definition of a custom integration.
+     *
+     *     Returns the exact same structure used to create the integration,
+     *     including decrypted sensitive fields (api_key_value, token, headers).
+     *     Only accessible to users with edit permission (creator + admins).
+     */
+    CustomIntegrationDefinition: {
+      authentication_type: components['schemas']['CustomAuthenticationType'];
+      /** Endpoint */
+      endpoint: string;
+      /** Default Model */
+      default_model?: string | null;
+      /** Model Properties */
+      model_properties?:
+        | components['schemas']['promptgalileo__schemas__config__custom__ModelProperties'][]
+        | null;
+      /** Token */
+      token?: string | null;
+      /** Api Key Header */
+      api_key_header?: string | null;
+      /** Api Key Value */
+      api_key_value?: string | null;
+      /** Authentication Scope */
+      authentication_scope?: string | null;
+      /** Oauth2 Token Url */
+      oauth2_token_url?: string | null;
+      /** Headers */
+      headers?: {
+        [key: string]: string;
+      } | null;
+      custom_llm_config?: components['schemas']['CustomLLMConfig'] | null;
+      /** Custom Header Mapping */
+      custom_header_mapping?: {
+        [key: string]: string;
+      } | null;
+      multi_modal_config?:
+        | components['schemas']['MultiModalModelIntegrationConfig']
+        | null;
     };
     /**
      * CustomLLMConfig
@@ -8682,10 +8935,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default databricks
+       * @constant
+       */
+      name?: 'databricks';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'databricks';
+      provider: 'databricks';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -9117,6 +9376,34 @@ export interface components {
        */
       sort_type?: 'custom';
     };
+    /**
+     * DatasetRemoveColumn
+     * @description Drop a column from the dataset schema.
+     */
+    DatasetRemoveColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'remove_column';
+      /** Column Name */
+      column_name: string;
+    };
+    /**
+     * DatasetRenameColumn
+     * @description Rename a column in the dataset schema, preserving values.
+     */
+    DatasetRenameColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'rename_column';
+      /** Column Name */
+      column_name: string;
+      /** New Column Name */
+      new_column_name: string;
+    };
     /** DatasetRow */
     DatasetRow: {
       /**
@@ -9384,6 +9671,10 @@ export interface components {
        * @default false
        */
       trigger?: boolean;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunCreatedAtFilter */
     ExperimentCreatedAtFilter: {
@@ -9456,6 +9747,39 @@ export interface components {
       dataset_id: string;
       /** Version Index */
       version_index: number;
+    };
+    /** ExperimentGroupIDFilter */
+    ExperimentGroupIDFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_id';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** ExperimentGroupNameFilter */
+    ExperimentGroupNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_name';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** RunIDFilter */
     ExperimentIDFilter: {
@@ -9598,6 +9922,8 @@ export interface components {
       num_spans?: number | null;
       /** Num Traces */
       num_traces?: number | null;
+      /** Num Sessions */
+      num_sessions?: number | null;
       task_type: components['schemas']['TaskType'];
       dataset?: components['schemas']['ExperimentDataset'] | null;
       /** Aggregate Metrics */
@@ -9606,7 +9932,7 @@ export interface components {
       };
       /**
        * Structured Aggregate Metrics
-       * @description Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+       * @description Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
        */
       structured_aggregate_metrics?: {
         [key: string]: components['schemas']['MetricAggregates'];
@@ -9646,6 +9972,12 @@ export interface components {
         [key: string]: components['schemas']['RunTagDB'][];
       };
       status?: components['schemas']['ExperimentStatus'];
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
+      /** Experiment Group Is System */
+      experiment_group_is_system?: boolean | null;
     };
     /** ExperimentSearchRequest */
     ExperimentSearchRequest: {
@@ -9666,6 +9998,8 @@ export interface components {
         | components['schemas']['ExperimentCreatedByFilter']
         | components['schemas']['ExperimentCreatedAtFilter']
         | components['schemas']['ExperimentUpdatedAtFilter']
+        | components['schemas']['ExperimentGroupIDFilter']
+        | components['schemas']['ExperimentGroupNameFilter']
       )[];
       /**
        * Sort
@@ -9701,6 +10035,10 @@ export interface components {
        * @default 16
        */
       task_type?: 16 | 17;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunUpdatedAtFilter */
     ExperimentUpdatedAtFilter: {
@@ -13325,6 +13663,18 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** FeatureIntegrationCosts */
+    FeatureIntegrationCosts: {
+      /** Feature Name */
+      feature_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Projects */
+      projects?: components['schemas']['ProjectIntegrationCosts'][];
+    };
     /** FeedbackAggregate */
     FeedbackAggregate: {
       /** Aggregate */
@@ -13881,6 +14231,47 @@ export interface components {
       /** Hallucination */
       hallucination: number;
     };
+    /** HealthScoreResult */
+    HealthScoreResult: {
+      health_score_type: components['schemas']['HealthScoreType'] | null;
+      /**
+       * Value
+       * @description Primary health score metric value, or None if no valid rows.
+       */
+      value: number | null;
+      /**
+       * Skipped Rows
+       * @description Rows excluded because MGT or score could not be parsed.
+       */
+      skipped_rows: number;
+      /**
+       * Secondary
+       * @description Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+       */
+      secondary: {
+        [key: string]: number | null;
+      };
+      /**
+       * Total Scored Rows
+       * @description Rows with a successful scorer result.
+       */
+      total_scored_rows: number;
+      /**
+       * Total Mgt Rows
+       * @description Rows with a non-null MGT value after overlay.
+       */
+      total_mgt_rows: number;
+      /**
+       * Joined Rows
+       * @description Rows with both a score and a MGT value (used for computation).
+       */
+      joined_rows: number;
+    };
+    /**
+     * HealthScoreType
+     * @enum {string}
+     */
+    HealthScoreType: 'macro_f1' | 'micro_f1' | 'mse' | 'mae';
     /** HealthcheckResponse */
     HealthcheckResponse: {
       /** Api Version */
@@ -14434,7 +14825,22 @@ export interface components {
      * IntegrationAction
      * @enum {string}
      */
-    IntegrationAction: 'update' | 'delete' | 'share';
+    IntegrationAction: 'update' | 'delete' | 'share' | 'read_secrets';
+    /** IntegrationCostsDataPoint */
+    IntegrationCostsDataPoint: {
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string;
+      /** Cost */
+      cost: number;
+    };
+    /** IntegrationCostsResponse */
+    IntegrationCostsResponse: {
+      /** Features */
+      features?: components['schemas']['FeatureIntegrationCosts'][];
+    };
     /** IntegrationDB */
     IntegrationDB: {
       /**
@@ -14447,7 +14853,9 @@ export interface components {
        * @default []
        */
       permissions?: components['schemas']['Permission'][];
-      name: components['schemas']['IntegrationName'];
+      /** Name */
+      name: string;
+      provider: components['schemas']['IntegrationProvider'];
       /**
        * Created At
        * Format: date-time
@@ -14476,12 +14884,19 @@ export interface components {
     };
     /** IntegrationDisableRequest */
     IntegrationDisableRequest: {
-      integration_name: components['schemas']['IntegrationName'];
+      /** Integration Name */
+      integration_name: string;
     };
     /** IntegrationModelsResponse */
     IntegrationModelsResponse: {
       /** Integration Name */
       integration_name: string;
+      /**
+       * Integration Id
+       * Format: uuid4
+       */
+      integration_id: string;
+      provider: components['schemas']['IntegrationProvider'];
       /** Models */
       models: string[];
       /** Scorer Models */
@@ -14504,10 +14919,10 @@ export interface components {
       model_properties?: components['schemas']['api__schemas__integration__llm_integration__ModelProperties'][];
     };
     /**
-     * IntegrationName
+     * IntegrationProvider
      * @enum {string}
      */
-    IntegrationName:
+    IntegrationProvider:
       | 'anthropic'
       | 'aws_bedrock'
       | 'aws_sagemaker'
@@ -14522,7 +14937,8 @@ export interface components {
       | 'writer';
     /** IntegrationSelectRequest */
     IntegrationSelectRequest: {
-      integration_name: components['schemas']['IntegrationName'];
+      /** Integration Name */
+      integration_name: string;
       /**
        * Integration Id
        * Format: uuid4
@@ -14713,8 +15129,12 @@ export interface components {
       steps_total?: number | null;
     };
     JsonPrimitive: string | number | boolean | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    JsonValue: any; // circular self-reference in generated spec — simplified to any
+    JsonValue:
+      | components['schemas']['JsonPrimitive']
+      | components['schemas']['JsonValue'][]
+      | {
+          [key: string]: components['schemas']['JsonValue'];
+        };
     /**
      * LLMExportFormat
      * @enum {string}
@@ -15073,6 +15493,7 @@ export interface components {
       sort?:
         | (
             | components['schemas']['ScorerNameSort']
+            | components['schemas']['ScorerUpdatedAtSort']
             | components['schemas']['ScorerEnabledInRunSort']
             | components['schemas']['ScorerEnabledInPlaygroundSort']
           )
@@ -15430,12 +15851,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -15446,6 +15861,11 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
       /** @description For metric columns only: Scorer config that produced the metric. */
       scorer_config?: components['schemas']['ScorerConfig'] | null;
       /**
@@ -15464,11 +15884,6 @@ export interface components {
        * @description Type of label color for the column, if this is a multilabel metric column.
        */
       label_color?: ('positive' | 'negative') | null;
-      /**
-       * Metric Key Alias
-       * @description Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-       */
-      metric_key_alias?: string | null;
     };
     /** LogRecordsCustomMetricsQueryRequest */
     LogRecordsCustomMetricsQueryRequest: {
@@ -15865,6 +16280,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       select_columns: components['schemas']['SelectColumns'];
     };
     /** LogRecordsPartialQueryResponse */
@@ -16011,6 +16432,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
     };
     /** LogRecordsQueryResponse */
     LogRecordsQueryResponse: {
@@ -16782,6 +17209,11 @@ export interface components {
        */
       traces_count: number;
       /**
+       * Spans Count
+       * @description total number of spans ingested
+       */
+      spans_count: number;
+      /**
        * Trace Ids
        * @description List of trace IDs that were ingested. Only included if include_trace_ids=True in request.
        */
@@ -17434,6 +17866,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Multijudge Average */
+      multijudge_average?: number | null;
       /** Input Tokens */
       input_tokens?: number | null;
       /** Output Tokens */
@@ -17441,6 +17875,13 @@ export interface components {
       /** Total Tokens */
       total_tokens?: number | null;
       critique?: components['schemas']['MetricCritiqueColumnar'] | null;
+      /**
+       * Metadata
+       * @description Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+       */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
       /**
        * Roll Up Metrics
        * @description Roll up metrics e.g. sum, average, min, max for numeric, and category_count for categorical metrics.
@@ -17538,6 +17979,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Multijudge Average */
+      multijudge_average?: number | null;
       /** Input Tokens */
       input_tokens?: number | null;
       /** Output Tokens */
@@ -17545,6 +17988,13 @@ export interface components {
       /** Total Tokens */
       total_tokens?: number | null;
       critique?: components['schemas']['MetricCritiqueColumnar'] | null;
+      /**
+       * Metadata
+       * @description Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+       */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
       /** Display Value */
       display_value?: string | null;
       /** Rationale */
@@ -17643,10 +18093,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default mistral
+       * @constant
+       */
+      name?: 'mistral';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'mistral';
+      provider: 'mistral';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17885,10 +18341,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default nvidia
+       * @constant
+       */
+      name?: 'nvidia';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'nvidia';
+      provider: 'nvidia';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17916,10 +18378,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default openai
+       * @constant
+       */
+      name?: 'openai';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'openai';
+      provider: 'openai';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -20085,7 +20553,8 @@ export interface components {
         | components['schemas']['DatasetAction']
         | components['schemas']['IntegrationAction']
         | components['schemas']['OrganizationAction']
-        | components['schemas']['AnnotationQueueAction'];
+        | components['schemas']['AnnotationQueueAction']
+        | components['schemas']['ControlResourceAction'];
       /** Allowed */
       allowed: boolean;
       /** Message */
@@ -20122,7 +20591,9 @@ export interface components {
       | 'edit_run_tags'
       | 'dismiss_alert'
       | 'edit_slice'
-      | 'edit_edit';
+      | 'edit_edit'
+      | 'update_control_bindings'
+      | 'use_control_runtime';
     /** ProjectBookmarkFilter */
     ProjectBookmarkFilter: {
       /**
@@ -20375,6 +20846,23 @@ export interface components {
       operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
+    };
+    /** ProjectIntegrationCosts */
+    ProjectIntegrationCosts: {
+      /**
+       * Project Id
+       * Format: uuid4
+       */
+      project_id: string;
+      /** Project Name */
+      project_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Data Points */
+      data_points?: components['schemas']['IntegrationCostsDataPoint'][];
     };
     /**
      * ProjectItem
@@ -21202,6 +21690,21 @@ export interface components {
       | 'custom_metric_autogen'
       | 'autotune'
       | 'signals';
+    /** RecommendedModelsResponse */
+    RecommendedModelsResponse: {
+      /** Supported */
+      supported: {
+        [key: string]: {
+          [key: string]: string[];
+        };
+      };
+      /** Available */
+      available: {
+        [key: string]: {
+          [key: string]: string[];
+        };
+      };
+    };
     /**
      * RecomputeLogRecordsMetricsRequest
      * @description Request to recompute metrics for a genai project run (log stream or experiment).
@@ -21261,6 +21764,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       /**
        * Scorer Ids
        * @description List of scorer IDs for which metrics should be recomputed.
@@ -22298,6 +22807,9 @@ export interface components {
             | components['schemas']['MetricColorPickerMultiLabel']
           )
         | null;
+      color_threshold_config?:
+        | components['schemas']['MetricColorPickerNumeric']
+        | null;
       /** Metric Name */
       metric_name?: string | null;
     };
@@ -22383,6 +22895,25 @@ export interface components {
        * Format: date-time
        */
       value: string;
+    };
+    /** ScorerUpdatedAtSort */
+    ScorerUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
     };
     /**
      * ScorersConfiguration
@@ -22492,6 +23023,11 @@ export interface components {
        * @default false
        */
       chunk_relevance_luna?: boolean;
+      /**
+       * Completeness Luna
+       * @default false
+       */
+      completeness_luna?: boolean;
       /**
        * Completeness Nli
        * @default false
@@ -23912,6 +24448,8 @@ export interface components {
         | components['schemas']['DatasetDeleteRow']
         | components['schemas']['DatasetFilterRows']
         | components['schemas']['DatasetCopyRecordData']
+        | components['schemas']['DatasetRemoveColumn']
+        | components['schemas']['DatasetRenameColumn']
       )[];
     };
     /** UpdateDatasetRequest */
@@ -24265,6 +24803,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       /** Query */
       query: string;
       /** Response */
@@ -24327,10 +24871,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default vegas_gateway
+       * @constant
+       */
+      name?: 'vegas_gateway';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'vegas_gateway';
+      provider: 'vegas_gateway';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24384,10 +24934,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default vertex_ai
+       * @constant
+       */
+      name?: 'vertex_ai';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'vertex_ai';
+      provider: 'vertex_ai';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24614,10 +25170,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default writer
+       * @constant
+       */
+      name?: 'writer';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'writer';
+      provider: 'writer';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24888,6 +25450,7 @@ export interface components {
       | '_context_relevance'
       | '_context_relevance_luna'
       | '_chunk_relevance_luna'
+      | '_completeness_luna'
       | '_chunk_attribution_utilization_gpt'
       | '_factuality'
       | '_groundedness'
@@ -29634,7 +30197,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -29677,7 +30240,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -29708,7 +30271,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -30193,6 +30756,106 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_integrations_custom__name__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_or_update_named_custom_integration_integrations_custom__name__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomIntegrationCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_named_custom_integration_integrations_custom__name__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
         };
       };
       /** @description Validation Error */
@@ -30872,6 +31535,42 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ValidateCodeScorerDatasetResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ComputeHealthScoreRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HealthScoreResult'];
         };
       };
       /** @description Validation Error */
@@ -31890,6 +32589,42 @@ export interface operations {
       };
     };
   };
+  get_integration_costs_integrations_costs_summary_get: {
+    parameters: {
+      query: {
+        /** @description Start of time range (UTC) */
+        start_time: string;
+        /** @description End of time range (UTC) */
+        end_time: string;
+        /** @description Aggregation interval */
+        interval: components['schemas']['CostInterval'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationCostsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   select_integration_integrations_select_post: {
     parameters: {
       query?: never;
@@ -31952,6 +32687,112 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_custom_integration_definition_integrations_custom_definition_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomIntegrationDefinition'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_status_integrations_custom__name__status_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_definition_integrations_custom__name__definition_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomIntegrationDefinition'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_recommended_models_llm_integrations_recommended_models_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecommendedModelsResponse'];
         };
       };
     };
