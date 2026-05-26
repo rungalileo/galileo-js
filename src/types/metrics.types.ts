@@ -110,6 +110,7 @@ export interface CreateCustomCodeMetricParams {
   nodeLevel: StepType;
   description?: string;
   tags?: string[];
+  outputType?: OutputType;
   /** Maximum time to wait for code validation in milliseconds (default: 60000ms / 1 minute) */
   timeoutMs?: number;
   /** Interval between validation polling attempts in milliseconds (default: 1000ms) */
