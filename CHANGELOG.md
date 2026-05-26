@@ -1,3 +1,11 @@
+# [2.2.0](https://github.com/rungalileo/galileo-js/compare/v2.1.2...v2.2.0) (2026-05-26)
+
+
+### Features
+
+* add outputType to CreateCustomCodeMetricParams ([#613](https://github.com/rungalileo/galileo-js/issues/613)) ([61b9bf7](https://github.com/rungalileo/galileo-js/commit/61b9bf7e2f5e6464411cd5e6109915c7ef26d1dc))
+* **metrics:** expose groundTruth flag on createCustomLlmMetric ([#607](https://github.com/rungalileo/galileo-js/issues/607)) ([cf49ba9](https://github.com/rungalileo/galileo-js/commit/cf49ba9f95e742f6e8605a0e828cdbd0602c9043))
+
 ## [2.1.2](https://github.com/rungalileo/galileo-js/compare/v2.1.1...v2.1.2) (2026-05-14)
 
 ### Bug Fixes
