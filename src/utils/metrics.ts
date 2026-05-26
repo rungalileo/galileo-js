@@ -95,6 +95,7 @@ export class Metrics {
     nodeLevel,
     description = '',
     tags = [],
+    outputType,
     timeoutMs,
     pollIntervalMs,
     requiredMetrics
@@ -155,7 +156,7 @@ export class Metrics {
       undefined, // No model type
       undefined, // No default version ID
       scoreableNodeTypes,
-      undefined
+      outputType
     );
     console.log(`Metric created: ${scorer.id}`);
 
