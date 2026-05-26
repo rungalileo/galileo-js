@@ -546,6 +546,31 @@ describe('metrics utils', () => {
       );
     });
 
+    it('should forward outputType to createScorer when provided', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        outputType: OutputType.PERCENTAGE
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({ outputType: OutputType.PERCENTAGE })
+      );
+    });
+
+    it('should pass outputType as undefined to createScorer when omitted', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({ outputType: undefined })
+      );
+    });
+
     it('should throw error when file does not exist', async () => {
       await expect(
         createCustomCodeMetric({
