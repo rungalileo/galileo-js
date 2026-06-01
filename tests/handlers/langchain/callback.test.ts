@@ -1221,6 +1221,127 @@ describe('GalileoCallback', () => {
       });
     });
 
+    describe('Gemini per-modality token breakdown', () => {
+      it('should extract audio/image tokens from usage_metadata.input_token_details', async () => {
+        const runId = createId();
+
+        await callback.handleLLMStart(
+          { name: 'LLM', lc: 1, type: 'secret', id: ['test'] },
+          ['test prompt'],
+          runId,
+          undefined,
+          { invocation_params: { model: 'gemini-2.5-flash' } }
+        );
+
+        const message = {
+          usage_metadata: {
+            input_tokens: 110,
+            output_tokens: 25,
+            total_tokens: 135,
+            input_token_details: { audio: 100, image: 5 },
+            output_token_details: { audio: 20 }
+          }
+        };
+        const mockLLMResult = {
+          generations: [[{ text: 'hello', generationInfo: {}, message }]],
+          llmOutput: {}
+        } as unknown as LLMResult;
+
+        await callback.handleLLMEnd(mockLLMResult, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as unknown as {
+          metrics: {
+            numAudioInputTokens?: number;
+            numImageInputTokens?: number;
+            numAudioOutputTokens?: number;
+          };
+        };
+        expect(span.metrics.numAudioInputTokens).toBe(100);
+        expect(span.metrics.numImageInputTokens).toBe(5);
+        expect(span.metrics.numAudioOutputTokens).toBe(20);
+      });
+
+      it('should extract audio/image tokens from response_metadata prompt_tokens_details', async () => {
+        const runId = createId();
+
+        await callback.handleLLMStart(
+          { name: 'LLM', lc: 1, type: 'secret', id: ['test'] },
+          ['test prompt'],
+          runId,
+          undefined,
+          { invocation_params: { model: 'gemini-2.5-flash' } }
+        );
+
+        const message = {
+          usage_metadata: { input_tokens: 110, output_tokens: 25, total_tokens: 135 },
+          response_metadata: {
+            prompt_tokens_details: [
+              { modality: 'TEXT', token_count: 10 },
+              { modality: 'AUDIO', token_count: 95 },
+              { modality: 'IMAGE', token_count: 5 }
+            ],
+            candidates_tokens_details: [
+              { modality: 'AUDIO', token_count: 20 },
+              { modality: 'TEXT', token_count: 5 }
+            ]
+          }
+        };
+        const mockLLMResult = {
+          generations: [[{ text: 'hello', generationInfo: {}, message }]],
+          llmOutput: {}
+        } as unknown as LLMResult;
+
+        await callback.handleLLMEnd(mockLLMResult, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as unknown as {
+          metrics: {
+            numAudioInputTokens?: number;
+            numImageInputTokens?: number;
+            numAudioOutputTokens?: number;
+          };
+        };
+        expect(span.metrics.numAudioInputTokens).toBe(95);
+        expect(span.metrics.numImageInputTokens).toBe(5);
+        expect(span.metrics.numAudioOutputTokens).toBe(20);
+      });
+
+      it('should return undefined modality fields for text-only response', async () => {
+        const runId = createId();
+
+        await callback.handleLLMStart(
+          { name: 'LLM', lc: 1, type: 'secret', id: ['test'] },
+          ['test prompt'],
+          runId,
+          undefined,
+          { invocation_params: { model: 'gpt-4o' } }
+        );
+
+        const mockLLMResult = {
+          generations: [[{ text: 'hello', generationInfo: {} }]],
+          llmOutput: { tokenUsage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } }
+        } as LLMResult;
+
+        await callback.handleLLMEnd(mockLLMResult, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as unknown as {
+          metrics: {
+            numAudioInputTokens?: number;
+            numImageInputTokens?: number;
+            numAudioOutputTokens?: number;
+          };
+        };
+        expect(span.metrics.numAudioInputTokens).toBeUndefined();
+        expect(span.metrics.numImageInputTokens).toBeUndefined();
+        expect(span.metrics.numAudioOutputTokens).toBeUndefined();
+      });
+    });
+
     describe('Retriever serialization error handling', () => {
       it('should handle retriever output serialization error', async () => {
         const runId = createId();

@@ -961,6 +961,9 @@ class GalileoLogger implements IGalileoLogger {
     numReasoningTokens?: number;
     numCachedInputTokens?: number;
     timeToFirstTokenNs?: number;
+    numImageInputTokens?: number;
+    numAudioInputTokens?: number;
+    numAudioOutputTokens?: number;
     temperature?: number;
     statusCode?: number;
     stepNumber?: number;
@@ -984,7 +987,10 @@ class GalileoLogger implements IGalileoLogger {
         numTotalTokens: options.totalTokens,
         numReasoningTokens: options.numReasoningTokens,
         numCachedInputTokens: options.numCachedInputTokens,
-        timeToFirstTokenNs: options.timeToFirstTokenNs
+        timeToFirstTokenNs: options.timeToFirstTokenNs,
+        numImageInputTokens: options.numImageInputTokens,
+        numAudioInputTokens: options.numAudioInputTokens,
+        numAudioOutputTokens: options.numAudioOutputTokens
       }),
       temperature: options.temperature,
       statusCode: options.statusCode,

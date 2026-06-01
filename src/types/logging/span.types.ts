@@ -238,6 +238,11 @@ export interface LlmMetricsOptions extends MetricsOptions {
   numReasoningTokens?: number;
   numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
+  // Per-modality breakdown — only populated for providers that return modality-level
+  // token counts (e.g. Gemini native via ChatGoogleGenerativeAI).
+  numImageInputTokens?: number;
+  numAudioInputTokens?: number;
+  numAudioOutputTokens?: number;
 }
 
 export interface SerializedLlmMetrics extends SerializedMetrics {
@@ -247,6 +252,9 @@ export interface SerializedLlmMetrics extends SerializedMetrics {
   numReasoningTokens?: number;
   numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
+  numImageInputTokens?: number;
+  numAudioInputTokens?: number;
+  numAudioOutputTokens?: number;
 }
 
 export class LlmMetrics extends Metrics {
@@ -256,6 +264,9 @@ export class LlmMetrics extends Metrics {
   numReasoningTokens?: number;
   numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
+  numImageInputTokens?: number;
+  numAudioInputTokens?: number;
+  numAudioOutputTokens?: number;
 
   constructor(options: LlmMetricsOptions) {
     super(options);
@@ -362,10 +373,8 @@ export interface RetrieverSpanOptions extends BaseSpanOptions {
   redactedOutput?: RetrieverSpanAllowedOutputType;
 }
 
-export interface SerializedRetrieverSpan extends Omit<
-  SerializedStep,
-  'output'
-> {
+export interface SerializedRetrieverSpan
+  extends Omit<SerializedStep, 'output'> {
   output: JsonArray;
 }
 
@@ -394,10 +403,11 @@ export class RetrieverSpan extends BaseStep {
   }
 }
 
-export interface ToolSpanOptions extends Omit<
-  BaseSpanOptions,
-  'input' | 'redactedInput' | 'output' | 'redactedOutput'
-> {
+export interface ToolSpanOptions
+  extends Omit<
+    BaseSpanOptions,
+    'input' | 'redactedInput' | 'output' | 'redactedOutput'
+  > {
   input: JsonValue;
   redactedInput?: JsonValue;
   output?: JsonValue;
