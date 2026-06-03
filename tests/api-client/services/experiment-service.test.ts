@@ -254,4 +254,52 @@ describe('ExperimentService', () => {
       ).rejects.toEqual(apiError);
     });
   });
+
+  describe('createExperiment', () => {
+    const dataset = { datasetId: 'dataset-1', versionIndex: 1 };
+
+    it('sends only name/task_type/dataset for the legacy two-arg call', async () => {
+      mockMakeRequest.mockResolvedValue({ id: 'exp-1', name: 'Exp' });
+
+      await experimentService.createExperiment('Exp', dataset);
+
+      const body = mockMakeRequest.mock.calls[0][2] as Record<string, unknown>;
+      expect(body.name).toBe('Exp');
+      expect(body.task_type).toBe(16);
+      expect(body.dataset).toEqual({
+        dataset_id: 'dataset-1',
+        version_index: 1
+      });
+      // Prompt-run fields are omitted when not provided (backward-compatible wire shape).
+      expect(body).not.toHaveProperty('trigger');
+      expect(body).not.toHaveProperty('scorers');
+      expect(body).not.toHaveProperty('prompt_template_version_id');
+      expect(body).not.toHaveProperty('prompt_settings');
+    });
+
+    it('sends trigger/scorers/prompt fields snake-cased when provided', async () => {
+      mockMakeRequest.mockResolvedValue({ id: 'exp-1', name: 'Exp' });
+
+      const scorers: ScorerConfig[] = [
+        { id: 'scorer-1', scorerType: ScorerTypes.preset, name: 'correctness' }
+      ];
+
+      await experimentService.createExperiment(
+        'Exp',
+        dataset,
+        true,
+        scorers,
+        'ptv-123',
+        { temperature: 0.5 } as never
+      );
+
+      const body = mockMakeRequest.mock.calls[0][2] as Record<string, unknown>;
+      expect(body.trigger).toBe(true);
+      expect(body.prompt_template_version_id).toBe('ptv-123');
+      expect(body.scorers).toEqual([
+        { id: 'scorer-1', scorer_type: 'preset', name: 'correctness' }
+      ]);
+      expect(body.prompt_settings).toEqual({ temperature: 0.5 });
+    });
+  });
 });

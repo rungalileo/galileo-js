@@ -68,16 +68,38 @@ export class ExperimentService extends BaseClient {
 
   public async createExperiment(
     name: string,
-    dataset?: ExperimentDatasetRequest | null
+    dataset?: ExperimentDatasetRequest | null,
+    trigger?: boolean,
+    scorers?: ScorerConfig[],
+    promptTemplateVersionId?: string | null,
+    promptSettings?: PromptRunSettings | null
   ): Promise<ExperimentResponseType> {
-    const requestBody = this.convertToSnakeCase<
-      ExperimentCreateRequest,
-      ExperimentCreateRequestOpenAPI
-    >({
+    // Build the request, including the prompt-run fields only when provided so the
+    // legacy two-arg call (name, dataset) is unchanged on the wire. When `trigger` is
+    // true, the API creates the experiment AND kicks off the runner job in one call —
+    // entering the batched playground path when the backend flag is enabled.
+    const request: ExperimentCreateRequest = {
       name,
       taskType: EXPERIMENT_TASK_TYPE,
       dataset
-    });
+    };
+    if (trigger !== undefined) {
+      request.trigger = trigger;
+    }
+    if (scorers !== undefined) {
+      request.scorers = scorers;
+    }
+    if (promptTemplateVersionId !== undefined) {
+      request.promptTemplateVersionId = promptTemplateVersionId;
+    }
+    if (promptSettings !== undefined) {
+      request.promptSettings = promptSettings;
+    }
+
+    const requestBody = this.convertToSnakeCase<
+      ExperimentCreateRequest,
+      ExperimentCreateRequestOpenAPI
+    >(request);
 
     const response = await this.makeRequest<ExperimentResponseOpenAPI>(
       RequestMethod.POST,
@@ -110,6 +132,12 @@ export class ExperimentService extends BaseClient {
     );
   }
 
+  /**
+   * @deprecated Prefer `createExperiment(name, dataset, true, scorers, promptTemplateVersionId, promptSettings)`,
+   * which creates the experiment and triggers the runner job in a single call and supports the
+   * batched playground path. This explicit job-submission route always uses the legacy single-job
+   * path and is retained only for backward compatibility.
+   */
   public async createPromptRunJob(
     experimentId: string,
     projectId: string,

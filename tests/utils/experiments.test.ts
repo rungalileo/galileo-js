@@ -425,15 +425,19 @@ describe('experiments utility', () => {
         promptTemplate: mockPromptTemplate,
         projectName
       });
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      // The experiment is created and triggered in a single call (no separate job).
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[0]).toBe('Test Experiment');
+      expect(call[1]).toEqual({
         datasetId: 'test-dataset-id',
         versionIndex: 1
       });
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(call[2]).toBe(true); // trigger
+      expect(call[4]).toBe('prompt-template-version-123'); // promptTemplateVersionId
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should run an experiment with a dataset ID, promptTemplate, and a metric', async () => {
@@ -444,14 +448,16 @@ describe('experiments utility', () => {
         metrics: [GalileoMetrics.correctness],
         projectName
       });
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[2]).toBe(true); // trigger
+      expect(call[3].length).toBeGreaterThan(0); // scorers passed in the create body
       expect(mockGetScorersPageByLabels).toHaveBeenCalled();
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      // Scorers register via the create body, not a separate run-scorer-settings call.
+      expect(mockCreateRunScorerSettings).not.toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should run an experiment with a dataset name and promptTemplate', async () => {
@@ -461,16 +467,17 @@ describe('experiments utility', () => {
         promptTemplate: mockPromptTemplate,
         projectName
       });
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[1]).toEqual({
         datasetId: 'test-dataset-id',
         versionIndex: 1
       });
+      expect(call[2]).toBe(true); // trigger
       expect(mockGetDatasetByName).toHaveBeenCalled();
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should run an experiment with a dataset object and promptTemplate', async () => {
@@ -480,15 +487,16 @@ describe('experiments utility', () => {
         promptTemplate: mockPromptTemplate,
         projectName
       });
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalledWith('Test Experiment', {
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[1]).toEqual({
         datasetId: 'test-dataset-id',
         versionIndex: 1
       });
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(call[2]).toBe(true); // trigger
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should throw an error when array dataset is used with promptTemplate', async () => {
@@ -607,16 +615,16 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
-      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
-
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[2]).toBe(true); // trigger
+      expect(call[3].length).toBeGreaterThan(0); // scorers in create body
       // Verify the correct scorer was found by name
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).not.toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should handle object metrics without version', async () => {
@@ -628,14 +636,15 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[2]).toBe(true); // trigger
+      expect(call[3].length).toBeGreaterThan(0); // scorers in create body
       expect(mockGetScorersPageByLabels).toHaveBeenCalled();
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).not.toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should handle object metrics with version', async () => {
@@ -654,15 +663,16 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[2]).toBe(true); // trigger
+      expect(call[3].length).toBeGreaterThan(0); // scorers in create body
       expect(mockGetScorersPageByLabels).toHaveBeenCalled();
       expect(mockGetScorerVersion).toHaveBeenCalledWith('scorer-123', 3);
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).not.toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
     it('should handle multiple metrics with mixed formats', async () => {
@@ -696,14 +706,15 @@ describe('experiments utility', () => {
         projectName
       });
 
-      expect(result).toHaveProperty(
-        'message',
-        promptRunJobCreatedSuccessMessage
+      expect(result.message).toContain(
+        'has started and is currently processing'
       );
-      expect(mockCreateExperiment).toHaveBeenCalled();
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[2]).toBe(true); // trigger
+      expect(call[3].length).toBeGreaterThan(0); // scorers in create body
       expect(mockGetScorersPageByLabels).toHaveBeenCalled();
-      expect(mockCreateRunScorerSettings).toHaveBeenCalled();
-      expect(mockCreatePromptRunJob).toHaveBeenCalled();
+      expect(mockCreateRunScorerSettings).not.toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
   });
 

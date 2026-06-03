@@ -482,38 +482,46 @@ export class Experiments {
       name,
       project.name
     );
-    const experiment = await this.createNewExperiment(
-      params,
-      experimentName,
-      project.name
-    );
-    sdkLogger.info(`🚀 Experiment ${experimentName} created.`);
-
-    await this.configureExperimentTags(
-      params.experimentTags,
-      project.id,
-      experiment.id
-    );
-    const [scorerConfigs, localMetricConfigs] =
-      await this.configureExperimentMetrics(metrics, project.id, experiment.id);
-
-    // Validate local metrics usage
-    if (localMetricConfigs.length > 0 && isPromptTemplate) {
-      throw new Error(
-        'Local metrics can only be used with a locally run experiment (function-based), not a prompt template experiment.'
+    // Prompt-template experiments are created and triggered in a single call so they
+    // enter the batched playground path. Function-based experiments are created up
+    // front (untriggered), have their scorers registered, then run locally.
+    if (isPromptTemplate) {
+      return await this.processExperimentPromptTemplate(
+        params,
+        experimentName,
+        project.name,
+        project.id,
+        metrics,
+        params.promptTemplate,
+        params.promptSettings || DEFAULT_PROMPT_RUN_SETTINGS
       );
     }
 
-    sdkLogger.info('Retrieving the dataset...');
-
-    // Load dataset and records using centralized function
-    const [loadedDatasetObj, records] = await this.loadExperimentData(
-      params,
-      project.name
-    );
-
-    // Process using either a runner function or a prompt template
     if (isFunction) {
+      const experiment = await this.createNewExperiment(
+        params,
+        experimentName,
+        project.name
+      );
+      sdkLogger.info(`🚀 Experiment ${experimentName} created.`);
+
+      await this.configureExperimentTags(
+        params.experimentTags,
+        project.id,
+        experiment.id
+      );
+      const [scorerConfigs, localMetricConfigs] =
+        await this.configureExperimentMetrics(
+          metrics,
+          project.id,
+          experiment.id
+        );
+
+      sdkLogger.info('Retrieving the dataset...');
+
+      // Load dataset and records using centralized function
+      const [, records] = await this.loadExperimentData(params, project.name);
+
       return await this.processExperimentFunction(
         params.function,
         experiment,
@@ -523,19 +531,9 @@ export class Experiments {
         localMetricConfigs,
         scorerConfigs.length
       );
-    } else if (isPromptTemplate) {
-      return await this.processExperimentPromptTemplate(
-        params.promptTemplate,
-        params.promptSettings || DEFAULT_PROMPT_RUN_SETTINGS,
-        loadedDatasetObj,
-        scorerConfigs,
-        experiment,
-        project.name,
-        project.id
-      );
-    } else {
-      throw new Error('One of function or promptTemplate must be provided');
     }
+
+    throw new Error('One of function or promptTemplate must be provided');
   }
 
   private async getExperimentProject(
@@ -728,19 +726,58 @@ export class Experiments {
     };
   }
 
-  private async processExperimentPromptTemplate(
-    promptTemplate: PromptTemplateType,
-    promptSettings: PromptRunSettings | undefined,
-    loadedDatasetObj: Dataset | null,
-    scorerConfigs: ScorerConfig[],
-    experiment: ExperimentResponseType,
+  /**
+   * Creates and triggers a prompt-template experiment in a single call.
+   *
+   * Uses `createExperiment(trigger=true)`, which creates the experiment AND kicks off the
+   * server-side runner job — entering the batched playground path when the backend
+   * `playground_batching` flag is enabled. Scorers are resolved client-side and passed in
+   * the create request (the API registers them); there is no separate scorer-settings call
+   * and no explicit `createPromptRunJob` (which only ever uses the legacy single-job path).
+   */
+  private async processExperimentPromptTemplate<
+    T extends Record<string, unknown>
+  >(
+    params: RunExperimentParams<T>,
+    experimentName: string,
     projectName: string,
-    projectId: string
+    projectId: string,
+    metrics:
+      | (GalileoMetrics | string | Metric | LocalMetricConfig)[]
+      | undefined,
+    promptTemplate: PromptTemplateType,
+    promptSettings: PromptRunSettings
   ): Promise<RunExperimentOutput> {
-    const client = await this.ensureClient();
-    await client.init({ projectScoped: true, projectName });
+    // Resolve scorer configs WITHOUT registering them (runId=null). The API registers
+    // them from the createExperiment(trigger=true) body.
+    let scorerConfigs: ScorerConfig[] = [];
+    if (metrics && metrics.length > 0) {
+      sdkLogger.info('Retrieving metrics...');
+      const [resolvedScorers, localMetricConfigs] =
+        await new Metrics().createMetricConfigs(projectId, null, metrics);
+      if (localMetricConfigs.length > 0) {
+        throw new Error(
+          'Local metrics can only be used with a locally run experiment (function-based), not a prompt template experiment.'
+        );
+      }
+      scorerConfigs = resolvedScorers;
+    }
 
-    let promptTemplateVersionId: string | undefined;
+    // A dataset is required for prompt-template experiments.
+    sdkLogger.info('Retrieving the dataset...');
+    const datasetObj = await getDatasetMetadata(params, projectName);
+    if (!datasetObj) {
+      throw new Error(
+        'A dataset record, id, or name of a dataset must be provided when a prompt_template is used'
+      );
+    }
+    const datasetRequest: ExperimentDatasetRequest = {
+      datasetId: datasetObj.id,
+      versionIndex: datasetObj.currentVersionIndex
+    };
+
+    // Resolve the prompt template version id.
+    let promptTemplateVersionId: string | null | undefined;
     if ('version' in promptTemplate) {
       promptTemplateVersionId = (promptTemplate as PromptTemplateVersion).id;
     } else {
@@ -750,29 +787,36 @@ export class Experiments {
       promptTemplateVersionId = (promptTemplate as PromptTemplate)
         .selectedVersionId;
     }
-    client.experimentId = experiment.id;
 
     sdkLogger.info(
-      `Starting prompt experiment ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'} for project ${projectName}...`
+      `Starting prompt experiment ${experimentName} for project ${projectName}...`
     );
 
-    const response = await client.createPromptRunJob(
-      experiment.id,
-      projectId,
-      promptTemplateVersionId,
-      loadedDatasetObj!.id,
+    // Single call: creates the experiment AND triggers the (batched) runner job.
+    const client = await this.ensureClient();
+    await client.init({ projectScoped: true, projectName });
+    const rawExperiment = await client.createExperiment(
+      experimentName,
+      datasetRequest,
+      true,
       scorerConfigs,
+      promptTemplateVersionId,
       promptSettings
     );
+    const experiment = this._enrichExperimentResponse(rawExperiment);
+    sdkLogger.info(`🚀 Experiment ${experimentName} created.`);
 
-    const linkToResults = this.getLinkToExperimentResults(
-      experiment.id,
-      projectId
-    );
-    sdkLogger.info(
-      `Prompt experiment ${experiment.name ? `experiment ${experiment.name}` : 'unnamed experiment'} has started and is currently processing. Results will be available at ${linkToResults}`
+    // Tags are applied after creation (the experiment now exists).
+    await this.configureExperimentTags(
+      params.experimentTags,
+      projectId,
+      experiment.id
     );
 
-    return { experiment, link: linkToResults, message: response.message };
+    const link = this.getLinkToExperimentResults(experiment.id, projectId);
+    const message = `Experiment ${experiment.name ?? experimentName} has started and is currently processing. Results will be available at ${link}`;
+    sdkLogger.info(message);
+
+    return { experiment, link, message };
   }
 }
