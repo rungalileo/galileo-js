@@ -499,6 +499,42 @@ describe('experiments utility', () => {
       expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
     });
 
+    it('should run an experiment with a PromptTemplateVersion passed directly', async () => {
+      // The `'version' in promptTemplate` branch: a PromptTemplateVersion is used as-is
+      // (its own `id` is the version id), rather than resolving selectedVersionId.
+      const result = await runExperiment({
+        name: 'Test Experiment',
+        datasetId: 'test-dataset-id',
+        promptTemplate: mockPromptTemplateVersion,
+        projectName
+      });
+      expect(result.message).toContain(
+        'has started and is currently processing'
+      );
+      const call = mockCreateExperiment.mock.calls[0];
+      expect(call[2]).toBe(true); // trigger
+      expect(call[4]).toBe(mockPromptTemplateVersion.id); // promptTemplateVersionId from .id
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
+    });
+
+    it('should throw an error when a local metric is used with promptTemplate', async () => {
+      // Local metrics require a function-based experiment; the prompt-template path resolves
+      // scorers in resolve-only mode and must reject any LocalMetricConfig.
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          datasetId: 'test-dataset-id',
+          promptTemplate: mockPromptTemplate,
+          metrics: [{ name: 'my_local_metric', scorerFn: () => 1 }],
+          projectName
+        })
+      ).rejects.toThrow(
+        'Local metrics can only be used with a locally run experiment (function-based), not a prompt template experiment.'
+      );
+      expect(mockCreateExperiment).not.toHaveBeenCalled();
+      expect(mockCreatePromptRunJob).not.toHaveBeenCalled();
+    });
+
     it('should throw an error when array dataset is used with promptTemplate', async () => {
       await expect(
         runExperiment({
