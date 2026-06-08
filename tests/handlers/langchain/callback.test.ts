@@ -1275,7 +1275,11 @@ describe('GalileoCallback', () => {
         );
 
         const message = {
-          usage_metadata: { input_tokens: 110, output_tokens: 25, total_tokens: 135 },
+          usage_metadata: {
+            input_tokens: 110,
+            output_tokens: 25,
+            total_tokens: 135
+          },
           response_metadata: {
             prompt_tokens_details: [
               { modality: 'TEXT', token_count: 10 },
@@ -1322,7 +1326,13 @@ describe('GalileoCallback', () => {
 
         const mockLLMResult = {
           generations: [[{ text: 'hello', generationInfo: {} }]],
-          llmOutput: { tokenUsage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } }
+          llmOutput: {
+            tokenUsage: {
+              promptTokens: 10,
+              completionTokens: 5,
+              totalTokens: 15
+            }
+          }
         } as LLMResult;
 
         await callback.handleLLMEnd(mockLLMResult, runId);
