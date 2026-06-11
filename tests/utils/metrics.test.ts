@@ -531,6 +531,33 @@ describe('metrics utils', () => {
       expect(mockGetScorersPageByIds).toHaveBeenCalled();
     });
 
+    it('skips server-side registration when runId is null (resolve-only)', async () => {
+      mockGetScorersPageByLabels.mockReset();
+      mockGetScorersPageByIds.mockReset();
+      mockGetScorersPageByLabels.mockResolvedValueOnce({
+        scorers: [
+          {
+            id: 'scorer-1',
+            name: 'correctness',
+            label: 'Correctness',
+            scorerType: ScorerTypes.preset
+          }
+        ],
+        nextStartingToken: null
+      });
+
+      const [scorers] = await createMetricConfigs('project-1', null, [
+        GalileoMetrics.correctness
+      ]);
+
+      // Scorers are still resolved...
+      expect(scorers).toHaveLength(1);
+      expect(mockGetScorersPageByLabels).toHaveBeenCalled();
+      // ...but NOT registered server-side; the caller passes them into
+      // createExperiment(trigger=true) instead.
+      expect(mockCreateRunScorerSettings).not.toHaveBeenCalled();
+    });
+
     it('should route mixed UUID + label inputs correctly', async () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000';
       mockGetScorersPageByLabels.mockReset();
