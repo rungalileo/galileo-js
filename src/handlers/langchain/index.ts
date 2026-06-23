@@ -576,6 +576,7 @@ export class GalileoCallback
     //   2. message.response_metadata.prompt_tokens_details / candidates_tokens_details
     //      (raw Gemini API token detail lists forwarded by the provider adapter)
     let numImageInputTokens: number | undefined;
+    let numImageOutputTokens: number | undefined;
     let numAudioInputTokens: number | undefined;
     let numAudioOutputTokens: number | undefined;
 
@@ -595,6 +596,8 @@ export class GalileoCallback
         numImageInputTokens = inputDetails.image as number;
       if (outputDetails?.audio !== undefined)
         numAudioOutputTokens = outputDetails.audio as number;
+      if (outputDetails?.image !== undefined)
+        numImageOutputTokens = outputDetails.image as number;
 
       // Surface 2: response_metadata token detail lists
       const responseMeta = message.response_metadata as
@@ -622,6 +625,8 @@ export class GalileoCallback
           const count = entry.token_count as number | undefined;
           if (modality === 'AUDIO' && numAudioOutputTokens === undefined)
             numAudioOutputTokens = count;
+          if (modality === 'IMAGE' && numImageOutputTokens === undefined)
+            numImageOutputTokens = count;
         }
       }
     }
@@ -646,6 +651,7 @@ export class GalileoCallback
         numOutputTokens,
         totalTokens,
         numImageInputTokens,
+        numImageOutputTokens,
         numAudioInputTokens,
         numAudioOutputTokens,
         statusCode: 200

@@ -101,6 +101,7 @@ export function logNodeTree(
       totalTokens: node.spanParams.totalTokens,
       timeToFirstTokenNs: node.spanParams.timeToFirstTokenNs,
       numImageInputTokens: node.spanParams.numImageInputTokens,
+      numImageOutputTokens: node.spanParams.numImageOutputTokens,
       numAudioInputTokens: node.spanParams.numAudioInputTokens,
       numAudioOutputTokens: node.spanParams.numAudioOutputTokens,
       durationNs,

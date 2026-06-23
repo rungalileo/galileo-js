@@ -241,6 +241,7 @@ export interface LlmMetricsOptions extends MetricsOptions {
   // Per-modality breakdown — only populated for providers that return modality-level
   // token counts (e.g. Gemini native via ChatGoogleGenerativeAI).
   numImageInputTokens?: number;
+  numImageOutputTokens?: number;
   numAudioInputTokens?: number;
   numAudioOutputTokens?: number;
 }
@@ -253,6 +254,7 @@ export interface SerializedLlmMetrics extends SerializedMetrics {
   numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
   numImageInputTokens?: number;
+  numImageOutputTokens?: number;
   numAudioInputTokens?: number;
   numAudioOutputTokens?: number;
 }
@@ -265,6 +267,7 @@ export class LlmMetrics extends Metrics {
   numCachedInputTokens?: number;
   timeToFirstTokenNs?: number;
   numImageInputTokens?: number;
+  numImageOutputTokens?: number;
   numAudioInputTokens?: number;
   numAudioOutputTokens?: number;
 
