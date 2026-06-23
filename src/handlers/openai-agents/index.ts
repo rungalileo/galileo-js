@@ -199,7 +199,10 @@ export class GalileoTracingProcessor implements TracingProcessor {
       const endedAt = trace.endedAt || new Date().toISOString();
       const durationNs =
         startedAt && endedAt
-          ? Math.max(0, calculateDurationNs(new Date(startedAt), new Date(endedAt)))
+          ? Math.max(
+              0,
+              calculateDurationNs(new Date(startedAt), new Date(endedAt))
+            )
           : 0;
       rootNode.spanParams.durationNs = durationNs;
       rootNode.spanParams.endedAt = endedAt;
@@ -292,7 +295,10 @@ export class GalileoTracingProcessor implements TracingProcessor {
     const endedAt = span.endedAt || new Date().toISOString();
     const durationNs =
       startedAt && endedAt
-        ? Math.max(0, calculateDurationNs(new Date(startedAt), new Date(endedAt)))
+        ? Math.max(
+            0,
+            calculateDurationNs(new Date(startedAt), new Date(endedAt))
+          )
         : 0;
     node.spanParams.durationNs = durationNs;
 
