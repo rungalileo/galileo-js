@@ -115,11 +115,10 @@ export interface BaseStepOptions {
   id?: string;
 }
 
-export interface SerializedStep
-  extends Omit<
-    BaseStepOptions,
-    'metrics' | 'createdAt' | 'output' | 'redactedOutput'
-  > {
+export interface SerializedStep extends Omit<
+  BaseStepOptions,
+  'metrics' | 'createdAt' | 'output' | 'redactedOutput'
+> {
   metrics?: SerializedMetrics;
   type: StepType;
   createdAt: Date;
