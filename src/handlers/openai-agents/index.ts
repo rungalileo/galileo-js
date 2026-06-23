@@ -195,11 +195,11 @@ export class GalileoTracingProcessor implements TracingProcessor {
   async onTraceEnd(trace: AgentTrace): Promise<void> {
     const rootNode = this._nodes.get(trace.traceId);
     if (rootNode) {
-      const startedAt = rootNode.spanParams.startedAt as string | undefined;
+      const startedAt = trace.startedAt;
       const endedAt = trace.endedAt || new Date().toISOString();
       const durationNs =
         startedAt && endedAt
-          ? calculateDurationNs(new Date(startedAt), new Date(endedAt))
+          ? Math.max(0, calculateDurationNs(new Date(startedAt), new Date(endedAt)))
           : 0;
       rootNode.spanParams.durationNs = durationNs;
       rootNode.spanParams.endedAt = endedAt;
@@ -288,11 +288,11 @@ export class GalileoTracingProcessor implements TracingProcessor {
     const node = this._nodes.get(span.spanId);
     if (!node) return;
 
-    const startedAt = node.spanParams.startedAt as string | undefined;
+    const startedAt = span.startedAt;
     const endedAt = span.endedAt || new Date().toISOString();
     const durationNs =
       startedAt && endedAt
-        ? calculateDurationNs(new Date(startedAt), new Date(endedAt))
+        ? Math.max(0, calculateDurationNs(new Date(startedAt), new Date(endedAt)))
         : 0;
     node.spanParams.durationNs = durationNs;
 
