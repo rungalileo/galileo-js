@@ -1256,11 +1256,13 @@ describe('GalileoCallback', () => {
             numAudioInputTokens?: number;
             numImageInputTokens?: number;
             numAudioOutputTokens?: number;
+            numImageOutputTokens?: number;
           };
         };
         expect(span.metrics.numAudioInputTokens).toBe(100);
         expect(span.metrics.numImageInputTokens).toBe(5);
         expect(span.metrics.numAudioOutputTokens).toBe(20);
+        expect(span.metrics.numImageOutputTokens).toBeUndefined();
       });
 
       it('should extract audio/image tokens from response_metadata prompt_tokens_details', async () => {
@@ -1306,11 +1308,56 @@ describe('GalileoCallback', () => {
             numAudioInputTokens?: number;
             numImageInputTokens?: number;
             numAudioOutputTokens?: number;
+            numImageOutputTokens?: number;
           };
         };
         expect(span.metrics.numAudioInputTokens).toBe(95);
         expect(span.metrics.numImageInputTokens).toBe(5);
         expect(span.metrics.numAudioOutputTokens).toBe(20);
+        expect(span.metrics.numImageOutputTokens).toBeUndefined();
+      });
+
+      it('should extract numImageOutputTokens from output_token_details.image', async () => {
+        const runId = createId();
+
+        await callback.handleLLMStart(
+          { name: 'LLM', lc: 1, type: 'secret', id: ['test'] },
+          ['test prompt'],
+          runId,
+          undefined,
+          { invocation_params: { model: 'gemini-2.5-flash' } }
+        );
+
+        const message = {
+          usage_metadata: {
+            input_tokens: 115,
+            output_tokens: 30,
+            total_tokens: 145,
+            input_token_details: { audio: 100, image: 5 },
+            output_token_details: { audio: 20, image: 10 }
+          }
+        };
+        const mockLLMResult = {
+          generations: [[{ text: 'hello', generationInfo: {}, message }]],
+          llmOutput: {}
+        } as unknown as LLMResult;
+
+        await callback.handleLLMEnd(mockLLMResult, runId);
+
+        const traces = callback._galileoLogger.traces;
+        expect(traces).toHaveLength(1);
+        const span = traces[0].spans[0] as unknown as {
+          metrics: {
+            numAudioInputTokens?: number;
+            numImageInputTokens?: number;
+            numAudioOutputTokens?: number;
+            numImageOutputTokens?: number;
+          };
+        };
+        expect(span.metrics.numAudioInputTokens).toBe(100);
+        expect(span.metrics.numImageInputTokens).toBe(5);
+        expect(span.metrics.numAudioOutputTokens).toBe(20);
+        expect(span.metrics.numImageOutputTokens).toBe(10);
       });
 
       it('should return undefined modality fields for text-only response', async () => {
@@ -1344,11 +1391,13 @@ describe('GalileoCallback', () => {
             numAudioInputTokens?: number;
             numImageInputTokens?: number;
             numAudioOutputTokens?: number;
+            numImageOutputTokens?: number;
           };
         };
         expect(span.metrics.numAudioInputTokens).toBeUndefined();
         expect(span.metrics.numImageInputTokens).toBeUndefined();
         expect(span.metrics.numAudioOutputTokens).toBeUndefined();
+        expect(span.metrics.numImageOutputTokens).toBeUndefined();
       });
     });
 
