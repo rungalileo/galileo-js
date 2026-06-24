@@ -851,6 +851,10 @@ export type AnthropicIntegration = {
    */
   name?: 'anthropic';
   /**
+   * Provider
+   */
+  provider?: 'anthropic';
+  /**
    * Extra
    */
   extra?: {
@@ -943,7 +947,7 @@ export type AvailableIntegrations = {
   /**
    * Integrations
    */
-  integrations: Array<IntegrationName>;
+  integrations: Array<IntegrationProvider>;
 };
 
 /**
@@ -975,6 +979,10 @@ export type AwsBedrockIntegration = {
    * Name
    */
   name?: 'aws_bedrock';
+  /**
+   * Provider
+   */
+  provider?: 'aws_bedrock';
   /**
    * Extra
    */
@@ -1022,6 +1030,10 @@ export type AwsSageMakerIntegration = {
    * Name
    */
   name?: 'aws_sagemaker';
+  /**
+   * Provider
+   */
+  provider?: 'aws_sagemaker';
   /**
    * Extra
    */
@@ -1148,6 +1160,10 @@ export type AzureIntegration = {
    * Name
    */
   name?: 'azure';
+  /**
+   * Provider
+   */
+  provider?: 'azure';
   /**
    * Extra
    */
@@ -1857,6 +1873,10 @@ export type BodyCreateDatasetDatasetsPost = {
    * Project Id
    */
   project_id?: string | null;
+  /**
+   * Column Mapping
+   */
+  column_mapping?: string | null;
 };
 
 /**
@@ -2533,12 +2553,6 @@ export type ColumnInfo = {
    */
   applicable_types?: Array<StepType>;
   /**
-   * Complex
-   *
-   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-   */
-  complex?: boolean;
-  /**
    * Is Optional
    *
    * Whether the column is optional.
@@ -2553,10 +2567,7 @@ export type ColumnInfo = {
   /**
    * Metric Key Alias
    *
-   * Alternate metric key for this column. When scorer UUIDs are used as column IDs
-   * (e.g. "metrics/{uuid}"), this holds the legacy snake_case metric name
-   * (e.g. "correctness") for display and dual-key query fallback.
-   * Patched manually — will be in generated types once SC-64064 merges to production.
+   * Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
    */
   metric_key_alias?: string | null;
 };
@@ -2568,19 +2579,19 @@ export type ColumnMapping = {
   /**
    * Input
    */
-  input: ColumnMappingConfig | Array<string> | null;
+  input?: ColumnMappingConfig | Array<string> | null;
   /**
    * Output
    */
-  output: ColumnMappingConfig | Array<string> | null;
+  output?: ColumnMappingConfig | Array<string> | null;
   /**
    * Generated Output
    */
-  generated_output: ColumnMappingConfig | Array<string> | null;
+  generated_output?: ColumnMappingConfig | Array<string> | null;
   /**
    * Metadata
    */
-  metadata: ColumnMappingConfig | Array<string> | null;
+  metadata?: ColumnMappingConfig | Array<string> | null;
   /**
    * Mgt
    */
@@ -2711,6 +2722,34 @@ export type CompletenessTemplate = {
 };
 
 /**
+ * ComputeHealthScoreRequest
+ */
+export type ComputeHealthScoreRequest = {
+  /**
+   * Scorer Id
+   */
+  scorer_id: string;
+  /**
+   * The scorer's output type, used to dispatch the correct metric.
+   */
+  output_type: OutputTypeEnum;
+  /**
+   * Scoreable Node Types
+   *
+   * The scorer's scoreable_node_types. Determines which record type carries the score.
+   */
+  scoreable_node_types?: Array<StepType>;
+  /**
+   * Mgt Overlay
+   *
+   * Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+   */
+  mgt_overlay?: {
+    [key: string]: string | null;
+  };
+};
+
+/**
  * ContentModality
  *
  * Classification of content modality
@@ -2837,6 +2876,26 @@ export const ControlCheckStage = { PRE: 'pre', POST: 'post' } as const;
  */
 export type ControlCheckStage =
   (typeof ControlCheckStage)[keyof typeof ControlCheckStage];
+
+/**
+ * ControlResourceAction
+ *
+ * Actions on Agent Control's org-scoped ``control`` resource.
+ */
+export const ControlResourceAction = {
+  CREATE: 'create',
+  READ: 'read',
+  UPDATE: 'update',
+  DELETE: 'delete'
+} as const;
+
+/**
+ * ControlResourceAction
+ *
+ * Actions on Agent Control's org-scoped ``control`` resource.
+ */
+export type ControlResourceAction =
+  (typeof ControlResourceAction)[keyof typeof ControlResourceAction];
 
 /**
  * ControlResult
@@ -3084,6 +3143,21 @@ export type CorrectnessScorer = {
    */
   num_judges?: number | null;
 };
+
+/**
+ * CostInterval
+ */
+export const CostInterval = {
+  HOURLY: 'hourly',
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly'
+} as const;
+
+/**
+ * CostInterval
+ */
+export type CostInterval = (typeof CostInterval)[keyof typeof CostInterval];
 
 /**
  * CreateCodeMetricGenerationRequest
@@ -3430,6 +3504,10 @@ export type CreateJobRequest = {
    * Multijudge Average Boolean Metrics
    */
   multijudge_average_boolean_metrics?: boolean;
+  /**
+   * Store Metric Ids
+   */
+  store_metric_ids?: boolean;
 };
 
 /**
@@ -3715,6 +3793,10 @@ export type CreateJobResponse = {
    */
   multijudge_average_boolean_metrics?: boolean;
   /**
+   * Store Metric Ids
+   */
+  store_metric_ids?: boolean;
+  /**
    * Message
    */
   message: string;
@@ -3823,6 +3905,10 @@ export type CreateScorerRequest = {
    * Name
    */
   name: string;
+  /**
+   * Id
+   */
+  id?: string | null;
   /**
    * Description
    */
@@ -4070,7 +4156,11 @@ export type CustomIntegration = {
   /**
    * Name
    */
-  name?: 'custom';
+  name?: string;
+  /**
+   * Provider
+   */
+  provider?: 'custom';
   /**
    * Extra
    */
@@ -4174,6 +4264,65 @@ export type CustomIntegrationCreate = {
    * Token
    */
   token?: string | null;
+};
+
+/**
+ * CustomIntegrationDefinition
+ *
+ * Response schema for the full JSON definition of a custom integration.
+ *
+ * Returns the exact same structure used to create the integration,
+ * including decrypted sensitive fields (api_key_value, token, headers).
+ * Only accessible to users with edit permission (creator + admins).
+ */
+export type CustomIntegrationDefinition = {
+  authentication_type: CustomAuthenticationType;
+  /**
+   * Endpoint
+   */
+  endpoint: string;
+  /**
+   * Default Model
+   */
+  default_model?: string | null;
+  /**
+   * Model Properties
+   */
+  model_properties?: Array<PromptgalileoSchemasConfigCustomModelProperties> | null;
+  /**
+   * Token
+   */
+  token?: string | null;
+  /**
+   * Api Key Header
+   */
+  api_key_header?: string | null;
+  /**
+   * Api Key Value
+   */
+  api_key_value?: string | null;
+  /**
+   * Authentication Scope
+   */
+  authentication_scope?: string | null;
+  /**
+   * Oauth2 Token Url
+   */
+  oauth2_token_url?: string | null;
+  /**
+   * Headers
+   */
+  headers?: {
+    [key: string]: string;
+  } | null;
+  custom_llm_config?: CustomLlmConfig | null;
+  /**
+   * Custom Header Mapping
+   */
+  custom_header_mapping?: {
+    [key: string]: string;
+  } | null;
+  multi_modal_config?: MultiModalModelIntegrationConfig | null;
 };
 
 /**
@@ -6713,6 +6862,10 @@ export type DatabricksIntegration = {
    */
   name?: 'databricks';
   /**
+   * Provider
+   */
+  provider?: 'databricks';
+  /**
    * Extra
    */
   extra?: {
@@ -7250,6 +7403,42 @@ export type DatasetProjectsSort = {
 };
 
 /**
+ * DatasetRemoveColumn
+ *
+ * Drop a column from the dataset schema.
+ */
+export type DatasetRemoveColumn = {
+  /**
+   * Edit Type
+   */
+  edit_type?: 'remove_column';
+  /**
+   * Column Name
+   */
+  column_name: string;
+};
+
+/**
+ * DatasetRenameColumn
+ *
+ * Rename a column in the dataset schema, preserving values.
+ */
+export type DatasetRenameColumn = {
+  /**
+   * Edit Type
+   */
+  edit_type?: 'rename_column';
+  /**
+   * Column Name
+   */
+  column_name: string;
+  /**
+   * New Column Name
+   */
+  new_column_name: string;
+};
+
+/**
  * DatasetRow
  */
 export type DatasetRow = {
@@ -7624,6 +7813,14 @@ export type ExperimentCreateRequest = {
    * Trigger
    */
   trigger?: boolean;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
 };
 
 /**
@@ -7710,6 +7907,42 @@ export type ExperimentDatasetRequest = {
    * Version Index
    */
   version_index: number;
+};
+
+/**
+ * ExperimentGroupIDFilter
+ */
+export type ExperimentGroupIdFilter = {
+  /**
+   * Name
+   */
+  name?: 'experiment_group_id';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * ExperimentGroupNameFilter
+ */
+export type ExperimentGroupNameFilter = {
+  /**
+   * Name
+   */
+  name?: 'experiment_group_name';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  case_sensitive?: boolean;
 };
 
 /**
@@ -7909,11 +8142,14 @@ export type ExperimentResponse = {
    * Num Traces
    */
   num_traces?: number | null;
+  /**
+   * Num Sessions
+   */
+  num_sessions?: number | null;
   task_type: TaskType;
   dataset?: ExperimentDataset | null;
   /**
    * Aggregate Metrics
-   * @deprecated Use `metricAggregates` instead.
    */
   aggregate_metrics?: {
     [key: string]: unknown;
@@ -7921,7 +8157,7 @@ export type ExperimentResponse = {
   /**
    * Structured Aggregate Metrics
    *
-   * Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+   * Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
    */
   structured_aggregate_metrics?: {
     [key: string]: MetricAggregates;
@@ -7976,6 +8212,18 @@ export type ExperimentResponse = {
     [key: string]: Array<RunTagDb>;
   };
   status?: ExperimentStatus;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
+  /**
+   * Experiment Group Is System
+   */
+  experiment_group_is_system?: boolean | null;
 };
 
 /**
@@ -8009,6 +8257,12 @@ export type ExperimentSearchRequest = {
     | ({
         name: 'updated_at';
       } & ExperimentUpdatedAtFilter)
+    | ({
+        name: 'experiment_group_id';
+      } & ExperimentGroupIdFilter)
+    | ({
+        name: 'experiment_group_name';
+      } & ExperimentGroupNameFilter)
   >;
   /**
    * Sort
@@ -8049,6 +8303,14 @@ export type ExperimentUpdateRequest = {
    * Task Type
    */
   task_type?: 16 | 17;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
 };
 
 /**
@@ -12537,6 +12799,24 @@ export type FactualityTemplate = {
 };
 
 /**
+ * FeatureIntegrationCosts
+ */
+export type FeatureIntegrationCosts = {
+  /**
+   * Feature Name
+   */
+  feature_name: string;
+  /**
+   * Total Cost
+   */
+  total_cost?: number;
+  /**
+   * Projects
+   */
+  projects?: Array<ProjectIntegrationCosts>;
+};
+
+/**
  * FeedbackAggregate
  */
 export type FeedbackAggregate = {
@@ -13224,6 +13504,67 @@ export type HallucinationSegment = {
 };
 
 /**
+ * HealthScoreResult
+ */
+export type HealthScoreResult = {
+  health_score_type: HealthScoreType | null;
+  /**
+   * Value
+   *
+   * Primary health score metric value, or None if no valid rows.
+   */
+  value: number | null;
+  /**
+   * Skipped Rows
+   *
+   * Rows excluded because MGT or score could not be parsed.
+   */
+  skipped_rows: number;
+  /**
+   * Secondary
+   *
+   * Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+   */
+  secondary: {
+    [key: string]: number | null;
+  };
+  /**
+   * Total Scored Rows
+   *
+   * Rows with a successful scorer result.
+   */
+  total_scored_rows: number;
+  /**
+   * Total Mgt Rows
+   *
+   * Rows with a non-null MGT value after overlay.
+   */
+  total_mgt_rows: number;
+  /**
+   * Joined Rows
+   *
+   * Rows with both a score and a MGT value (used for computation).
+   */
+  joined_rows: number;
+};
+
+/**
+ * HealthScoreType
+ */
+export const HealthScoreType = {
+  MACRO_F1: 'macro_f1',
+  MICRO_F1: 'micro_f1',
+  MSE: 'mse',
+  MAE: 'mae'
+} as const;
+
+/**
+ * HealthScoreType
+ */
+export type HealthScoreType =
+  (typeof HealthScoreType)[keyof typeof HealthScoreType];
+
+/**
  * HealthcheckResponse
  */
 export type HealthcheckResponse = {
@@ -13766,7 +14107,8 @@ export type InstructionAdherenceTemplate = {
 export const IntegrationAction = {
   UPDATE: 'update',
   DELETE: 'delete',
-  SHARE: 'share'
+  SHARE: 'share',
+  READ_SECRETS: 'read_secrets'
 } as const;
 
 /**
@@ -13774,6 +14116,30 @@ export const IntegrationAction = {
  */
 export type IntegrationAction =
   (typeof IntegrationAction)[keyof typeof IntegrationAction];
+
+/**
+ * IntegrationCostsDataPoint
+ */
+export type IntegrationCostsDataPoint = {
+  /**
+   * Timestamp
+   */
+  timestamp: string;
+  /**
+   * Cost
+   */
+  cost: number;
+};
+
+/**
+ * IntegrationCostsResponse
+ */
+export type IntegrationCostsResponse = {
+  /**
+   * Features
+   */
+  features?: Array<FeatureIntegrationCosts>;
+};
 
 /**
  * IntegrationDB
@@ -13787,7 +14153,11 @@ export type IntegrationDb = {
    * Permissions
    */
   permissions?: Array<Permission>;
-  name: IntegrationName;
+  /**
+   * Name
+   */
+  name: string;
+  provider: IntegrationProvider;
   /**
    * Created At
    */
@@ -13814,7 +14184,10 @@ export type IntegrationDb = {
  * IntegrationDisableRequest
  */
 export type IntegrationDisableRequest = {
-  integration_name: IntegrationName;
+  /**
+   * Integration Name
+   */
+  integration_name: string;
 };
 
 /**
@@ -13825,6 +14198,11 @@ export type IntegrationModelsResponse = {
    * Integration Name
    */
   integration_name: string;
+  /**
+   * Integration Id
+   */
+  integration_id: string;
+  provider: IntegrationProvider;
   /**
    * Models
    */
@@ -13854,9 +14232,9 @@ export type IntegrationModelsResponse = {
 };
 
 /**
- * IntegrationName
+ * IntegrationProvider
  */
-export const IntegrationName = {
+export const IntegrationProvider = {
   ANTHROPIC: 'anthropic',
   AWS_BEDROCK: 'aws_bedrock',
   AWS_SAGEMAKER: 'aws_sagemaker',
@@ -13872,16 +14250,19 @@ export const IntegrationName = {
 } as const;
 
 /**
- * IntegrationName
+ * IntegrationProvider
  */
-export type IntegrationName =
-  (typeof IntegrationName)[keyof typeof IntegrationName];
+export type IntegrationProvider =
+  (typeof IntegrationProvider)[keyof typeof IntegrationProvider];
 
 /**
  * IntegrationSelectRequest
  */
 export type IntegrationSelectRequest = {
-  integration_name: IntegrationName;
+  /**
+   * Integration Name
+   */
+  integration_name: string;
   /**
    * Integration Id
    */
@@ -14631,6 +15012,9 @@ export type ListScorersRequest = {
         name: 'name';
       } & ScorerNameSort)
     | ({
+        name: 'updated_at';
+      } & ScorerUpdatedAtSort)
+    | ({
         name: 'enabled_in_run';
       } & ScorerEnabledInRunSort)
     | ({
@@ -15092,12 +15476,6 @@ export type LogRecordsColumnInfo = {
    */
   applicable_types?: Array<StepType>;
   /**
-   * Complex
-   *
-   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-   */
-  complex?: boolean;
-  /**
    * Is Optional
    *
    * Whether the column is optional.
@@ -15109,6 +15487,12 @@ export type LogRecordsColumnInfo = {
    * Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
    */
   roll_up_method?: string | null;
+  /**
+   * Metric Key Alias
+   *
+   * Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+   */
+  metric_key_alias?: string | null;
   /**
    * For metric columns only: Scorer config that produced the metric.
    */
@@ -15137,12 +15521,6 @@ export type LogRecordsColumnInfo = {
    * Type of label color for the column, if this is a multilabel metric column.
    */
   label_color?: 'positive' | 'negative' | null;
-  /**
-   * Metric Key Alias
-   *
-   * Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-   */
-  metric_key_alias?: string | null;
 };
 
 /**
@@ -15650,6 +16028,12 @@ export type LogRecordsPartialQueryRequest = {
    * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
    */
   include_counts?: boolean;
+  /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
   select_columns: SelectColumns;
 };
 
@@ -15848,6 +16232,12 @@ export type LogRecordsQueryRequest = {
    * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
    */
   include_counts?: boolean;
+  /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
 };
 
 /**
@@ -16772,6 +17162,12 @@ export type LogTracesIngestResponse = {
    */
   traces_count: number;
   /**
+   * Spans Count
+   *
+   * total number of spans ingested
+   */
+  spans_count: number;
+  /**
    * Trace Ids
    *
    * List of trace IDs that were ingested. Only included if include_trace_ids=True in request.
@@ -17666,6 +18062,10 @@ export type MetricRollUp = {
    */
   num_judges?: number | null;
   /**
+   * Multijudge Average
+   */
+  multijudge_average?: number | null;
+  /**
    * Input Tokens
    */
   input_tokens?: number | null;
@@ -17678,6 +18078,14 @@ export type MetricRollUp = {
    */
   total_tokens?: number | null;
   critique?: MetricCritiqueColumnar | null;
+  /**
+   * Metadata
+   *
+   * Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
   /**
    * Roll Up Metrics
    *
@@ -17818,6 +18226,10 @@ export type MetricSuccess = {
    */
   num_judges?: number | null;
   /**
+   * Multijudge Average
+   */
+  multijudge_average?: number | null;
+  /**
    * Input Tokens
    */
   input_tokens?: number | null;
@@ -17830,6 +18242,14 @@ export type MetricSuccess = {
    */
   total_tokens?: number | null;
   critique?: MetricCritiqueColumnar | null;
+  /**
+   * Metadata
+   *
+   * Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
   /**
    * Display Value
    */
@@ -17954,6 +18374,10 @@ export type MistralIntegration = {
    * Name
    */
   name?: 'mistral';
+  /**
+   * Provider
+   */
+  provider?: 'mistral';
   /**
    * Extra
    */
@@ -18285,6 +18709,10 @@ export type NvidiaIntegration = {
    */
   name?: 'nvidia';
   /**
+   * Provider
+   */
+  provider?: 'nvidia';
+  /**
    * Extra
    */
   extra?: {
@@ -18332,6 +18760,10 @@ export type OpenAiIntegration = {
    * Name
    */
   name?: 'openai';
+  /**
+   * Provider
+   */
+  provider?: 'openai';
   /**
    * Extra
    */
@@ -21116,7 +21548,8 @@ export type Permission = {
     | DatasetAction
     | IntegrationAction
     | OrganizationAction
-    | AnnotationQueueAction;
+    | AnnotationQueueAction
+    | ControlResourceAction;
   /**
    * Allowed
    */
@@ -21160,7 +21593,9 @@ export const ProjectAction = {
   EDIT_RUN_TAGS: 'edit_run_tags',
   DISMISS_ALERT: 'dismiss_alert',
   EDIT_SLICE: 'edit_slice',
-  EDIT_EDIT: 'edit_edit'
+  EDIT_EDIT: 'edit_edit',
+  UPDATE_CONTROL_BINDINGS: 'update_control_bindings',
+  USE_CONTROL_RUNTIME: 'use_control_runtime'
 } as const;
 
 /**
@@ -21471,6 +21906,28 @@ export type ProjectIdFilter = {
    * Value
    */
   value: string | Array<string | string>;
+};
+
+/**
+ * ProjectIntegrationCosts
+ */
+export type ProjectIntegrationCosts = {
+  /**
+   * Project Id
+   */
+  project_id: string;
+  /**
+   * Project Name
+   */
+  project_name: string;
+  /**
+   * Total Cost
+   */
+  total_cost?: number;
+  /**
+   * Data Points
+   */
+  data_points?: Array<IntegrationCostsDataPoint>;
 };
 
 /**
@@ -22402,6 +22859,28 @@ export type RecommendedModelPurpose =
   (typeof RecommendedModelPurpose)[keyof typeof RecommendedModelPurpose];
 
 /**
+ * RecommendedModelsResponse
+ */
+export type RecommendedModelsResponse = {
+  /**
+   * Supported
+   */
+  supported: {
+    [key in RecommendedModelPurpose]?: {
+      [key: string]: Array<string>;
+    };
+  };
+  /**
+   * Available
+   */
+  available: {
+    [key in RecommendedModelPurpose]?: {
+      [key: string]: Array<string>;
+    };
+  };
+};
+
+/**
  * RecomputeLogRecordsMetricsRequest
  *
  * Request to recompute metrics for a genai project run (log stream or experiment).
@@ -22479,6 +22958,12 @@ export type RecomputeLogRecordsMetricsRequest = {
    * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
    */
   include_counts?: boolean;
+  /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
   /**
    * Scorer Ids
    *
@@ -23895,6 +24380,7 @@ export type ScorerResponse = {
         type: 'multi_label';
       } & MetricColorPickerMultiLabel)
     | null;
+  color_threshold_config?: MetricColorPickerNumeric | null;
   /**
    * Metric Name
    */
@@ -24007,6 +24493,24 @@ export type ScorerUpdatedAtFilter = {
 };
 
 /**
+ * ScorerUpdatedAtSort
+ */
+export type ScorerUpdatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
  * ScorersConfiguration
  *
  * Configure which scorers to enable for a particular prompt run.
@@ -24095,6 +24599,10 @@ export type ScorersConfiguration = {
    * Chunk Relevance Luna
    */
   chunk_relevance_luna?: boolean;
+  /**
+   * Completeness Luna
+   */
+  completeness_luna?: boolean;
   /**
    * Completeness Nli
    */
@@ -25684,6 +26192,12 @@ export type UpdateDatasetContentRequest = {
     | ({
         edit_type: 'copy_record_data';
       } & DatasetCopyRecordData)
+    | ({
+        edit_type: 'remove_column';
+      } & DatasetRemoveColumn)
+    | ({
+        edit_type: 'rename_column';
+      } & DatasetRenameColumn)
   >;
 };
 
@@ -26154,6 +26668,12 @@ export type ValidateLlmScorerLogRecordRequest = {
    */
   include_counts?: boolean;
   /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
+  /**
    * Query
    */
   query: string;
@@ -26243,6 +26763,10 @@ export type VegasGatewayIntegration = {
    */
   name?: 'vegas_gateway';
   /**
+   * Provider
+   */
+  provider?: 'vegas_gateway';
+  /**
    * Extra
    */
   extra?: {
@@ -26325,6 +26849,10 @@ export type VertexAiIntegration = {
    * Name
    */
   name?: 'vertex_ai';
+  /**
+   * Provider
+   */
+  provider?: 'vertex_ai';
   /**
    * Extra
    */
@@ -26630,6 +27158,10 @@ export type WriterIntegration = {
    * Name
    */
   name?: 'writer';
+  /**
+   * Provider
+   */
+  provider?: 'writer';
   /**
    * Extra
    */
@@ -26990,6 +27522,7 @@ export const PromptgalileoSchemasScorerNameScorerName = {
   _CONTEXT_RELEVANCE: '_context_relevance',
   _CONTEXT_RELEVANCE_LUNA: '_context_relevance_luna',
   _CHUNK_RELEVANCE_LUNA: '_chunk_relevance_luna',
+  _COMPLETENESS_LUNA: '_completeness_luna',
   _CHUNK_ATTRIBUTION_UTILIZATION_GPT: '_chunk_attribution_utilization_gpt',
   _FACTUALITY: '_factuality',
   _GROUNDEDNESS: '_groundedness',
@@ -32077,7 +32610,7 @@ export type ListAvailableIntegrationsIntegrationsAvailableGetResponse =
 export type DeleteIntegrationIntegrationsNameDeleteData = {
   body?: never;
   path: {
-    name: IntegrationName;
+    name: IntegrationProvider;
   };
   query?: never;
   url: '/integrations/{name}';
@@ -32103,7 +32636,7 @@ export type DeleteIntegrationIntegrationsNameDeleteResponses = {
 export type GetIntegrationIntegrationsNameGetData = {
   body?: never;
   path: {
-    name: IntegrationName;
+    name: IntegrationProvider;
   };
   query?: never;
   url: '/integrations/{name}';
@@ -32127,40 +32660,40 @@ export type GetIntegrationIntegrationsNameGetResponses = {
    */
   200:
     | ({
-        name: 'aws_bedrock';
+        provider: 'aws_bedrock';
       } & AwsBedrockIntegration)
     | ({
-        name: 'aws_sagemaker';
+        provider: 'aws_sagemaker';
       } & AwsSageMakerIntegration)
     | ({
-        name: 'azure';
+        provider: 'azure';
       } & AzureIntegration)
     | ({
-        name: 'anthropic';
+        provider: 'anthropic';
       } & AnthropicIntegration)
     | ({
-        name: 'custom';
+        provider: 'custom';
       } & CustomIntegration)
     | ({
-        name: 'databricks';
+        provider: 'databricks';
       } & DatabricksIntegration)
     | ({
-        name: 'mistral';
+        provider: 'mistral';
       } & MistralIntegration)
     | ({
-        name: 'nvidia';
+        provider: 'nvidia';
       } & NvidiaIntegration)
     | ({
-        name: 'openai';
+        provider: 'openai';
       } & OpenAiIntegration)
     | ({
-        name: 'vegas_gateway';
+        provider: 'vegas_gateway';
       } & VegasGatewayIntegration)
     | ({
-        name: 'vertex_ai';
+        provider: 'vertex_ai';
       } & VertexAiIntegration)
     | ({
-        name: 'writer';
+        provider: 'writer';
       } & WriterIntegration);
 };
 
@@ -32170,7 +32703,7 @@ export type GetIntegrationIntegrationsNameGetResponse =
 export type GetIntegrationStatusIntegrationsNameStatusGetData = {
   body?: never;
   path: {
-    name: IntegrationName;
+    name: IntegrationProvider;
   };
   query?: never;
   url: '/integrations/{name}/status';
@@ -32687,6 +33220,109 @@ export type CreateOrUpdateIntegrationIntegrationsCustomPutResponses = {
 
 export type CreateOrUpdateIntegrationIntegrationsCustomPutResponse =
   CreateOrUpdateIntegrationIntegrationsCustomPutResponses[keyof CreateOrUpdateIntegrationIntegrationsCustomPutResponses];
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Name
+     *
+     * Slug identifying this named custom integration
+     */
+    name: string;
+  };
+  query?: never;
+  url: '/integrations/custom/{name}';
+};
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteError =
+  DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteErrors[keyof DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteErrors];
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetData = {
+  body?: never;
+  path: {
+    /**
+     * Name
+     *
+     * Slug identifying this named custom integration
+     */
+    name: string;
+  };
+  query?: never;
+  url: '/integrations/custom/{name}';
+};
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetError =
+  GetNamedCustomIntegrationIntegrationsCustomNameGetErrors[keyof GetNamedCustomIntegrationIntegrationsCustomNameGetErrors];
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: IntegrationDb;
+};
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetResponse =
+  GetNamedCustomIntegrationIntegrationsCustomNameGetResponses[keyof GetNamedCustomIntegrationIntegrationsCustomNameGetResponses];
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutData =
+  {
+    body: CustomIntegrationCreate;
+    path: {
+      /**
+       * Name
+       *
+       * Slug identifying this named custom integration
+       */
+      name: string;
+    };
+    query?: never;
+    url: '/integrations/custom/{name}';
+  };
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutError =
+  CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutErrors[keyof CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutErrors];
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: IntegrationDb;
+  };
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponse =
+  CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponses[keyof CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponses];
 
 export type CreateOrUpdateUnityCatalogIntegrationIntegrationsDatabricksUnityCatalogSqlPutData =
   {
@@ -33308,6 +33944,45 @@ export type ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses = {
 
 export type ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponse =
   ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses[keyof ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses];
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostData =
+  {
+    body: ComputeHealthScoreRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+      /**
+       * Run Id
+       */
+      run_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/metrics-testing/{run_id}/health-score';
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostError =
+  ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors[keyof ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors];
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: HealthScoreResult;
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponse =
+  ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses[keyof ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses];
 
 export type LogTracesProjectsProjectIdTracesPostData = {
   body: LogTracesIngestRequest;
@@ -34294,6 +34969,50 @@ export type ListIntegrationsIntegrationsGetResponses = {
 export type ListIntegrationsIntegrationsGetResponse =
   ListIntegrationsIntegrationsGetResponses[keyof ListIntegrationsIntegrationsGetResponses];
 
+export type GetIntegrationCostsIntegrationsCostsSummaryGetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Start Time
+     *
+     * Start of time range (UTC)
+     */
+    start_time: string;
+    /**
+     * End Time
+     *
+     * End of time range (UTC)
+     */
+    end_time: string;
+    /**
+     * Aggregation interval
+     */
+    interval: CostInterval;
+  };
+  url: '/integrations/costs/summary';
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetError =
+  GetIntegrationCostsIntegrationsCostsSummaryGetErrors[keyof GetIntegrationCostsIntegrationsCostsSummaryGetErrors];
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: IntegrationCostsResponse;
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetResponse =
+  GetIntegrationCostsIntegrationsCostsSummaryGetResponses[keyof GetIntegrationCostsIntegrationsCostsSummaryGetResponses];
+
 export type SelectIntegrationIntegrationsSelectPostData = {
   body: IntegrationSelectRequest;
   path?: never;
@@ -34345,6 +35064,120 @@ export type DisableIntegrationIntegrationsDisablePostResponses = {
   200: unknown;
 };
 
+export type GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetData =
+  {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/integrations/custom/definition';
+  };
+
+export type GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: CustomIntegrationDefinition;
+  };
+
+export type GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponse =
+  GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponses[keyof GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponses];
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Name
+       *
+       * Slug identifying this named custom integration
+       */
+      name: string;
+    };
+    query?: never;
+    url: '/integrations/custom/{name}/status';
+  };
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetError =
+  GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetErrors[keyof GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetErrors];
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponses =
+  {
+    /**
+     * Response Get Named Custom Integration Status Integrations Custom  Name  Status Get
+     *
+     * Successful Response
+     */
+    200: {
+      [key: string]: string;
+    };
+  };
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponse =
+  GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponses[keyof GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponses];
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Name
+       *
+       * Slug identifying this named custom integration
+       */
+      name: string;
+    };
+    query?: never;
+    url: '/integrations/custom/{name}/definition';
+  };
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetError =
+  GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetErrors[keyof GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetErrors];
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: CustomIntegrationDefinition;
+  };
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponse =
+  GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponses[keyof GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponses];
+
+export type GetRecommendedModelsLlmIntegrationsRecommendedModelsGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/llm_integrations/recommended_models';
+};
+
+export type GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: RecommendedModelsResponse;
+};
+
+export type GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponse =
+  GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponses[keyof GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponses];
+
 export type GetIntegrationsAndModelInfoLlmIntegrationsGetData = {
   body?: never;
   path?: never;
@@ -34374,7 +35207,7 @@ export type GetIntegrationsAndModelInfoLlmIntegrationsGetResponses = {
    * Successful Response
    */
   200: {
-    [key in LlmIntegration]?: IntegrationModelsResponse;
+    [key: string]: IntegrationModelsResponse;
   };
 };
 
@@ -34422,7 +35255,7 @@ export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRun
      * Successful Response
      */
     200: {
-      [key in LlmIntegration]?: IntegrationModelsResponse;
+      [key: string]: IntegrationModelsResponse;
     };
   };
 
