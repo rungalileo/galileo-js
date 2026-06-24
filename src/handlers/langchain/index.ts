@@ -538,23 +538,24 @@ export class GalileoCallback
       tokenUsage.total_tokens) as number | undefined;
 
     // Fallback: usage_metadata on the first generation message
+    const firstGen = output.generations?.flat()?.[0];
+    // ChatGeneration has a .message property with usage_metadata; plain Generation does not.
+    // Use property narrowing since the Generation type doesn't declare .message.
+    const genRecord = firstGen as unknown as
+      | Record<string, unknown>
+      | undefined;
+    const message =
+      genRecord &&
+      typeof genRecord.message === 'object' &&
+      genRecord.message !== null
+        ? (genRecord.message as Record<string, unknown>)
+        : undefined;
+
     if (
       numInputTokens === undefined &&
       numOutputTokens === undefined &&
       totalTokens === undefined
     ) {
-      const firstGen = output.generations?.flat()?.[0];
-      // ChatGeneration has a .message property with usage_metadata; plain Generation does not.
-      // Use property narrowing since the Generation type doesn't declare .message.
-      const genRecord = firstGen as unknown as
-        | Record<string, unknown>
-        | undefined;
-      const message =
-        genRecord &&
-        typeof genRecord.message === 'object' &&
-        genRecord.message !== null
-          ? (genRecord.message as Record<string, unknown>)
-          : undefined;
       const usageMeta = message?.usage_metadata as
         | Record<string, unknown>
         | undefined;
@@ -565,6 +566,68 @@ export class GalileoCallback
         numOutputTokens = (usageMeta.output_tokens ??
           usageMeta.completion_tokens) as number | undefined;
         totalTokens = usageMeta.total_tokens as number | undefined;
+      }
+    }
+
+    // Gemini native path: per-modality token breakdown.
+    // Checks two surfaces in order:
+    //   1. message.usage_metadata.input_token_details / output_token_details
+    //      (langchain-google-genai >= 2.x with LangChain Core UsageMetadata)
+    //   2. message.response_metadata.prompt_tokens_details / candidates_tokens_details
+    //      (raw Gemini API token detail lists forwarded by the provider adapter)
+    let numImageInputTokens: number | undefined;
+    let numImageOutputTokens: number | undefined;
+    let numAudioInputTokens: number | undefined;
+    let numAudioOutputTokens: number | undefined;
+
+    if (message) {
+      const usageMeta = message.usage_metadata as
+        | Record<string, unknown>
+        | undefined;
+      const inputDetails = usageMeta?.input_token_details as
+        | Record<string, unknown>
+        | undefined;
+      const outputDetails = usageMeta?.output_token_details as
+        | Record<string, unknown>
+        | undefined;
+      if (inputDetails?.audio !== undefined)
+        numAudioInputTokens = inputDetails.audio as number;
+      if (inputDetails?.image !== undefined)
+        numImageInputTokens = inputDetails.image as number;
+      if (outputDetails?.audio !== undefined)
+        numAudioOutputTokens = outputDetails.audio as number;
+      if (outputDetails?.image !== undefined)
+        numImageOutputTokens = outputDetails.image as number;
+
+      // Surface 2: response_metadata token detail lists
+      const responseMeta = message.response_metadata as
+        | Record<string, unknown>
+        | undefined;
+      const promptDetails = responseMeta?.prompt_tokens_details as
+        | Array<Record<string, unknown>>
+        | undefined;
+      const candidatesDetails = responseMeta?.candidates_tokens_details as
+        | Array<Record<string, unknown>>
+        | undefined;
+      if (promptDetails) {
+        for (const entry of promptDetails) {
+          const modality = String(entry.modality ?? '').toUpperCase();
+          const count = entry.token_count as number | undefined;
+          if (modality === 'AUDIO' && numAudioInputTokens === undefined)
+            numAudioInputTokens = count;
+          if (modality === 'IMAGE' && numImageInputTokens === undefined)
+            numImageInputTokens = count;
+        }
+      }
+      if (candidatesDetails) {
+        for (const entry of candidatesDetails) {
+          const modality = String(entry.modality ?? '').toUpperCase();
+          const count = entry.token_count as number | undefined;
+          if (modality === 'AUDIO' && numAudioOutputTokens === undefined)
+            numAudioOutputTokens = count;
+          if (modality === 'IMAGE' && numImageOutputTokens === undefined)
+            numImageOutputTokens = count;
+        }
       }
     }
 
@@ -587,6 +650,10 @@ export class GalileoCallback
         numInputTokens,
         numOutputTokens,
         totalTokens,
+        numImageInputTokens,
+        numImageOutputTokens,
+        numAudioInputTokens,
+        numAudioOutputTokens,
         statusCode: 200
       },
       'handleLLMEnd'
