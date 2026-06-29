@@ -55,30 +55,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/projects/{project_id}/prompt_datasets': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Prompt Datasets
-     * @deprecated
-     */
-    get: operations['list_prompt_datasets_projects__project_id__prompt_datasets_get'];
-    put?: never;
-    /**
-     * Upload Prompt Evaluation Dataset
-     * @deprecated
-     */
-    post: operations['upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/datasets': {
     parameters: {
       query?: never;
@@ -175,34 +151,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/projects/{project_id}/prompt_datasets/{dataset_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Download Prompt Dataset
-     * @deprecated
-     */
-    get: operations['download_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__get'];
-    /**
-     * Update Prompt Dataset
-     * @deprecated
-     */
-    put: operations['update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put'];
-    post?: never;
-    /**
-     * Delete Prompt Dataset
-     * @deprecated
-     */
-    delete: operations['delete_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/datasets/{dataset_id}/content': {
     parameters: {
       query?: never;
@@ -228,8 +176,9 @@ export interface paths {
      *     The `index` and `column_name` fields are treated as keys tied to a specific version of the dataset.
      *     As such, these values are considered immutable identifiers for the dataset's structure.
      *
-     *     For example, if an edit operation changes the name of a column, subsequent edit operations in
-     *     the same request should reference the column using its original name.
+     *     Edits are applied sequentially in list order, and each edit sees the table state left by the
+     *     previous one. For example, after a `rename_column` edit renames `col_a` to `col_b`, any
+     *     subsequent `update_row` in the same request must reference the column as `col_b`, not `col_a`.
      *
      *     The `If-Match` header is used to ensure that updates are only applied if the client's version of the dataset
      *     matches the server's version. This prevents conflicts from simultaneous updates. The `ETag` header in the response
@@ -577,23 +526,6 @@ export interface paths {
      * @description Create a new project.
      */
     post: operations['create_project_projects_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/projects/{project_id}/upload_file': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Upload File */
-    post: operations['upload_file_projects__project_id__upload_file_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1767,107 +1699,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/scorers/{scorer_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Scorer */
-    get: operations['get_scorer_scorers__scorer_id__get'];
-    put?: never;
-    post?: never;
-    /** Delete Scorer */
-    delete: operations['delete_scorer_scorers__scorer_id__delete'];
-    options?: never;
-    head?: never;
-    /** Update */
-    patch: operations['update_scorers__scorer_id__patch'];
-    trace?: never;
-  };
-  '/scorers/code/validate': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Validate Code Scorer
-     * @description Validate a code scorer with optional simple input/output test.
-     */
-    post: operations['validate_code_scorer_scorers_code_validate_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/code/validate/{task_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Validate Code Scorer Task Result
-     * @description Poll for a code-scorer validation task result (returns status/result).
-     *
-     *     The validation job creates an entry in `registered_scorer_task_results` (pending) and the runner
-     *     will PATCH the internal task-results endpoint when it finishes. This GET allows clients to poll
-     *     the current task result.
-     */
-    get: operations['get_validate_code_scorer_task_result_scorers_code_validate__task_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/version/code': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Scorer Version Code */
-    get: operations['get_scorer_version_code_scorers__scorer_id__version_code_get'];
-    put?: never;
-    /** Create Code Scorer Version */
-    post: operations['create_code_scorer_version_scorers__scorer_id__version_code_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/version/preset': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Create Preset Scorer Version
-     * @description Create a preset scorer version.
-     */
-    post: operations['create_preset_scorer_version_scorers__scorer_id__version_preset_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/scorers/{scorer_id}/version/luna': {
     parameters: {
       query?: never;
@@ -1885,156 +1716,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/scorers/list': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** List Scorers With Filters */
-    post: operations['list_scorers_with_filters_scorers_list_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/tags': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List Tags */
-    get: operations['list_tags_scorers_tags_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/version': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Scorer Version Or Latest */
-    get: operations['get_scorer_version_or_latest_scorers__scorer_id__version_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/versions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List All Versions For Scorer */
-    get: operations['list_all_versions_for_scorer_scorers__scorer_id__versions_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/projects': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Projects For Scorer Route
-     * @description List all projects associated with a specific scorer.
-     */
-    get: operations['list_projects_for_scorer_route_scorers__scorer_id__projects_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/versions/{scorer_version_id}/projects': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Projects For Scorer Version Route
-     * @description List all projects associated with a specific scorer version.
-     */
-    get: operations['list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/versions/{version_number}/restore': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Restore Scorer Version
-     * @description List all scorers.
-     */
-    post: operations['restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/llm/autogen': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Autogen Llm Scorer
-     * @description Autogenerate an LLM scorer configuration.
-     *
-     *     Returns a Celery task ID that can be used to poll for the autogeneration results.
-     */
-    post: operations['autogen_llm_scorer_scorers_llm_autogen_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/scorers/llm/validate': {
     parameters: {
       query?: never;
@@ -2046,6 +1727,23 @@ export interface paths {
     put?: never;
     /** Manual Llm Validate */
     post: operations['manual_llm_validate_scorers_llm_validate_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/llm/validate/multipart': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Manual Llm Validate Multipart */
+    post: operations['manual_llm_validate_multipart_scorers_llm_validate_multipart_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2411,6 +2109,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/integrations/custom/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a named custom integration */
+    get: operations['get_named_custom_integration_integrations_custom__name__get'];
+    /** Create or update a named custom integration */
+    put: operations['create_or_update_named_custom_integration_integrations_custom__name__put'];
+    post?: never;
+    /** Delete a named custom integration */
+    delete: operations['delete_named_custom_integration_integrations_custom__name__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/integrations/databricks/unity-catalog/sql': {
     parameters: {
       query?: never;
@@ -2646,6 +2363,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/datasets/query/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Count Datasets
+     * @description Count datasets visible to the current user with filtering.
+     */
+    post: operations['count_datasets_datasets_query_count_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/datasets/{dataset_id}/variable_preview': {
     parameters: {
       query?: never;
@@ -2723,6 +2460,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/scorers/{scorer_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Scorer */
+    get: operations['get_scorer_scorers__scorer_id__get'];
+    put?: never;
+    post?: never;
+    /** Delete Scorer */
+    delete: operations['delete_scorer_scorers__scorer_id__delete'];
+    options?: never;
+    head?: never;
+    /** Update */
+    patch: operations['update_scorers__scorer_id__patch'];
+    trace?: never;
+  };
   '/scorers/{scorer_id}/version/llm': {
     parameters: {
       query?: never;
@@ -2734,6 +2490,26 @@ export interface paths {
     put?: never;
     /** Create Llm Scorer Version */
     post: operations['create_llm_scorer_version_scorers__scorer_id__version_llm_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/code/validate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Validate Code Scorer
+     * @description Validate a code scorer with optional simple input/output test.
+     */
+    post: operations['validate_code_scorer_scorers_code_validate_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2754,6 +2530,238 @@ export interface paths {
      * @description Validate a code scorer using actual log records.
      */
     post: operations['validate_code_scorer_log_record_scorers_code_validate_log_record_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/code/validate/{task_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Validate Code Scorer Task Result
+     * @description Poll for a code-scorer validation task result (returns status/result).
+     *
+     *     The validation job creates an entry in `registered_scorer_task_results` (pending) and the runner
+     *     will PATCH the internal task-results endpoint when it finishes. This GET allows clients to poll
+     *     the current task result.
+     */
+    get: operations['get_validate_code_scorer_task_result_scorers_code_validate__task_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/version/code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Scorer Version Code */
+    get: operations['get_scorer_version_code_scorers__scorer_id__version_code_get'];
+    put?: never;
+    /** Create Code Scorer Version */
+    post: operations['create_code_scorer_version_scorers__scorer_id__version_code_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/version/preset': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Preset Scorer Version
+     * @description Create a preset scorer version.
+     */
+    post: operations['create_preset_scorer_version_scorers__scorer_id__version_preset_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/list': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** List Scorers With Filters */
+    post: operations['list_scorers_with_filters_scorers_list_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/tags': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Tags */
+    get: operations['list_tags_scorers_tags_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/version': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Scorer Version Or Latest */
+    get: operations['get_scorer_version_or_latest_scorers__scorer_id__version_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List All Versions For Scorer */
+    get: operations['list_all_versions_for_scorer_scorers__scorer_id__versions_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/scope': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set Scorer Scope
+     * @description Full-replace a scorer's access scope (Share / manage visibility). metrics_rbac only.
+     */
+    put: operations['set_scorer_scope_scorers__scorer_id__scope_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Projects For Scorer Route
+     * @description List all projects associated with a specific scorer.
+     */
+    get: operations['list_projects_for_scorer_route_scorers__scorer_id__projects_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/versions/{scorer_version_id}/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Projects For Scorer Version Route
+     * @description List all projects associated with a specific scorer version.
+     */
+    get: operations['list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/versions/{version_number}/restore': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Restore Scorer Version
+     * @description List all scorers.
+     */
+    post: operations['restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/llm/autogen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Autogen Llm Scorer
+     * @description Autogenerate an LLM scorer configuration.
+     *
+     *     Returns a Celery task ID that can be used to poll for the autogeneration results.
+     */
+    post: operations['autogen_llm_scorer_scorers_llm_autogen_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2808,6 +2816,70 @@ export interface paths {
      * @description Validate a code scorer against dataset rows.
      */
     post: operations['validate_code_scorer_dataset_scorers_code_validate_dataset_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/metrics-testing/{run_id}/health-score': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Compute Health Score Endpoint
+     * @description Compute the health score metric for a metrics testing run.
+     */
+    post: operations['compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/health-scores': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Scorer Health Scores
+     * @description Return all persisted health scores for a scorer against a dataset, ordered by version ASC.
+     *
+     *     scores[0] is the baseline (first recorded), scores[-1] is the latest.
+     */
+    get: operations['get_scorer_health_scores_scorers__scorer_id__health_scores_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/versions/{version_number}/health-scores': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Write Scorer Version Health Score
+     * @description Persist the health score for a scorer version against a dataset.
+     *
+     *     Called by the UI after saving a metric version, passing the score from the last compute.
+     */
+    post: operations['write_scorer_version_health_score_scorers__scorer_id__versions__version_number__health_scores_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3300,6 +3372,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/integrations/costs/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Integration Costs */
+    get: operations['get_integration_costs_integrations_costs_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/integrations/select': {
     parameters: {
       query?: never;
@@ -3336,6 +3425,86 @@ export interface paths {
      *     Creates an opt-out record so no shared integration of this type is used.
      */
     post: operations['disable_integration_integrations_disable_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/definition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get custom integration definition
+     * @description Return the full JSON definition of the custom integration, including decrypted secrets.
+     *
+     *     Only users with edit permission on the integration (its creator and admins)
+     *     are authorized to call this endpoint.
+     */
+    get: operations['get_custom_integration_definition_integrations_custom_definition_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/{name}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Check status of a named custom integration */
+    get: operations['get_named_custom_integration_status_integrations_custom__name__status_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/{name}/definition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get definition of a named custom integration
+     * @description Return the full JSON definition of a named custom integration, including decrypted secrets.
+     */
+    get: operations['get_named_custom_integration_definition_integrations_custom__name__definition_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/llm_integrations/recommended_models': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Recommended Models
+     * @description Get recommended models for all purposes, grouped by integration.
+     */
+    get: operations['get_recommended_models_llm_integrations_recommended_models_get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -4033,7 +4202,9 @@ export interface components {
       has_children: boolean;
       /** Metrics */
       metrics: {
-        [key: string]: components['schemas']['SystemMetricInfo'];
+        [key: string]:
+          | components['schemas']['SystemMetricInfo']
+          | components['schemas']['CategoricalMetricInfo'];
       };
       /** Trace Count */
       trace_count: number;
@@ -4111,7 +4282,23 @@ export interface components {
         | components['schemas']['AnnotationStarAggregate']
         | components['schemas']['AnnotationScoreAggregate']
         | components['schemas']['AnnotationTagsAggregate']
+        | components['schemas']['AnnotationChoiceAggregate']
+        | components['schemas']['AnnotationTreeChoiceAggregate']
         | components['schemas']['AnnotationTextAggregate'];
+    };
+    /** AnnotationChoiceAggregate */
+    AnnotationChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
     };
     /** AnnotationLikeDislikeAggregate */
     AnnotationLikeDislikeAggregate: {
@@ -4198,11 +4385,32 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
+    /** AnnotationTreeChoiceAggregate */
+    AnnotationTreeChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'tree_choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
+    };
     /**
      * AnnotationType
      * @enum {string}
      */
-    AnnotationType: 'like_dislike' | 'star' | 'score' | 'tags' | 'text';
+    AnnotationType:
+      | 'like_dislike'
+      | 'star'
+      | 'score'
+      | 'tags'
+      | 'text'
+      | 'choice'
+      | 'tree_choice';
     /**
      * AnthropicAuthenticationType
      * @enum {string}
@@ -4238,10 +4446,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default anthropic
+       * @constant
+       */
+      name?: 'anthropic';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'anthropic';
+      provider: 'anthropic';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4303,7 +4517,7 @@ export interface components {
     /** AvailableIntegrations */
     AvailableIntegrations: {
       /** Integrations */
-      integrations: components['schemas']['IntegrationName'][];
+      integrations: components['schemas']['IntegrationProvider'][];
     };
     /** AwsBedrockIntegration */
     AwsBedrockIntegration: {
@@ -4328,10 +4542,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default aws_bedrock
+       * @constant
+       */
+      name?: 'aws_bedrock';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'aws_bedrock';
+      provider: 'aws_bedrock';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4360,10 +4580,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default aws_sagemaker
+       * @constant
+       */
+      name?: 'aws_sagemaker';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'aws_sagemaker';
+      provider: 'aws_sagemaker';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4459,10 +4685,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default azure
+       * @constant
+       */
+      name?: 'azure';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'azure';
+      provider: 'azure';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4823,6 +5055,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -4850,6 +5087,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /**
      * BaseScorerVersionDB
@@ -4961,16 +5200,13 @@ export interface components {
     };
     /** Body_create_code_scorer_version_scorers__scorer_id__version_code_post */
     Body_create_code_scorer_version_scorers__scorer_id__version_code_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /**
        * Validation Result
-       * @description Pre-validated result as JSON string to skip validation
+       * @description Pre-validated result as JSON string from the validate endpoint
        */
-      validation_result?: string | null;
+      validation_result: string;
     };
     /** Body_create_dataset_datasets_post */
     Body_create_dataset_datasets_post: {
@@ -4999,6 +5235,8 @@ export interface components {
       copy_from_dataset_version_index?: number | null;
       /** Project Id */
       project_id?: string | null;
+      /** Column Mapping */
+      column_mapping?: string | null;
     };
     /** Body_login_email_login_post */
     Body_login_email_login_post: {
@@ -5024,37 +5262,27 @@ export interface components {
        */
       client_secret?: string | null;
     };
-    /** Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put */
-    Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put: {
-      /** File */
-      file?: string | null;
-      /** Column Names */
-      column_names?: string[] | null;
-    };
-    /** Body_upload_file_projects__project_id__upload_file_post */
-    Body_upload_file_projects__project_id__upload_file_post: {
+    /** Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post */
+    Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post: {
       /**
-       * File
-       * Format: binary
+       * Body
+       * @description JSON-encoded GeneratedScorerValidationRequest
        */
-      file: string;
-      /** Upload Metadata */
-      upload_metadata: string;
-    };
-    /** Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post */
-    Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post: {
+      body: string;
       /**
-       * File
-       * Format: binary
+       * Query Files
+       * @default []
        */
-      file: string;
+      query_files?: string[];
+      /**
+       * Response Files
+       * @default []
+       */
+      response_files?: string[];
     };
     /** Body_validate_code_scorer_dataset_scorers_code_validate_dataset_post */
     Body_validate_code_scorer_dataset_scorers_code_validate_dataset_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /**
        * Dataset Id
@@ -5079,10 +5307,7 @@ export interface components {
     };
     /** Body_validate_code_scorer_log_record_scorers_code_validate_log_record_post */
     Body_validate_code_scorer_log_record_scorers_code_validate_log_record_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /** Log Stream Id */
       log_stream_id?: string | null;
@@ -5112,10 +5337,7 @@ export interface components {
     };
     /** Body_validate_code_scorer_scorers_code_validate_post */
     Body_validate_code_scorer_scorers_code_validate_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /** Test Input */
       test_input?: string | null;
@@ -5242,6 +5464,31 @@ export interface components {
       /** Value */
       value: string | string[];
     };
+    /** CategoricalMetricInfo */
+    CategoricalMetricInfo: {
+      /**
+       * @description Discriminator: categorical metrics aggregated as per-label counts (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      aggregation_type: 'categorical';
+      /**
+       * Name
+       * @description Unique identifier for the metric
+       */
+      name: string;
+      /**
+       * Label
+       * @description Human-readable display name for the metric
+       */
+      label: string;
+      /**
+       * Category Counts
+       * @description Count of occurrences per category label across records
+       */
+      category_counts?: {
+        [key: string]: number;
+      };
+    };
     /**
      * CategoricalRollUpMethod
      * @description Roll up methods for aggregating categorical metrics up the session/trace/span hierarchy.
@@ -5298,6 +5545,30 @@ export interface components {
       response_schema?: {
         [key: string]: unknown;
       } | null;
+    };
+    /** ChoiceAggregate */
+    ChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
+    };
+    /** ChoiceRating */
+    ChoiceRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'choice';
+      /** Value */
+      value: string;
     };
     /** ChunkAttributionUtilizationScorer */
     ChunkAttributionUtilizationScorer: {
@@ -5513,12 +5784,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -5529,20 +5794,25 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
     };
     /** ColumnMapping */
     ColumnMapping: {
       /** Input */
-      input: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      input?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Output */
-      output: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      output?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Generated Output */
-      generated_output:
+      generated_output?:
         | components['schemas']['ColumnMappingConfig']
         | string[]
         | null;
       /** Metadata */
-      metadata: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      metadata?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Mgt */
       mgt?: {
         [key: string]: components['schemas']['ColumnMappingConfig'];
@@ -5663,6 +5933,28 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ComputeHealthScoreRequest */
+    ComputeHealthScoreRequest: {
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
+      /** @description The scorer's output type, used to dispatch the correct metric. */
+      output_type: components['schemas']['OutputTypeEnum'];
+      /**
+       * Scoreable Node Types
+       * @description The scorer's scoreable_node_types. Determines which record type carries the score.
+       */
+      scoreable_node_types?: components['schemas']['StepType'][];
+      /**
+       * Mgt Overlay
+       * @description Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+       */
+      mgt_overlay?: {
+        [key: string]: string | null;
+      };
+    };
     /**
      * ContentModality
      * @description Classification of content modality
@@ -5738,6 +6030,12 @@ export interface components {
      * @enum {string}
      */
     ControlCheckStage: 'pre' | 'post';
+    /**
+     * ControlResourceAction
+     * @description Actions on Agent Control's org-scoped ``control`` resource.
+     * @enum {string}
+     */
+    ControlResourceAction: 'create' | 'read' | 'update' | 'delete';
     /** ControlResult */
     ControlResult: {
       /** @description Decision/action produced by the control. */
@@ -5932,6 +6230,11 @@ export interface components {
       num_judges?: number | null;
     };
     /**
+     * CostInterval
+     * @enum {string}
+     */
+    CostInterval: 'hourly' | 'daily' | 'weekly' | 'monthly';
+    /**
      * CreateCodeMetricGenerationRequest
      * @description Request to generate scorer code from a user message.
      */
@@ -5996,7 +6299,7 @@ export interface components {
       job_id?: string | null;
       /**
        * Job Name
-       * @default default
+       * @default log_stream_scorer
        */
       job_name?: string;
       /**
@@ -6121,17 +6424,6 @@ export interface components {
       luna_model?: string | null;
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
-      prompt_optimization_configuration?:
-        | components['schemas']['PromptOptimizationConfiguration']
-        | null;
-      /**
-       * Epoch
-       * @default 0
-       */
-      epoch?: number;
-      metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration']
-        | null;
       /** Is Session */
       is_session?: boolean | null;
       /** Validation Config */
@@ -6158,6 +6450,13 @@ export interface components {
        * @default false
        */
       multijudge_average_boolean_metrics?: boolean;
+      /**
+       * Store Metric Ids
+       * @default false
+       */
+      store_metric_ids?: boolean;
+      /** Trace Ids */
+      trace_ids?: string[];
     };
     /** CreateJobResponse */
     CreateJobResponse: {
@@ -6176,7 +6475,7 @@ export interface components {
       job_id?: string | null;
       /**
        * Job Name
-       * @default default
+       * @default log_stream_scorer
        */
       job_name?: string;
       /**
@@ -6301,17 +6600,6 @@ export interface components {
       luna_model?: string | null;
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
-      prompt_optimization_configuration?:
-        | components['schemas']['PromptOptimizationConfiguration']
-        | null;
-      /**
-       * Epoch
-       * @default 0
-       */
-      epoch?: number;
-      metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration']
-        | null;
       /** Is Session */
       is_session?: boolean | null;
       /** Validation Config */
@@ -6338,6 +6626,13 @@ export interface components {
        * @default false
        */
       multijudge_average_boolean_metrics?: boolean;
+      /**
+       * Store Metric Ids
+       * @default false
+       */
+      store_metric_ids?: boolean;
+      /** Trace Ids */
+      trace_ids?: string[];
       /** Message */
       message: string;
       /** Link */
@@ -6404,6 +6699,10 @@ export interface components {
     CreateScorerRequest: {
       /** Name */
       name: string;
+      /** Id */
+      id?: string | null;
+      /** Label */
+      label?: string | null;
       /**
        * Description
        * @default
@@ -6446,6 +6745,10 @@ export interface components {
             | components['schemas']['MetricColorPickerMultiLabel']
           )
         | null;
+      /** Is Global */
+      is_global?: boolean | null;
+      /** Project Ids */
+      project_ids?: string[];
     };
     /** CreateScorerVersionRequest */
     CreateScorerVersionRequest: {
@@ -6580,10 +6883,15 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default custom
+       */
+      name?: string;
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'custom';
+      provider: 'custom';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -6672,6 +6980,47 @@ export interface components {
       } | null;
       /** Token */
       token?: string | null;
+    };
+    /**
+     * CustomIntegrationDefinition
+     * @description Response schema for the full JSON definition of a custom integration.
+     *
+     *     Returns the exact same structure used to create the integration,
+     *     including decrypted sensitive fields (api_key_value, token, headers).
+     *     Only accessible to users with edit permission (creator + admins).
+     */
+    CustomIntegrationDefinition: {
+      authentication_type: components['schemas']['CustomAuthenticationType'];
+      /** Endpoint */
+      endpoint: string;
+      /** Default Model */
+      default_model?: string | null;
+      /** Model Properties */
+      model_properties?:
+        | components['schemas']['promptgalileo__schemas__config__custom__ModelProperties'][]
+        | null;
+      /** Token */
+      token?: string | null;
+      /** Api Key Header */
+      api_key_header?: string | null;
+      /** Api Key Value */
+      api_key_value?: string | null;
+      /** Authentication Scope */
+      authentication_scope?: string | null;
+      /** Oauth2 Token Url */
+      oauth2_token_url?: string | null;
+      /** Headers */
+      headers?: {
+        [key: string]: string;
+      } | null;
+      custom_llm_config?: components['schemas']['CustomLLMConfig'] | null;
+      /** Custom Header Mapping */
+      custom_header_mapping?: {
+        [key: string]: string;
+      } | null;
+      multi_modal_config?:
+        | components['schemas']['MultiModalModelIntegrationConfig']
+        | null;
     };
     /**
      * CustomLLMConfig
@@ -6802,6 +7151,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -6829,6 +7183,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedAgenticWorkflowSuccessGPTScorer */
     CustomizedAgenticWorkflowSuccessGPTScorer: {
@@ -6933,6 +7289,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -6960,6 +7321,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedChunkAttributionUtilizationGPTScorer */
     CustomizedChunkAttributionUtilizationGPTScorer: {
@@ -7054,6 +7417,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7081,6 +7449,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedCompletenessGPTScorer */
     CustomizedCompletenessGPTScorer: {
@@ -7174,6 +7544,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7201,6 +7576,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedFactualityGPTScorer */
     CustomizedFactualityGPTScorer: {
@@ -7304,6 +7681,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7331,6 +7713,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
       /**
        * Function Explanation Param Name
        * @default explanation
@@ -7431,6 +7815,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7458,6 +7847,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedGroundednessGPTScorer */
     CustomizedGroundednessGPTScorer: {
@@ -7558,6 +7949,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7585,6 +7981,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedInputSexistGPTScorer */
     CustomizedInputSexistGPTScorer: {
@@ -7685,6 +8083,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7712,6 +8115,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedInputToxicityGPTScorer */
     CustomizedInputToxicityGPTScorer: {
@@ -7812,6 +8217,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7839,6 +8249,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedInstructionAdherenceGPTScorer */
     CustomizedInstructionAdherenceGPTScorer: {
@@ -7939,6 +8351,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7966,6 +8383,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
       /**
        * Function Explanation Param Name
        * @default explanation
@@ -8071,6 +8490,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8098,6 +8522,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedSexistGPTScorer */
     CustomizedSexistGPTScorer: {
@@ -8198,6 +8624,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8225,6 +8656,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedToolErrorRateGPTScorer */
     CustomizedToolErrorRateGPTScorer: {
@@ -8329,6 +8762,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8356,6 +8794,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedToolSelectionQualityGPTScorer */
     CustomizedToolSelectionQualityGPTScorer: {
@@ -8456,6 +8896,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8483,6 +8928,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedToxicityGPTScorer */
     CustomizedToxicityGPTScorer: {
@@ -8583,6 +9030,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8610,6 +9062,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /**
      * DataType
@@ -8663,10 +9117,12 @@ export interface components {
       | 'score_rating'
       | 'star_rating'
       | 'tags_rating'
+      | 'choice_rating'
       | 'thumb_rating_aggregate'
       | 'score_rating_aggregate'
       | 'star_rating_aggregate'
-      | 'tags_rating_aggregate';
+      | 'tags_rating_aggregate'
+      | 'choice_rating_aggregate';
     /**
      * DataUnit
      * @enum {string}
@@ -8682,10 +9138,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default databricks
+       * @constant
+       */
+      name?: 'databricks';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'databricks';
+      provider: 'databricks';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -9117,6 +9579,34 @@ export interface components {
        */
       sort_type?: 'custom';
     };
+    /**
+     * DatasetRemoveColumn
+     * @description Drop a column from the dataset schema.
+     */
+    DatasetRemoveColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'remove_column';
+      /** Column Name */
+      column_name: string;
+    };
+    /**
+     * DatasetRenameColumn
+     * @description Rename a column in the dataset schema, preserving values.
+     */
+    DatasetRenameColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'rename_column';
+      /** Column Name */
+      column_name: string;
+      /** New Column Name */
+      new_column_name: string;
+    };
     /** DatasetRow */
     DatasetRow: {
       /**
@@ -9333,6 +9823,7 @@ export interface components {
       | 'permission_error'
       | 'not_found_error'
       | 'workflow_error'
+      | 'rate_limit_error'
       | 'system_error'
       | 'not_applicable_reason'
       | 'uncataloged_error';
@@ -9384,6 +9875,10 @@ export interface components {
        * @default false
        */
       trigger?: boolean;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunCreatedAtFilter */
     ExperimentCreatedAtFilter: {
@@ -9456,6 +9951,39 @@ export interface components {
       dataset_id: string;
       /** Version Index */
       version_index: number;
+    };
+    /** ExperimentGroupIDFilter */
+    ExperimentGroupIDFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_id';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** ExperimentGroupNameFilter */
+    ExperimentGroupNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_name';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** RunIDFilter */
     ExperimentIDFilter: {
@@ -9598,6 +10126,8 @@ export interface components {
       num_spans?: number | null;
       /** Num Traces */
       num_traces?: number | null;
+      /** Num Sessions */
+      num_sessions?: number | null;
       task_type: components['schemas']['TaskType'];
       dataset?: components['schemas']['ExperimentDataset'] | null;
       /** Aggregate Metrics */
@@ -9606,7 +10136,7 @@ export interface components {
       };
       /**
        * Structured Aggregate Metrics
-       * @description Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+       * @description Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
        */
       structured_aggregate_metrics?: {
         [key: string]: components['schemas']['MetricAggregates'];
@@ -9646,6 +10176,12 @@ export interface components {
         [key: string]: components['schemas']['RunTagDB'][];
       };
       status?: components['schemas']['ExperimentStatus'];
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
+      /** Experiment Group Is System */
+      experiment_group_is_system?: boolean | null;
     };
     /** ExperimentSearchRequest */
     ExperimentSearchRequest: {
@@ -9666,6 +10202,8 @@ export interface components {
         | components['schemas']['ExperimentCreatedByFilter']
         | components['schemas']['ExperimentCreatedAtFilter']
         | components['schemas']['ExperimentUpdatedAtFilter']
+        | components['schemas']['ExperimentGroupIDFilter']
+        | components['schemas']['ExperimentGroupNameFilter']
       )[];
       /**
        * Sort
@@ -9701,6 +10239,10 @@ export interface components {
        * @default 16
        */
       task_type?: 16 | 17;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunUpdatedAtFilter */
     ExperimentUpdatedAtFilter: {
@@ -12459,12 +13001,10 @@ export interface components {
         | components['schemas']['ExtendedControlSpanRecord']
       )[];
       /**
-       * Type
-       * @description Type of the trace, span or session.
-       * @default trace
-       * @constant
+       * @description Type of the trace, span or session. (enum property replaced by openapi-typescript)
+       * @enum {string}
        */
-      type?: 'trace';
+      type: 'trace';
       /**
        * Input
        * @description Input to the trace or span.
@@ -13325,6 +13865,18 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** FeatureIntegrationCosts */
+    FeatureIntegrationCosts: {
+      /** Feature Name */
+      feature_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Projects */
+      projects?: components['schemas']['ProjectIntegrationCosts'][];
+    };
     /** FeedbackAggregate */
     FeedbackAggregate: {
       /** Aggregate */
@@ -13333,7 +13885,9 @@ export interface components {
         | components['schemas']['StarAggregate']
         | components['schemas']['ScoreAggregate']
         | components['schemas']['TagsAggregate']
-        | components['schemas']['TextAggregate'];
+        | components['schemas']['TextAggregate']
+        | components['schemas']['ChoiceAggregate']
+        | components['schemas']['TreeChoiceAggregate'];
     };
     /** FeedbackRatingDB */
     FeedbackRatingDB: {
@@ -13345,7 +13899,9 @@ export interface components {
         | components['schemas']['StarRating']
         | components['schemas']['ScoreRating']
         | components['schemas']['TagsRating']
-        | components['schemas']['TextRating'];
+        | components['schemas']['TextRating']
+        | components['schemas']['ChoiceRating']
+        | components['schemas']['TreeChoiceRating'];
       /**
        * Created At
        * Format: date-time
@@ -13366,7 +13922,14 @@ export interface components {
      * FeedbackType
      * @enum {string}
      */
-    FeedbackType: 'like_dislike' | 'star' | 'score' | 'tags' | 'text';
+    FeedbackType:
+      | 'like_dislike'
+      | 'star'
+      | 'score'
+      | 'tags'
+      | 'text'
+      | 'choice'
+      | 'tree_choice';
     /**
      * FewShotExample
      * @description Few-shot example for a chainpoll metric prompt.
@@ -13881,6 +14444,47 @@ export interface components {
       /** Hallucination */
       hallucination: number;
     };
+    /** HealthScoreResult */
+    HealthScoreResult: {
+      health_score_type: components['schemas']['HealthScoreType'] | null;
+      /**
+       * Value
+       * @description Primary health score metric value, or None if no valid rows.
+       */
+      value: number | null;
+      /**
+       * Skipped Rows
+       * @description Rows excluded because MGT or score could not be parsed.
+       */
+      skipped_rows: number;
+      /**
+       * Secondary
+       * @description Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+       */
+      secondary: {
+        [key: string]: number | null;
+      };
+      /**
+       * Total Scored Rows
+       * @description Rows with a successful scorer result.
+       */
+      total_scored_rows: number;
+      /**
+       * Total Mgt Rows
+       * @description Rows with a non-null MGT value after overlay.
+       */
+      total_mgt_rows: number;
+      /**
+       * Joined Rows
+       * @description Rows with both a score and a MGT value (used for computation).
+       */
+      joined_rows: number;
+    };
+    /**
+     * HealthScoreType
+     * @enum {string}
+     */
+    HealthScoreType: 'macro_f1' | 'micro_f1' | 'mse' | 'mae';
     /** HealthcheckResponse */
     HealthcheckResponse: {
       /** Api Version */
@@ -14434,7 +15038,22 @@ export interface components {
      * IntegrationAction
      * @enum {string}
      */
-    IntegrationAction: 'update' | 'delete' | 'share';
+    IntegrationAction: 'update' | 'delete' | 'share' | 'read_secrets';
+    /** IntegrationCostsDataPoint */
+    IntegrationCostsDataPoint: {
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string;
+      /** Cost */
+      cost: number;
+    };
+    /** IntegrationCostsResponse */
+    IntegrationCostsResponse: {
+      /** Features */
+      features?: components['schemas']['FeatureIntegrationCosts'][];
+    };
     /** IntegrationDB */
     IntegrationDB: {
       /**
@@ -14447,7 +15066,9 @@ export interface components {
        * @default []
        */
       permissions?: components['schemas']['Permission'][];
-      name: components['schemas']['IntegrationName'];
+      /** Name */
+      name: string;
+      provider: components['schemas']['IntegrationProvider'];
       /**
        * Created At
        * Format: date-time
@@ -14476,12 +15097,19 @@ export interface components {
     };
     /** IntegrationDisableRequest */
     IntegrationDisableRequest: {
-      integration_name: components['schemas']['IntegrationName'];
+      /** Integration Name */
+      integration_name: string;
     };
     /** IntegrationModelsResponse */
     IntegrationModelsResponse: {
       /** Integration Name */
       integration_name: string;
+      /**
+       * Integration Id
+       * Format: uuid4
+       */
+      integration_id: string;
+      provider: components['schemas']['IntegrationProvider'];
       /** Models */
       models: string[];
       /** Scorer Models */
@@ -14504,10 +15132,10 @@ export interface components {
       model_properties?: components['schemas']['api__schemas__integration__llm_integration__ModelProperties'][];
     };
     /**
-     * IntegrationName
+     * IntegrationProvider
      * @enum {string}
      */
-    IntegrationName:
+    IntegrationProvider:
       | 'anthropic'
       | 'aws_bedrock'
       | 'aws_sagemaker'
@@ -14522,7 +15150,8 @@ export interface components {
       | 'writer';
     /** IntegrationSelectRequest */
     IntegrationSelectRequest: {
-      integration_name: components['schemas']['IntegrationName'];
+      /** Integration Name */
+      integration_name: string;
       /**
        * Integration Id
        * Format: uuid4
@@ -14713,8 +15342,12 @@ export interface components {
       steps_total?: number | null;
     };
     JsonPrimitive: string | number | boolean | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    JsonValue: any; // circular self-reference in generated spec — simplified to any
+    JsonValue:
+      | components['schemas']['JsonPrimitive']
+      | components['schemas']['JsonValue'][]
+      | {
+          [key: string]: components['schemas']['JsonValue'];
+        };
     /**
      * LLMExportFormat
      * @enum {string}
@@ -14928,28 +15561,6 @@ export interface components {
       /** Log Streams */
       log_streams: components['schemas']['LogStreamResponse'][];
     };
-    /** ListPromptDatasetResponse */
-    ListPromptDatasetResponse: {
-      /**
-       * Starting Token
-       * @default 0
-       */
-      starting_token?: number;
-      /**
-       * Limit
-       * @default 100
-       */
-      limit?: number;
-      /**
-       * Paginated
-       * @default false
-       */
-      paginated?: boolean;
-      /** Next Starting Token */
-      next_starting_token?: number | null;
-      /** Datasets */
-      datasets?: components['schemas']['PromptDatasetDB'][];
-    };
     /** ListPromptTemplateParams */
     ListPromptTemplateParams: {
       /** Filters */
@@ -15067,12 +15678,16 @@ export interface components {
         | components['schemas']['ScorerUpdatedAtFilter']
         | components['schemas']['ScorerLabelFilter']
         | components['schemas']['ScorerScoreableNodeTypesFilter']
+        | components['schemas']['ScorerMultimodalCapabilitiesFilter']
         | components['schemas']['ScorerIDFilter']
+        | components['schemas']['ScorerIsGlobalFilter']
+        | components['schemas']['ScorerScopeProjectsFilter']
       )[];
       /** Sort */
       sort?:
         | (
             | components['schemas']['ScorerNameSort']
+            | components['schemas']['ScorerUpdatedAtSort']
             | components['schemas']['ScorerEnabledInRunSort']
             | components['schemas']['ScorerEnabledInPlaygroundSort']
           )
@@ -15149,6 +15764,26 @@ export interface components {
        * @description Time until the first token was generated in nanoseconds.
        */
       time_to_first_token_ns?: number | null;
+      /**
+       * Num Image Input Tokens
+       * @description Number of image input tokens.
+       */
+      num_image_input_tokens?: number | null;
+      /**
+       * Num Audio Input Tokens
+       * @description Number of audio input tokens.
+       */
+      num_audio_input_tokens?: number | null;
+      /**
+       * Num Audio Output Tokens
+       * @description Number of audio output tokens.
+       */
+      num_audio_output_tokens?: number | null;
+      /**
+       * Num Image Output Tokens
+       * @description Number of image output tokens.
+       */
+      num_image_output_tokens?: number | null;
     } & {
       [key: string]: unknown;
     };
@@ -15430,12 +16065,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -15446,6 +16075,11 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
       /** @description For metric columns only: Scorer config that produced the metric. */
       scorer_config?: components['schemas']['ScorerConfig'] | null;
       /**
@@ -15464,11 +16098,6 @@ export interface components {
        * @description Type of label color for the column, if this is a multilabel metric column.
        */
       label_color?: ('positive' | 'negative') | null;
-      /**
-       * Metric Key Alias
-       * @description Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-       */
-      metric_key_alias?: string | null;
     };
     /** LogRecordsCustomMetricsQueryRequest */
     LogRecordsCustomMetricsQueryRequest: {
@@ -15622,6 +16251,12 @@ export interface components {
        * @description Optional filename for the exported file
        */
       file_name?: string | null;
+      /**
+       * Export Computed Metrics Only
+       * @description When true, export only enabled scorer metrics with computed values (success or roll_up). For session exports, omit entire sessions unless every enabled metric at session, trace, or span level is ready (success, roll_up, or not_applicable).
+       * @default false
+       */
+      export_computed_metrics_only?: boolean;
       /**
        * Log Stream Id
        * @description Log stream id associated with the traces.
@@ -15865,6 +16500,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       select_columns: components['schemas']['SelectColumns'];
     };
     /** LogRecordsPartialQueryResponse */
@@ -16011,6 +16652,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
     };
     /** LogRecordsQueryResponse */
     LogRecordsQueryResponse: {
@@ -16782,6 +17429,11 @@ export interface components {
        */
       traces_count: number;
       /**
+       * Spans Count
+       * @description total number of spans ingested
+       */
+      spans_count: number;
+      /**
        * Trace Ids
        * @description List of trace IDs that were ingested. Only included if include_trace_ids=True in request.
        */
@@ -17253,29 +17905,6 @@ export interface components {
       /** Original Explanation */
       original_explanation: string;
     };
-    /**
-     * MetricCritiqueJobConfiguration
-     * @description Info necessary to execute a metric critique job.
-     */
-    MetricCritiqueJobConfiguration: {
-      /** Project Type */
-      project_type: 'prompt_evaluation' | 'llm_monitor' | 'gen_ai';
-      /** Metric Name */
-      metric_name: string;
-      /** Scorer Id */
-      scorer_id?: string | null;
-      /** Critique Ids */
-      critique_ids: string[];
-      /** Recompute Settings */
-      recompute_settings?:
-        | (
-            | components['schemas']['RecomputeSettingsRuns']
-            | components['schemas']['RecomputeSettingsProject']
-            | components['schemas']['RecomputeSettingsObserve']
-            | components['schemas']['RecomputeSettingsLogStream']
-          )
-        | null;
-    };
     /** MetricError */
     MetricError: {
       /**
@@ -17434,6 +18063,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Multijudge Average */
+      multijudge_average?: number | null;
       /** Input Tokens */
       input_tokens?: number | null;
       /** Output Tokens */
@@ -17441,6 +18072,13 @@ export interface components {
       /** Total Tokens */
       total_tokens?: number | null;
       critique?: components['schemas']['MetricCritiqueColumnar'] | null;
+      /**
+       * Metadata
+       * @description Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+       */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
       /**
        * Roll Up Metrics
        * @description Roll up metrics e.g. sum, average, min, max for numeric, and category_count for categorical metrics.
@@ -17538,6 +18176,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Multijudge Average */
+      multijudge_average?: number | null;
       /** Input Tokens */
       input_tokens?: number | null;
       /** Output Tokens */
@@ -17545,6 +18185,13 @@ export interface components {
       /** Total Tokens */
       total_tokens?: number | null;
       critique?: components['schemas']['MetricCritiqueColumnar'] | null;
+      /**
+       * Metadata
+       * @description Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+       */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
       /** Display Value */
       display_value?: string | null;
       /** Rationale */
@@ -17610,11 +18257,8 @@ export interface components {
        * @description Name of the metric that we are testing.
        */
       name: string;
-      /**
-       * @description Output type of the metrics testing table. If not provided, all columns are returned.
-       * @default boolean
-       */
-      output_type?: components['schemas']['OutputTypeEnum'];
+      /** @description Output type of the scorer. Required when metric_key is REGISTERED_SCORER_VALIDATION; used to determine the data_type for validation columns. */
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
       /**
        * Cot Enabled
        * @description Whether the metrics testing table is using chain of thought (CoT) enabled scorers. If True, the columns will be generated for CoT enabled scorers.
@@ -17643,10 +18287,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default mistral
+       * @constant
+       */
+      name?: 'mistral';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'mistral';
+      provider: 'mistral';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17885,10 +18535,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default nvidia
+       * @constant
+       */
+      name?: 'nvidia';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'nvidia';
+      provider: 'nvidia';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17916,10 +18572,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default openai
+       * @constant
+       */
+      name?: 'openai';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'openai';
+      provider: 'openai';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -19334,6 +19996,8 @@ export interface components {
       } | null;
       /** Previous Session Id */
       previous_session_id?: string | null;
+      /** Num Traces */
+      num_traces?: number | null;
     };
     /** PartialExtendedToolSpanRecord */
     PartialExtendedToolSpanRecord: {
@@ -19792,6 +20456,8 @@ export interface components {
        * @default true
        */
       is_complete?: boolean;
+      /** Num Spans */
+      num_spans?: number | null;
     };
     /** PartialExtendedWorkflowSpanRecord */
     PartialExtendedWorkflowSpanRecord: {
@@ -20078,6 +20744,7 @@ export interface components {
         | components['schemas']['GroupAction']
         | components['schemas']['GroupMemberAction']
         | components['schemas']['ProjectAction']
+        | components['schemas']['ScorerAction']
         | components['schemas']['RegisteredScorerAction']
         | components['schemas']['ApiKeyAction']
         | components['schemas']['GeneratedScorerAction']
@@ -20085,7 +20752,8 @@ export interface components {
         | components['schemas']['DatasetAction']
         | components['schemas']['IntegrationAction']
         | components['schemas']['OrganizationAction']
-        | components['schemas']['AnnotationQueueAction'];
+        | components['schemas']['AnnotationQueueAction']
+        | components['schemas']['ControlResourceAction'];
       /** Allowed */
       allowed: boolean;
       /** Message */
@@ -20122,7 +20790,9 @@ export interface components {
       | 'edit_run_tags'
       | 'dismiss_alert'
       | 'edit_slice'
-      | 'edit_edit';
+      | 'edit_edit'
+      | 'update_control_bindings'
+      | 'use_control_runtime';
     /** ProjectBookmarkFilter */
     ProjectBookmarkFilter: {
       /**
@@ -20376,6 +21046,23 @@ export interface components {
       /** Value */
       value: string | string[];
     };
+    /** ProjectIntegrationCosts */
+    ProjectIntegrationCosts: {
+      /**
+       * Project Id
+       * Format: uuid4
+       */
+      project_id: string;
+      /** Project Name */
+      project_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Data Points */
+      data_points?: components['schemas']['IntegrationCostsDataPoint'][];
+    };
     /**
      * ProjectItem
      * @description Represents a single project item for the UI list.
@@ -20554,9 +21241,6 @@ export interface components {
     ProjectUpdate: {
       /** Name */
       name?: string | null;
-      /** Created By */
-      created_by?: string | null;
-      type?: components['schemas']['ProjectType'] | null;
       /** Labels */
       labels?: string[] | null;
       /** Description */
@@ -20625,27 +21309,6 @@ export interface components {
        * @constant
        */
       sort_type?: 'column';
-    };
-    /** PromptDatasetDB */
-    PromptDatasetDB: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string;
-      /**
-       * Dataset Id
-       * Format: uuid4
-       */
-      dataset_id: string;
-      /** File Name */
-      file_name?: string | null;
-      /** Message */
-      message?: string | null;
-      /** Num Rows */
-      num_rows?: number | null;
-      /** Rows */
-      rows?: number | null;
     };
     /** PromptInjectionScorer */
     PromptInjectionScorer: {
@@ -20751,38 +21414,6 @@ export interface components {
       response_schema?: {
         [key: string]: unknown;
       } | null;
-    };
-    /**
-     * PromptOptimizationConfiguration
-     * @description Configuration for prompt optimization.
-     */
-    PromptOptimizationConfiguration: {
-      /** Prompt */
-      prompt: string;
-      /** Evaluation Criteria */
-      evaluation_criteria: string;
-      /** Task Description */
-      task_description: string;
-      /** Includes Target */
-      includes_target: boolean;
-      /** Num Rows */
-      num_rows: number;
-      /** Iterations */
-      iterations: number;
-      /** Max Tokens */
-      max_tokens: number;
-      /** Temperature */
-      temperature: number;
-      /** Generation Model Alias */
-      generation_model_alias: string;
-      /** Evaluation Model Alias */
-      evaluation_model_alias: string;
-      /** @default openai */
-      integration_name?: components['schemas']['LLMIntegration'];
-      /** Reasoning Effort */
-      reasoning_effort?: string | null;
-      /** Verbosity */
-      verbosity?: string | null;
     };
     /** PromptPerplexityScorer */
     PromptPerplexityScorer: {
@@ -21201,7 +21832,23 @@ export interface components {
       | 'custom_metric_judge'
       | 'custom_metric_autogen'
       | 'autotune'
-      | 'signals';
+      | 'signals'
+      | 'ai_assistant';
+    /** RecommendedModelsResponse */
+    RecommendedModelsResponse: {
+      /** Supported */
+      supported: {
+        [key: string]: {
+          [key: string]: string[];
+        };
+      };
+      /** Available */
+      available: {
+        [key: string]: {
+          [key: string]: string[];
+        };
+      };
+    };
     /**
      * RecomputeLogRecordsMetricsRequest
      * @description Request to recompute metrics for a genai project run (log stream or experiment).
@@ -21262,53 +21909,16 @@ export interface components {
        */
       include_counts?: boolean;
       /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
+      /**
        * Scorer Ids
        * @description List of scorer IDs for which metrics should be recomputed.
        */
       scorer_ids: string[];
-    };
-    /** RecomputeSettingsLogStream */
-    RecomputeSettingsLogStream: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'log_stream_filters';
-      /**
-       * Run Id
-       * Format: uuid4
-       */
-      run_id: string;
-      /** Filters */
-      filters: unknown[];
-    };
-    /** RecomputeSettingsObserve */
-    RecomputeSettingsObserve: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'observe_filters';
-      /** Filters */
-      filters: unknown[];
-    };
-    /** RecomputeSettingsProject */
-    RecomputeSettingsProject: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'project';
-    };
-    /** RecomputeSettingsRuns */
-    RecomputeSettingsRuns: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'runs';
-      /** Run Ids */
-      run_ids: string[];
     };
     /** RegisteredScorer */
     RegisteredScorer: {
@@ -21726,9 +22336,9 @@ export interface components {
       example_content_id?: string | null;
       creator: components['schemas']['UserDB'];
       /** Logged Splits */
-      logged_splits: string[];
+      logged_splits?: string[];
       /** Logged Inference Names */
-      logged_inference_names: string[];
+      logged_inference_names?: string[];
     };
     /** RunDBThin */
     RunDBThin: {
@@ -21775,6 +22385,10 @@ export interface components {
       /** Example Content Id */
       example_content_id?: string | null;
       creator: components['schemas']['UserDB'];
+      /** Logged Splits */
+      logged_splits?: string[];
+      /** Logged Inference Names */
+      logged_inference_names?: string[];
     };
     /**
      * RunParamsMap
@@ -21935,6 +22549,11 @@ export interface components {
       /** Value */
       value: number;
     };
+    /**
+     * ScorerAction
+     * @enum {string}
+     */
+    ScorerAction: 'update' | 'delete' | 'share' | 'export' | 'autotune_apply';
     /**
      * ScorerConfig
      * @description Used for configuring a scorer for a scorer job.
@@ -22136,6 +22755,11 @@ export interface components {
        */
       name: 'exclude_slm_scorers';
     };
+    /** ScorerHealthScoresResponse */
+    ScorerHealthScoresResponse: {
+      /** Scores */
+      scores: components['schemas']['ScorerVersionHealthScoreEntry'][];
+    };
     /** ScorerIDFilter */
     ScorerIDFilter: {
       /**
@@ -22151,6 +22775,26 @@ export interface components {
       operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
+    };
+    /**
+     * ScorerIsGlobalFilter
+     * @description Filters on the access scope tier: is_global=True (global metrics) vs
+     *     is_global=False (project-scoped metrics).
+     */
+    ScorerIsGlobalFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'is_global';
+      /**
+       * Operator
+       * @default eq
+       * @enum {string}
+       */
+      operator?: 'eq' | 'ne';
+      /** Value */
+      value: boolean;
     };
     /** ScorerLabelFilter */
     ScorerLabelFilter: {
@@ -22191,6 +22835,34 @@ export interface components {
       operator: 'eq' | 'ne' | 'one_of' | 'not_in';
       /** Value */
       value: string | string[];
+    };
+    /**
+     * ScorerMultimodalCapabilitiesFilter
+     * @description Filter scorers by multimodal_capabilities.
+     *
+     *     Use operator ``contains`` to match scorers that support a single capability
+     *     (e.g. ``{"name": "multimodal_capabilities", "operator": "contains", "value": "vision"}``).
+     *     Use ``one_of`` to match scorers whose capabilities include ANY of the given
+     *     values (e.g. ``{"name": "multimodal_capabilities", "operator": "one_of", "value": ["vision", "audio"]}``).
+     */
+    ScorerMultimodalCapabilitiesFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'multimodal_capabilities';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** ScorerNameFilter */
     ScorerNameFilter: {
@@ -22238,6 +22910,11 @@ export interface components {
        * Format: uuid4
        */
       id: string;
+      /**
+       * Permissions
+       * @default []
+       */
+      permissions?: components['schemas']['Permission'][];
       /** Name */
       name: string;
       scorer_type: components['schemas']['ScorerTypes'];
@@ -22298,8 +22975,54 @@ export interface components {
             | components['schemas']['MetricColorPickerMultiLabel']
           )
         | null;
+      color_threshold_config?:
+        | components['schemas']['MetricColorPickerNumeric']
+        | null;
       /** Metric Name */
       metric_name?: string | null;
+      /**
+       * Is Global
+       * @default false
+       */
+      is_global?: boolean;
+      /** Scope Projects */
+      scope_projects?: components['schemas']['ScorerScopeProjectRef'][];
+    };
+    /**
+     * ScorerScopeProjectRef
+     * @description Minimal project representation (id and name only) for scorer access scope.
+     */
+    ScorerScopeProjectRef: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /** Name */
+      name: string;
+    };
+    /**
+     * ScorerScopeProjectsFilter
+     * @description Matches scorers whose access scope (scorer_projects) includes ANY of the
+     *     given project ids. include_global=True additionally matches global scorers
+     *     ("metrics available in project X").
+     *
+     *     Distinct from the run-usage "projects used" relation (scorers_to_projects /
+     *     GET /scorers/{scorer_id}/projects), which tracks where a scorer has run.
+     */
+    ScorerScopeProjectsFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'scope_projects';
+      /** Project Ids */
+      project_ids: string[];
+      /**
+       * Include Global
+       * @default false
+       */
+      include_global?: boolean;
     };
     /** ScorerScoreableNodeTypesFilter */
     ScorerScoreableNodeTypesFilter: {
@@ -22383,6 +23106,58 @@ export interface components {
        * Format: date-time
        */
       value: string;
+    };
+    /** ScorerUpdatedAtSort */
+    ScorerUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** ScorerVersionHealthScoreEntry */
+    ScorerVersionHealthScoreEntry: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Scorer Version Id
+       * Format: uuid4
+       */
+      scorer_version_id: string;
+      /** Scorer Version Number */
+      scorer_version_number: number;
+      /**
+       * Dataset Id
+       * Format: uuid4
+       */
+      dataset_id: string;
+      /** Health Score Type */
+      health_score_type: string;
+      /** Score */
+      score: number;
+      /** Secondary */
+      secondary: {
+        [key: string]: number | null;
+      } | null;
+      /**
+       * Computed At
+       * Format: date-time
+       */
+      computed_at: string;
     };
     /**
      * ScorersConfiguration
@@ -22492,6 +23267,11 @@ export interface components {
        * @default false
        */
       chunk_relevance_luna?: boolean;
+      /**
+       * Completeness Luna
+       * @default false
+       */
+      completeness_luna?: boolean;
       /**
        * Completeness Nli
        * @default false
@@ -22638,6 +23418,12 @@ export interface components {
        * @default false
        */
       llm_scorers?: boolean;
+      /**
+       * Multimodal Scorers
+       * @description Whether to sample only on multimodal scorers.
+       * @default false
+       */
+      multimodal_scorers?: boolean;
     };
     /** SelectColumns */
     SelectColumns: {
@@ -22993,6 +23779,54 @@ export interface components {
       /** Input Strings */
       input_strings: string[];
     };
+    /**
+     * StubTraceRecord
+     * @description Placeholder for a trace referenced by spans but not yet ingested.
+     *
+     *     Synthesized when one or more spans declare trace_id=X but no
+     *     TraceRecord with that id exists in storage. Holds the orphan spans
+     *     together so the client can render them under a single root.
+     *
+     *     Extends ExtendedRecordWithChildSpans so isinstance checks work
+     *     uniformly for both real and stub traces.
+     */
+    StubTraceRecord: {
+      /** Spans */
+      spans?: (
+        | components['schemas']['ExtendedAgentSpanRecordWithChildren']
+        | components['schemas']['ExtendedWorkflowSpanRecordWithChildren']
+        | components['schemas']['ExtendedLlmSpanRecord']
+        | components['schemas']['ExtendedToolSpanRecordWithChildren']
+        | components['schemas']['ExtendedRetrieverSpanRecordWithChildren']
+        | components['schemas']['ExtendedControlSpanRecord']
+      )[];
+      /**
+       * @description Discriminator; identifies this as a synthesized placeholder, not a real trace. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'stub_trace';
+      /**
+       * Id
+       * Format: uuid4
+       * @description ID of the missing trace, taken from span trace_id references.
+       */
+      id: string;
+      /**
+       * Project Id
+       * @description Project ID inferred from child spans, if all agree; otherwise None.
+       */
+      project_id?: string | null;
+      /**
+       * Run Id
+       * @description Run ID inferred from child spans, if all agree; otherwise None.
+       */
+      run_id?: string | null;
+      /**
+       * Session Id
+       * @description Session ID inferred from child spans, if all agree; otherwise None.
+       */
+      session_id?: string | null;
+    };
     /** SubscriptionConfig */
     SubscriptionConfig: {
       /**
@@ -23075,6 +23909,11 @@ export interface components {
     };
     /** SystemMetricInfo */
     SystemMetricInfo: {
+      /**
+       * @description Discriminator: numeric metrics aggregated via stats/histogram (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      aggregation_type: 'numeric';
       /**
        * Name
        * @description Unique identifier for the metric
@@ -23184,26 +24023,7 @@ export interface components {
      *     We store these as ints instead of strings because we will be looking this up in the database frequently.
      * @enum {integer}
      */
-    TaskType:
-      | 0
-      | 1
-      | 2
-      | 3
-      | 4
-      | 5
-      | 6
-      | 7
-      | 8
-      | 9
-      | 10
-      | 11
-      | 12
-      | 13
-      | 14
-      | 15
-      | 16
-      | 17
-      | 18;
+    TaskType: 7 | 9 | 12 | 13 | 15 | 16 | 17 | 18;
     /** TemplateStubRequest */
     TemplateStubRequest: {
       /** Templates */
@@ -23874,6 +24694,30 @@ export interface components {
        */
       execution_time?: number;
     };
+    /** TreeChoiceAggregate */
+    TreeChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'tree_choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
+    };
+    /** TreeChoiceRating */
+    TreeChoiceRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'tree_choice';
+      /** Value */
+      value: string;
+    };
     /** UncertaintyScorer */
     UncertaintyScorer: {
       /**
@@ -23912,6 +24756,8 @@ export interface components {
         | components['schemas']['DatasetDeleteRow']
         | components['schemas']['DatasetFilterRows']
         | components['schemas']['DatasetCopyRecordData']
+        | components['schemas']['DatasetRemoveColumn']
+        | components['schemas']['DatasetRenameColumn']
       )[];
     };
     /** UpdateDatasetRequest */
@@ -23968,6 +24814,19 @@ export interface components {
             | components['schemas']['MetricColorPickerMultiLabel']
           )
         | null;
+    };
+    /**
+     * UpdateScorerScopeRequest
+     * @description Full-replace access scope update for a scorer (Share / manage visibility).
+     *
+     *     is_global=True promotes the scorer to global (org admin only; project_ids
+     *     must be empty). is_global=False scopes the scorer to exactly project_ids.
+     */
+    UpdateScorerScopeRequest: {
+      /** Is Global */
+      is_global: boolean;
+      /** Project Ids */
+      project_ids?: string[];
     };
     /** UpsertDatasetContentRequest */
     UpsertDatasetContentRequest: {
@@ -24165,6 +25024,16 @@ export interface components {
       response: string;
       chain_poll_template: components['schemas']['ChainPollTemplate'];
       scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /**
+       * Normalized Input
+       * @description Optional multimodal content parts. When set, replaces the text-only query/response formatting in the validation job so that file content is passed through to the LLM.
+       */
+      normalized_input?:
+        | (
+            | components['schemas']['TextContentPart']
+            | components['schemas']['FileContentPart']
+          )[]
+        | null;
       /** User Prompt */
       user_prompt: string;
       /**
@@ -24265,12 +25134,28 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       /** Query */
       query: string;
       /** Response */
       response: string;
       chain_poll_template: components['schemas']['ChainPollTemplate'];
       scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /**
+       * Normalized Input
+       * @description Optional multimodal content parts. When set, replaces the text-only query/response formatting in the validation job so that file content is passed through to the LLM.
+       */
+      normalized_input?:
+        | (
+            | components['schemas']['TextContentPart']
+            | components['schemas']['FileContentPart']
+          )[]
+        | null;
       /** User Prompt */
       user_prompt: string;
     };
@@ -24321,16 +25206,26 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
     };
     /** VegasGatewayIntegration */
     VegasGatewayIntegration: {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default vegas_gateway
+       * @constant
+       */
+      name?: 'vegas_gateway';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'vegas_gateway';
+      provider: 'vegas_gateway';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24384,10 +25279,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default vertex_ai
+       * @constant
+       */
+      name?: 'vertex_ai';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'vertex_ai';
+      provider: 'vertex_ai';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24607,6 +25508,22 @@ export interface components {
         | components['schemas']['ControlSpan']
       )[];
     };
+    /** WriteHealthScoreRequest */
+    WriteHealthScoreRequest: {
+      /**
+       * Dataset Id
+       * Format: uuid4
+       */
+      dataset_id: string;
+      /** Health Score Type */
+      health_score_type: string;
+      /** Score */
+      score: number;
+      /** Secondary */
+      secondary?: {
+        [key: string]: number | null;
+      } | null;
+    };
     /** WriterIntegration */
     WriterIntegration: {
       /** Organization Id */
@@ -24614,10 +25531,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default writer
+       * @constant
+       */
+      name?: 'writer';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'writer';
+      provider: 'writer';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24799,6 +25722,8 @@ export interface components {
       | 'completeness'
       | 'context_adherence'
       | 'context_adherence_luna'
+      | 'context_adherence_vision'
+      | 'context_adherence_audio'
       | 'context_relevance'
       | 'context_relevance_luna'
       | 'conversation_quality'
@@ -24816,6 +25741,8 @@ export interface components {
       | 'input_tone_gpt'
       | 'input_toxicity'
       | 'input_toxicity_luna'
+      | 'input_toxicity_vision'
+      | 'input_toxicity_audio'
       | 'instruction_adherence'
       | 'output_pii'
       | 'output_pii_gpt'
@@ -24827,6 +25754,8 @@ export interface components {
       | 'output_tone_gpt'
       | 'output_toxicity'
       | 'output_toxicity_luna'
+      | 'output_toxicity_vision'
+      | 'output_toxicity_audio'
       | 'prompt_injection'
       | 'prompt_injection_luna'
       | 'prompt_perplexity'
@@ -24888,6 +25817,7 @@ export interface components {
       | '_context_relevance'
       | '_context_relevance_luna'
       | '_chunk_relevance_luna'
+      | '_completeness_luna'
       | '_chunk_attribution_utilization_gpt'
       | '_factuality'
       | '_groundedness'
@@ -25029,78 +25959,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Token'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_prompt_datasets_projects__project_id__prompt_datasets_get: {
-    parameters: {
-      query?: {
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListPromptDatasetResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post: {
-    parameters: {
-      query?: {
-        format?: components['schemas']['DatasetFormat'];
-        hidden?: boolean;
-      };
-      header?: never;
-      path: {
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PromptDatasetDB'];
         };
       };
       /** @description Validation Error */
@@ -25339,109 +26197,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ListDatasetResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  download_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-        dataset_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put: {
-    parameters: {
-      query?: {
-        file_name?: string | null;
-        num_rows?: number | null;
-        format?: components['schemas']['DatasetFormat'];
-        hidden?: boolean;
-      };
-      header?: never;
-      path: {
-        project_id: string;
-        dataset_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PromptDatasetDB'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-        dataset_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
         };
       };
       /** @description Validation Error */
@@ -26342,41 +27097,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ProjectCreateResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  upload_file_projects__project_id__upload_file_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_upload_file_projects__project_id__upload_file_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
         };
       };
       /** @description Validation Error */
@@ -28706,271 +29426,6 @@ export interface operations {
       };
     };
   };
-  get_scorer_scorers__scorer_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_scorer_scorers__scorer_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DeleteScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_scorers__scorer_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateScorerRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  validate_code_scorer_scorers_code_validate_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_validate_code_scorer_scorers_code_validate_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ValidateCodeScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_validate_code_scorer_task_result_scorers_code_validate__task_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        task_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RegisteredScorerTaskResultResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_scorer_version_code_scorers__scorer_id__version_code_get: {
-    parameters: {
-      query?: {
-        /** @description version number, defaults to latest version */
-        version?: number | null;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_code_scorer_version_scorers__scorer_id__version_code_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_create_code_scorer_version_scorers__scorer_id__version_code_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_preset_scorer_version_scorers__scorer_id__version_preset_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateScorerVersionRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   create_luna_scorer_version_scorers__scorer_id__version_luna_post: {
     parameters: {
       query?: never;
@@ -29006,264 +29461,6 @@ export interface operations {
       };
     };
   };
-  list_scorers_with_filters_scorers_list_post: {
-    parameters: {
-      query?: {
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ListScorersRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListScorersResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_tags_scorers_tags_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': string[];
-        };
-      };
-    };
-  };
-  get_scorer_version_or_latest_scorers__scorer_id__version_get: {
-    parameters: {
-      query?: {
-        version?: number;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
-    parameters: {
-      query?: {
-        run_id?: string | null;
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListScorerVersionsResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_projects_for_scorer_route_scorers__scorer_id__projects_get: {
-    parameters: {
-      query?: {
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get: {
-    parameters: {
-      query: {
-        scorer_id: string;
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        scorer_version_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-        version_number: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  autogen_llm_scorer_scorers_llm_autogen_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateLLMScorerAutogenRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GenerationResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   manual_llm_validate_scorers_llm_validate_post: {
     parameters: {
       query?: never;
@@ -29271,11 +29468,29 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GeneratedScorerValidationResponse'];
+        };
+      };
+    };
+  };
+  manual_llm_validate_multipart_scorers_llm_validate_multipart_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
-        'application/json': {
-          [key: string]: unknown;
-        };
+        'multipart/form-data': components['schemas']['Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post'];
       };
     };
     responses: {
@@ -29634,7 +29849,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -29677,7 +29892,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -29708,7 +29923,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -30206,6 +30421,106 @@ export interface operations {
       };
     };
   };
+  get_named_custom_integration_integrations_custom__name__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_or_update_named_custom_integration_integrations_custom__name__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomIntegrationCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_named_custom_integration_integrations_custom__name__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_or_update_unity_catalog_integration_integrations_databricks_unity_catalog_sql_put: {
     parameters: {
       query?: never;
@@ -30583,6 +30898,39 @@ export interface operations {
       };
     };
   };
+  count_datasets_datasets_query_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListDatasetParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': number;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_dataset_variable_preview_datasets__dataset_id__variable_preview_get: {
     parameters: {
       query?: never;
@@ -30718,6 +31066,106 @@ export interface operations {
       };
     };
   };
+  get_scorer_scorers__scorer_id__get: {
+    parameters: {
+      query?: {
+        /** @description Actions to include in the 'permissions' field of the scorer. */
+        actions?: components['schemas']['ScorerAction'][];
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_scorer_scorers__scorer_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeleteScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_scorers__scorer_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateScorerRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_llm_scorer_version_scorers__scorer_id__version_llm_post: {
     parameters: {
       query?: never;
@@ -30753,6 +31201,39 @@ export interface operations {
       };
     };
   };
+  validate_code_scorer_scorers_code_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_validate_code_scorer_scorers_code_validate_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ValidateCodeScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   validate_code_scorer_log_record_scorers_code_validate_log_record_post: {
     parameters: {
       query?: never;
@@ -30773,6 +31254,435 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ValidateScorerLogRecordResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_validate_code_scorer_task_result_scorers_code_validate__task_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegisteredScorerTaskResultResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_scorer_version_code_scorers__scorer_id__version_code_get: {
+    parameters: {
+      query?: {
+        /** @description version number, defaults to latest version */
+        version?: number | null;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_code_scorer_version_scorers__scorer_id__version_code_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_create_code_scorer_version_scorers__scorer_id__version_code_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_preset_scorer_version_scorers__scorer_id__version_preset_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateScorerVersionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_scorers_with_filters_scorers_list_post: {
+    parameters: {
+      query?: {
+        /** @description Actions to include in the 'permissions' field of the scorers. */
+        actions?: components['schemas']['ScorerAction'][];
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ListScorersRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListScorersResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_tags_scorers_tags_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string[];
+        };
+      };
+    };
+  };
+  get_scorer_version_or_latest_scorers__scorer_id__version_get: {
+    parameters: {
+      query?: {
+        version?: number;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
+    parameters: {
+      query?: {
+        run_id?: string | null;
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListScorerVersionsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  set_scorer_scope_scorers__scorer_id__scope_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateScorerScopeRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_projects_for_scorer_route_scorers__scorer_id__projects_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        scorer_version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+        version_number: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  autogen_llm_scorer_scorers_llm_autogen_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateLLMScorerAutogenRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GenerationResponse'];
         };
       };
       /** @description Validation Error */
@@ -30885,6 +31795,111 @@ export interface operations {
       };
     };
   };
+  compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ComputeHealthScoreRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HealthScoreResult'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_scorer_health_scores_scorers__scorer_id__health_scores_get: {
+    parameters: {
+      query: {
+        dataset_id: string;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerHealthScoresResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  write_scorer_version_health_score_scorers__scorer_id__versions__version_number__health_scores_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+        version_number: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WriteHealthScoreRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerVersionHealthScoreEntry'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   log_traces_projects__project_id__traces_post: {
     parameters: {
       query?: never;
@@ -30940,7 +31955,9 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ExtendedTraceRecordWithChildren'];
+          'application/json':
+            | components['schemas']['ExtendedTraceRecordWithChildren']
+            | components['schemas']['StubTraceRecord'];
         };
       };
       /** @description Validation Error */
@@ -31890,6 +32907,42 @@ export interface operations {
       };
     };
   };
+  get_integration_costs_integrations_costs_summary_get: {
+    parameters: {
+      query: {
+        /** @description Start of time range (UTC) */
+        start_time: string;
+        /** @description End of time range (UTC) */
+        end_time: string;
+        /** @description Aggregation interval */
+        interval: components['schemas']['CostInterval'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationCostsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   select_integration_integrations_select_post: {
     parameters: {
       query?: never;
@@ -31952,6 +33005,112 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_custom_integration_definition_integrations_custom_definition_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomIntegrationDefinition'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_status_integrations_custom__name__status_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_definition_integrations_custom__name__definition_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomIntegrationDefinition'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_recommended_models_llm_integrations_recommended_models_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecommendedModelsResponse'];
         };
       };
     };
