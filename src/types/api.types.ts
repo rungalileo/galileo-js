@@ -55,30 +55,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/projects/{project_id}/prompt_datasets': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Prompt Datasets
-     * @deprecated
-     */
-    get: operations['list_prompt_datasets_projects__project_id__prompt_datasets_get'];
-    put?: never;
-    /**
-     * Upload Prompt Evaluation Dataset
-     * @deprecated
-     */
-    post: operations['upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/datasets': {
     parameters: {
       query?: never;
@@ -175,34 +151,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/projects/{project_id}/prompt_datasets/{dataset_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Download Prompt Dataset
-     * @deprecated
-     */
-    get: operations['download_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__get'];
-    /**
-     * Update Prompt Dataset
-     * @deprecated
-     */
-    put: operations['update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put'];
-    post?: never;
-    /**
-     * Delete Prompt Dataset
-     * @deprecated
-     */
-    delete: operations['delete_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__delete'];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/datasets/{dataset_id}/content': {
     parameters: {
       query?: never;
@@ -228,8 +176,9 @@ export interface paths {
      *     The `index` and `column_name` fields are treated as keys tied to a specific version of the dataset.
      *     As such, these values are considered immutable identifiers for the dataset's structure.
      *
-     *     For example, if an edit operation changes the name of a column, subsequent edit operations in
-     *     the same request should reference the column using its original name.
+     *     Edits are applied sequentially in list order, and each edit sees the table state left by the
+     *     previous one. For example, after a `rename_column` edit renames `col_a` to `col_b`, any
+     *     subsequent `update_row` in the same request must reference the column as `col_b`, not `col_a`.
      *
      *     The `If-Match` header is used to ensure that updates are only applied if the client's version of the dataset
      *     matches the server's version. This prevents conflicts from simultaneous updates. The `ETag` header in the response
@@ -577,23 +526,6 @@ export interface paths {
      * @description Create a new project.
      */
     post: operations['create_project_projects_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/projects/{project_id}/upload_file': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Upload File */
-    post: operations['upload_file_projects__project_id__upload_file_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1025,7 +957,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Create Job */
+    /**
+     * Create Job
+     * @description Create a job for a project run and enqueue it for processing.
+     */
     post: operations['create_job_jobs_post'];
     delete?: never;
     options?: never;
@@ -1062,31 +997,11 @@ export interface paths {
     };
     /**
      * Get Jobs For Project Run
-     * @description Get all jobs by for a project and run.
+     * @description Get all jobs for a project and run.
      *
      *     Returns them in order of creation from newest to oldest.
      */
     get: operations['get_jobs_for_project_run_projects__project_id__runs__run_id__jobs_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/projects/{project_id}/runs/{run_id}/jobs/latest': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Latest Job For Project Run
-     * @description Returns the most recently updated job for a run.
-     */
-    get: operations['get_latest_job_for_project_run_projects__project_id__runs__run_id__jobs_latest_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1129,12 +1044,10 @@ export interface paths {
      *     ----------
      *     project_id : UUID4
      *         Project ID.
-     *     ctx : Context, optional
-     *         User context with database session, by default Depends(get_user_context)
      *
      *     Returns
      *     -------
-     *     List[GetTemplateResponse]
+     *     List[BasePromptTemplateResponse]
      *         List of prompt template responses.
      */
     get: operations['get_project_templates_projects__project_id__templates_get'];
@@ -1155,8 +1068,6 @@ export interface paths {
      *             examples=
      *             [BasePromptTemplateVersion.test_data() | BasePromptTemplate.test_data()],
      *         )
-     *     db_read : Session, optional
-     *         Session object to execute DB reads, by default Depends(get_db_read)
      *
      *     Returns
      *     -------
@@ -1184,18 +1095,15 @@ export interface paths {
      *     Parameters
      *     ----------
      *     project_id : UUID4
-     *         Prokect ID.
+     *         Project ID.
      *     template_name : str
      *         Prompt template name.
      *     version : Optional[int]
      *         Version number to fetch. defaults to selected version.
-     *     ctx : Context, optional
-     *         User context with database session, by default Depends(get_user_context).
-     *
      *
      *     Returns
      *     -------
-     *     GetTemplateResponse
+     *     BasePromptTemplateVersionResponse
      *         Prompt template response.
      */
     get: operations['get_template_version_by_name_projects__project_id__templates_versions_get'];
@@ -1225,12 +1133,10 @@ export interface paths {
      *         Prompt template ID.
      *     project_id : UUID4
      *         Project ID.
-     *     ctx : Context, optional
-     *         User context with database session, by default Depends(get_user_context).
      *
      *     Returns
      *     -------
-     *     GetTemplateResponse
+     *     BasePromptTemplateResponse
      *         Prompt template response.
      */
     get: operations['get_template_from_project_projects__project_id__templates__template_id__get'];
@@ -1266,12 +1172,8 @@ export interface paths {
      *         Project ID.
      *     template_id : UUID4
      *         Prompt template ID.
-     *     body : dict, optional
-     *         Body of the request, by default Body( ...,
-     *             examples=[CreatePromptTemplateVersionRequest.test_data()],
-     *         )
-     *     db_read : Session, optional
-     *         Database session, by default Depends(get_db_read)
+     *     base_prompt_template_version : BasePromptTemplateVersion
+     *         Version details to create.
      *
      *     Returns
      *     -------
@@ -1301,11 +1203,9 @@ export interface paths {
      *     Parameters
      *     ----------
      *     params : ListPromptTemplateParams
-     *         Query parameters for filtering and sorting
+     *         Query parameters for filtering and sorting.
      *     pagination : PaginationRequestMixin
-     *         Pagination parameters
-     *     ctx : Context
-     *         User context containing database session and user information
+     *         Pagination parameters.
      *
      *     Returns
      *     -------
@@ -1334,19 +1234,15 @@ export interface paths {
      *
      *     Parameters
      *     ----------
-     *     template_id : UUID4
-     *         ID of the template to query versions for
      *     params : ListPromptTemplateVersionParams
-     *         Query parameters for filtering and sorting
+     *         Query parameters for filtering and sorting.
      *     pagination : PaginationRequestMixin
-     *         Pagination parameters
-     *     ctx : Context
-     *         User context containing database session and user information
+     *         Pagination parameters.
      *
      *     Returns
      *     -------
      *     ListPromptTemplateVersionResponse
-     *         Paginated list of template version responses
+     *         Paginated list of template version responses.
      */
     post: operations['query_template_versions_templates__template_id__versions_query_post'];
     delete?: never;
@@ -1373,8 +1269,6 @@ export interface paths {
      *         Template ID.
      *     version : int
      *         Version number to fetch.
-     *     ctx : Context, optional
-     *         User context with database session, by default Depends(get_user_context)
      *
      *     Returns
      *     -------
@@ -1443,10 +1337,8 @@ export interface paths {
      *
      *     Parameters
      *     ----------
-     *     ctx : Context
-     *         Request context including authentication information
      *     create_request : CreatePromptTemplateWithVersionRequestBody
-     *         Request body containing template name and content
+     *         Request body containing template name and content.
      *     principal : Principal
      *         Principal object.
      *
@@ -1477,23 +1369,18 @@ export interface paths {
      * @description Delete multiple global prompt templates in bulk.
      *
      *     This endpoint allows efficient deletion of multiple global prompt templates at once.
-     *     It validates permissions for each template in the service and provides detailed feedback about
-     *     successful and failed deletions for each template.
+     *     It validates permissions for each template in the service and provides detailed
+     *     feedback about successful and failed deletions for each template.
      *
      *     Parameters
      *     ----------
      *     delete_request : BulkDeletePromptTemplatesRequest
-     *         Request containing list of template IDs to delete (max 100)
-     *     ctx : Context
-     *         Request context including authentication information
+     *         Request containing list of template IDs to delete (max 100).
      *
      *     Returns
      *     -------
      *     BulkDeletePromptTemplatesResponse
-     *         Details about the bulk deletion operation including:
-     *         - Number of successfully deleted templates
-     *         - List of failed deletions with reasons
-     *         - Summary message
+     *         Details about the bulk deletion operation including deleted count and failures.
      */
     delete: operations['bulk_delete_global_templates_templates_bulk_delete_delete'];
     options?: never;
@@ -1516,15 +1403,13 @@ export interface paths {
      *     ----------
      *     template_id : UUID4
      *         Prompt template id.
-     *     ctx : Context
-     *         Request context including authentication information
      *     principal : Principal
      *         Principal object.
      *
      *     Returns
      *     -------
      *     BasePromptTemplateResponse
-     *         Details about the created prompt template.
+     *         Details about the prompt template.
      */
     get: operations['get_global_template_templates__template_id__get'];
     put?: never;
@@ -1537,8 +1422,6 @@ export interface paths {
      *     ----------
      *     template_id : UUID4
      *         Prompt template id.
-     *     ctx : Context
-     *         Request context including authentication information
      *
      *     Returns
      *     -------
@@ -1560,8 +1443,6 @@ export interface paths {
      *         Prompt template to update.
      *     principal : Principal
      *         Principal object.
-     *     ctx : Context
-     *         Request context including authentication information.
      *
      *     Returns
      *     -------
@@ -1588,10 +1469,8 @@ export interface paths {
      *     ----------
      *     template_id : UUID4
      *         Prompt template ID.
-     *     ctx : Context
-     *         Request context including authentication information
      *     base_prompt_template_version : BasePromptTemplateVersion
-     *         Version details to create
+     *         Version details to create.
      *
      *     Returns
      *     -------
@@ -1622,8 +1501,6 @@ export interface paths {
      *         Prompt template id.
      *     version : int
      *         Version number.
-     *     ctx : Context
-     *         Request context including authentication information
      *
      *     Returns
      *     -------
@@ -1641,8 +1518,6 @@ export interface paths {
      *         Prompt template id.
      *     version : int
      *         Version number.
-     *     ctx : Context
-     *         Request context including authentication information
      *
      *     Returns
      *     -------
@@ -1767,107 +1642,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/scorers/{scorer_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Scorer */
-    get: operations['get_scorer_scorers__scorer_id__get'];
-    put?: never;
-    post?: never;
-    /** Delete Scorer */
-    delete: operations['delete_scorer_scorers__scorer_id__delete'];
-    options?: never;
-    head?: never;
-    /** Update */
-    patch: operations['update_scorers__scorer_id__patch'];
-    trace?: never;
-  };
-  '/scorers/code/validate': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Validate Code Scorer
-     * @description Validate a code scorer with optional simple input/output test.
-     */
-    post: operations['validate_code_scorer_scorers_code_validate_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/code/validate/{task_id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Validate Code Scorer Task Result
-     * @description Poll for a code-scorer validation task result (returns status/result).
-     *
-     *     The validation job creates an entry in `registered_scorer_task_results` (pending) and the runner
-     *     will PATCH the internal task-results endpoint when it finishes. This GET allows clients to poll
-     *     the current task result.
-     */
-    get: operations['get_validate_code_scorer_task_result_scorers_code_validate__task_id__get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/version/code': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Scorer Version Code */
-    get: operations['get_scorer_version_code_scorers__scorer_id__version_code_get'];
-    put?: never;
-    /** Create Code Scorer Version */
-    post: operations['create_code_scorer_version_scorers__scorer_id__version_code_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/version/preset': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Create Preset Scorer Version
-     * @description Create a preset scorer version.
-     */
-    post: operations['create_preset_scorer_version_scorers__scorer_id__version_preset_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/scorers/{scorer_id}/version/luna': {
     parameters: {
       query?: never;
@@ -1885,156 +1659,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/scorers/list': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** List Scorers With Filters */
-    post: operations['list_scorers_with_filters_scorers_list_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/tags': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List Tags */
-    get: operations['list_tags_scorers_tags_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/version': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Scorer Version Or Latest */
-    get: operations['get_scorer_version_or_latest_scorers__scorer_id__version_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/versions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List All Versions For Scorer */
-    get: operations['list_all_versions_for_scorer_scorers__scorer_id__versions_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/projects': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Projects For Scorer Route
-     * @description List all projects associated with a specific scorer.
-     */
-    get: operations['list_projects_for_scorer_route_scorers__scorer_id__projects_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/versions/{scorer_version_id}/projects': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List Projects For Scorer Version Route
-     * @description List all projects associated with a specific scorer version.
-     */
-    get: operations['list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/{scorer_id}/versions/{version_number}/restore': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Restore Scorer Version
-     * @description List all scorers.
-     */
-    post: operations['restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/scorers/llm/autogen': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Autogen Llm Scorer
-     * @description Autogenerate an LLM scorer configuration.
-     *
-     *     Returns a Celery task ID that can be used to poll for the autogeneration results.
-     */
-    post: operations['autogen_llm_scorer_scorers_llm_autogen_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/scorers/llm/validate': {
     parameters: {
       query?: never;
@@ -2046,6 +1670,23 @@ export interface paths {
     put?: never;
     /** Manual Llm Validate */
     post: operations['manual_llm_validate_scorers_llm_validate_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/llm/validate/multipart': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Manual Llm Validate Multipart */
+    post: operations['manual_llm_validate_multipart_scorers_llm_validate_multipart_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2411,6 +2052,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/integrations/custom/{name}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a named custom integration */
+    get: operations['get_named_custom_integration_integrations_custom__name__get'];
+    /** Create or update a named custom integration */
+    put: operations['create_or_update_named_custom_integration_integrations_custom__name__put'];
+    post?: never;
+    /** Delete a named custom integration */
+    delete: operations['delete_named_custom_integration_integrations_custom__name__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/integrations/databricks/unity-catalog/sql': {
     parameters: {
       query?: never;
@@ -2646,6 +2306,159 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/annotation_queues': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Annotation Queue
+     * @description Create an annotation queue at the organization level.
+     *
+     *     The creator will automatically be granted the 'owner' role.
+     *     Optionally accepts a list of annotator emails. Users that don't exist in the organization will be invited.
+     *     Optionally copies templates from an existing queue if copy_templates_from_queue_id is provided.
+     */
+    post: operations['create_annotation_queue_annotation_queues_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Annotation Queue
+     * @description Get an annotation queue by ID with templates and counts.
+     */
+    get: operations['get_annotation_queue_annotation_queues__queue_id__get'];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Annotation Queue
+     * @description Delete an annotation queue.
+     */
+    delete: operations['delete_annotation_queue_annotation_queues__queue_id__delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update Annotation Queue
+     * @description Update an annotation queue.
+     */
+    patch: operations['update_annotation_queue_annotation_queues__queue_id__patch'];
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/users': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Annotation Queue Users
+     * @description List users who have access to an annotation queue with pagination.
+     */
+    get: operations['list_annotation_queue_users_annotation_queues__queue_id__users_get'];
+    put?: never;
+    /**
+     * Share Annotation Queue With Users
+     * @description Share an annotation queue with users by granting them specific roles.
+     *
+     *     Users can be specified by user_id or email. If using email and the user doesn't exist
+     *     in the organization, they will be invited automatically with the 'user' role.
+     *
+     *     Roles: owner, annotator
+     */
+    post: operations['share_annotation_queue_with_users_annotation_queues__queue_id__users_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/users/{user_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove Annotation Queue User
+     * @description Remove a user's access to an annotation queue.
+     */
+    delete: operations['remove_annotation_queue_user_annotation_queues__queue_id__users__user_id__delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update Annotation Queue User Role
+     * @description Update a user's role for an annotation queue.
+     */
+    patch: operations['update_annotation_queue_user_role_annotation_queues__queue_id__users__user_id__patch'];
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/partial_search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Partial Search Annotation Queue Records
+     * @description Search records in an annotation queue with partial field selection.
+     *
+     *     This endpoint queries all project/run pairs associated with the queue and returns
+     *     records that are in the annotation queue, with only the requested fields included.
+     *
+     *     Permission checks:
+     *     - User must have READ permission on the annotation queue
+     *
+     *     Note: This endpoint queries across all projects/runs in the queue.
+     */
+    post: operations['partial_search_annotation_queue_records_annotation_queues__queue_id__partial_search_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/datasets/query/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Count Datasets
+     * @description Count datasets visible to the current user with filtering.
+     */
+    post: operations['count_datasets_datasets_query_count_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/datasets/{dataset_id}/variable_preview': {
     parameters: {
       query?: never;
@@ -2723,6 +2536,25 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/scorers/{scorer_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Scorer */
+    get: operations['get_scorer_scorers__scorer_id__get'];
+    put?: never;
+    post?: never;
+    /** Delete Scorer */
+    delete: operations['delete_scorer_scorers__scorer_id__delete'];
+    options?: never;
+    head?: never;
+    /** Update */
+    patch: operations['update_scorers__scorer_id__patch'];
+    trace?: never;
+  };
   '/scorers/{scorer_id}/version/llm': {
     parameters: {
       query?: never;
@@ -2734,6 +2566,26 @@ export interface paths {
     put?: never;
     /** Create Llm Scorer Version */
     post: operations['create_llm_scorer_version_scorers__scorer_id__version_llm_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/code/validate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Validate Code Scorer
+     * @description Validate a code scorer with optional simple input/output test.
+     */
+    post: operations['validate_code_scorer_scorers_code_validate_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2754,6 +2606,238 @@ export interface paths {
      * @description Validate a code scorer using actual log records.
      */
     post: operations['validate_code_scorer_log_record_scorers_code_validate_log_record_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/code/validate/{task_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Validate Code Scorer Task Result
+     * @description Poll for a code-scorer validation task result (returns status/result).
+     *
+     *     The validation job creates an entry in `registered_scorer_task_results` (pending) and the runner
+     *     will PATCH the internal task-results endpoint when it finishes. This GET allows clients to poll
+     *     the current task result.
+     */
+    get: operations['get_validate_code_scorer_task_result_scorers_code_validate__task_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/version/code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Scorer Version Code */
+    get: operations['get_scorer_version_code_scorers__scorer_id__version_code_get'];
+    put?: never;
+    /** Create Code Scorer Version */
+    post: operations['create_code_scorer_version_scorers__scorer_id__version_code_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/version/preset': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Preset Scorer Version
+     * @description Create a preset scorer version.
+     */
+    post: operations['create_preset_scorer_version_scorers__scorer_id__version_preset_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/list': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** List Scorers With Filters */
+    post: operations['list_scorers_with_filters_scorers_list_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/tags': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Tags */
+    get: operations['list_tags_scorers_tags_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/version': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Scorer Version Or Latest */
+    get: operations['get_scorer_version_or_latest_scorers__scorer_id__version_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List All Versions For Scorer */
+    get: operations['list_all_versions_for_scorer_scorers__scorer_id__versions_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/scope': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set Scorer Scope
+     * @description Full-replace a scorer's access scope (Share / manage visibility). metrics_rbac only.
+     */
+    put: operations['set_scorer_scope_scorers__scorer_id__scope_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Projects For Scorer Route
+     * @description List all projects associated with a specific scorer.
+     */
+    get: operations['list_projects_for_scorer_route_scorers__scorer_id__projects_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/versions/{scorer_version_id}/projects': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Projects For Scorer Version Route
+     * @description List all projects associated with a specific scorer version.
+     */
+    get: operations['list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/versions/{version_number}/restore': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Restore Scorer Version
+     * @description List all scorers.
+     */
+    post: operations['restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/llm/autogen': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Autogen Llm Scorer
+     * @description Autogenerate an LLM scorer configuration.
+     *
+     *     Returns a Celery task ID that can be used to poll for the autogeneration results.
+     */
+    post: operations['autogen_llm_scorer_scorers_llm_autogen_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2808,6 +2892,70 @@ export interface paths {
      * @description Validate a code scorer against dataset rows.
      */
     post: operations['validate_code_scorer_dataset_scorers_code_validate_dataset_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/projects/{project_id}/metrics-testing/{run_id}/health-score': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Compute Health Score Endpoint
+     * @description Compute the health score metric for a metrics testing run.
+     */
+    post: operations['compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/health-scores': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Scorer Health Scores
+     * @description Return all persisted health scores for a scorer against a dataset, ordered by version ASC.
+     *
+     *     scores[0] is the baseline (first recorded), scores[-1] is the latest.
+     */
+    get: operations['get_scorer_health_scores_scorers__scorer_id__health_scores_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/scorers/{scorer_id}/versions/{version_number}/health-scores': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Write Scorer Version Health Score
+     * @description Persist the health score for a scorer version against a dataset.
+     *
+     *     Called by the UI after saving a metric version, passing the score from the last compute.
+     */
+    post: operations['write_scorer_version_health_score_scorers__scorer_id__versions__version_number__health_scores_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3300,6 +3448,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/integrations/costs/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Integration Costs */
+    get: operations['get_integration_costs_integrations_costs_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/integrations/select': {
     parameters: {
       query?: never;
@@ -3336,6 +3501,86 @@ export interface paths {
      *     Creates an opt-out record so no shared integration of this type is used.
      */
     post: operations['disable_integration_integrations_disable_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/definition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get custom integration definition
+     * @description Return the full JSON definition of the custom integration, including decrypted secrets.
+     *
+     *     Only users with edit permission on the integration (its creator and admins)
+     *     are authorized to call this endpoint.
+     */
+    get: operations['get_custom_integration_definition_integrations_custom_definition_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/{name}/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Check status of a named custom integration */
+    get: operations['get_named_custom_integration_status_integrations_custom__name__status_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/custom/{name}/definition': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get definition of a named custom integration
+     * @description Return the full JSON definition of a named custom integration, including decrypted secrets.
+     */
+    get: operations['get_named_custom_integration_definition_integrations_custom__name__definition_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/llm_integrations/recommended_models': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Recommended Models
+     * @description Get recommended models for all purposes, grouped by integration.
+     */
+    get: operations['get_recommended_models_llm_integrations_recommended_models_get'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3429,6 +3674,371 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/annotation_queues/{queue_id}/details': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Queue Details */
+    get: operations['queue_details_annotation_queues__queue_id__details_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Count Annotation Queues
+     * @description Count annotation queues in the user's organization with filtering.
+     */
+    post: operations['count_annotation_queues_annotation_queues_count_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/query': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Query Annotation Queues
+     * @description Query annotation queues in the user's organization with filtering and sorting.
+     *
+     *     Response includes num_templates for each queue to support copy selection UI.
+     */
+    post: operations['query_annotation_queues_annotation_queues_query_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/templates/reorder': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reorder Queue Templates
+     * @description Reorder templates within an annotation queue.
+     *
+     *     The ordering must include all and only the template IDs currently in the queue.
+     *     Templates will be assigned positions 1, 2, 3... based on their order in the list.
+     */
+    post: operations['reorder_queue_templates_annotation_queues__queue_id__templates_reorder_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Queue Templates
+     * @description Get all templates for an annotation queue.
+     *
+     *     Templates are returned ordered by position (ascending).
+     */
+    get: operations['get_queue_templates_annotation_queues__queue_id__templates_get'];
+    put?: never;
+    /**
+     * Create Queue Template
+     * @description Create template(s) in an annotation queue.
+     *
+     *     Supports two scenarios:
+     *     1. Create a single template: Provide 'template' field
+     *     2. Copy all templates from source queue: Provide 'copy_from_queue_id' field
+     */
+    post: operations['create_queue_template_annotation_queues__queue_id__templates_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/templates/{template_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Queue Template
+     * @description Delete a template from an annotation queue.
+     *
+     *     Validates that:
+     *     - Template exists
+     *     - Template belongs to the specified queue
+     *     - User has UPDATE permission on the queue
+     *
+     *     After deletion, remaining templates are renumbered to maintain sequential positions.
+     */
+    delete: operations['delete_queue_template_annotation_queues__queue_id__templates__template_id__delete'];
+    options?: never;
+    head?: never;
+    /**
+     * Update Queue Template
+     * @description Update an existing template in an annotation queue.
+     *
+     *     Can update:
+     *     - Template name (must be unique within the queue)
+     *     - Template criteria
+     *
+     *     Note: Constraints and other fields cannot be updated.
+     */
+    patch: operations['update_queue_template_annotation_queues__queue_id__templates__template_id__patch'];
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Add Records To Annotation Queue
+     * @description Add records to an annotation queue.
+     *
+     *     The request must specify either a list of record IDs or a filter tree to select records.
+     *     All specified records must exist within the given project and run.
+     *
+     *     Permission checks:
+     *     - User must have UPDATE permission on the annotation queue
+     *     - User must have READ permission on the project containing the records
+     *
+     *     Returns 200 OK with the count of records added on success.
+     */
+    post: operations['add_records_to_annotation_queue_annotation_queues__queue_id__records_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Export Annotation Queue Records
+     * @description Export selected records from an annotation queue.
+     *
+     *     The request must specify either a list of record IDs or a filter tree to select queue records.
+     *
+     *     Permission checks:
+     *     - User must have READ permission on the annotation queue
+     */
+    post: operations['export_annotation_queue_records_annotation_queues__queue_id__records_export_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/export/url': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Export Annotation Queue Records Url
+     * @description Export selected records from an annotation queue and return a presigned download URL.
+     *
+     *     The request must specify either a list of record IDs or a filter tree to select queue records.
+     *
+     *     Permission checks:
+     *     - User must have READ permission on the annotation queue
+     */
+    post: operations['export_annotation_queue_records_url_annotation_queues__queue_id__records_export_url_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/remove': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Remove Records From Annotation Queue
+     * @description Remove records from an annotation queue.
+     *
+     *     The request must specify either a list of record IDs or a filter tree to select records.
+     *     Selection is applied across all project/run pairs currently tracked in the queue.
+     *
+     *     Permission checks:
+     *     - User must have UPDATE permission on the annotation queue
+     */
+    post: operations['remove_records_from_annotation_queue_annotation_queues__queue_id__records_remove_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/count': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Count Annotation Queue Records
+     * @description Count records in an annotation queue.
+     *
+     *     Permission checks:
+     *     - User must have READ permission on the annotation queue
+     */
+    post: operations['count_annotation_queue_records_annotation_queues__queue_id__records_count_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/{record_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Annotation Queue Record
+     * @description Get a single record in an annotation queue.
+     *
+     *     Permission checks:
+     *     - User must have READ permission on the annotation queue
+     */
+    get: operations['get_annotation_queue_record_annotation_queues__queue_id__records__record_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/{record_id}/rating': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Create Annotation Queue Record Rating
+     * @description Create an annotation rating for a record in an annotation queue.
+     *
+     *     This endpoint is project-unaware and takes the template_id in the query params.
+     */
+    put: operations['create_annotation_queue_record_rating_annotation_queues__queue_id__records__record_id__rating_put'];
+    post?: never;
+    /**
+     * Delete Annotation Queue Record Rating
+     * @description Delete an annotation rating for a record in an annotation queue.
+     *
+     *     This soft-deletes the rating by inserting a new row with is_deleted=1.
+     */
+    delete: operations['delete_annotation_queue_record_rating_annotation_queues__queue_id__records__record_id__rating_delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/annotation_queues/{queue_id}/records/available_columns': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Get Annotation Queue Records Available Columns
+     * @description Get available columns for records in an annotation queue.
+     *
+     *     Annotation queues can contain records from multiple projects/runs, so this endpoint
+     *     returns the standard columns common across all records plus any metric columns present
+     *     in the queue's active project/run membership and any user metadata columns present
+     *     on those runs.
+     *
+     *     Permission checks:
+     *     - User must have READ permission on the annotation queue
+     *
+     *     Returns:
+     *     - Standard columns (id, created_at, input, output, etc.)
+     *     - Metric columns available in the queue's active project/run pairs
+     *     - User metadata columns available in the queue's active project/run pairs
+     *     - Annotation aggregate feedback columns for queue owners/editors and org admins
+     *
+     *     Excludes:
+     *     - Dataset metadata columns (project/run-specific)
+     */
+    post: operations['get_annotation_queue_records_available_columns_annotation_queues__queue_id__records_available_columns_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3448,6 +4058,42 @@ export interface components {
      * @enum {string}
      */
     ActionType: 'OVERRIDE' | 'PASSTHROUGH';
+    /**
+     * AddRecordsToQueueRequest
+     * @description Request to add records to an annotation queue.
+     */
+    AddRecordsToQueueRequest: {
+      /**
+       * Project Id
+       * Format: uuid4
+       * @description Project ID containing the records
+       */
+      project_id: string;
+      /**
+       * Run Id
+       * Format: uuid4
+       * @description Run ID (log stream, experiment, or metrics testing) containing the records
+       */
+      run_id: string;
+      /**
+       * Record Selector
+       * @description Selector to specify which records to add (either by record IDs or filter tree)
+       */
+      record_selector:
+        | components['schemas']['AnnotationQueueRecordsByRecordIDs']
+        | components['schemas']['AnnotationQueueRecordsByFilterTree'];
+    };
+    /**
+     * AddRecordsToQueueResponse
+     * @description Response after adding records to an annotation queue.
+     */
+    AddRecordsToQueueResponse: {
+      /**
+       * Num Records Added
+       * @description Number of records added to the queue
+       */
+      num_records_added: number;
+    };
     /** AgentSpan */
     AgentSpan: {
       /**
@@ -4033,7 +4679,9 @@ export interface components {
       has_children: boolean;
       /** Metrics */
       metrics: {
-        [key: string]: components['schemas']['SystemMetricInfo'];
+        [key: string]:
+          | components['schemas']['SystemMetricInfo']
+          | components['schemas']['CategoricalMetricInfo'];
       };
       /** Trace Count */
       trace_count: number;
@@ -4111,7 +4759,39 @@ export interface components {
         | components['schemas']['AnnotationStarAggregate']
         | components['schemas']['AnnotationScoreAggregate']
         | components['schemas']['AnnotationTagsAggregate']
+        | components['schemas']['AnnotationChoiceAggregate']
+        | components['schemas']['AnnotationTreeChoiceAggregate']
         | components['schemas']['AnnotationTextAggregate'];
+    };
+    /** AnnotationAgreementAggregate */
+    AnnotationAgreementAggregate: {
+      /** Buckets */
+      buckets: components['schemas']['AnnotationAgreementBucket'][];
+      /** Average Agreement */
+      average_agreement: number;
+    };
+    /** AnnotationAgreementBucket */
+    AnnotationAgreementBucket: {
+      /** Min Inclusive */
+      min_inclusive: number;
+      /** Max Exclusive */
+      max_exclusive: number | null;
+      /** Count */
+      count: number;
+    };
+    /** AnnotationChoiceAggregate */
+    AnnotationChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
     };
     /** AnnotationLikeDislikeAggregate */
     AnnotationLikeDislikeAggregate: {
@@ -4134,6 +4814,617 @@ export interface components {
      * @enum {string}
      */
     AnnotationQueueAction: 'update' | 'delete' | 'share' | 'record_annotation';
+    /** AnnotationQueueCountRequest */
+    AnnotationQueueCountRequest: {
+      filter_tree?:
+        | components['schemas']['FilterExpression_Annotated_Union_LogRecordsIDFilter__LogRecordsDateFilter__LogRecordsNumberFilter__LogRecordsBooleanFilter__LogRecordsCollectionFilter__LogRecordsTextFilter__LogRecordsFullyAnnotatedFilter___FieldInfo_annotation_NoneType__required_True__discriminator__type____']
+        | null;
+    };
+    /** AnnotationQueueCountResponse */
+    AnnotationQueueCountResponse: {
+      /**
+       * Total Count
+       * @description Total number of annotation queues matching the filters
+       */
+      total_count: number;
+    };
+    /** AnnotationQueueCreatedAtFilter */
+    AnnotationQueueCreatedAtFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'created_at';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+      /**
+       * Value
+       * Format: date-time
+       */
+      value: string;
+    };
+    /** AnnotationQueueCreatedAtSort */
+    AnnotationQueueCreatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'created_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueCreatedBySort */
+    AnnotationQueueCreatedBySort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'created_by';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueDetailsResponse */
+    AnnotationQueueDetailsResponse: {
+      /**
+       * Num Logs Fully Annotated
+       * @description Count of queue logs that have a rating for every queue template from each annotation-capable collaborator with track_progress enabled.
+       * @default 0
+       */
+      num_logs_fully_annotated?: number;
+      /**
+       * Annotation Aggregates
+       * @description Queue-wide aggregates keyed by annotation template UUID. Null when the caller cannot view queue-wide aggregates.
+       */
+      annotation_aggregates?: {
+        [key: string]: components['schemas']['AnnotationAggregate'];
+      } | null;
+      /**
+       * Annotation Aggregates By Annotator
+       * @description Per-user aggregates keyed by annotation-capable collaborator UUID, then annotation template UUID. Null when the caller cannot view all per-user aggregates for the queue.
+       */
+      annotation_aggregates_by_annotator?: {
+        [key: string]: {
+          [key: string]: components['schemas']['AnnotationAggregate'];
+        };
+      } | null;
+      /** @description Queue-wide aggregate of record-level overall annotator agreement. Null when the caller cannot view queue-wide aggregates. */
+      overall_annotation_agreement?:
+        | components['schemas']['AnnotationAgreementAggregate']
+        | null;
+    };
+    /**
+     * AnnotationQueueExportRequest
+     * @description Request to export selected annotation queue records.
+     */
+    AnnotationQueueExportRequest: {
+      /**
+       * Column Ids
+       * @description Column IDs to include in the export. Applies only to CSV exports.
+       */
+      column_ids?: string[] | null;
+      /**
+       * @description Export format
+       * @default jsonl
+       */
+      export_format?: components['schemas']['LLMExportFormat'];
+      /**
+       * Redact
+       * @description Redact sensitive data
+       * @default true
+       */
+      redact?: boolean;
+      /**
+       * File Name
+       * @description Optional filename for the exported file
+       */
+      file_name?: string | null;
+      /**
+       * Export Computed Metrics Only
+       * @description When true, export only enabled scorer metrics with computed values (success or roll_up). For session exports, omit entire sessions unless every enabled metric at session, trace, or span level is ready (success, roll_up, or not_applicable). Not supported with export_format=jsonl_flat (returns 422); use jsonl or csv instead.
+       * @default false
+       */
+      export_computed_metrics_only?: boolean;
+      /**
+       * Record Selector
+       * @description Selector to specify which queue records to export (either by record IDs or filter tree)
+       */
+      record_selector:
+        | components['schemas']['AnnotationQueueRecordsByRecordIDs']
+        | components['schemas']['AnnotationQueueRecordsByFilterTree'];
+    };
+    /**
+     * AnnotationQueueExportUrlResponse
+     * @description Response for an annotation queue export written to object storage.
+     */
+    AnnotationQueueExportUrlResponse: {
+      /** Url */
+      url: string;
+      /**
+       * Url Expires At
+       * Format: date-time
+       */
+      url_expires_at: string;
+      /** File Name */
+      file_name: string;
+      /** Content Type */
+      content_type: string;
+    };
+    /** AnnotationQueueIDFilter */
+    AnnotationQueueIDFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'id';
+      /**
+       * Operator
+       * @default eq
+       * @enum {string}
+       */
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+      /** Value */
+      value: string | string[];
+    };
+    /** AnnotationQueueNameFilter */
+    AnnotationQueueNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
+    };
+    /** AnnotationQueueNameSort */
+    AnnotationQueueNameSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'name';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueNumAnnotatorsFilter */
+    AnnotationQueueNumAnnotatorsFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_annotators';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+      /** Value */
+      value: number | number[] | number[];
+    };
+    /** AnnotationQueueNumAnnotatorsSort */
+    AnnotationQueueNumAnnotatorsSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_annotators';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueNumLogRecordsFilter */
+    AnnotationQueueNumLogRecordsFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_log_records';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+      /** Value */
+      value: number | number[] | number[];
+    };
+    /** AnnotationQueueNumLogRecordsSort */
+    AnnotationQueueNumLogRecordsSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_log_records';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueNumTemplatesFilter */
+    AnnotationQueueNumTemplatesFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_templates';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+      /** Value */
+      value: number | number[] | number[];
+    };
+    /** AnnotationQueueNumTemplatesSort */
+    AnnotationQueueNumTemplatesSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_templates';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueNumUsersFilter */
+    AnnotationQueueNumUsersFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_users';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+      /** Value */
+      value: number | number[] | number[];
+    };
+    /** AnnotationQueueNumUsersSort */
+    AnnotationQueueNumUsersSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'num_users';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueOverallProgressFilter */
+    AnnotationQueueOverallProgressFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'overall_progress';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+      /** Value */
+      value: number | number[] | number[];
+    };
+    /** AnnotationQueueOverallProgressSort */
+    AnnotationQueueOverallProgressSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'overall_progress';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /**
+     * AnnotationQueuePartialSearchRequest
+     * @description Request to search records in an annotation queue with partial field selection.
+     *
+     *     Similar to LogRecordsPartialQueryRequest but doesn't require log_stream_id/experiment_id
+     *     since the queue determines which project/run pairs to search. This is also
+     *     the queue-scoped search path where the `fully_annotated` filter is supported.
+     */
+    AnnotationQueuePartialSearchRequest: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /** Previous Last Row Id */
+      previous_last_row_id?: string | null;
+      /** @description Filter tree to apply when searching records in the queue. The `fully_annotated` filter is only supported on this queue-scoped path. */
+      filter_tree?:
+        | components['schemas']['FilterExpression_Annotated_Union_LogRecordsIDFilter__LogRecordsDateFilter__LogRecordsNumberFilter__LogRecordsBooleanFilter__LogRecordsCollectionFilter__LogRecordsTextFilter__LogRecordsFullyAnnotatedFilter___FieldInfo_annotation_NoneType__required_True__discriminator__type____']
+        | null;
+      /** @description Sort for the query. Defaults to native sort (created_at, id descending). */
+      sort?: components['schemas']['LogRecordsSortClause'] | null;
+      /** @description Columns to include in the response */
+      select_columns: components['schemas']['SelectColumns'];
+      /**
+       * Truncate Fields
+       * @description Whether to truncate long text fields
+       * @default false
+       */
+      truncate_fields?: boolean;
+      /**
+       * Include Counts
+       * @description If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
+       * @default false
+       */
+      include_counts?: boolean;
+    };
+    /** AnnotationQueueProjectFilter */
+    AnnotationQueueProjectFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'project_id';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** AnnotationQueueRecordsByFilterTree */
+    AnnotationQueueRecordsByFilterTree: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'filter_tree';
+      /** @description Filter tree to select records */
+      filter_tree: components['schemas']['FilterExpression_Annotated_Union_LogRecordsIDFilter__LogRecordsDateFilter__LogRecordsNumberFilter__LogRecordsBooleanFilter__LogRecordsCollectionFilter__LogRecordsTextFilter__LogRecordsFullyAnnotatedFilter___FieldInfo_annotation_NoneType__required_True__discriminator__type____'];
+    };
+    /** AnnotationQueueRecordsByRecordIDs */
+    AnnotationQueueRecordsByRecordIDs: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'record_ids';
+      /**
+       * Record Ids
+       * @description List of log record IDs to select
+       */
+      record_ids: string[];
+    };
+    /** AnnotationQueueResponse */
+    AnnotationQueueResponse: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Permissions
+       * @default []
+       */
+      permissions?: components['schemas']['Permission'][];
+      /** Name */
+      name: string;
+      /** Description */
+      description: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string;
+      created_by_user: components['schemas']['UserInfo'] | null;
+      /**
+       * Num Log Records
+       * @default 0
+       */
+      num_log_records?: number;
+      /**
+       * Num Annotators
+       * @default 0
+       */
+      num_annotators?: number;
+      /**
+       * Num Users
+       * @default 0
+       */
+      num_users?: number;
+      /**
+       * Num Templates
+       * @default 0
+       */
+      num_templates?: number;
+      /** Num Logs Annotated */
+      num_logs_annotated?: {
+        [key: string]: number;
+      } | null;
+      /** Progress */
+      progress?: {
+        [key: string]: number;
+      } | null;
+      /** Overall Progress */
+      overall_progress?: number | null;
+      /** Templates */
+      templates?: components['schemas']['AnnotationTemplateDB'][];
+    };
+    /** AnnotationQueueUpdatedAtFilter */
+    AnnotationQueueUpdatedAtFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+      /**
+       * Value
+       * Format: date-time
+       */
+      value: string;
+    };
+    /** AnnotationQueueUpdatedAtSort */
+    AnnotationQueueUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** AnnotationQueueUserCollaboratorCreate */
+    AnnotationQueueUserCollaboratorCreate: {
+      /** @default viewer */
+      role?: components['schemas']['CollaboratorRole'];
+      /** User Id */
+      user_id?: string | null;
+      /** User Email */
+      user_email?: string | null;
+      /**
+       * Track Progress
+       * @default true
+       */
+      track_progress?: boolean;
+    };
+    /** AnnotationQueueUserCollaboratorUpdate */
+    AnnotationQueueUserCollaboratorUpdate: {
+      role: components['schemas']['CollaboratorRole'];
+      /** Track Progress */
+      track_progress?: boolean | null;
+    };
+    /** AnnotationRatingCreate */
+    AnnotationRatingCreate: {
+      /** Explanation */
+      explanation?: string | null;
+      /** Rating */
+      rating:
+        | components['schemas']['api__schemas__annotation__LikeDislikeRating']
+        | components['schemas']['api__schemas__annotation__StarRating']
+        | components['schemas']['api__schemas__annotation__ScoreRating']
+        | components['schemas']['api__schemas__annotation__TagsRating']
+        | components['schemas']['api__schemas__annotation__TextRating']
+        | components['schemas']['api__schemas__annotation__ChoiceRating']
+        | components['schemas']['api__schemas__annotation__TreeChoiceRating'];
+    };
+    /** AnnotationRatingDB */
+    AnnotationRatingDB: {
+      /** Explanation */
+      explanation?: string | null;
+      /** Rating */
+      rating:
+        | components['schemas']['api__schemas__annotation__LikeDislikeRating']
+        | components['schemas']['api__schemas__annotation__StarRating']
+        | components['schemas']['api__schemas__annotation__ScoreRating']
+        | components['schemas']['api__schemas__annotation__TagsRating']
+        | components['schemas']['api__schemas__annotation__TextRating']
+        | components['schemas']['api__schemas__annotation__ChoiceRating']
+        | components['schemas']['api__schemas__annotation__TreeChoiceRating'];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Created By */
+      created_by: string | null;
+    };
     /** AnnotationRatingInfo */
     AnnotationRatingInfo: {
       annotation_type: components['schemas']['AnnotationType'];
@@ -4186,6 +5477,83 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
+    /** AnnotationTemplateCreate */
+    AnnotationTemplateCreate: {
+      /** Name */
+      name: string;
+      /**
+       * Include Explanation
+       * @default false
+       */
+      include_explanation?: boolean;
+      /** Criteria */
+      criteria?: string | null;
+      /** Constraints */
+      constraints:
+        | components['schemas']['LikeDislikeConstraints']
+        | components['schemas']['StarConstraints']
+        | components['schemas']['ScoreConstraints']
+        | components['schemas']['TagsConstraints']
+        | components['schemas']['TextConstraints']
+        | components['schemas']['ChoiceConstraints']
+        | components['schemas']['TreeChoiceConstraints'];
+    };
+    /** AnnotationTemplateDB */
+    AnnotationTemplateDB: {
+      /** Name */
+      name: string;
+      /** Include Explanation */
+      include_explanation: boolean;
+      /** Criteria */
+      criteria?: string | null;
+      /** Constraints */
+      constraints:
+        | components['schemas']['LikeDislikeConstraints']
+        | components['schemas']['StarConstraints']
+        | components['schemas']['ScoreConstraints']
+        | components['schemas']['TagsConstraints']
+        | components['schemas']['TextConstraints']
+        | components['schemas']['ChoiceConstraints']
+        | components['schemas']['TreeChoiceDBConstraints'];
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Created By */
+      created_by: string | null;
+      /** Position */
+      position: number;
+      /**
+       * Usage Count
+       * @description Number of annotation ratings using the template.
+       */
+      usage_count: number;
+    };
+    /**
+     * AnnotationTemplateReorder
+     * @description Request to re-order the annotation templates of a project.
+     *
+     *     - Expects a list of strings where each string is the ID of a template in the project in the order
+     *     we want the templates to appear in.
+     *     - Expects the list to be complete list of all template IDs.
+     */
+    AnnotationTemplateReorder: {
+      /** Ordering */
+      ordering: string[];
+    };
+    /** AnnotationTemplateUpdate */
+    AnnotationTemplateUpdate: {
+      /** Name */
+      name: string;
+      /** Criteria */
+      criteria: string | null;
+    };
     /** AnnotationTextAggregate */
     AnnotationTextAggregate: {
       /**
@@ -4198,11 +5566,32 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
+    /** AnnotationTreeChoiceAggregate */
+    AnnotationTreeChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'tree_choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
+    };
     /**
      * AnnotationType
      * @enum {string}
      */
-    AnnotationType: 'like_dislike' | 'star' | 'score' | 'tags' | 'text';
+    AnnotationType:
+      | 'like_dislike'
+      | 'star'
+      | 'score'
+      | 'tags'
+      | 'text'
+      | 'choice'
+      | 'tree_choice';
     /**
      * AnthropicAuthenticationType
      * @enum {string}
@@ -4238,10 +5627,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default anthropic
+       * @constant
+       */
+      name?: 'anthropic';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'anthropic';
+      provider: 'anthropic';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4303,7 +5698,7 @@ export interface components {
     /** AvailableIntegrations */
     AvailableIntegrations: {
       /** Integrations */
-      integrations: components['schemas']['IntegrationName'][];
+      integrations: components['schemas']['IntegrationProvider'][];
     };
     /** AwsBedrockIntegration */
     AwsBedrockIntegration: {
@@ -4328,10 +5723,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default aws_bedrock
+       * @constant
+       */
+      name?: 'aws_bedrock';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'aws_bedrock';
+      provider: 'aws_bedrock';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4360,10 +5761,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default aws_sagemaker
+       * @constant
+       */
+      name?: 'aws_sagemaker';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'aws_sagemaker';
+      provider: 'aws_sagemaker';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4459,10 +5866,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default azure
+       * @constant
+       */
+      name?: 'azure';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'azure';
+      provider: 'azure';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -4823,6 +6236,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -4850,6 +6268,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /**
      * BaseScorerVersionDB
@@ -4939,6 +6359,8 @@ export interface components {
       chain_poll_template?: components['schemas']['ChainPollTemplate'] | null;
       /** Allowed Model */
       allowed_model?: boolean | null;
+      /** Created By */
+      created_by?: string | null;
     };
     /** BleuScorer */
     BleuScorer: {
@@ -4961,16 +6383,13 @@ export interface components {
     };
     /** Body_create_code_scorer_version_scorers__scorer_id__version_code_post */
     Body_create_code_scorer_version_scorers__scorer_id__version_code_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /**
        * Validation Result
-       * @description Pre-validated result as JSON string to skip validation
+       * @description Pre-validated result as JSON string from the validate endpoint
        */
-      validation_result?: string | null;
+      validation_result: string;
     };
     /** Body_create_dataset_datasets_post */
     Body_create_dataset_datasets_post: {
@@ -4999,6 +6418,8 @@ export interface components {
       copy_from_dataset_version_index?: number | null;
       /** Project Id */
       project_id?: string | null;
+      /** Column Mapping */
+      column_mapping?: string | null;
     };
     /** Body_login_email_login_post */
     Body_login_email_login_post: {
@@ -5024,37 +6445,27 @@ export interface components {
        */
       client_secret?: string | null;
     };
-    /** Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put */
-    Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put: {
-      /** File */
-      file?: string | null;
-      /** Column Names */
-      column_names?: string[] | null;
-    };
-    /** Body_upload_file_projects__project_id__upload_file_post */
-    Body_upload_file_projects__project_id__upload_file_post: {
+    /** Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post */
+    Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post: {
       /**
-       * File
-       * Format: binary
+       * Body
+       * @description JSON-encoded GeneratedScorerValidationRequest
        */
-      file: string;
-      /** Upload Metadata */
-      upload_metadata: string;
-    };
-    /** Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post */
-    Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post: {
+      body: string;
       /**
-       * File
-       * Format: binary
+       * Query Files
+       * @default []
        */
-      file: string;
+      query_files?: string[];
+      /**
+       * Response Files
+       * @default []
+       */
+      response_files?: string[];
     };
     /** Body_validate_code_scorer_dataset_scorers_code_validate_dataset_post */
     Body_validate_code_scorer_dataset_scorers_code_validate_dataset_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /**
        * Dataset Id
@@ -5079,10 +6490,7 @@ export interface components {
     };
     /** Body_validate_code_scorer_log_record_scorers_code_validate_log_record_post */
     Body_validate_code_scorer_log_record_scorers_code_validate_log_record_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /** Log Stream Id */
       log_stream_id?: string | null;
@@ -5112,10 +6520,7 @@ export interface components {
     };
     /** Body_validate_code_scorer_scorers_code_validate_post */
     Body_validate_code_scorer_scorers_code_validate_post: {
-      /**
-       * File
-       * Format: binary
-       */
+      /** File */
       file: string;
       /** Test Input */
       test_input?: string | null;
@@ -5242,6 +6647,31 @@ export interface components {
       /** Value */
       value: string | string[];
     };
+    /** CategoricalMetricInfo */
+    CategoricalMetricInfo: {
+      /**
+       * @description Discriminator: categorical metrics aggregated as per-label counts (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      aggregation_type: 'categorical';
+      /**
+       * Name
+       * @description Unique identifier for the metric
+       */
+      name: string;
+      /**
+       * Label
+       * @description Human-readable display name for the metric
+       */
+      label: string;
+      /**
+       * Category Counts
+       * @description Count of occurrences per category label across records
+       */
+      category_counts?: {
+        [key: string]: number;
+      };
+    };
     /**
      * CategoricalRollUpMethod
      * @description Roll up methods for aggregating categorical metrics up the session/trace/span hierarchy.
@@ -5298,6 +6728,35 @@ export interface components {
       response_schema?: {
         [key: string]: unknown;
       } | null;
+    };
+    /** ChoiceAggregate */
+    ChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
+    };
+    /** ChoiceConstraints */
+    ChoiceConstraints: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'choice';
+      /** Choices */
+      choices: string[];
+      /**
+       * Allow Other
+       * @default false
+       */
+      allow_other?: boolean;
     };
     /** ChunkAttributionUtilizationScorer */
     ChunkAttributionUtilizationScorer: {
@@ -5513,12 +6972,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -5529,20 +6982,25 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
     };
     /** ColumnMapping */
     ColumnMapping: {
       /** Input */
-      input: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      input?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Output */
-      output: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      output?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Generated Output */
-      generated_output:
+      generated_output?:
         | components['schemas']['ColumnMappingConfig']
         | string[]
         | null;
       /** Metadata */
-      metadata: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      metadata?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Mgt */
       mgt?: {
         [key: string]: components['schemas']['ColumnMappingConfig'];
@@ -5663,6 +7121,28 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** ComputeHealthScoreRequest */
+    ComputeHealthScoreRequest: {
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
+      /** @description The scorer's output type, used to dispatch the correct metric. */
+      output_type: components['schemas']['OutputTypeEnum'];
+      /**
+       * Scoreable Node Types
+       * @description The scorer's scoreable_node_types. Determines which record type carries the score.
+       */
+      scoreable_node_types?: components['schemas']['StepType'][];
+      /**
+       * Mgt Overlay
+       * @description Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+       */
+      mgt_overlay?: {
+        [key: string]: string | null;
+      };
+    };
     /**
      * ContentModality
      * @description Classification of content modality
@@ -5738,6 +7218,12 @@ export interface components {
      * @enum {string}
      */
     ControlCheckStage: 'pre' | 'post';
+    /**
+     * ControlResourceAction
+     * @description Actions on Agent Control's org-scoped ``control`` resource.
+     * @enum {string}
+     */
+    ControlResourceAction: 'create' | 'read' | 'update' | 'delete';
     /** ControlResult */
     ControlResult: {
       /** @description Decision/action produced by the control. */
@@ -5932,6 +7418,24 @@ export interface components {
       num_judges?: number | null;
     };
     /**
+     * CostInterval
+     * @enum {string}
+     */
+    CostInterval: 'hourly' | 'daily' | 'weekly' | 'monthly';
+    /** CreateAnnotationQueueRequest */
+    CreateAnnotationQueueRequest: {
+      name: components['schemas']['Name'];
+      /** Description */
+      description?: string | null;
+      /** Annotator Emails */
+      annotator_emails?: string[];
+      /**
+       * Copy Templates From Queue Id
+       * @description Optional ID of an existing annotation queue to copy templates from
+       */
+      copy_templates_from_queue_id?: string | null;
+    };
+    /**
      * CreateCodeMetricGenerationRequest
      * @description Request to generate scorer code from a user message.
      */
@@ -5996,7 +7500,7 @@ export interface components {
       job_id?: string | null;
       /**
        * Job Name
-       * @default default
+       * @default log_stream_scorer
        */
       job_name?: string;
       /**
@@ -6121,17 +7625,6 @@ export interface components {
       luna_model?: string | null;
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
-      prompt_optimization_configuration?:
-        | components['schemas']['PromptOptimizationConfiguration']
-        | null;
-      /**
-       * Epoch
-       * @default 0
-       */
-      epoch?: number;
-      metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration']
-        | null;
       /** Is Session */
       is_session?: boolean | null;
       /** Validation Config */
@@ -6158,6 +7651,13 @@ export interface components {
        * @default false
        */
       multijudge_average_boolean_metrics?: boolean;
+      /**
+       * Store Metric Ids
+       * @default false
+       */
+      store_metric_ids?: boolean;
+      /** Trace Ids */
+      trace_ids?: string[];
     };
     /** CreateJobResponse */
     CreateJobResponse: {
@@ -6176,7 +7676,7 @@ export interface components {
       job_id?: string | null;
       /**
        * Job Name
-       * @default default
+       * @default log_stream_scorer
        */
       job_name?: string;
       /**
@@ -6301,17 +7801,6 @@ export interface components {
       luna_model?: string | null;
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
-      prompt_optimization_configuration?:
-        | components['schemas']['PromptOptimizationConfiguration']
-        | null;
-      /**
-       * Epoch
-       * @default 0
-       */
-      epoch?: number;
-      metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration']
-        | null;
       /** Is Session */
       is_session?: boolean | null;
       /** Validation Config */
@@ -6338,6 +7827,13 @@ export interface components {
        * @default false
        */
       multijudge_average_boolean_metrics?: boolean;
+      /**
+       * Store Metric Ids
+       * @default false
+       */
+      store_metric_ids?: boolean;
+      /** Trace Ids */
+      trace_ids?: string[];
       /** Message */
       message: string;
       /** Link */
@@ -6400,10 +7896,31 @@ export interface components {
        */
       hidden?: boolean;
     };
+    /**
+     * CreateQueueTemplateRequest
+     * @description Request to create templates in an annotation queue.
+     *
+     *     Supports two scenarios:
+     *     1. Create a single template (template field)
+     *     2. Copy all templates from a source queue (copy_from_queue_id field)
+     */
+    CreateQueueTemplateRequest: {
+      /** @description Template to create. Required if copy_from_queue_id is not provided. */
+      template?: components['schemas']['AnnotationTemplateCreate'] | null;
+      /**
+       * Copy From Queue Id
+       * @description Source queue ID to copy all templates from. Required if template is not provided.
+       */
+      copy_from_queue_id?: string | null;
+    };
     /** CreateScorerRequest */
     CreateScorerRequest: {
       /** Name */
       name: string;
+      /** Id */
+      id?: string | null;
+      /** Label */
+      label?: string | null;
       /**
        * Description
        * @default
@@ -6446,6 +7963,10 @@ export interface components {
             | components['schemas']['MetricColorPickerMultiLabel']
           )
         | null;
+      /** Is Global */
+      is_global?: boolean | null;
+      /** Project Ids */
+      project_ids?: string[];
     };
     /** CreateScorerVersionRequest */
     CreateScorerVersionRequest: {
@@ -6580,10 +8101,15 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default custom
+       */
+      name?: string;
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'custom';
+      provider: 'custom';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -6672,6 +8198,47 @@ export interface components {
       } | null;
       /** Token */
       token?: string | null;
+    };
+    /**
+     * CustomIntegrationDefinition
+     * @description Response schema for the full JSON definition of a custom integration.
+     *
+     *     Returns the exact same structure used to create the integration,
+     *     including decrypted sensitive fields (api_key_value, token, headers).
+     *     Only accessible to users with edit permission (creator + admins).
+     */
+    CustomIntegrationDefinition: {
+      authentication_type: components['schemas']['CustomAuthenticationType'];
+      /** Endpoint */
+      endpoint: string;
+      /** Default Model */
+      default_model?: string | null;
+      /** Model Properties */
+      model_properties?:
+        | components['schemas']['promptgalileo__schemas__config__custom__ModelProperties'][]
+        | null;
+      /** Token */
+      token?: string | null;
+      /** Api Key Header */
+      api_key_header?: string | null;
+      /** Api Key Value */
+      api_key_value?: string | null;
+      /** Authentication Scope */
+      authentication_scope?: string | null;
+      /** Oauth2 Token Url */
+      oauth2_token_url?: string | null;
+      /** Headers */
+      headers?: {
+        [key: string]: string;
+      } | null;
+      custom_llm_config?: components['schemas']['CustomLLMConfig'] | null;
+      /** Custom Header Mapping */
+      custom_header_mapping?: {
+        [key: string]: string;
+      } | null;
+      multi_modal_config?:
+        | components['schemas']['MultiModalModelIntegrationConfig']
+        | null;
     };
     /**
      * CustomLLMConfig
@@ -6802,6 +8369,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -6829,6 +8401,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedAgenticWorkflowSuccessGPTScorer */
     CustomizedAgenticWorkflowSuccessGPTScorer: {
@@ -6933,6 +8507,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -6960,6 +8539,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedChunkAttributionUtilizationGPTScorer */
     CustomizedChunkAttributionUtilizationGPTScorer: {
@@ -7054,6 +8635,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7081,6 +8667,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedCompletenessGPTScorer */
     CustomizedCompletenessGPTScorer: {
@@ -7174,6 +8762,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7201,6 +8794,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedFactualityGPTScorer */
     CustomizedFactualityGPTScorer: {
@@ -7304,6 +8899,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7331,6 +8931,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
       /**
        * Function Explanation Param Name
        * @default explanation
@@ -7431,6 +9033,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7458,6 +9065,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedGroundednessGPTScorer */
     CustomizedGroundednessGPTScorer: {
@@ -7558,6 +9167,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7585,6 +9199,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedInputSexistGPTScorer */
     CustomizedInputSexistGPTScorer: {
@@ -7685,6 +9301,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7712,6 +9333,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedInputToxicityGPTScorer */
     CustomizedInputToxicityGPTScorer: {
@@ -7812,6 +9435,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7839,6 +9467,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedInstructionAdherenceGPTScorer */
     CustomizedInstructionAdherenceGPTScorer: {
@@ -7939,6 +9569,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7966,6 +9601,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
       /**
        * Function Explanation Param Name
        * @default explanation
@@ -8071,6 +9708,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8098,6 +9740,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedSexistGPTScorer */
     CustomizedSexistGPTScorer: {
@@ -8198,6 +9842,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8225,6 +9874,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedToolErrorRateGPTScorer */
     CustomizedToolErrorRateGPTScorer: {
@@ -8329,6 +9980,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8356,6 +10012,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedToolSelectionQualityGPTScorer */
     CustomizedToolSelectionQualityGPTScorer: {
@@ -8456,6 +10114,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8483,6 +10146,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /** CustomizedToxicityGPTScorer */
     CustomizedToxicityGPTScorer: {
@@ -8583,6 +10248,11 @@ export interface components {
       multimodal_capabilities?:
         | components['schemas']['MultimodalCapability'][]
         | null;
+      /**
+       * Requires Tools In Llm Span
+       * @default false
+       */
+      requires_tools_in_llm_span?: boolean;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8610,6 +10280,8 @@ export interface components {
             [key: string]: number;
           }
         | null;
+      /** Scorer Path Name */
+      scorer_path_name?: string | null;
     };
     /**
      * DataType
@@ -8663,10 +10335,12 @@ export interface components {
       | 'score_rating'
       | 'star_rating'
       | 'tags_rating'
+      | 'choice_rating'
       | 'thumb_rating_aggregate'
       | 'score_rating_aggregate'
       | 'star_rating_aggregate'
-      | 'tags_rating_aggregate';
+      | 'tags_rating_aggregate'
+      | 'choice_rating_aggregate';
     /**
      * DataUnit
      * @enum {string}
@@ -8682,10 +10356,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default databricks
+       * @constant
+       */
+      name?: 'databricks';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'databricks';
+      provider: 'databricks';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -9117,6 +10797,34 @@ export interface components {
        */
       sort_type?: 'custom';
     };
+    /**
+     * DatasetRemoveColumn
+     * @description Drop a column from the dataset schema.
+     */
+    DatasetRemoveColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'remove_column';
+      /** Column Name */
+      column_name: string;
+    };
+    /**
+     * DatasetRenameColumn
+     * @description Rename a column in the dataset schema, preserving values.
+     */
+    DatasetRenameColumn: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      edit_type: 'rename_column';
+      /** Column Name */
+      column_name: string;
+      /** New Column Name */
+      new_column_name: string;
+    };
     /** DatasetRow */
     DatasetRow: {
       /**
@@ -9333,6 +11041,7 @@ export interface components {
       | 'permission_error'
       | 'not_found_error'
       | 'workflow_error'
+      | 'rate_limit_error'
       | 'system_error'
       | 'not_applicable_reason'
       | 'uncataloged_error';
@@ -9384,6 +11093,10 @@ export interface components {
        * @default false
        */
       trigger?: boolean;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunCreatedAtFilter */
     ExperimentCreatedAtFilter: {
@@ -9456,6 +11169,39 @@ export interface components {
       dataset_id: string;
       /** Version Index */
       version_index: number;
+    };
+    /** ExperimentGroupIDFilter */
+    ExperimentGroupIDFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_id';
+      /**
+       * Value
+       * Format: uuid4
+       */
+      value: string;
+    };
+    /** ExperimentGroupNameFilter */
+    ExperimentGroupNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_name';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** RunIDFilter */
     ExperimentIDFilter: {
@@ -9598,6 +11344,8 @@ export interface components {
       num_spans?: number | null;
       /** Num Traces */
       num_traces?: number | null;
+      /** Num Sessions */
+      num_sessions?: number | null;
       task_type: components['schemas']['TaskType'];
       dataset?: components['schemas']['ExperimentDataset'] | null;
       /** Aggregate Metrics */
@@ -9606,7 +11354,7 @@ export interface components {
       };
       /**
        * Structured Aggregate Metrics
-       * @description Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+       * @description Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
        */
       structured_aggregate_metrics?: {
         [key: string]: components['schemas']['MetricAggregates'];
@@ -9646,6 +11394,12 @@ export interface components {
         [key: string]: components['schemas']['RunTagDB'][];
       };
       status?: components['schemas']['ExperimentStatus'];
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
+      /** Experiment Group Is System */
+      experiment_group_is_system?: boolean | null;
     };
     /** ExperimentSearchRequest */
     ExperimentSearchRequest: {
@@ -9666,6 +11420,8 @@ export interface components {
         | components['schemas']['ExperimentCreatedByFilter']
         | components['schemas']['ExperimentCreatedAtFilter']
         | components['schemas']['ExperimentUpdatedAtFilter']
+        | components['schemas']['ExperimentGroupIDFilter']
+        | components['schemas']['ExperimentGroupNameFilter']
       )[];
       /**
        * Sort
@@ -9701,6 +11457,10 @@ export interface components {
        * @default 16
        */
       task_type?: 16 | 17;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunUpdatedAtFilter */
     ExperimentUpdatedAtFilter: {
@@ -9960,6 +11720,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -10231,6 +12003,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -10467,6 +12251,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -10713,6 +12509,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -10979,6 +12787,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -11212,6 +13032,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -11467,6 +13299,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -11712,6 +13556,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -11923,6 +13779,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -12162,6 +14030,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -12417,6 +14297,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -12459,12 +14351,10 @@ export interface components {
         | components['schemas']['ExtendedControlSpanRecord']
       )[];
       /**
-       * Type
-       * @description Type of the trace, span or session.
-       * @default trace
-       * @constant
+       * @description Type of the trace, span or session. (enum property replaced by openapi-typescript)
+       * @enum {string}
        */
-      type?: 'trace';
+      type: 'trace';
       /**
        * Input
        * @description Input to the trace or span.
@@ -12667,6 +14557,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -12914,6 +14816,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -13180,6 +15094,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -13325,6 +15251,18 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** FeatureIntegrationCosts */
+    FeatureIntegrationCosts: {
+      /** Feature Name */
+      feature_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Projects */
+      projects?: components['schemas']['ProjectIntegrationCosts'][];
+    };
     /** FeedbackAggregate */
     FeedbackAggregate: {
       /** Aggregate */
@@ -13333,7 +15271,9 @@ export interface components {
         | components['schemas']['StarAggregate']
         | components['schemas']['ScoreAggregate']
         | components['schemas']['TagsAggregate']
-        | components['schemas']['TextAggregate'];
+        | components['schemas']['TextAggregate']
+        | components['schemas']['ChoiceAggregate']
+        | components['schemas']['TreeChoiceAggregate'];
     };
     /** FeedbackRatingDB */
     FeedbackRatingDB: {
@@ -13341,11 +15281,13 @@ export interface components {
       explanation?: string | null;
       /** Rating */
       rating:
-        | components['schemas']['LikeDislikeRating']
-        | components['schemas']['StarRating']
-        | components['schemas']['ScoreRating']
-        | components['schemas']['TagsRating']
-        | components['schemas']['TextRating'];
+        | components['schemas']['libs__python__schemas__log_records__feedback__LikeDislikeRating']
+        | components['schemas']['libs__python__schemas__log_records__feedback__StarRating']
+        | components['schemas']['libs__python__schemas__log_records__feedback__ScoreRating']
+        | components['schemas']['libs__python__schemas__log_records__feedback__TagsRating']
+        | components['schemas']['libs__python__schemas__log_records__feedback__TextRating']
+        | components['schemas']['libs__python__schemas__log_records__feedback__ChoiceRating']
+        | components['schemas']['libs__python__schemas__log_records__feedback__TreeChoiceRating'];
       /**
        * Created At
        * Format: date-time
@@ -13366,7 +15308,14 @@ export interface components {
      * FeedbackType
      * @enum {string}
      */
-    FeedbackType: 'like_dislike' | 'star' | 'score' | 'tags' | 'text';
+    FeedbackType:
+      | 'like_dislike'
+      | 'star'
+      | 'score'
+      | 'tags'
+      | 'text'
+      | 'choice'
+      | 'tree_choice';
     /**
      * FewShotExample
      * @description Few-shot example for a chainpoll metric prompt.
@@ -13881,6 +15830,47 @@ export interface components {
       /** Hallucination */
       hallucination: number;
     };
+    /** HealthScoreResult */
+    HealthScoreResult: {
+      health_score_type: components['schemas']['HealthScoreType'] | null;
+      /**
+       * Value
+       * @description Primary health score metric value, or None if no valid rows.
+       */
+      value: number | null;
+      /**
+       * Skipped Rows
+       * @description Rows excluded because MGT or score could not be parsed.
+       */
+      skipped_rows: number;
+      /**
+       * Secondary
+       * @description Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+       */
+      secondary: {
+        [key: string]: number | null;
+      };
+      /**
+       * Total Scored Rows
+       * @description Rows with a successful scorer result.
+       */
+      total_scored_rows: number;
+      /**
+       * Total Mgt Rows
+       * @description Rows with a non-null MGT value after overlay.
+       */
+      total_mgt_rows: number;
+      /**
+       * Joined Rows
+       * @description Rows with both a score and a MGT value (used for computation).
+       */
+      joined_rows: number;
+    };
+    /**
+     * HealthScoreType
+     * @enum {string}
+     */
+    HealthScoreType: 'macro_f1' | 'micro_f1' | 'mse' | 'mae';
     /** HealthcheckResponse */
     HealthcheckResponse: {
       /** Api Version */
@@ -14434,7 +16424,22 @@ export interface components {
      * IntegrationAction
      * @enum {string}
      */
-    IntegrationAction: 'update' | 'delete' | 'share';
+    IntegrationAction: 'update' | 'delete' | 'share' | 'read_secrets';
+    /** IntegrationCostsDataPoint */
+    IntegrationCostsDataPoint: {
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string;
+      /** Cost */
+      cost: number;
+    };
+    /** IntegrationCostsResponse */
+    IntegrationCostsResponse: {
+      /** Features */
+      features?: components['schemas']['FeatureIntegrationCosts'][];
+    };
     /** IntegrationDB */
     IntegrationDB: {
       /**
@@ -14447,7 +16452,9 @@ export interface components {
        * @default []
        */
       permissions?: components['schemas']['Permission'][];
-      name: components['schemas']['IntegrationName'];
+      /** Name */
+      name: string;
+      provider: components['schemas']['IntegrationProvider'];
       /**
        * Created At
        * Format: date-time
@@ -14476,12 +16483,19 @@ export interface components {
     };
     /** IntegrationDisableRequest */
     IntegrationDisableRequest: {
-      integration_name: components['schemas']['IntegrationName'];
+      /** Integration Name */
+      integration_name: string;
     };
     /** IntegrationModelsResponse */
     IntegrationModelsResponse: {
       /** Integration Name */
       integration_name: string;
+      /**
+       * Integration Id
+       * Format: uuid4
+       */
+      integration_id: string;
+      provider: components['schemas']['IntegrationProvider'];
       /** Models */
       models: string[];
       /** Scorer Models */
@@ -14504,10 +16518,10 @@ export interface components {
       model_properties?: components['schemas']['api__schemas__integration__llm_integration__ModelProperties'][];
     };
     /**
-     * IntegrationName
+     * IntegrationProvider
      * @enum {string}
      */
-    IntegrationName:
+    IntegrationProvider:
       | 'anthropic'
       | 'aws_bedrock'
       | 'aws_sagemaker'
@@ -14522,7 +16536,8 @@ export interface components {
       | 'writer';
     /** IntegrationSelectRequest */
     IntegrationSelectRequest: {
-      integration_name: components['schemas']['IntegrationName'];
+      /** Integration Name */
+      integration_name: string;
       /**
        * Integration Id
        * Format: uuid4
@@ -14713,13 +16728,17 @@ export interface components {
       steps_total?: number | null;
     };
     JsonPrimitive: string | number | boolean | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    JsonValue: any; // circular self-reference in generated spec — simplified to any
+    JsonValue:
+      | components['schemas']['JsonPrimitive']
+      | components['schemas']['JsonValue'][]
+      | {
+          [key: string]: components['schemas']['JsonValue'];
+        };
     /**
      * LLMExportFormat
      * @enum {string}
      */
-    LLMExportFormat: 'csv' | 'jsonl';
+    LLMExportFormat: 'csv' | 'jsonl' | 'jsonl_flat';
     /**
      * LLMIntegration
      * @enum {string}
@@ -14751,15 +16770,94 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
-    /** LikeDislikeRating */
-    LikeDislikeRating: {
+    /** LikeDislikeConstraints */
+    LikeDislikeConstraints: {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      feedback_type: 'like_dislike';
-      /** Value */
-      value: boolean;
+      annotation_type: 'like_dislike';
+    };
+    /** ListAnnotationQueueCollaboratorsResponse */
+    ListAnnotationQueueCollaboratorsResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Collaborators */
+      collaborators: components['schemas']['UserAnnotationQueueCollaborator'][];
+    };
+    /** ListAnnotationQueueParams */
+    ListAnnotationQueueParams: {
+      /** Filters */
+      filters?: (
+        | components['schemas']['AnnotationQueueIDFilter']
+        | components['schemas']['AnnotationQueueNameFilter']
+        | components['schemas']['AnnotationQueueProjectFilter']
+        | components['schemas']['AnnotationQueueCreatedAtFilter']
+        | components['schemas']['AnnotationQueueUpdatedAtFilter']
+        | components['schemas']['AnnotationQueueNumLogRecordsFilter']
+        | components['schemas']['AnnotationQueueNumAnnotatorsFilter']
+        | components['schemas']['AnnotationQueueNumUsersFilter']
+        | components['schemas']['AnnotationQueueOverallProgressFilter']
+        | components['schemas']['AnnotationQueueNumTemplatesFilter']
+      )[];
+      /**
+       * Sort
+       * @default {
+       *       "name": "created_at",
+       *       "ascending": false,
+       *       "sort_type": "column"
+       *     }
+       */
+      sort?:
+        | (
+            | components['schemas']['AnnotationQueueNameSort']
+            | components['schemas']['AnnotationQueueCreatedAtSort']
+            | components['schemas']['AnnotationQueueUpdatedAtSort']
+            | components['schemas']['AnnotationQueueCreatedBySort']
+            | components['schemas']['AnnotationQueueNumUsersSort']
+            | components['schemas']['AnnotationQueueNumLogRecordsSort']
+            | components['schemas']['AnnotationQueueNumTemplatesSort']
+            | components['schemas']['AnnotationQueueNumAnnotatorsSort']
+            | components['schemas']['AnnotationQueueOverallProgressSort']
+          )
+        | null;
+    };
+    /** ListAnnotationQueueResponse */
+    ListAnnotationQueueResponse: {
+      /**
+       * Starting Token
+       * @default 0
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       * @default 100
+       */
+      limit?: number;
+      /**
+       * Paginated
+       * @default false
+       */
+      paginated?: boolean;
+      /** Next Starting Token */
+      next_starting_token?: number | null;
+      /** Annotation Queues */
+      annotation_queues: components['schemas']['AnnotationQueueResponse'][];
     };
     /** ListDatasetParams */
     ListDatasetParams: {
@@ -14928,28 +17026,6 @@ export interface components {
       /** Log Streams */
       log_streams: components['schemas']['LogStreamResponse'][];
     };
-    /** ListPromptDatasetResponse */
-    ListPromptDatasetResponse: {
-      /**
-       * Starting Token
-       * @default 0
-       */
-      starting_token?: number;
-      /**
-       * Limit
-       * @default 100
-       */
-      limit?: number;
-      /**
-       * Paginated
-       * @default false
-       */
-      paginated?: boolean;
-      /** Next Starting Token */
-      next_starting_token?: number | null;
-      /** Datasets */
-      datasets?: components['schemas']['PromptDatasetDB'][];
-    };
     /** ListPromptTemplateParams */
     ListPromptTemplateParams: {
       /** Filters */
@@ -15067,12 +17143,16 @@ export interface components {
         | components['schemas']['ScorerUpdatedAtFilter']
         | components['schemas']['ScorerLabelFilter']
         | components['schemas']['ScorerScoreableNodeTypesFilter']
+        | components['schemas']['ScorerMultimodalCapabilitiesFilter']
         | components['schemas']['ScorerIDFilter']
+        | components['schemas']['ScorerIsGlobalFilter']
+        | components['schemas']['ScorerScopeProjectsFilter']
       )[];
       /** Sort */
       sort?:
         | (
             | components['schemas']['ScorerNameSort']
+            | components['schemas']['ScorerUpdatedAtSort']
             | components['schemas']['ScorerEnabledInRunSort']
             | components['schemas']['ScorerEnabledInPlaygroundSort']
           )
@@ -15149,6 +17229,26 @@ export interface components {
        * @description Time until the first token was generated in nanoseconds.
        */
       time_to_first_token_ns?: number | null;
+      /**
+       * Num Image Input Tokens
+       * @description Number of image input tokens.
+       */
+      num_image_input_tokens?: number | null;
+      /**
+       * Num Audio Input Tokens
+       * @description Number of audio input tokens.
+       */
+      num_audio_input_tokens?: number | null;
+      /**
+       * Num Audio Output Tokens
+       * @description Number of audio output tokens.
+       */
+      num_audio_output_tokens?: number | null;
+      /**
+       * Num Image Output Tokens
+       * @description Number of image output tokens.
+       */
+      num_image_output_tokens?: number | null;
     } & {
       [key: string]: unknown;
     };
@@ -15430,12 +17530,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -15446,6 +17540,11 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
       /** @description For metric columns only: Scorer config that produced the metric. */
       scorer_config?: components['schemas']['ScorerConfig'] | null;
       /**
@@ -15464,11 +17563,6 @@ export interface components {
        * @description Type of label color for the column, if this is a multilabel metric column.
        */
       label_color?: ('positive' | 'negative') | null;
-      /**
-       * Metric Key Alias
-       * @description Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-       */
-      metric_key_alias?: string | null;
     };
     /** LogRecordsCustomMetricsQueryRequest */
     LogRecordsCustomMetricsQueryRequest: {
@@ -15623,6 +17717,12 @@ export interface components {
        */
       file_name?: string | null;
       /**
+       * Export Computed Metrics Only
+       * @description When true, export only enabled scorer metrics with computed values (success or roll_up). For session exports, omit entire sessions unless every enabled metric at session, trace, or span level is ready (success, roll_up, or not_applicable). Not supported with export_format=jsonl_flat (returns 422); use jsonl or csv instead.
+       * @default false
+       */
+      export_computed_metrics_only?: boolean;
+      /**
        * Log Stream Id
        * @description Log stream id associated with the traces.
        */
@@ -15653,6 +17753,12 @@ export interface components {
       /** @description Sort clause for the export.  Defaults to native sort (created_at, id descending). */
       sort?: components['schemas']['LogRecordsSortClause'] | null;
       root_type: components['schemas']['RootType'];
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the export. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
     };
     /**
      * LogRecordsFilterType
@@ -15865,6 +17971,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       select_columns: components['schemas']['SelectColumns'];
     };
     /** LogRecordsPartialQueryResponse */
@@ -16011,6 +18123,12 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
     };
     /** LogRecordsQueryResponse */
     LogRecordsQueryResponse: {
@@ -16782,6 +18900,11 @@ export interface components {
        */
       traces_count: number;
       /**
+       * Spans Count
+       * @description total number of spans ingested
+       */
+      spans_count: number;
+      /**
        * Trace Ids
        * @description List of trace IDs that were ingested. Only included if include_trace_ids=True in request.
        */
@@ -17253,29 +19376,6 @@ export interface components {
       /** Original Explanation */
       original_explanation: string;
     };
-    /**
-     * MetricCritiqueJobConfiguration
-     * @description Info necessary to execute a metric critique job.
-     */
-    MetricCritiqueJobConfiguration: {
-      /** Project Type */
-      project_type: 'prompt_evaluation' | 'llm_monitor' | 'gen_ai';
-      /** Metric Name */
-      metric_name: string;
-      /** Scorer Id */
-      scorer_id?: string | null;
-      /** Critique Ids */
-      critique_ids: string[];
-      /** Recompute Settings */
-      recompute_settings?:
-        | (
-            | components['schemas']['RecomputeSettingsRuns']
-            | components['schemas']['RecomputeSettingsProject']
-            | components['schemas']['RecomputeSettingsObserve']
-            | components['schemas']['RecomputeSettingsLogStream']
-          )
-        | null;
-    };
     /** MetricError */
     MetricError: {
       /**
@@ -17434,6 +19534,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Multijudge Average */
+      multijudge_average?: number | null;
       /** Input Tokens */
       input_tokens?: number | null;
       /** Output Tokens */
@@ -17441,6 +19543,13 @@ export interface components {
       /** Total Tokens */
       total_tokens?: number | null;
       critique?: components['schemas']['MetricCritiqueColumnar'] | null;
+      /**
+       * Metadata
+       * @description Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+       */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
       /**
        * Roll Up Metrics
        * @description Roll up metrics e.g. sum, average, min, max for numeric, and category_count for categorical metrics.
@@ -17538,6 +19647,8 @@ export interface components {
       model_alias?: string | null;
       /** Num Judges */
       num_judges?: number | null;
+      /** Multijudge Average */
+      multijudge_average?: number | null;
       /** Input Tokens */
       input_tokens?: number | null;
       /** Output Tokens */
@@ -17545,6 +19656,13 @@ export interface components {
       /** Total Tokens */
       total_tokens?: number | null;
       critique?: components['schemas']['MetricCritiqueColumnar'] | null;
+      /**
+       * Metadata
+       * @description Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+       */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
       /** Display Value */
       display_value?: string | null;
       /** Rationale */
@@ -17610,11 +19728,8 @@ export interface components {
        * @description Name of the metric that we are testing.
        */
       name: string;
-      /**
-       * @description Output type of the metrics testing table. If not provided, all columns are returned.
-       * @default boolean
-       */
-      output_type?: components['schemas']['OutputTypeEnum'];
+      /** @description Output type of the scorer. Required when metric_key is REGISTERED_SCORER_VALIDATION; used to determine the data_type for validation columns. */
+      output_type?: components['schemas']['OutputTypeEnum'] | null;
       /**
        * Cot Enabled
        * @description Whether the metrics testing table is using chain of thought (CoT) enabled scorers. If True, the columns will be generated for CoT enabled scorers.
@@ -17643,10 +19758,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default mistral
+       * @constant
+       */
+      name?: 'mistral';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'mistral';
+      provider: 'mistral';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17709,16 +19830,6 @@ export interface components {
       output_token_limit?: number | null;
       /** Token Limit */
       token_limit?: number | null;
-      /**
-       * Output Price
-       * @default 0
-       */
-      output_price?: number;
-      /**
-       * Input Price
-       * @default 0
-       */
-      input_price?: number;
       /** @default tokens */
       cost_by?: components['schemas']['ModelCostBy'];
       /**
@@ -17885,10 +19996,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default nvidia
+       * @constant
+       */
+      name?: 'nvidia';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'nvidia';
+      provider: 'nvidia';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17916,10 +20033,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default openai
+       * @constant
+       */
+      name?: 'openai';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'openai';
+      provider: 'openai';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -17960,7 +20083,8 @@ export interface components {
       | 'delete'
       | 'delete_log_data'
       | 'read_settings'
-      | 'update_settings';
+      | 'update_settings'
+      | 'read_cost_settings';
     /** OutputMap */
     OutputMap: {
       /** Response */
@@ -18328,6 +20452,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -18559,6 +20695,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -18800,6 +20948,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -19061,6 +21221,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -19311,6 +21483,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -19334,6 +21518,8 @@ export interface components {
       } | null;
       /** Previous Session Id */
       previous_session_id?: string | null;
+      /** Num Traces */
+      num_traces?: number | null;
     };
     /** PartialExtendedToolSpanRecord */
     PartialExtendedToolSpanRecord: {
@@ -19516,6 +21702,18 @@ export interface components {
        * @description Whether every field is annotated by every annotator in the queue
        */
       fully_annotated?: boolean | null;
+      /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
       /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
@@ -19765,6 +21963,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -19792,6 +22002,8 @@ export interface components {
        * @default true
        */
       is_complete?: boolean;
+      /** Num Spans */
+      num_spans?: number | null;
     };
     /** PartialExtendedWorkflowSpanRecord */
     PartialExtendedWorkflowSpanRecord: {
@@ -20006,6 +22218,18 @@ export interface components {
        */
       fully_annotated?: boolean | null;
       /**
+       * Progress Message
+       * @description Runner progress text written directly to CH span
+       * @default
+       */
+      progress_message?: string;
+      /**
+       * Error Message
+       * @description Runner error text written directly to CH span
+       * @default
+       */
+      error_message?: string;
+      /**
        * Metric Info
        * @description Detailed information about the metrics associated with this trace or span
        */
@@ -20078,6 +22302,7 @@ export interface components {
         | components['schemas']['GroupAction']
         | components['schemas']['GroupMemberAction']
         | components['schemas']['ProjectAction']
+        | components['schemas']['ScorerAction']
         | components['schemas']['RegisteredScorerAction']
         | components['schemas']['ApiKeyAction']
         | components['schemas']['GeneratedScorerAction']
@@ -20085,7 +22310,8 @@ export interface components {
         | components['schemas']['DatasetAction']
         | components['schemas']['IntegrationAction']
         | components['schemas']['OrganizationAction']
-        | components['schemas']['AnnotationQueueAction'];
+        | components['schemas']['AnnotationQueueAction']
+        | components['schemas']['ControlResourceAction'];
       /** Allowed */
       allowed: boolean;
       /** Message */
@@ -20122,7 +22348,9 @@ export interface components {
       | 'edit_run_tags'
       | 'dismiss_alert'
       | 'edit_slice'
-      | 'edit_edit';
+      | 'edit_edit'
+      | 'update_control_bindings'
+      | 'use_control_runtime';
     /** ProjectBookmarkFilter */
     ProjectBookmarkFilter: {
       /**
@@ -20376,6 +22604,23 @@ export interface components {
       /** Value */
       value: string | string[];
     };
+    /** ProjectIntegrationCosts */
+    ProjectIntegrationCosts: {
+      /**
+       * Project Id
+       * Format: uuid4
+       */
+      project_id: string;
+      /** Project Name */
+      project_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Data Points */
+      data_points?: components['schemas']['IntegrationCostsDataPoint'][];
+    };
     /**
      * ProjectItem
      * @description Represents a single project item for the UI list.
@@ -20554,9 +22799,6 @@ export interface components {
     ProjectUpdate: {
       /** Name */
       name?: string | null;
-      /** Created By */
-      created_by?: string | null;
-      type?: components['schemas']['ProjectType'] | null;
       /** Labels */
       labels?: string[] | null;
       /** Description */
@@ -20625,27 +22867,6 @@ export interface components {
        * @constant
        */
       sort_type?: 'column';
-    };
-    /** PromptDatasetDB */
-    PromptDatasetDB: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string;
-      /**
-       * Dataset Id
-       * Format: uuid4
-       */
-      dataset_id: string;
-      /** File Name */
-      file_name?: string | null;
-      /** Message */
-      message?: string | null;
-      /** Num Rows */
-      num_rows?: number | null;
-      /** Rows */
-      rows?: number | null;
     };
     /** PromptInjectionScorer */
     PromptInjectionScorer: {
@@ -20751,38 +22972,6 @@ export interface components {
       response_schema?: {
         [key: string]: unknown;
       } | null;
-    };
-    /**
-     * PromptOptimizationConfiguration
-     * @description Configuration for prompt optimization.
-     */
-    PromptOptimizationConfiguration: {
-      /** Prompt */
-      prompt: string;
-      /** Evaluation Criteria */
-      evaluation_criteria: string;
-      /** Task Description */
-      task_description: string;
-      /** Includes Target */
-      includes_target: boolean;
-      /** Num Rows */
-      num_rows: number;
-      /** Iterations */
-      iterations: number;
-      /** Max Tokens */
-      max_tokens: number;
-      /** Temperature */
-      temperature: number;
-      /** Generation Model Alias */
-      generation_model_alias: string;
-      /** Evaluation Model Alias */
-      evaluation_model_alias: string;
-      /** @default openai */
-      integration_name?: components['schemas']['LLMIntegration'];
-      /** Reasoning Effort */
-      reasoning_effort?: string | null;
-      /** Verbosity */
-      verbosity?: string | null;
     };
     /** PromptPerplexityScorer */
     PromptPerplexityScorer: {
@@ -21201,7 +23390,23 @@ export interface components {
       | 'custom_metric_judge'
       | 'custom_metric_autogen'
       | 'autotune'
-      | 'signals';
+      | 'signals'
+      | 'ai_assistant';
+    /** RecommendedModelsResponse */
+    RecommendedModelsResponse: {
+      /** Supported */
+      supported: {
+        [key: string]: {
+          [key: string]: string[];
+        };
+      };
+      /** Available */
+      available: {
+        [key: string]: {
+          [key: string]: string[];
+        };
+      };
+    };
     /**
      * RecomputeLogRecordsMetricsRequest
      * @description Request to recompute metrics for a genai project run (log stream or experiment).
@@ -21262,53 +23467,16 @@ export interface components {
        */
       include_counts?: boolean;
       /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
+      /**
        * Scorer Ids
        * @description List of scorer IDs for which metrics should be recomputed.
        */
       scorer_ids: string[];
-    };
-    /** RecomputeSettingsLogStream */
-    RecomputeSettingsLogStream: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'log_stream_filters';
-      /**
-       * Run Id
-       * Format: uuid4
-       */
-      run_id: string;
-      /** Filters */
-      filters: unknown[];
-    };
-    /** RecomputeSettingsObserve */
-    RecomputeSettingsObserve: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'observe_filters';
-      /** Filters */
-      filters: unknown[];
-    };
-    /** RecomputeSettingsProject */
-    RecomputeSettingsProject: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'project';
-    };
-    /** RecomputeSettingsRuns */
-    RecomputeSettingsRuns: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      mode: 'runs';
-      /** Run Ids */
-      run_ids: string[];
     };
     /** RegisteredScorer */
     RegisteredScorer: {
@@ -21353,6 +23521,30 @@ export interface components {
         | components['schemas']['ValidateRegisteredScorerResult']
         | string
         | null;
+    };
+    /**
+     * RemoveRecordsFromQueueRequest
+     * @description Request to remove records from an annotation queue.
+     */
+    RemoveRecordsFromQueueRequest: {
+      /**
+       * Record Selector
+       * @description Selector to specify which records to remove (either by record IDs or filter tree)
+       */
+      record_selector:
+        | components['schemas']['AnnotationQueueRecordsByRecordIDs']
+        | components['schemas']['AnnotationQueueRecordsByFilterTree'];
+    };
+    /**
+     * RemoveRecordsFromQueueResponse
+     * @description Response after removing records from an annotation queue.
+     */
+    RemoveRecordsFromQueueResponse: {
+      /**
+       * Num Records Removed
+       * @description Number of records removed from the queue
+       */
+      num_records_removed: number;
     };
     /** RenderTemplateRequest */
     RenderTemplateRequest: {
@@ -21726,9 +23918,9 @@ export interface components {
       example_content_id?: string | null;
       creator: components['schemas']['UserDB'];
       /** Logged Splits */
-      logged_splits: string[];
+      logged_splits?: string[];
       /** Logged Inference Names */
-      logged_inference_names: string[];
+      logged_inference_names?: string[];
     };
     /** RunDBThin */
     RunDBThin: {
@@ -21775,6 +23967,10 @@ export interface components {
       /** Example Content Id */
       example_content_id?: string | null;
       creator: components['schemas']['UserDB'];
+      /** Logged Splits */
+      logged_splits?: string[];
+      /** Logged Inference Names */
+      logged_inference_names?: string[];
     };
     /**
      * RunParamsMap
@@ -21925,16 +24121,23 @@ export interface components {
       /** Count */
       count: number;
     };
-    /** ScoreRating */
-    ScoreRating: {
+    /** ScoreConstraints */
+    ScoreConstraints: {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      feedback_type: 'score';
-      /** Value */
-      value: number;
+      annotation_type: 'score';
+      /** Min */
+      min: number;
+      /** Max */
+      max: number;
     };
+    /**
+     * ScorerAction
+     * @enum {string}
+     */
+    ScorerAction: 'update' | 'delete' | 'share' | 'export' | 'autotune_apply';
     /**
      * ScorerConfig
      * @description Used for configuring a scorer for a scorer job.
@@ -22136,6 +24339,11 @@ export interface components {
        */
       name: 'exclude_slm_scorers';
     };
+    /** ScorerHealthScoresResponse */
+    ScorerHealthScoresResponse: {
+      /** Scores */
+      scores: components['schemas']['ScorerVersionHealthScoreEntry'][];
+    };
     /** ScorerIDFilter */
     ScorerIDFilter: {
       /**
@@ -22151,6 +24359,26 @@ export interface components {
       operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
       /** Value */
       value: string | string[];
+    };
+    /**
+     * ScorerIsGlobalFilter
+     * @description Filters on the access scope tier: is_global=True (global metrics) vs
+     *     is_global=False (project-scoped metrics).
+     */
+    ScorerIsGlobalFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'is_global';
+      /**
+       * Operator
+       * @default eq
+       * @enum {string}
+       */
+      operator?: 'eq' | 'ne';
+      /** Value */
+      value: boolean;
     };
     /** ScorerLabelFilter */
     ScorerLabelFilter: {
@@ -22191,6 +24419,34 @@ export interface components {
       operator: 'eq' | 'ne' | 'one_of' | 'not_in';
       /** Value */
       value: string | string[];
+    };
+    /**
+     * ScorerMultimodalCapabilitiesFilter
+     * @description Filter scorers by multimodal_capabilities.
+     *
+     *     Use operator ``contains`` to match scorers that support a single capability
+     *     (e.g. ``{"name": "multimodal_capabilities", "operator": "contains", "value": "vision"}``).
+     *     Use ``one_of`` to match scorers whose capabilities include ANY of the given
+     *     values (e.g. ``{"name": "multimodal_capabilities", "operator": "one_of", "value": ["vision", "audio"]}``).
+     */
+    ScorerMultimodalCapabilitiesFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'multimodal_capabilities';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** ScorerNameFilter */
     ScorerNameFilter: {
@@ -22238,6 +24494,11 @@ export interface components {
        * Format: uuid4
        */
       id: string;
+      /**
+       * Permissions
+       * @default []
+       */
+      permissions?: components['schemas']['Permission'][];
       /** Name */
       name: string;
       scorer_type: components['schemas']['ScorerTypes'];
@@ -22298,8 +24559,54 @@ export interface components {
             | components['schemas']['MetricColorPickerMultiLabel']
           )
         | null;
+      color_threshold_config?:
+        | components['schemas']['MetricColorPickerNumeric']
+        | null;
       /** Metric Name */
       metric_name?: string | null;
+      /**
+       * Is Global
+       * @default false
+       */
+      is_global?: boolean;
+      /** Scope Projects */
+      scope_projects?: components['schemas']['ScorerScopeProjectRef'][];
+    };
+    /**
+     * ScorerScopeProjectRef
+     * @description Minimal project representation (id and name only) for scorer access scope.
+     */
+    ScorerScopeProjectRef: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /** Name */
+      name: string;
+    };
+    /**
+     * ScorerScopeProjectsFilter
+     * @description Matches scorers whose access scope (scorer_projects) includes ANY of the
+     *     given project ids. include_global=True additionally matches global scorers
+     *     ("metrics available in project X").
+     *
+     *     Distinct from the run-usage "projects used" relation (scorers_to_projects /
+     *     GET /scorers/{scorer_id}/projects), which tracks where a scorer has run.
+     */
+    ScorerScopeProjectsFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'scope_projects';
+      /** Project Ids */
+      project_ids: string[];
+      /**
+       * Include Global
+       * @default false
+       */
+      include_global?: boolean;
     };
     /** ScorerScoreableNodeTypesFilter */
     ScorerScoreableNodeTypesFilter: {
@@ -22383,6 +24690,58 @@ export interface components {
        * Format: date-time
        */
       value: string;
+    };
+    /** ScorerUpdatedAtSort */
+    ScorerUpdatedAtSort: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'updated_at';
+      /**
+       * Ascending
+       * @default true
+       */
+      ascending?: boolean;
+      /**
+       * Sort Type
+       * @default column
+       * @constant
+       */
+      sort_type?: 'column';
+    };
+    /** ScorerVersionHealthScoreEntry */
+    ScorerVersionHealthScoreEntry: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Scorer Version Id
+       * Format: uuid4
+       */
+      scorer_version_id: string;
+      /** Scorer Version Number */
+      scorer_version_number: number;
+      /**
+       * Dataset Id
+       * Format: uuid4
+       */
+      dataset_id: string;
+      /** Health Score Type */
+      health_score_type: string;
+      /** Score */
+      score: number;
+      /** Secondary */
+      secondary: {
+        [key: string]: number | null;
+      } | null;
+      /**
+       * Computed At
+       * Format: date-time
+       */
+      computed_at: string;
     };
     /**
      * ScorersConfiguration
@@ -22492,6 +24851,11 @@ export interface components {
        * @default false
        */
       chunk_relevance_luna?: boolean;
+      /**
+       * Completeness Luna
+       * @default false
+       */
+      completeness_luna?: boolean;
       /**
        * Completeness Nli
        * @default false
@@ -22638,6 +25002,12 @@ export interface components {
        * @default false
        */
       llm_scorers?: boolean;
+      /**
+       * Multimodal Scorers
+       * @description Whether to sample only on multimodal scorers.
+       * @default false
+       */
+      multimodal_scorers?: boolean;
     };
     /** SelectColumns */
     SelectColumns: {
@@ -22965,15 +25335,13 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
-    /** StarRating */
-    StarRating: {
+    /** StarConstraints */
+    StarConstraints: {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      feedback_type: 'star';
-      /** Value */
-      value: number;
+      annotation_type: 'star';
     };
     /**
      * StepType
@@ -22992,6 +25360,54 @@ export interface components {
     StringData: {
       /** Input Strings */
       input_strings: string[];
+    };
+    /**
+     * StubTraceRecord
+     * @description Placeholder for a trace referenced by spans but not yet ingested.
+     *
+     *     Synthesized when one or more spans declare trace_id=X but no
+     *     TraceRecord with that id exists in storage. Holds the orphan spans
+     *     together so the client can render them under a single root.
+     *
+     *     Extends ExtendedRecordWithChildSpans so isinstance checks work
+     *     uniformly for both real and stub traces.
+     */
+    StubTraceRecord: {
+      /** Spans */
+      spans?: (
+        | components['schemas']['ExtendedAgentSpanRecordWithChildren']
+        | components['schemas']['ExtendedWorkflowSpanRecordWithChildren']
+        | components['schemas']['ExtendedLlmSpanRecord']
+        | components['schemas']['ExtendedToolSpanRecordWithChildren']
+        | components['schemas']['ExtendedRetrieverSpanRecordWithChildren']
+        | components['schemas']['ExtendedControlSpanRecord']
+      )[];
+      /**
+       * @description Discriminator; identifies this as a synthesized placeholder, not a real trace. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      type: 'stub_trace';
+      /**
+       * Id
+       * Format: uuid4
+       * @description ID of the missing trace, taken from span trace_id references.
+       */
+      id: string;
+      /**
+       * Project Id
+       * @description Project ID inferred from child spans, if all agree; otherwise None.
+       */
+      project_id?: string | null;
+      /**
+       * Run Id
+       * @description Run ID inferred from child spans, if all agree; otherwise None.
+       */
+      run_id?: string | null;
+      /**
+       * Session Id
+       * @description Session ID inferred from child spans, if all agree; otherwise None.
+       */
+      session_id?: string | null;
     };
     /** SubscriptionConfig */
     SubscriptionConfig: {
@@ -23076,6 +25492,11 @@ export interface components {
     /** SystemMetricInfo */
     SystemMetricInfo: {
       /**
+       * @description Discriminator: numeric metrics aggregated via stats/histogram (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      aggregation_type: 'numeric';
+      /**
        * Name
        * @description Unique identifier for the metric
        */
@@ -23149,15 +25570,20 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
-    /** TagsRating */
-    TagsRating: {
+    /** TagsConstraints */
+    TagsConstraints: {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      feedback_type: 'tags';
-      /** Value */
-      value: string[];
+      annotation_type: 'tags';
+      /** Tags */
+      tags: string[];
+      /**
+       * Allow Other
+       * @default false
+       */
+      allow_other?: boolean;
     };
     /** TaskResourceLimits */
     TaskResourceLimits: {
@@ -23184,26 +25610,7 @@ export interface components {
      *     We store these as ints instead of strings because we will be looking this up in the database frequently.
      * @enum {integer}
      */
-    TaskType:
-      | 0
-      | 1
-      | 2
-      | 3
-      | 4
-      | 5
-      | 6
-      | 7
-      | 8
-      | 9
-      | 10
-      | 11
-      | 12
-      | 13
-      | 14
-      | 15
-      | 16
-      | 17
-      | 18;
+    TaskType: 7 | 9 | 12 | 13 | 15 | 16 | 17 | 18;
     /** TemplateStubRequest */
     TemplateStubRequest: {
       /** Templates */
@@ -23227,6 +25634,14 @@ export interface components {
       /** Unrated Count */
       unrated_count: number;
     };
+    /** TextConstraints */
+    TextConstraints: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'text';
+    };
     /**
      * TextContentPart
      * @description A text segment within a message.
@@ -23239,16 +25654,6 @@ export interface components {
       type: 'text';
       /** Text */
       text: string;
-    };
-    /** TextRating */
-    TextRating: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      feedback_type: 'text';
-      /** Value */
-      value: string;
     };
     /** Token */
     Token: {
@@ -23874,6 +26279,53 @@ export interface components {
        */
       execution_time?: number;
     };
+    /** TreeChoiceAggregate */
+    TreeChoiceAggregate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'tree_choice';
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+      /** Unrated Count */
+      unrated_count: number;
+    };
+    /** TreeChoiceConstraints */
+    TreeChoiceConstraints: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'tree_choice';
+      /** Choices Tree */
+      choices_tree?: components['schemas']['TreeChoiceNode'][] | null;
+      /** Choices Tree Yaml */
+      choices_tree_yaml?: string | null;
+    };
+    /** TreeChoiceDBConstraints */
+    TreeChoiceDBConstraints: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'tree_choice';
+      /** Choices Tree */
+      choices_tree: components['schemas']['TreeChoiceNode'][];
+      /** Choices Tree Yaml */
+      choices_tree_yaml: string;
+    };
+    /** TreeChoiceNode */
+    TreeChoiceNode: {
+      /** Label */
+      label: string;
+      /** Id */
+      id: string;
+      /** Children */
+      children?: components['schemas']['TreeChoiceNode'][];
+    };
     /** UncertaintyScorer */
     UncertaintyScorer: {
       /**
@@ -23892,6 +26344,12 @@ export interface components {
             | components['schemas']['ModalityFilter']
           )[]
         | null;
+    };
+    /** UpdateAnnotationQueueRequest */
+    UpdateAnnotationQueueRequest: {
+      name?: components['schemas']['Name'] | null;
+      /** Description */
+      description?: string | null;
     };
     /**
      * UpdateDatasetContentRequest
@@ -23912,6 +26370,8 @@ export interface components {
         | components['schemas']['DatasetDeleteRow']
         | components['schemas']['DatasetFilterRows']
         | components['schemas']['DatasetCopyRecordData']
+        | components['schemas']['DatasetRemoveColumn']
+        | components['schemas']['DatasetRenameColumn']
       )[];
     };
     /** UpdateDatasetRequest */
@@ -23969,6 +26429,19 @@ export interface components {
           )
         | null;
     };
+    /**
+     * UpdateScorerScopeRequest
+     * @description Full-replace access scope update for a scorer (Share / manage visibility).
+     *
+     *     is_global=True promotes the scorer to global (org admin only; project_ids
+     *     must be empty). is_global=False scopes the scorer to exactly project_ids.
+     */
+    UpdateScorerScopeRequest: {
+      /** Is Global */
+      is_global: boolean;
+      /** Project Ids */
+      project_ids?: string[];
+    };
     /** UpsertDatasetContentRequest */
     UpsertDatasetContentRequest: {
       /**
@@ -23995,6 +26468,51 @@ export interface components {
       | 'change_role_to_manager'
       | 'change_role_to_user'
       | 'change_role_to_read_only';
+    /**
+     * UserAnnotationQueueCollaborator
+     * @description User collaborator for an annotation queue, extends shared UserCollaborator with annotation_queue_id.
+     */
+    UserAnnotationQueueCollaborator: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Permissions
+       * @default []
+       */
+      permissions?: components['schemas']['Permission'][];
+      role: components['schemas']['CollaboratorRole'];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * User Id
+       * Format: uuid4
+       */
+      user_id: string;
+      /** First Name */
+      first_name: string | null;
+      /** Last Name */
+      last_name: string | null;
+      /** Email */
+      email: string;
+      /**
+       * Annotation Queue Id
+       * Format: uuid4
+       */
+      annotation_queue_id: string;
+      /**
+       * Track Progress
+       * @default true
+       */
+      track_progress?: boolean;
+      /** Progress */
+      progress?: number | null;
+    };
     /** UserCollaborator */
     UserCollaborator: {
       /**
@@ -24165,6 +26683,16 @@ export interface components {
       response: string;
       chain_poll_template: components['schemas']['ChainPollTemplate'];
       scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /**
+       * Normalized Input
+       * @description Optional multimodal content parts. When set, replaces the text-only query/response formatting in the validation job so that file content is passed through to the LLM.
+       */
+      normalized_input?:
+        | (
+            | components['schemas']['TextContentPart']
+            | components['schemas']['FileContentPart']
+          )[]
+        | null;
       /** User Prompt */
       user_prompt: string;
       /**
@@ -24265,12 +26793,28 @@ export interface components {
        * @default false
        */
       include_counts?: boolean;
+      /**
+       * Include Code Metric Metadata
+       * @description If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+       * @default false
+       */
+      include_code_metric_metadata?: boolean;
       /** Query */
       query: string;
       /** Response */
       response: string;
       chain_poll_template: components['schemas']['ChainPollTemplate'];
       scorer_configuration: components['schemas']['GeneratedScorerConfiguration'];
+      /**
+       * Normalized Input
+       * @description Optional multimodal content parts. When set, replaces the text-only query/response formatting in the validation job so that file content is passed through to the LLM.
+       */
+      normalized_input?:
+        | (
+            | components['schemas']['TextContentPart']
+            | components['schemas']['FileContentPart']
+          )[]
+        | null;
       /** User Prompt */
       user_prompt: string;
     };
@@ -24321,16 +26865,26 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
     };
     /** VegasGatewayIntegration */
     VegasGatewayIntegration: {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default vegas_gateway
+       * @constant
+       */
+      name?: 'vegas_gateway';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'vegas_gateway';
+      provider: 'vegas_gateway';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24384,10 +26938,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default vertex_ai
+       * @constant
+       */
+      name?: 'vertex_ai';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'vertex_ai';
+      provider: 'vertex_ai';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24607,6 +27167,22 @@ export interface components {
         | components['schemas']['ControlSpan']
       )[];
     };
+    /** WriteHealthScoreRequest */
+    WriteHealthScoreRequest: {
+      /**
+       * Dataset Id
+       * Format: uuid4
+       */
+      dataset_id: string;
+      /** Health Score Type */
+      health_score_type: string;
+      /** Score */
+      score: number;
+      /** Secondary */
+      secondary?: {
+        [key: string]: number | null;
+      } | null;
+    };
     /** WriterIntegration */
     WriterIntegration: {
       /** Organization Id */
@@ -24614,10 +27190,16 @@ export interface components {
       /** Id */
       id?: string | null;
       /**
+       * Name
+       * @default writer
+       * @constant
+       */
+      name?: 'writer';
+      /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
-      name: 'writer';
+      provider: 'writer';
       /** Extra */
       extra?: {
         [key: string]: unknown;
@@ -24629,6 +27211,76 @@ export interface components {
       organization_id: string;
       /** Token */
       token: string;
+    };
+    /** ChoiceRating */
+    api__schemas__annotation__ChoiceRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'choice';
+      /** Value */
+      value: string;
+    };
+    /** LikeDislikeRating */
+    api__schemas__annotation__LikeDislikeRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'like_dislike';
+      /** Value */
+      value: boolean;
+    };
+    /** ScoreRating */
+    api__schemas__annotation__ScoreRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'score';
+      /** Value */
+      value: number;
+    };
+    /** StarRating */
+    api__schemas__annotation__StarRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'star';
+      /** Value */
+      value: number;
+    };
+    /** TagsRating */
+    api__schemas__annotation__TagsRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'tags';
+      /** Value */
+      value: string[];
+    };
+    /** TextRating */
+    api__schemas__annotation__TextRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'text';
+      /** Value */
+      value: string;
+    };
+    /** TreeChoiceRating */
+    api__schemas__annotation__TreeChoiceRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      annotation_type: 'tree_choice';
+      /** Value */
+      value: string;
     };
     /**
      * BulkDeleteFailure
@@ -24799,6 +27451,8 @@ export interface components {
       | 'completeness'
       | 'context_adherence'
       | 'context_adherence_luna'
+      | 'context_adherence_vision'
+      | 'context_adherence_audio'
       | 'context_relevance'
       | 'context_relevance_luna'
       | 'conversation_quality'
@@ -24816,6 +27470,8 @@ export interface components {
       | 'input_tone_gpt'
       | 'input_toxicity'
       | 'input_toxicity_luna'
+      | 'input_toxicity_vision'
+      | 'input_toxicity_audio'
       | 'instruction_adherence'
       | 'output_pii'
       | 'output_pii_gpt'
@@ -24827,6 +27483,8 @@ export interface components {
       | 'output_tone_gpt'
       | 'output_toxicity'
       | 'output_toxicity_luna'
+      | 'output_toxicity_vision'
+      | 'output_toxicity_audio'
       | 'prompt_injection'
       | 'prompt_injection_luna'
       | 'prompt_perplexity'
@@ -24843,6 +27501,76 @@ export interface components {
       | 'uncertainty'
       | 'user_intent_change'
       | 'interruption_detection';
+    /** ChoiceRating */
+    libs__python__schemas__log_records__feedback__ChoiceRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'choice';
+      /** Value */
+      value: string;
+    };
+    /** LikeDislikeRating */
+    libs__python__schemas__log_records__feedback__LikeDislikeRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'like_dislike';
+      /** Value */
+      value: boolean;
+    };
+    /** ScoreRating */
+    libs__python__schemas__log_records__feedback__ScoreRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'score';
+      /** Value */
+      value: number;
+    };
+    /** StarRating */
+    libs__python__schemas__log_records__feedback__StarRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'star';
+      /** Value */
+      value: number;
+    };
+    /** TagsRating */
+    libs__python__schemas__log_records__feedback__TagsRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'tags';
+      /** Value */
+      value: string[];
+    };
+    /** TextRating */
+    libs__python__schemas__log_records__feedback__TextRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'text';
+      /** Value */
+      value: string;
+    };
+    /** TreeChoiceRating */
+    libs__python__schemas__log_records__feedback__TreeChoiceRating: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      feedback_type: 'tree_choice';
+      /** Value */
+      value: string;
+    };
     /**
      * ModelProperties
      * @description Properties for a model in a custom integration.
@@ -24888,6 +27616,7 @@ export interface components {
       | '_context_relevance'
       | '_context_relevance_luna'
       | '_chunk_relevance_luna'
+      | '_completeness_luna'
       | '_chunk_attribution_utilization_gpt'
       | '_factuality'
       | '_groundedness'
@@ -25029,78 +27758,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Token'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_prompt_datasets_projects__project_id__prompt_datasets_get: {
-    parameters: {
-      query?: {
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListPromptDatasetResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post: {
-    parameters: {
-      query?: {
-        format?: components['schemas']['DatasetFormat'];
-        hidden?: boolean;
-      };
-      header?: never;
-      path: {
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PromptDatasetDB'];
         };
       };
       /** @description Validation Error */
@@ -25339,109 +27996,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ListDatasetResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  download_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-        dataset_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put: {
-    parameters: {
-      query?: {
-        file_name?: string | null;
-        num_rows?: number | null;
-        format?: components['schemas']['DatasetFormat'];
-        hidden?: boolean;
-      };
-      header?: never;
-      path: {
-        project_id: string;
-        dataset_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PromptDatasetDB'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-        dataset_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
         };
       };
       /** @description Validation Error */
@@ -26342,41 +28896,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ProjectCreateResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  upload_file_projects__project_id__upload_file_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_upload_file_projects__project_id__upload_file_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
         };
       };
       /** @description Validation Error */
@@ -27588,38 +30107,6 @@ export interface operations {
       };
     };
   };
-  get_latest_job_for_project_run_projects__project_id__runs__run_id__jobs_latest_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        project_id: string;
-        run_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['JobDB'] | null;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   get_settings_projects__project_id__runs__run_id__scorer_settings_get: {
     parameters: {
       query?: never;
@@ -28706,271 +31193,6 @@ export interface operations {
       };
     };
   };
-  get_scorer_scorers__scorer_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  delete_scorer_scorers__scorer_id__delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DeleteScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  update_scorers__scorer_id__patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateScorerRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  validate_code_scorer_scorers_code_validate_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_validate_code_scorer_scorers_code_validate_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ValidateCodeScorerResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_validate_code_scorer_task_result_scorers_code_validate__task_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        task_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['RegisteredScorerTaskResultResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  get_scorer_version_code_scorers__scorer_id__version_code_get: {
-    parameters: {
-      query?: {
-        /** @description version number, defaults to latest version */
-        version?: number | null;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_code_scorer_version_scorers__scorer_id__version_code_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': components['schemas']['Body_create_code_scorer_version_scorers__scorer_id__version_code_post'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  create_preset_scorer_version_scorers__scorer_id__version_preset_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateScorerVersionRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   create_luna_scorer_version_scorers__scorer_id__version_luna_post: {
     parameters: {
       query?: never;
@@ -29006,264 +31228,6 @@ export interface operations {
       };
     };
   };
-  list_scorers_with_filters_scorers_list_post: {
-    parameters: {
-      query?: {
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ListScorersRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListScorersResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_tags_scorers_tags_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': string[];
-        };
-      };
-    };
-  };
-  get_scorer_version_or_latest_scorers__scorer_id__version_get: {
-    parameters: {
-      query?: {
-        version?: number;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
-    parameters: {
-      query?: {
-        run_id?: string | null;
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ListScorerVersionsResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_projects_for_scorer_route_scorers__scorer_id__projects_get: {
-    parameters: {
-      query?: {
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        scorer_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get: {
-    parameters: {
-      query: {
-        scorer_id: string;
-        starting_token?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        scorer_version_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        scorer_id: string;
-        version_number: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BaseScorerVersionResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
-  autogen_llm_scorer_scorers_llm_autogen_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CreateLLMScorerAutogenRequest'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GenerationResponse'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   manual_llm_validate_scorers_llm_validate_post: {
     parameters: {
       query?: never;
@@ -29271,11 +31235,29 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GeneratedScorerValidationResponse'];
+        };
+      };
+    };
+  };
+  manual_llm_validate_multipart_scorers_llm_validate_multipart_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
     requestBody: {
       content: {
-        'application/json': {
-          [key: string]: unknown;
-        };
+        'multipart/form-data': components['schemas']['Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post'];
       };
     };
     responses: {
@@ -29634,7 +31616,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -29677,7 +31659,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -29708,7 +31690,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        name: components['schemas']['IntegrationName'];
+        name: components['schemas']['IntegrationProvider'];
       };
       cookie?: never;
     };
@@ -30206,6 +32188,106 @@ export interface operations {
       };
     };
   };
+  get_named_custom_integration_integrations_custom__name__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_or_update_named_custom_integration_integrations_custom__name__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomIntegrationCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_named_custom_integration_integrations_custom__name__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_or_update_unity_catalog_integration_integrations_databricks_unity_catalog_sql_put: {
     parameters: {
       query?: never;
@@ -30583,6 +32665,341 @@ export interface operations {
       };
     };
   };
+  create_annotation_queue_annotation_queues_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateAnnotationQueueRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationQueueResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_annotation_queue_annotation_queues__queue_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationQueueResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_annotation_queue_annotation_queues__queue_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_annotation_queue_annotation_queues__queue_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAnnotationQueueRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationQueueResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_annotation_queue_users_annotation_queues__queue_id__users_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListAnnotationQueueCollaboratorsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  share_annotation_queue_with_users_annotation_queues__queue_id__users_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationQueueUserCollaboratorCreate'][];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserAnnotationQueueCollaborator'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  remove_annotation_queue_user_annotation_queues__queue_id__users__user_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_annotation_queue_user_role_annotation_queues__queue_id__users__user_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationQueueUserCollaboratorUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserAnnotationQueueCollaborator'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  partial_search_annotation_queue_records_annotation_queues__queue_id__partial_search_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationQueuePartialSearchRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsPartialQueryResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  count_datasets_datasets_query_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListDatasetParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': number;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_dataset_variable_preview_datasets__dataset_id__variable_preview_get: {
     parameters: {
       query?: never;
@@ -30718,6 +33135,106 @@ export interface operations {
       };
     };
   };
+  get_scorer_scorers__scorer_id__get: {
+    parameters: {
+      query?: {
+        /** @description Actions to include in the 'permissions' field of the scorer. */
+        actions?: components['schemas']['ScorerAction'][];
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_scorer_scorers__scorer_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeleteScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_scorers__scorer_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateScorerRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   create_llm_scorer_version_scorers__scorer_id__version_llm_post: {
     parameters: {
       query?: never;
@@ -30753,6 +33270,39 @@ export interface operations {
       };
     };
   };
+  validate_code_scorer_scorers_code_validate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_validate_code_scorer_scorers_code_validate_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ValidateCodeScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   validate_code_scorer_log_record_scorers_code_validate_log_record_post: {
     parameters: {
       query?: never;
@@ -30773,6 +33323,435 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ValidateScorerLogRecordResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_validate_code_scorer_task_result_scorers_code_validate__task_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegisteredScorerTaskResultResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_scorer_version_code_scorers__scorer_id__version_code_get: {
+    parameters: {
+      query?: {
+        /** @description version number, defaults to latest version */
+        version?: number | null;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_code_scorer_version_scorers__scorer_id__version_code_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'multipart/form-data': components['schemas']['Body_create_code_scorer_version_scorers__scorer_id__version_code_post'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_preset_scorer_version_scorers__scorer_id__version_preset_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateScorerVersionRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_scorers_with_filters_scorers_list_post: {
+    parameters: {
+      query?: {
+        /** @description Actions to include in the 'permissions' field of the scorers. */
+        actions?: components['schemas']['ScorerAction'][];
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ListScorersRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListScorersResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_tags_scorers_tags_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string[];
+        };
+      };
+    };
+  };
+  get_scorer_version_or_latest_scorers__scorer_id__version_get: {
+    parameters: {
+      query?: {
+        version?: number;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_all_versions_for_scorer_scorers__scorer_id__versions_get: {
+    parameters: {
+      query?: {
+        run_id?: string | null;
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListScorerVersionsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  set_scorer_scope_scorers__scorer_id__scope_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateScorerScopeRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_projects_for_scorer_route_scorers__scorer_id__projects_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_projects_for_scorer_version_route_scorers_versions__scorer_version_id__projects_get: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        scorer_version_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['api__schemas__project_v2__GetProjectsPaginatedResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  restore_scorer_version_scorers__scorer_id__versions__version_number__restore_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+        version_number: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BaseScorerVersionResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  autogen_llm_scorer_scorers_llm_autogen_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateLLMScorerAutogenRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GenerationResponse'];
         };
       };
       /** @description Validation Error */
@@ -30885,6 +33864,111 @@ export interface operations {
       };
     };
   };
+  compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ComputeHealthScoreRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HealthScoreResult'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_scorer_health_scores_scorers__scorer_id__health_scores_get: {
+    parameters: {
+      query: {
+        dataset_id: string;
+      };
+      header?: never;
+      path: {
+        scorer_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerHealthScoresResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  write_scorer_version_health_score_scorers__scorer_id__versions__version_number__health_scores_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        scorer_id: string;
+        version_number: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WriteHealthScoreRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScorerVersionHealthScoreEntry'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   log_traces_projects__project_id__traces_post: {
     parameters: {
       query?: never;
@@ -30940,7 +34024,9 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ExtendedTraceRecordWithChildren'];
+          'application/json':
+            | components['schemas']['ExtendedTraceRecordWithChildren']
+            | components['schemas']['StubTraceRecord'];
         };
       };
       /** @description Validation Error */
@@ -31890,6 +34976,42 @@ export interface operations {
       };
     };
   };
+  get_integration_costs_integrations_costs_summary_get: {
+    parameters: {
+      query: {
+        /** @description Start of time range (UTC) */
+        start_time: string;
+        /** @description End of time range (UTC) */
+        end_time: string;
+        /** @description Aggregation interval */
+        interval: components['schemas']['CostInterval'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationCostsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   select_integration_integrations_select_post: {
     parameters: {
       query?: never;
@@ -31952,6 +35074,112 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_custom_integration_definition_integrations_custom_definition_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomIntegrationDefinition'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_status_integrations_custom__name__status_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: string;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_named_custom_integration_definition_integrations_custom__name__definition_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Slug identifying this named custom integration */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CustomIntegrationDefinition'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_recommended_models_llm_integrations_recommended_models_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecommendedModelsResponse'];
         };
       };
     };
@@ -32080,6 +35308,593 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['CodeMetricGenerationStatusResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  queue_details_annotation_queues__queue_id__details_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationQueueDetailsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  count_annotation_queues_annotation_queues_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListAnnotationQueueParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationQueueCountResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  query_annotation_queues_annotation_queues_query_post: {
+    parameters: {
+      query?: {
+        starting_token?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ListAnnotationQueueParams'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ListAnnotationQueueResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  reorder_queue_templates_annotation_queues__queue_id__templates_reorder_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationTemplateReorder'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_queue_templates_annotation_queues__queue_id__templates_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationTemplateDB'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_queue_template_annotation_queues__queue_id__templates_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateQueueTemplateRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationTemplateDB'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_queue_template_annotation_queues__queue_id__templates__template_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_queue_template_annotation_queues__queue_id__templates__template_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationTemplateUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationTemplateDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  add_records_to_annotation_queue_annotation_queues__queue_id__records_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddRecordsToQueueRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AddRecordsToQueueResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  export_annotation_queue_records_annotation_queues__queue_id__records_export_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationQueueExportRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  export_annotation_queue_records_url_annotation_queues__queue_id__records_export_url_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationQueueExportRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationQueueExportUrlResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  remove_records_from_annotation_queue_annotation_queues__queue_id__records_remove_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RemoveRecordsFromQueueRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RemoveRecordsFromQueueResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  count_annotation_queue_records_annotation_queues__queue_id__records_count_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationQueueCountRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsQueryCountResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_annotation_queue_record_annotation_queues__queue_id__records__record_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        record_id: string;
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json':
+            | components['schemas']['PartialExtendedTraceRecord']
+            | components['schemas']['PartialExtendedAgentSpanRecord']
+            | components['schemas']['PartialExtendedWorkflowSpanRecord']
+            | components['schemas']['PartialExtendedLlmSpanRecord']
+            | components['schemas']['PartialExtendedToolSpanRecord']
+            | components['schemas']['PartialExtendedRetrieverSpanRecord']
+            | components['schemas']['PartialExtendedControlSpanRecord']
+            | components['schemas']['PartialExtendedSessionRecord'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  create_annotation_queue_record_rating_annotation_queues__queue_id__records__record_id__rating_put: {
+    parameters: {
+      query: {
+        annotation_template_id: string;
+      };
+      header?: never;
+      path: {
+        queue_id: string;
+        record_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnnotationRatingCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnnotationRatingDB'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_annotation_queue_record_rating_annotation_queues__queue_id__records__record_id__rating_delete: {
+    parameters: {
+      query: {
+        annotation_template_id: string;
+      };
+      header?: never;
+      path: {
+        queue_id: string;
+        record_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_annotation_queue_records_available_columns_annotation_queues__queue_id__records_available_columns_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        queue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LogRecordsAvailableColumnsResponse'];
         };
       };
       /** @description Validation Error */
