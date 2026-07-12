@@ -1857,6 +1857,10 @@ export type BodyCreateDatasetDatasetsPost = {
    * Project Id
    */
   project_id?: string | null;
+  /**
+   * Column Mapping
+   */
+  column_mapping?: string | null;
 };
 
 /**
@@ -2533,12 +2537,6 @@ export type ColumnInfo = {
    */
   applicable_types?: Array<StepType>;
   /**
-   * Complex
-   *
-   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-   */
-  complex?: boolean;
-  /**
    * Is Optional
    *
    * Whether the column is optional.
@@ -2553,10 +2551,7 @@ export type ColumnInfo = {
   /**
    * Metric Key Alias
    *
-   * Alternate metric key for this column. When scorer UUIDs are used as column IDs
-   * (e.g. "metrics/{uuid}"), this holds the legacy snake_case metric name
-   * (e.g. "correctness") for display and dual-key query fallback.
-   * Patched manually — will be in generated types once SC-64064 merges to production.
+   * Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
    */
   metric_key_alias?: string | null;
 };
@@ -2568,19 +2563,19 @@ export type ColumnMapping = {
   /**
    * Input
    */
-  input: ColumnMappingConfig | Array<string> | null;
+  input?: ColumnMappingConfig | Array<string> | null;
   /**
    * Output
    */
-  output: ColumnMappingConfig | Array<string> | null;
+  output?: ColumnMappingConfig | Array<string> | null;
   /**
    * Generated Output
    */
-  generated_output: ColumnMappingConfig | Array<string> | null;
+  generated_output?: ColumnMappingConfig | Array<string> | null;
   /**
    * Metadata
    */
-  metadata: ColumnMappingConfig | Array<string> | null;
+  metadata?: ColumnMappingConfig | Array<string> | null;
   /**
    * Mgt
    */
@@ -2708,6 +2703,34 @@ export type CompletenessTemplate = {
   response_schema?: {
     [key: string]: unknown;
   } | null;
+};
+
+/**
+ * ComputeHealthScoreRequest
+ */
+export type ComputeHealthScoreRequest = {
+  /**
+   * Scorer Id
+   */
+  scorer_id: string;
+  /**
+   * The scorer's output type, used to dispatch the correct metric.
+   */
+  output_type: OutputTypeEnum;
+  /**
+   * Scoreable Node Types
+   *
+   * The scorer's scoreable_node_types. Determines which record type carries the score.
+   */
+  scoreable_node_types?: Array<StepType>;
+  /**
+   * Mgt Overlay
+   *
+   * Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+   */
+  mgt_overlay?: {
+    [key: string]: string | null;
+  };
 };
 
 /**
@@ -3084,6 +3107,21 @@ export type CorrectnessScorer = {
    */
   num_judges?: number | null;
 };
+
+/**
+ * CostInterval
+ */
+export const CostInterval = {
+  HOURLY: 'hourly',
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly'
+} as const;
+
+/**
+ * CostInterval
+ */
+export type CostInterval = (typeof CostInterval)[keyof typeof CostInterval];
 
 /**
  * CreateCodeMetricGenerationRequest
@@ -3823,6 +3861,10 @@ export type CreateScorerRequest = {
    * Name
    */
   name: string;
+  /**
+   * Id
+   */
+  id?: string | null;
   /**
    * Description
    */
@@ -7624,6 +7666,14 @@ export type ExperimentCreateRequest = {
    * Trigger
    */
   trigger?: boolean;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
 };
 
 /**
@@ -7710,6 +7760,46 @@ export type ExperimentDatasetRequest = {
    * Version Index
    */
   version_index: number;
+};
+
+/**
+ * ExperimentGroupIDFilter
+ */
+export type ExperimentGroupIdFilter = {
+  /**
+   * Name
+   */
+  name?: 'experiment_group_id';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  /**
+   * Value
+   */
+  value: string | Array<string | string>;
+};
+
+/**
+ * ExperimentGroupNameFilter
+ */
+export type ExperimentGroupNameFilter = {
+  /**
+   * Name
+   */
+  name?: 'experiment_group_name';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  case_sensitive?: boolean;
 };
 
 /**
@@ -7913,7 +8003,6 @@ export type ExperimentResponse = {
   dataset?: ExperimentDataset | null;
   /**
    * Aggregate Metrics
-   * @deprecated Use `metricAggregates` instead.
    */
   aggregate_metrics?: {
     [key: string]: unknown;
@@ -7921,7 +8010,7 @@ export type ExperimentResponse = {
   /**
    * Structured Aggregate Metrics
    *
-   * Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+   * Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
    */
   structured_aggregate_metrics?: {
     [key: string]: MetricAggregates;
@@ -7976,6 +8065,18 @@ export type ExperimentResponse = {
     [key: string]: Array<RunTagDb>;
   };
   status?: ExperimentStatus;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
+  /**
+   * Experiment Group Is System
+   */
+  experiment_group_is_system?: boolean | null;
 };
 
 /**
@@ -8009,6 +8110,12 @@ export type ExperimentSearchRequest = {
     | ({
         name: 'updated_at';
       } & ExperimentUpdatedAtFilter)
+    | ({
+        name: 'experiment_group_id';
+      } & ExperimentGroupIdFilter)
+    | ({
+        name: 'experiment_group_name';
+      } & ExperimentGroupNameFilter)
   >;
   /**
    * Sort
@@ -12537,6 +12644,24 @@ export type FactualityTemplate = {
 };
 
 /**
+ * FeatureIntegrationCosts
+ */
+export type FeatureIntegrationCosts = {
+  /**
+   * Feature Name
+   */
+  feature_name: string;
+  /**
+   * Total Cost
+   */
+  total_cost?: number;
+  /**
+   * Projects
+   */
+  projects?: Array<ProjectIntegrationCosts>;
+};
+
+/**
  * FeedbackAggregate
  */
 export type FeedbackAggregate = {
@@ -13224,6 +13349,67 @@ export type HallucinationSegment = {
 };
 
 /**
+ * HealthScoreResult
+ */
+export type HealthScoreResult = {
+  health_score_type: HealthScoreType | null;
+  /**
+   * Value
+   *
+   * Primary health score metric value, or None if no valid rows.
+   */
+  value: number | null;
+  /**
+   * Skipped Rows
+   *
+   * Rows excluded because MGT or score could not be parsed.
+   */
+  skipped_rows: number;
+  /**
+   * Secondary
+   *
+   * Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+   */
+  secondary: {
+    [key: string]: number | null;
+  };
+  /**
+   * Total Scored Rows
+   *
+   * Rows with a successful scorer result.
+   */
+  total_scored_rows: number;
+  /**
+   * Total Mgt Rows
+   *
+   * Rows with a non-null MGT value after overlay.
+   */
+  total_mgt_rows: number;
+  /**
+   * Joined Rows
+   *
+   * Rows with both a score and a MGT value (used for computation).
+   */
+  joined_rows: number;
+};
+
+/**
+ * HealthScoreType
+ */
+export const HealthScoreType = {
+  MACRO_F1: 'macro_f1',
+  MICRO_F1: 'micro_f1',
+  MSE: 'mse',
+  MAE: 'mae'
+} as const;
+
+/**
+ * HealthScoreType
+ */
+export type HealthScoreType =
+  (typeof HealthScoreType)[keyof typeof HealthScoreType];
+
+/**
  * HealthcheckResponse
  */
 export type HealthcheckResponse = {
@@ -13774,6 +13960,30 @@ export const IntegrationAction = {
  */
 export type IntegrationAction =
   (typeof IntegrationAction)[keyof typeof IntegrationAction];
+
+/**
+ * IntegrationCostsDataPoint
+ */
+export type IntegrationCostsDataPoint = {
+  /**
+   * Timestamp
+   */
+  timestamp: string;
+  /**
+   * Cost
+   */
+  cost: number;
+};
+
+/**
+ * IntegrationCostsResponse
+ */
+export type IntegrationCostsResponse = {
+  /**
+   * Features
+   */
+  features?: Array<FeatureIntegrationCosts>;
+};
 
 /**
  * IntegrationDB
@@ -15092,12 +15302,6 @@ export type LogRecordsColumnInfo = {
    */
   applicable_types?: Array<StepType>;
   /**
-   * Complex
-   *
-   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-   */
-  complex?: boolean;
-  /**
    * Is Optional
    *
    * Whether the column is optional.
@@ -15109,6 +15313,12 @@ export type LogRecordsColumnInfo = {
    * Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
    */
   roll_up_method?: string | null;
+  /**
+   * Metric Key Alias
+   *
+   * Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+   */
+  metric_key_alias?: string | null;
   /**
    * For metric columns only: Scorer config that produced the metric.
    */
@@ -15137,12 +15347,6 @@ export type LogRecordsColumnInfo = {
    * Type of label color for the column, if this is a multilabel metric column.
    */
   label_color?: 'positive' | 'negative' | null;
-  /**
-   * Metric Key Alias
-   *
-   * Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-   */
-  metric_key_alias?: string | null;
 };
 
 /**
@@ -21474,6 +21678,28 @@ export type ProjectIdFilter = {
 };
 
 /**
+ * ProjectIntegrationCosts
+ */
+export type ProjectIntegrationCosts = {
+  /**
+   * Project Id
+   */
+  project_id: string;
+  /**
+   * Project Name
+   */
+  project_name: string;
+  /**
+   * Total Cost
+   */
+  total_cost?: number;
+  /**
+   * Data Points
+   */
+  data_points?: Array<IntegrationCostsDataPoint>;
+};
+
+/**
  * ProjectItem
  *
  * Represents a single project item for the UI list.
@@ -23895,6 +24121,7 @@ export type ScorerResponse = {
         type: 'multi_label';
       } & MetricColorPickerMultiLabel)
     | null;
+  color_threshold_config?: MetricColorPickerNumeric | null;
   /**
    * Metric Name
    */
@@ -33309,6 +33536,45 @@ export type ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses = {
 export type ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponse =
   ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses[keyof ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses];
 
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostData =
+  {
+    body: ComputeHealthScoreRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+      /**
+       * Run Id
+       */
+      run_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/metrics-testing/{run_id}/health-score';
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostError =
+  ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors[keyof ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors];
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: HealthScoreResult;
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponse =
+  ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses[keyof ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses];
+
 export type LogTracesProjectsProjectIdTracesPostData = {
   body: LogTracesIngestRequest;
   path: {
@@ -34293,6 +34559,50 @@ export type ListIntegrationsIntegrationsGetResponses = {
 
 export type ListIntegrationsIntegrationsGetResponse =
   ListIntegrationsIntegrationsGetResponses[keyof ListIntegrationsIntegrationsGetResponses];
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Start Time
+     *
+     * Start of time range (UTC)
+     */
+    start_time: string;
+    /**
+     * End Time
+     *
+     * End of time range (UTC)
+     */
+    end_time: string;
+    /**
+     * Aggregation interval
+     */
+    interval: CostInterval;
+  };
+  url: '/integrations/costs/summary';
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetError =
+  GetIntegrationCostsIntegrationsCostsSummaryGetErrors[keyof GetIntegrationCostsIntegrationsCostsSummaryGetErrors];
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: IntegrationCostsResponse;
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetResponse =
+  GetIntegrationCostsIntegrationsCostsSummaryGetResponses[keyof GetIntegrationCostsIntegrationsCostsSummaryGetResponses];
 
 export type SelectIntegrationIntegrationsSelectPostData = {
   body: IntegrationSelectRequest;
