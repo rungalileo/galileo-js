@@ -259,7 +259,11 @@ export class Metrics {
    * validates they exist, and registers server-side metrics with Galileo.
    *
    * @param projectId - The ID of the project
-   * @param runId - The ID of the run (can be experiment ID or log stream ID)
+   * @param runId - The ID of the run (can be experiment ID or log stream ID). When
+   *               `null`/`undefined`, the resolved scorer configs are returned WITHOUT
+   *               registering them server-side — used by the prompt-template experiment
+   *               flow, which passes scorers into `createExperiment(trigger=true)` and
+   *               lets the API register them.
    * @param metrics - List of metrics to configure. Can include:
    *                  - GalileoMetrics const object values (e.g., GalileoMetrics.correctness)
    *                  - Metric objects with name and optional version
@@ -286,7 +290,7 @@ export class Metrics {
    */
   public async createMetricConfigs(
     projectId: string,
-    runId: string,
+    runId: string | null | undefined,
     metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
   ): Promise<[ScorerConfig[], LocalMetricConfig[]]> {
     const localMetricConfigs: LocalMetricConfig[] = [];
@@ -389,8 +393,10 @@ export class Metrics {
       );
     }
 
-    // Register server-side metrics with Galileo
-    if (scorers.length > 0) {
+    // Register server-side metrics with Galileo. Skipped when runId is nullish
+    // (resolve-only mode): the caller registers them another way, e.g. by passing
+    // scorers into createExperiment(trigger=true).
+    if (runId && scorers.length > 0) {
       const apiClient = new GalileoApiClient();
       await apiClient.init({ projectId });
 
@@ -645,7 +651,7 @@ export const getMetrics = async (
  */
 export const createMetricConfigs = async (
   projectId: string,
-  runId: string,
+  runId: string | null | undefined,
   metrics: (GalileoMetrics | Metric | LocalMetricConfig | string)[]
 ): Promise<[ScorerConfig[], LocalMetricConfig[]]> => {
   const metricsInstance = new Metrics();

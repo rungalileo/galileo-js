@@ -1635,10 +1635,21 @@ export class GalileoApiClient extends BaseClient {
 
   public async createExperiment(
     name: string,
-    dataset?: ExperimentDatasetRequest | null
+    dataset?: ExperimentDatasetRequest | null,
+    trigger?: boolean,
+    scorers?: ScorerConfig[],
+    promptTemplateVersionId?: string | null,
+    promptSettings?: PromptRunSettings | null
   ) {
     this.ensureService(this.experimentService);
-    return this.experimentService.createExperiment(name, dataset);
+    return this.experimentService.createExperiment(
+      name,
+      dataset,
+      trigger,
+      scorers,
+      promptTemplateVersionId,
+      promptSettings
+    );
   }
 
   /**

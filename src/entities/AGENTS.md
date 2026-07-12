@@ -30,21 +30,16 @@ The utils layer is the **public surface**; the entities layer holds the **logic*
 
 ## `Experiments.runExperiment()` — the one workflow to know
 
-Source: `src/entities/experiments.ts`. Single entry point for both processing modes (user function vs prompt template) across three dataset sources (inline, by ID, by name). Each call goes through 11 steps:
+Source: `src/entities/experiments.ts`. Single entry point for both processing modes (user function vs prompt template) across three dataset sources (inline, by ID, by name). Each call runs a shared prelude (steps 1–5) then a mode-specific branch (step 6) — the two modes create the experiment differently:
 
 1. **Determine mode** — `'function' in params` vs `'promptTemplate' in params`. Neither → throws.
 2. **Array+template gate** — inline `Array` dataset with `promptTemplate` → throws ("Prompt template experiments cannot be run with a local dataset").
 3. **Resolve project** — explicit `projectId`/`projectName` → `GALILEO_PROJECT_ID` → `GALILEO_PROJECT` env fallback. None → throws.
 4. **Validate project name** — project must have a name.
 5. **Deduplicate experiment name** — name collision appends ISO timestamp, logs a warning.
-6. **Create experiment** — resolves `ExperimentDatasetRequest` via `getDatasetMetadata` (dataset object, string=name, ID, or null for inline arrays), then POSTs.
-7. **Configure tags** — `experimentTags?` upserted one by one; individual failures are logged, never abort the run.
-8. **Configure metrics** — `Metrics.createMetricConfigs` categorises each input into server-side (scorer configs) or client-side (`LocalMetricConfig`). Unknown names/IDs → throws. Validates `aggregatableTypes` ⊆ `['trace','workflow']` and non-overlap with `scorableTypes`.
-9. **Local-metrics+template gate** — local metrics with `promptTemplate` → throws.
-10. **Load dataset records** — `Datasets.loadDatasetAndRecords` resolves by priority: `datasetId` → `datasetName` → `dataset:string` (name) → `dataset:object` → `dataset:array` (inline). Empty for function mode → throws; missing dataset object for prompt template → throws.
-11. **Branch and execute**:
-    - **Function branch** (`processExperimentFunction` → `runExperimentWithFunction`): wraps execution in `experimentContext.run({ experimentId, projectName })`, initialises the singleton logger with local metrics, processes rows sequentially (`for...of`), wraps each user function with `log()` to emit a span, **swallows user-function errors as `"Error: ..."` strings** (never rethrows), flushes, returns `{ results, experiment, link, message }`.
-    - **Prompt-template branch** (`processExperimentPromptTemplate`): resolves `promptTemplateVersionId` from `PromptTemplate.selectedVersionId` or `PromptTemplateVersion.id`, submits a server-side prompt run job via `client.createPromptRunJob`, returns `{ experiment, link, message }` (no `results` — server executes asynchronously).
+6. **Branch by mode** — experiment creation, metric handling, and tags happen per branch:
+   - **Function branch** (`processExperimentFunction` → `runExperimentWithFunction`): creates the experiment up front, untriggered, via `createNewExperiment` (resolves `ExperimentDatasetRequest` via `getDatasetMetadata`); upserts `experimentTags?` one by one (failures logged, never abort); registers metrics via `configureExperimentMetrics` → `createMetricConfigs(projectId, experimentId, …)` (server-side scorer registration; local metrics allowed here); loads dataset records (`loadDatasetAndRecords`; empty → throws); then wraps execution in `experimentContext.run({ experimentId, projectName })`, initialises the singleton logger with local metrics, processes rows sequentially (`for...of`), wraps each user function with `log()` to emit a span, **swallows user-function errors as `"Error: ..."` strings** (never rethrows), flushes, returns `{ results, experiment, link, message }`.
+   - **Prompt-template branch** (`processExperimentPromptTemplate`): resolves scorer configs _without_ registering them (`createMetricConfigs(projectId, null, …)` — resolve-only; a local metric → throws); resolves the dataset (`getDatasetMetadata`; missing → throws) and `promptTemplateVersionId` (from `PromptTemplate.selectedVersionId` or `PromptTemplateVersion.id`); then creates **and triggers** the experiment in a single call `createExperiment(name, dataset, /*trigger*/ true, scorers, promptTemplateVersionId, promptSettings)`. The API registers the scorers from the request body and starts the runner job — entering the batched playground path when the backend `playground_batching` flag is enabled. Tags are applied after creation. Returns `{ experiment, link, message }` (no `results` — server executes asynchronously). The legacy `createPromptRunJob` (`POST /jobs`) is retained (`@deprecated`) but no longer used by this flow.
 
 ## Key Types (from `src/types/experiment.types.ts`)
 

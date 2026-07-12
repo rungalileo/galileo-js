@@ -363,7 +363,7 @@ runExperiment({
 1. **Sequential row processing** — rows are processed in a `for...of` loop; no parallelism.
 2. **User function errors are swallowed** — `processRow` catches all errors and converts them to `"Error: ..."` strings. Experiment completes.
 3. **Tag failures are tolerant** — individual tag upsert failures are logged but don't abort the experiment.
-4. **Prompt template experiments are async on the server** — `createPromptRunJob` submits a job. The response `message` confirms submission. Results appear later in the console.
+4. **Prompt template experiments are async on the server** — a single `createExperiment(trigger=true, …)` call creates the experiment and starts the runner job server-side (entering the batched playground path when enabled). The returned `message` confirms submission and is built client-side. Results appear later in the console.
 5. **`results` field is only present for function-based experiments.** Prompt template experiments return `undefined` for `results`.
 6. **`deserializeInputFromString`** — if the `row.input` is not valid JSON, it wraps the raw string as `{ value: rawString }` rather than throwing.
 7. **`GALILEO_CONSOLE_URL` rewriting** — if the URL contains `api.galileo.ai`, it's automatically rewritten to `app.galileo.ai` for the console link.
