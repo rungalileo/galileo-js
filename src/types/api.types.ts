@@ -2814,6 +2814,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/projects/{project_id}/metrics-testing/{run_id}/health-score': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Compute Health Score Endpoint
+     * @description Compute the health score metric for a metrics testing run.
+     */
+    post: operations['compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/projects/{project_id}/traces': {
     parameters: {
       query?: never;
@@ -3292,6 +3312,23 @@ export interface paths {
      * @description List the created integrations for the requesting user.
      */
     get: operations['list_integrations_integrations_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/integrations/costs/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Integration Costs */
+    get: operations['get_integration_costs_integrations_costs_summary_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -4999,6 +5036,8 @@ export interface components {
       copy_from_dataset_version_index?: number | null;
       /** Project Id */
       project_id?: string | null;
+      /** Column Mapping */
+      column_mapping?: string | null;
     };
     /** Body_login_email_login_post */
     Body_login_email_login_post: {
@@ -5513,12 +5552,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -5529,20 +5562,25 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
     };
     /** ColumnMapping */
     ColumnMapping: {
       /** Input */
-      input: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      input?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Output */
-      output: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      output?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Generated Output */
-      generated_output:
+      generated_output?:
         | components['schemas']['ColumnMappingConfig']
         | string[]
         | null;
       /** Metadata */
-      metadata: components['schemas']['ColumnMappingConfig'] | string[] | null;
+      metadata?: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Mgt */
       mgt?: {
         [key: string]: components['schemas']['ColumnMappingConfig'];
@@ -5662,6 +5700,28 @@ export interface components {
       response_schema?: {
         [key: string]: unknown;
       } | null;
+    };
+    /** ComputeHealthScoreRequest */
+    ComputeHealthScoreRequest: {
+      /**
+       * Scorer Id
+       * Format: uuid4
+       */
+      scorer_id: string;
+      /** @description The scorer's output type, used to dispatch the correct metric. */
+      output_type: components['schemas']['OutputTypeEnum'];
+      /**
+       * Scoreable Node Types
+       * @description The scorer's scoreable_node_types. Determines which record type carries the score.
+       */
+      scoreable_node_types?: components['schemas']['StepType'][];
+      /**
+       * Mgt Overlay
+       * @description Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+       */
+      mgt_overlay?: {
+        [key: string]: string | null;
+      };
     };
     /**
      * ContentModality
@@ -5931,6 +5991,11 @@ export interface components {
        */
       num_judges?: number | null;
     };
+    /**
+     * CostInterval
+     * @enum {string}
+     */
+    CostInterval: 'hourly' | 'daily' | 'weekly' | 'monthly';
     /**
      * CreateCodeMetricGenerationRequest
      * @description Request to generate scorer code from a user message.
@@ -6404,6 +6469,8 @@ export interface components {
     CreateScorerRequest: {
       /** Name */
       name: string;
+      /** Id */
+      id?: string | null;
       /**
        * Description
        * @default
@@ -9384,6 +9451,10 @@ export interface components {
        * @default false
        */
       trigger?: boolean;
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
     };
     /** RunCreatedAtFilter */
     ExperimentCreatedAtFilter: {
@@ -9456,6 +9527,42 @@ export interface components {
       dataset_id: string;
       /** Version Index */
       version_index: number;
+    };
+    /** ExperimentGroupIDFilter */
+    ExperimentGroupIDFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_id';
+      /**
+       * Operator
+       * @default eq
+       * @enum {string}
+       */
+      operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+      /** Value */
+      value: string | string[];
+    };
+    /** ExperimentGroupNameFilter */
+    ExperimentGroupNameFilter: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      name: 'experiment_group_name';
+      /**
+       * Operator
+       * @enum {string}
+       */
+      operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+      /** Value */
+      value: string | string[];
+      /**
+       * Case Sensitive
+       * @default true
+       */
+      case_sensitive?: boolean;
     };
     /** RunIDFilter */
     ExperimentIDFilter: {
@@ -9606,7 +9713,7 @@ export interface components {
       };
       /**
        * Structured Aggregate Metrics
-       * @description Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+       * @description Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
        */
       structured_aggregate_metrics?: {
         [key: string]: components['schemas']['MetricAggregates'];
@@ -9646,6 +9753,12 @@ export interface components {
         [key: string]: components['schemas']['RunTagDB'][];
       };
       status?: components['schemas']['ExperimentStatus'];
+      /** Experiment Group Id */
+      experiment_group_id?: string | null;
+      /** Experiment Group Name */
+      experiment_group_name?: string | null;
+      /** Experiment Group Is System */
+      experiment_group_is_system?: boolean | null;
     };
     /** ExperimentSearchRequest */
     ExperimentSearchRequest: {
@@ -9666,6 +9779,8 @@ export interface components {
         | components['schemas']['ExperimentCreatedByFilter']
         | components['schemas']['ExperimentCreatedAtFilter']
         | components['schemas']['ExperimentUpdatedAtFilter']
+        | components['schemas']['ExperimentGroupIDFilter']
+        | components['schemas']['ExperimentGroupNameFilter']
       )[];
       /**
        * Sort
@@ -13325,6 +13440,18 @@ export interface components {
         [key: string]: unknown;
       } | null;
     };
+    /** FeatureIntegrationCosts */
+    FeatureIntegrationCosts: {
+      /** Feature Name */
+      feature_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Projects */
+      projects?: components['schemas']['ProjectIntegrationCosts'][];
+    };
     /** FeedbackAggregate */
     FeedbackAggregate: {
       /** Aggregate */
@@ -13881,6 +14008,47 @@ export interface components {
       /** Hallucination */
       hallucination: number;
     };
+    /** HealthScoreResult */
+    HealthScoreResult: {
+      health_score_type: components['schemas']['HealthScoreType'] | null;
+      /**
+       * Value
+       * @description Primary health score metric value, or None if no valid rows.
+       */
+      value: number | null;
+      /**
+       * Skipped Rows
+       * @description Rows excluded because MGT or score could not be parsed.
+       */
+      skipped_rows: number;
+      /**
+       * Secondary
+       * @description Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+       */
+      secondary: {
+        [key: string]: number | null;
+      };
+      /**
+       * Total Scored Rows
+       * @description Rows with a successful scorer result.
+       */
+      total_scored_rows: number;
+      /**
+       * Total Mgt Rows
+       * @description Rows with a non-null MGT value after overlay.
+       */
+      total_mgt_rows: number;
+      /**
+       * Joined Rows
+       * @description Rows with both a score and a MGT value (used for computation).
+       */
+      joined_rows: number;
+    };
+    /**
+     * HealthScoreType
+     * @enum {string}
+     */
+    HealthScoreType: 'macro_f1' | 'micro_f1' | 'mse' | 'mae';
     /** HealthcheckResponse */
     HealthcheckResponse: {
       /** Api Version */
@@ -14435,6 +14603,21 @@ export interface components {
      * @enum {string}
      */
     IntegrationAction: 'update' | 'delete' | 'share';
+    /** IntegrationCostsDataPoint */
+    IntegrationCostsDataPoint: {
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string;
+      /** Cost */
+      cost: number;
+    };
+    /** IntegrationCostsResponse */
+    IntegrationCostsResponse: {
+      /** Features */
+      features?: components['schemas']['FeatureIntegrationCosts'][];
+    };
     /** IntegrationDB */
     IntegrationDB: {
       /**
@@ -14713,8 +14896,12 @@ export interface components {
       steps_total?: number | null;
     };
     JsonPrimitive: string | number | boolean | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    JsonValue: any; // circular self-reference in generated spec — simplified to any
+    JsonValue:
+      | components['schemas']['JsonPrimitive']
+      | components['schemas']['JsonValue'][]
+      | {
+          [key: string]: components['schemas']['JsonValue'];
+        };
     /**
      * LLMExportFormat
      * @enum {string}
@@ -15430,12 +15617,6 @@ export interface components {
        */
       applicable_types?: components['schemas']['StepType'][];
       /**
-       * Complex
-       * @description Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-       * @default false
-       */
-      complex?: boolean;
-      /**
        * Is Optional
        * @description Whether the column is optional.
        * @default false
@@ -15446,6 +15627,11 @@ export interface components {
        * @description Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
        */
       roll_up_method?: string | null;
+      /**
+       * Metric Key Alias
+       * @description Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+       */
+      metric_key_alias?: string | null;
       /** @description For metric columns only: Scorer config that produced the metric. */
       scorer_config?: components['schemas']['ScorerConfig'] | null;
       /**
@@ -15464,11 +15650,6 @@ export interface components {
        * @description Type of label color for the column, if this is a multilabel metric column.
        */
       label_color?: ('positive' | 'negative') | null;
-      /**
-       * Metric Key Alias
-       * @description Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-       */
-      metric_key_alias?: string | null;
     };
     /** LogRecordsCustomMetricsQueryRequest */
     LogRecordsCustomMetricsQueryRequest: {
@@ -20376,6 +20557,23 @@ export interface components {
       /** Value */
       value: string | string[];
     };
+    /** ProjectIntegrationCosts */
+    ProjectIntegrationCosts: {
+      /**
+       * Project Id
+       * Format: uuid4
+       */
+      project_id: string;
+      /** Project Name */
+      project_name: string;
+      /**
+       * Total Cost
+       * @default 0
+       */
+      total_cost?: number;
+      /** Data Points */
+      data_points?: components['schemas']['IntegrationCostsDataPoint'][];
+    };
     /**
      * ProjectItem
      * @description Represents a single project item for the UI list.
@@ -22297,6 +22495,9 @@ export interface components {
             | components['schemas']['MetricColorPickerCategorical']
             | components['schemas']['MetricColorPickerMultiLabel']
           )
+        | null;
+      color_threshold_config?:
+        | components['schemas']['MetricColorPickerNumeric']
         | null;
       /** Metric Name */
       metric_name?: string | null;
@@ -30885,6 +31086,42 @@ export interface operations {
       };
     };
   };
+  compute_health_score_endpoint_projects__project_id__metrics_testing__run_id__health_score_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        project_id: string;
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ComputeHealthScoreRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HealthScoreResult'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   log_traces_projects__project_id__traces_post: {
     parameters: {
       query?: never;
@@ -31886,6 +32123,42 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['IntegrationDB'][];
+        };
+      };
+    };
+  };
+  get_integration_costs_integrations_costs_summary_get: {
+    parameters: {
+      query: {
+        /** @description Start of time range (UTC) */
+        start_time: string;
+        /** @description End of time range (UTC) */
+        end_time: string;
+        /** @description Aggregation interval */
+        interval: components['schemas']['CostInterval'];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['IntegrationCostsResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };
