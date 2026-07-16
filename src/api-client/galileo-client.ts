@@ -1524,7 +1524,7 @@ export class GalileoApiClient extends BaseClient {
     const options: GlobalPromptTemplateListOptions =
       typeof nameFilterOrOptions === 'string'
         ? { nameFilter: nameFilterOrOptions, limit, startingToken }
-        : (nameFilterOrOptions ?? {});
+        : nameFilterOrOptions ?? {};
 
     const resolvedProjectId = await this.resolveProjectIdOrName(
       options.projectId,
@@ -2173,5 +2173,4 @@ export class GalileoApiClient extends BaseClient {
     this.ensureService(this.traceService);
     return this.traceService!.searchMetrics(options);
   }
-
 }

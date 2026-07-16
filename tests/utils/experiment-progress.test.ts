@@ -22,11 +22,12 @@ jest.mock('cli-progress', () => ({
   Presets: { shades_classic: {} }
 }));
 
-const makeResponse = (progressPercent: number): ExperimentResponseType =>
+const makeResponse = (progressPercent: number | null): ExperimentResponseType =>
   ({
     id: 'exp-id',
     projectId: 'proj-id',
-    status: { logGeneration: { progressPercent } }
+    status:
+      progressPercent === null ? {} : { logGeneration: { progressPercent } }
   }) as unknown as ExperimentResponseType;
 
 describe('monitorExperimentProgress', () => {
@@ -88,5 +89,75 @@ describe('monitorExperimentProgress', () => {
       projectId,
       runId: experimentId
     });
+  });
+
+  it('throws when timeoutMs is exceeded', async () => {
+    mockGetExperiment.mockResolvedValue(makeResponse(0.0));
+
+    await expect(
+      monitorExperimentProgress(experimentId, projectId, {
+        pollIntervalMs: 0,
+        showProgressBar: false,
+        timeoutMs: 0
+      })
+    ).rejects.toThrow('timed out');
+  });
+
+  it('throws when progress is stalled with no data', async () => {
+    mockGetExperiment.mockResolvedValue(makeResponse(null));
+
+    await expect(
+      monitorExperimentProgress(experimentId, projectId, {
+        pollIntervalMs: 0,
+        showProgressBar: false,
+        stalledProgressMaxAttempts: 3
+      })
+    ).rejects.toThrow('stalled');
+  });
+
+  it('throws when progress does not advance', async () => {
+    mockGetExperiment.mockResolvedValue(makeResponse(0.3));
+
+    await expect(
+      monitorExperimentProgress(experimentId, projectId, {
+        pollIntervalMs: 0,
+        showProgressBar: false,
+        stalledProgressMaxAttempts: 3
+      })
+    ).rejects.toThrow('stalled');
+  });
+
+  it('resets stall counter when progress advances', async () => {
+    mockGetExperiment
+      .mockResolvedValueOnce(makeResponse(0.1))
+      .mockResolvedValueOnce(makeResponse(0.1))
+      .mockResolvedValueOnce(makeResponse(0.5))
+      .mockResolvedValueOnce(makeResponse(1.0));
+
+    await monitorExperimentProgress(experimentId, projectId, {
+      pollIntervalMs: 0,
+      showProgressBar: false,
+      stalledProgressMaxAttempts: 3
+    });
+
+    expect(mockGetExperiment).toHaveBeenCalledTimes(4);
+  });
+
+  it('clamps progressPercent to 0-100 range', async () => {
+    const cliProgress = require('cli-progress');
+    const mockUpdate = jest.fn();
+    cliProgress.SingleBar.mockImplementationOnce(() => ({
+      start: jest.fn(),
+      update: mockUpdate,
+      stop: jest.fn()
+    }));
+
+    mockGetExperiment.mockResolvedValue(makeResponse(1.5));
+
+    await monitorExperimentProgress(experimentId, projectId, {
+      showProgressBar: true
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith(100);
   });
 });

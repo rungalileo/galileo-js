@@ -5,6 +5,8 @@ export interface ExperimentProgressOptions {
   pollIntervalMs?: number;
   signal?: AbortSignal;
   showProgressBar?: boolean;
+  timeoutMs?: number;
+  stalledProgressMaxAttempts?: number;
 }
 
 const sleep = (ms: number): Promise<void> =>
@@ -25,7 +27,13 @@ export async function monitorExperimentProgress(
   projectId: string,
   options: ExperimentProgressOptions = {}
 ): Promise<void> {
-  const { pollIntervalMs = 2000, signal, showProgressBar = true } = options;
+  const {
+    pollIntervalMs = 2000,
+    signal,
+    showProgressBar = true,
+    timeoutMs,
+    stalledProgressMaxAttempts = 30
+  } = options;
 
   const apiClient = new GalileoApiClient();
   await apiClient.init({ projectId, runId: experimentId });
@@ -42,6 +50,10 @@ export async function monitorExperimentProgress(
     progressBar.start(100, 0);
   }
 
+  const startTime = Date.now();
+  let lastProgressPercent = -1;
+  let stalledAttempts = 0;
+
   try {
     let progressPercent = 0;
     while (progressPercent < 100) {
@@ -49,9 +61,38 @@ export async function monitorExperimentProgress(
         throw new Error('Experiment progress monitoring was cancelled');
       }
 
+      if (timeoutMs !== undefined && Date.now() - startTime >= timeoutMs) {
+        throw new Error(
+          `Experiment progress monitoring timed out after ${timeoutMs}ms`
+        );
+      }
+
       const experiment = await apiClient.getExperiment(experimentId);
-      progressPercent =
-        (experiment.status?.logGeneration?.progressPercent ?? 0) * 100;
+      const rawPercent =
+        experiment.status?.logGeneration?.progressPercent ?? null;
+
+      if (rawPercent === null) {
+        stalledAttempts++;
+        if (stalledAttempts >= stalledProgressMaxAttempts) {
+          throw new Error(
+            `Experiment progress monitoring stalled: no progress data received after ${stalledProgressMaxAttempts} attempts`
+          );
+        }
+      } else {
+        progressPercent = Math.min(100, Math.max(0, rawPercent * 100));
+
+        if (progressPercent === lastProgressPercent) {
+          stalledAttempts++;
+          if (stalledAttempts >= stalledProgressMaxAttempts) {
+            throw new Error(
+              `Experiment progress monitoring stalled: progress stuck at ${progressPercent.toFixed(1)}% for ${stalledProgressMaxAttempts} consecutive polls`
+            );
+          }
+        } else {
+          stalledAttempts = 0;
+          lastProgressPercent = progressPercent;
+        }
+      }
 
       if (progressBar) {
         progressBar.update(progressPercent);

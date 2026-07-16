@@ -113,7 +113,7 @@ export function extractLlmData(
       | undefined
       | null;
     const responseStatusCode = responseError
-      ? ((responseError.status_code as number | undefined) ?? 500)
+      ? (responseError.status_code as number | undefined) ?? 500
       : undefined;
 
     return {
