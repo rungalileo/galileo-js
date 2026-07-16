@@ -74,8 +74,6 @@ import type {
 import { ExperimentTagsService } from './services/experiment-tags-service';
 import { ScorerService } from './services/scorer-service';
 import { ExportService } from './services/export-service';
-import { JobsService } from './services/job-service';
-import { JobProgressService } from './services/job-progress-service';
 import { RunsService } from './services/runs-service';
 import {
   SyntheticDatasetExtensionRequest,
@@ -101,7 +99,7 @@ import {
   GlobalPromptTemplateListOptions,
   ListPromptTemplateResponse
 } from '../types/prompt-template.types';
-import { JobDbType, TaskType } from '../types/job.types';
+
 import { Message } from '../types/message.types';
 import type { Messages } from '../types/new-api.types';
 import { StepType } from '../types/logging/step.types';
@@ -148,8 +146,6 @@ export class GalileoApiClient extends BaseClient {
   public projectScoped: boolean = true;
 
   // Service instances
-  private jobsService?: JobsService;
-  private jobProgressService?: JobProgressService;
   private authService?: AuthService;
   private projectService?: ProjectService;
   private logStreamService?: LogStreamService;
@@ -212,12 +208,6 @@ export class GalileoApiClient extends BaseClient {
 
       // Initialize dataset and trace services
       this.datasetService = new DatasetService(this.apiUrl, this.token);
-
-      // Initialize job service
-      this.jobsService = new JobsService(this.apiUrl, this.token);
-
-      // Initialize job progress service
-      this.jobProgressService = new JobProgressService(this.apiUrl, this.token);
 
       // Initialize global prompt template service
       this.globalPromptTemplateService = new GlobalPromptTemplateService(
@@ -1906,29 +1896,6 @@ export class GalileoApiClient extends BaseClient {
     return this.experimentTagsService.deleteExperimentTag(experimentId, tagId);
   }
 
-  public async createJob(options: {
-    projectId: string;
-    name: string;
-    runId: string;
-    datasetId: string;
-    promptTemplateId: string;
-    taskType: TaskType;
-    promptSettings: PromptRunSettings;
-    scorers?: ScorerConfig[];
-  }): Promise<CreateJobResponse> {
-    this.ensureService(this.jobsService);
-    return this.jobsService.create({
-      projectId: options.projectId,
-      jobName: options.name,
-      runId: options.runId,
-      datasetId: options.datasetId,
-      promptTemplateVersionId: options.promptTemplateId,
-      taskType: options.taskType,
-      promptSettings: options.promptSettings,
-      scorers: options.scorers
-    });
-  }
-
   /**
    * Creates a new scorer.
    * @param options - The scorer creation options.
@@ -2207,25 +2174,4 @@ export class GalileoApiClient extends BaseClient {
     return this.traceService!.searchMetrics(options);
   }
 
-  public async getJob(jobId: string): Promise<JobDbType> {
-    this.ensureService(this.jobProgressService);
-    return this.jobProgressService.getJob(jobId);
-  }
-
-  // This method maintains backward compatibility but delegates to getRunScorerJobs
-  public async getJobsForProjectRun(
-    projectId: string,
-    runId: string
-  ): Promise<JobDbType[]> {
-    this.ensureService(this.jobProgressService);
-    return this.jobProgressService.getRunScorerJobs(projectId, runId);
-  }
-
-  public async getRunScorerJobs(
-    projectId: string,
-    runId: string
-  ): Promise<JobDbType[]> {
-    this.ensureService(this.jobProgressService);
-    return this.jobProgressService.getRunScorerJobs(projectId, runId);
-  }
 }
