@@ -31,9 +31,7 @@ export type LlmSpanAllowedInputType =
   | Message
   | Message[];
 export type LlmSpanAllowedOutputType =
-  | string
-  | Record<string, string>
-  | Message;
+  string | Record<string, string> | Message;
 export type RetrieverSpanAllowedOutputType =
   | string
   | Record<string, string>
@@ -115,11 +113,10 @@ export interface BaseStepOptions {
   id?: string;
 }
 
-export interface SerializedStep
-  extends Omit<
-    BaseStepOptions,
-    'metrics' | 'createdAt' | 'output' | 'redactedOutput'
-  > {
+export interface SerializedStep extends Omit<
+  BaseStepOptions,
+  'metrics' | 'createdAt' | 'output' | 'redactedOutput'
+> {
   metrics?: SerializedMetrics;
   type: StepType;
   createdAt: Date;

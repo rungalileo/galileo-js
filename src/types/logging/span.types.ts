@@ -376,8 +376,10 @@ export interface RetrieverSpanOptions extends BaseSpanOptions {
   redactedOutput?: RetrieverSpanAllowedOutputType;
 }
 
-export interface SerializedRetrieverSpan
-  extends Omit<SerializedStep, 'output'> {
+export interface SerializedRetrieverSpan extends Omit<
+  SerializedStep,
+  'output'
+> {
   output: JsonArray;
 }
 
@@ -406,11 +408,10 @@ export class RetrieverSpan extends BaseStep {
   }
 }
 
-export interface ToolSpanOptions
-  extends Omit<
-    BaseSpanOptions,
-    'input' | 'redactedInput' | 'output' | 'redactedOutput'
-  > {
+export interface ToolSpanOptions extends Omit<
+  BaseSpanOptions,
+  'input' | 'redactedInput' | 'output' | 'redactedOutput'
+> {
   input: JsonValue;
   redactedInput?: JsonValue;
   output?: JsonValue;
@@ -474,11 +475,7 @@ export class ToolSpan extends StepWithChildSpans {
 
 // Type for all span types
 export type Span =
-  | WorkflowSpan
-  | AgentSpan
-  | LlmSpan
-  | RetrieverSpan
-  | ToolSpan;
+  WorkflowSpan | AgentSpan | LlmSpan | RetrieverSpan | ToolSpan;
 
 /**
  * Type guard to validate if a value is a valid AgentType

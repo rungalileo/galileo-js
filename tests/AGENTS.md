@@ -123,9 +123,7 @@ import type { PromptTemplate } from '../../src/types/prompt-template.types';
 import { commonHandlers, TEST_HOST, mockProject } from '../common';
 
 // 2. Fixture constants (EXAMPLE_*)
-const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {
-  /* realistic data */
-};
+const EXAMPLE_PROMPT_TEMPLATE: PromptTemplate = {/* realistic data */};
 
 // 3. Handler mocks (jest.fn().mockImplementation)
 const createPromptHandler = jest.fn().mockImplementation(() => {

@@ -16,14 +16,10 @@ import {
 } from '../types/errors.types';
 
 // Type guards for snake_case and camelCase conversion
-type ValidatedSnakeCase<
-  T extends object,
-  TTarget
-> = ObjectToSnake<T> extends TTarget ? TTarget : never;
-type ValidatedCamelCase<
-  T extends object,
-  TTarget
-> = ObjectToCamel<T> extends TTarget ? TTarget : never;
+type ValidatedSnakeCase<T extends object, TTarget> =
+  ObjectToSnake<T> extends TTarget ? TTarget : never;
+type ValidatedCamelCase<T extends object, TTarget> =
+  ObjectToCamel<T> extends TTarget ? TTarget : never;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

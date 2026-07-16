@@ -14,9 +14,7 @@ export type ScorerNameOpenAPI =
 
 export type SingleMetricValue = number | string | boolean;
 export type MetricValueType =
-  | SingleMetricValue
-  | SingleMetricValue[]
-  | Record<string, SingleMetricValue>;
+  SingleMetricValue | SingleMetricValue[] | Record<string, SingleMetricValue>;
 
 /**
  * Built-in Galileo metric scorers.

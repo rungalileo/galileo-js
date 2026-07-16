@@ -158,7 +158,7 @@ export function logNodeTree(
   // Conclude workflow/agent span. Use the last child's output if necessary
   if (isWorkflowSpan) {
     const finalOutput =
-      output ?? (lastChild ? lastChild.spanParams.output ?? '' : '');
+      output ?? (lastChild ? (lastChild.spanParams.output ?? '') : '');
     logger.conclude({
       output: toStringValue(finalOutput),
       statusCode
