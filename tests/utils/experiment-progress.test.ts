@@ -1,5 +1,6 @@
 import { monitorExperimentProgress } from '../../src/utils/job-progress';
 import type { ExperimentResponseType } from '../../src/types/experiment.types';
+import cliProgress from 'cli-progress';
 
 const mockInit = jest.fn<Promise<void>, [object]>();
 const mockGetExperiment = jest.fn<Promise<ExperimentResponseType>, [string]>();
@@ -144,13 +145,10 @@ describe('monitorExperimentProgress', () => {
   });
 
   it('clamps progressPercent to 0-100 range', async () => {
-    const cliProgress = require('cli-progress');
     const mockUpdate = jest.fn();
-    cliProgress.SingleBar.mockImplementationOnce(() => ({
-      start: jest.fn(),
-      update: mockUpdate,
-      stop: jest.fn()
-    }));
+    jest.mocked(cliProgress.SingleBar).mockImplementationOnce(
+      () => ({ start: jest.fn(), update: mockUpdate, stop: jest.fn() }) as never
+    );
 
     mockGetExperiment.mockResolvedValue(makeResponse(1.5));
 
