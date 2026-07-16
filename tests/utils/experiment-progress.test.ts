@@ -146,9 +146,12 @@ describe('monitorExperimentProgress', () => {
 
   it('clamps progressPercent to 0-100 range', async () => {
     const mockUpdate = jest.fn();
-    jest.mocked(cliProgress.SingleBar).mockImplementationOnce(
-      () => ({ start: jest.fn(), update: mockUpdate, stop: jest.fn() }) as never
-    );
+    jest
+      .mocked(cliProgress.SingleBar)
+      .mockImplementationOnce(
+        () =>
+          ({ start: jest.fn(), update: mockUpdate, stop: jest.fn() }) as never
+      );
 
     mockGetExperiment.mockResolvedValue(makeResponse(1.5));
 
