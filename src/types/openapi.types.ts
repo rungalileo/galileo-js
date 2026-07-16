@@ -34,6 +34,52 @@ export const ActionType = {
 export type ActionType = (typeof ActionType)[keyof typeof ActionType];
 
 /**
+ * AddRecordsToQueueRequest
+ *
+ * Request to add records to an annotation queue.
+ */
+export type AddRecordsToQueueRequest = {
+  /**
+   * Project Id
+   *
+   * Project ID containing the records
+   */
+  project_id: string;
+  /**
+   * Run Id
+   *
+   * Run ID (log stream, experiment, or metrics testing) containing the records
+   */
+  run_id: string;
+  /**
+   * Record Selector
+   *
+   * Selector to specify which records to add (either by record IDs or filter tree)
+   */
+  record_selector:
+    | ({
+        type: 'record_ids';
+      } & AnnotationQueueRecordsByRecordIds)
+    | ({
+        type: 'filter_tree';
+      } & AnnotationQueueRecordsByFilterTree);
+};
+
+/**
+ * AddRecordsToQueueResponse
+ *
+ * Response after adding records to an annotation queue.
+ */
+export type AddRecordsToQueueResponse = {
+  /**
+   * Num Records Added
+   *
+   * Number of records added to the queue
+   */
+  num_records_added: number;
+};
+
+/**
  * AgentSpan
  */
 export type AgentSpan = {
@@ -503,7 +549,13 @@ export type AggregatedTraceViewNode = {
    * Metrics
    */
   metrics: {
-    [key: string]: SystemMetricInfo;
+    [key: string]:
+      | ({
+          aggregation_type: 'numeric';
+        } & SystemMetricInfo)
+      | ({
+          aggregation_type: 'categorical';
+        } & CategoricalMetricInfo);
   };
   /**
    * Trace Count
@@ -633,8 +685,66 @@ export type AnnotationAggregate = {
         annotation_type: 'tags';
       } & AnnotationTagsAggregate)
     | ({
+        annotation_type: 'choice';
+      } & AnnotationChoiceAggregate)
+    | ({
+        annotation_type: 'tree_choice';
+      } & AnnotationTreeChoiceAggregate)
+    | ({
         annotation_type: 'text';
       } & AnnotationTextAggregate);
+};
+
+/**
+ * AnnotationAgreementAggregate
+ */
+export type AnnotationAgreementAggregate = {
+  /**
+   * Buckets
+   */
+  buckets: Array<AnnotationAgreementBucket>;
+  /**
+   * Average Agreement
+   */
+  average_agreement: number;
+};
+
+/**
+ * AnnotationAgreementBucket
+ */
+export type AnnotationAgreementBucket = {
+  /**
+   * Min Inclusive
+   */
+  min_inclusive: number;
+  /**
+   * Max Exclusive
+   */
+  max_exclusive: number | null;
+  /**
+   * Count
+   */
+  count: number;
+};
+
+/**
+ * AnnotationChoiceAggregate
+ */
+export type AnnotationChoiceAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'choice';
+  /**
+   * Counts
+   */
+  counts: {
+    [key: string]: number;
+  };
+  /**
+   * Unrated Count
+   */
+  unrated_count: number;
 };
 
 /**
@@ -678,6 +788,702 @@ export const AnnotationQueueAction = {
  */
 export type AnnotationQueueAction =
   (typeof AnnotationQueueAction)[keyof typeof AnnotationQueueAction];
+
+/**
+ * AnnotationQueueCountRequest
+ */
+export type AnnotationQueueCountRequest = {
+  filter_tree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
+};
+
+/**
+ * AnnotationQueueCountResponse
+ */
+export type AnnotationQueueCountResponse = {
+  /**
+   * Total Count
+   *
+   * Total number of annotation queues matching the filters
+   */
+  total_count: number;
+};
+
+/**
+ * AnnotationQueueCreatedAtFilter
+ */
+export type AnnotationQueueCreatedAtFilter = {
+  /**
+   * Name
+   */
+  name?: 'created_at';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * AnnotationQueueCreatedAtSort
+ */
+export type AnnotationQueueCreatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'created_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueCreatedBySort
+ */
+export type AnnotationQueueCreatedBySort = {
+  /**
+   * Name
+   */
+  name?: 'created_by';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueDetailsResponse
+ */
+export type AnnotationQueueDetailsResponse = {
+  /**
+   * Num Logs Fully Annotated
+   *
+   * Count of queue logs that have a rating for every queue template from each annotation-capable collaborator with track_progress enabled.
+   */
+  num_logs_fully_annotated?: number;
+  /**
+   * Annotation Aggregates
+   *
+   * Queue-wide aggregates keyed by annotation template UUID. Null when the caller cannot view queue-wide aggregates.
+   */
+  annotation_aggregates?: {
+    [key: string]: AnnotationAggregate;
+  } | null;
+  /**
+   * Annotation Aggregates By Annotator
+   *
+   * Per-user aggregates keyed by annotation-capable collaborator UUID, then annotation template UUID. Null when the caller cannot view all per-user aggregates for the queue.
+   */
+  annotation_aggregates_by_annotator?: {
+    [key: string]: {
+      [key: string]: AnnotationAggregate;
+    };
+  } | null;
+  /**
+   * Queue-wide aggregate of record-level overall annotator agreement. Null when the caller cannot view queue-wide aggregates.
+   */
+  overall_annotation_agreement?: AnnotationAgreementAggregate | null;
+};
+
+/**
+ * AnnotationQueueExportRequest
+ *
+ * Request to export selected annotation queue records.
+ */
+export type AnnotationQueueExportRequest = {
+  /**
+   * Column Ids
+   *
+   * Column IDs to include in the export. Applies only to CSV exports.
+   */
+  column_ids?: Array<string> | null;
+  /**
+   * Export format
+   */
+  export_format?: LlmExportFormat;
+  /**
+   * Redact
+   *
+   * Redact sensitive data
+   */
+  redact?: boolean;
+  /**
+   * File Name
+   *
+   * Optional filename for the exported file
+   */
+  file_name?: string | null;
+  /**
+   * Export Computed Metrics Only
+   *
+   * When true, export only enabled scorer metrics with computed values (success or roll_up). For session exports, omit entire sessions unless every enabled metric at session, trace, or span level is ready (success, roll_up, or not_applicable). Not supported with export_format=jsonl_flat (returns 422); use jsonl or csv instead.
+   */
+  export_computed_metrics_only?: boolean;
+  /**
+   * Record Selector
+   *
+   * Selector to specify which queue records to export (either by record IDs or filter tree)
+   */
+  record_selector:
+    | ({
+        type: 'record_ids';
+      } & AnnotationQueueRecordsByRecordIds)
+    | ({
+        type: 'filter_tree';
+      } & AnnotationQueueRecordsByFilterTree);
+};
+
+/**
+ * AnnotationQueueIDFilter
+ */
+export type AnnotationQueueIdFilter = {
+  /**
+   * Name
+   */
+  name?: 'id';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne' | 'one_of' | 'not_in' | 'contains';
+  /**
+   * Value
+   */
+  value: string | Array<string | string>;
+};
+
+/**
+ * AnnotationQueueNameFilter
+ */
+export type AnnotationQueueNameFilter = {
+  /**
+   * Name
+   */
+  name?: 'name';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  case_sensitive?: boolean;
+};
+
+/**
+ * AnnotationQueueNameSort
+ */
+export type AnnotationQueueNameSort = {
+  /**
+   * Name
+   */
+  name?: 'name';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueNumAnnotatorsFilter
+ */
+export type AnnotationQueueNumAnnotatorsFilter = {
+  /**
+   * Name
+   */
+  name?: 'num_annotators';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+  /**
+   * Value
+   */
+  value: number | number | Array<number> | Array<number>;
+};
+
+/**
+ * AnnotationQueueNumAnnotatorsSort
+ */
+export type AnnotationQueueNumAnnotatorsSort = {
+  /**
+   * Name
+   */
+  name?: 'num_annotators';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueNumLogRecordsFilter
+ */
+export type AnnotationQueueNumLogRecordsFilter = {
+  /**
+   * Name
+   */
+  name?: 'num_log_records';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+  /**
+   * Value
+   */
+  value: number | number | Array<number> | Array<number>;
+};
+
+/**
+ * AnnotationQueueNumLogRecordsSort
+ */
+export type AnnotationQueueNumLogRecordsSort = {
+  /**
+   * Name
+   */
+  name?: 'num_log_records';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueNumTemplatesFilter
+ */
+export type AnnotationQueueNumTemplatesFilter = {
+  /**
+   * Name
+   */
+  name?: 'num_templates';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+  /**
+   * Value
+   */
+  value: number | number | Array<number> | Array<number>;
+};
+
+/**
+ * AnnotationQueueNumTemplatesSort
+ */
+export type AnnotationQueueNumTemplatesSort = {
+  /**
+   * Name
+   */
+  name?: 'num_templates';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueNumUsersFilter
+ */
+export type AnnotationQueueNumUsersFilter = {
+  /**
+   * Name
+   */
+  name?: 'num_users';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+  /**
+   * Value
+   */
+  value: number | number | Array<number> | Array<number>;
+};
+
+/**
+ * AnnotationQueueNumUsersSort
+ */
+export type AnnotationQueueNumUsersSort = {
+  /**
+   * Name
+   */
+  name?: 'num_users';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueOverallProgressFilter
+ */
+export type AnnotationQueueOverallProgressFilter = {
+  /**
+   * Name
+   */
+  name?: 'overall_progress';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'between';
+  /**
+   * Value
+   */
+  value: number | number | Array<number> | Array<number>;
+};
+
+/**
+ * AnnotationQueueOverallProgressSort
+ */
+export type AnnotationQueueOverallProgressSort = {
+  /**
+   * Name
+   */
+  name?: 'overall_progress';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueuePartialSearchRequest
+ *
+ * Request to search records in an annotation queue with partial field selection.
+ *
+ * Similar to LogRecordsPartialQueryRequest but doesn't require log_stream_id/experiment_id
+ * since the queue determines which project/run pairs to search. This is also
+ * the queue-scoped search path where the `fully_annotated` filter is supported.
+ */
+export type AnnotationQueuePartialSearchRequest = {
+  /**
+   * Starting Token
+   */
+  starting_token?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Previous Last Row Id
+   */
+  previous_last_row_id?: string | null;
+  /**
+   * Filter tree to apply when searching records in the queue. The `fully_annotated` filter is only supported on this queue-scoped path.
+   */
+  filter_tree?: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType | null;
+  /**
+   * Sort for the query. Defaults to native sort (created_at, id descending).
+   */
+  sort?: LogRecordsSortClause | null;
+  /**
+   * Columns to include in the response
+   */
+  select_columns: SelectColumns;
+  /**
+   * Truncate Fields
+   *
+   * Whether to truncate long text fields
+   */
+  truncate_fields?: boolean;
+  /**
+   * Include Counts
+   *
+   * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
+   */
+  include_counts?: boolean;
+};
+
+/**
+ * AnnotationQueueProjectFilter
+ */
+export type AnnotationQueueProjectFilter = {
+  /**
+   * Name
+   */
+  name?: 'project_id';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * AnnotationQueueRecordsByFilterTree
+ */
+export type AnnotationQueueRecordsByFilterTree = {
+  /**
+   * Type
+   */
+  type?: 'filter_tree';
+  /**
+   * Filter tree to select records
+   */
+  filter_tree: FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType;
+};
+
+/**
+ * AnnotationQueueRecordsByRecordIDs
+ */
+export type AnnotationQueueRecordsByRecordIds = {
+  /**
+   * Type
+   */
+  type?: 'record_ids';
+  /**
+   * Record Ids
+   *
+   * List of log record IDs to select
+   */
+  record_ids: Array<string>;
+};
+
+/**
+ * AnnotationQueueResponse
+ */
+export type AnnotationQueueResponse = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Permissions
+   */
+  permissions?: Array<Permission>;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Description
+   */
+  description: string | null;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
+  created_by_user: UserInfo | null;
+  /**
+   * Num Log Records
+   */
+  num_log_records?: number;
+  /**
+   * Num Annotators
+   */
+  num_annotators?: number;
+  /**
+   * Num Users
+   */
+  num_users?: number;
+  /**
+   * Num Templates
+   */
+  num_templates?: number;
+  /**
+   * Num Logs Annotated
+   */
+  num_logs_annotated?: {
+    [key: string]: number;
+  } | null;
+  /**
+   * Progress
+   */
+  progress?: {
+    [key: string]: number;
+  } | null;
+  /**
+   * Overall Progress
+   */
+  overall_progress?: number | null;
+  /**
+   * Templates
+   */
+  templates?: Array<AnnotationTemplateDb>;
+};
+
+/**
+ * AnnotationQueueUpdatedAtFilter
+ */
+export type AnnotationQueueUpdatedAtFilter = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * AnnotationQueueUpdatedAtSort
+ */
+export type AnnotationQueueUpdatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * AnnotationQueueUserCollaboratorCreate
+ */
+export type AnnotationQueueUserCollaboratorCreate = {
+  role?: CollaboratorRole;
+  /**
+   * User Id
+   */
+  user_id?: string | null;
+  /**
+   * User Email
+   */
+  user_email?: string | null;
+  /**
+   * Track Progress
+   */
+  track_progress?: boolean;
+};
+
+/**
+ * AnnotationQueueUserCollaboratorUpdate
+ */
+export type AnnotationQueueUserCollaboratorUpdate = {
+  role: CollaboratorRole;
+  /**
+   * Track Progress
+   */
+  track_progress?: boolean | null;
+};
+
+/**
+ * AnnotationRatingCreate
+ */
+export type AnnotationRatingCreate = {
+  /**
+   * Explanation
+   */
+  explanation?: string | null;
+  /**
+   * Rating
+   */
+  rating:
+    | ({
+        annotation_type: 'like_dislike';
+      } & ApiSchemasAnnotationLikeDislikeRating)
+    | ({
+        annotation_type: 'star';
+      } & ApiSchemasAnnotationStarRating)
+    | ({
+        annotation_type: 'score';
+      } & ApiSchemasAnnotationScoreRating)
+    | ({
+        annotation_type: 'tags';
+      } & ApiSchemasAnnotationTagsRating)
+    | ({
+        annotation_type: 'text';
+      } & ApiSchemasAnnotationTextRating)
+    | ({
+        annotation_type: 'choice';
+      } & ApiSchemasAnnotationChoiceRating)
+    | ({
+        annotation_type: 'tree_choice';
+      } & ApiSchemasAnnotationTreeChoiceRating);
+};
+
+/**
+ * AnnotationRatingDB
+ */
+export type AnnotationRatingDb = {
+  /**
+   * Explanation
+   */
+  explanation?: string | null;
+  /**
+   * Rating
+   */
+  rating:
+    | ({
+        annotation_type: 'like_dislike';
+      } & ApiSchemasAnnotationLikeDislikeRating)
+    | ({
+        annotation_type: 'star';
+      } & ApiSchemasAnnotationStarRating)
+    | ({
+        annotation_type: 'score';
+      } & ApiSchemasAnnotationScoreRating)
+    | ({
+        annotation_type: 'tags';
+      } & ApiSchemasAnnotationTagsRating)
+    | ({
+        annotation_type: 'text';
+      } & ApiSchemasAnnotationTextRating)
+    | ({
+        annotation_type: 'choice';
+      } & ApiSchemasAnnotationChoiceRating)
+    | ({
+        annotation_type: 'tree_choice';
+      } & ApiSchemasAnnotationTreeChoiceRating);
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Created By
+   */
+  created_by: string | null;
+};
 
 /**
  * AnnotationRatingInfo
@@ -761,6 +1567,144 @@ export type AnnotationTagsAggregate = {
 };
 
 /**
+ * AnnotationTemplateCreate
+ */
+export type AnnotationTemplateCreate = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Include Explanation
+   */
+  include_explanation?: boolean;
+  /**
+   * Criteria
+   */
+  criteria?: string | null;
+  /**
+   * Constraints
+   */
+  constraints:
+    | ({
+        annotation_type: 'like_dislike';
+      } & LikeDislikeConstraints)
+    | ({
+        annotation_type: 'star';
+      } & StarConstraints)
+    | ({
+        annotation_type: 'score';
+      } & ScoreConstraints)
+    | ({
+        annotation_type: 'tags';
+      } & TagsConstraints)
+    | ({
+        annotation_type: 'text';
+      } & TextConstraints)
+    | ({
+        annotation_type: 'choice';
+      } & ChoiceConstraints)
+    | ({
+        annotation_type: 'tree_choice';
+      } & TreeChoiceConstraints);
+};
+
+/**
+ * AnnotationTemplateDB
+ */
+export type AnnotationTemplateDb = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Include Explanation
+   */
+  include_explanation: boolean;
+  /**
+   * Criteria
+   */
+  criteria?: string | null;
+  /**
+   * Constraints
+   */
+  constraints:
+    | ({
+        annotation_type: 'like_dislike';
+      } & LikeDislikeConstraints)
+    | ({
+        annotation_type: 'star';
+      } & StarConstraints)
+    | ({
+        annotation_type: 'score';
+      } & ScoreConstraints)
+    | ({
+        annotation_type: 'tags';
+      } & TagsConstraints)
+    | ({
+        annotation_type: 'text';
+      } & TextConstraints)
+    | ({
+        annotation_type: 'choice';
+      } & ChoiceConstraints)
+    | ({
+        annotation_type: 'tree_choice';
+      } & TreeChoiceDbConstraints);
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Created By
+   */
+  created_by: string | null;
+  /**
+   * Position
+   */
+  position: number;
+  /**
+   * Usage Count
+   *
+   * Number of annotation ratings using the template.
+   */
+  usage_count: number;
+};
+
+/**
+ * AnnotationTemplateReorder
+ *
+ * Request to re-order the annotation templates of a project.
+ *
+ * - Expects a list of strings where each string is the ID of a template in the project in the order
+ * we want the templates to appear in.
+ * - Expects the list to be complete list of all template IDs.
+ */
+export type AnnotationTemplateReorder = {
+  /**
+   * Ordering
+   */
+  ordering: Array<string>;
+};
+
+/**
+ * AnnotationTemplateUpdate
+ */
+export type AnnotationTemplateUpdate = {
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Criteria
+   */
+  criteria: string | null;
+};
+
+/**
  * AnnotationTextAggregate
  */
 export type AnnotationTextAggregate = {
@@ -779,6 +1723,26 @@ export type AnnotationTextAggregate = {
 };
 
 /**
+ * AnnotationTreeChoiceAggregate
+ */
+export type AnnotationTreeChoiceAggregate = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'tree_choice';
+  /**
+   * Counts
+   */
+  counts: {
+    [key: string]: number;
+  };
+  /**
+   * Unrated Count
+   */
+  unrated_count: number;
+};
+
+/**
  * AnnotationType
  */
 export const AnnotationType = {
@@ -786,7 +1750,9 @@ export const AnnotationType = {
   STAR: 'star',
   SCORE: 'score',
   TAGS: 'tags',
-  TEXT: 'text'
+  TEXT: 'text',
+  CHOICE: 'choice',
+  TREE_CHOICE: 'tree_choice'
 } as const;
 
 /**
@@ -850,6 +1816,10 @@ export type AnthropicIntegration = {
    * Name
    */
   name?: 'anthropic';
+  /**
+   * Provider
+   */
+  provider?: 'anthropic';
   /**
    * Extra
    */
@@ -943,7 +1913,7 @@ export type AvailableIntegrations = {
   /**
    * Integrations
    */
-  integrations: Array<IntegrationName>;
+  integrations: Array<IntegrationProvider>;
 };
 
 /**
@@ -975,6 +1945,10 @@ export type AwsBedrockIntegration = {
    * Name
    */
   name?: 'aws_bedrock';
+  /**
+   * Provider
+   */
+  provider?: 'aws_bedrock';
   /**
    * Extra
    */
@@ -1022,6 +1996,10 @@ export type AwsSageMakerIntegration = {
    * Name
    */
   name?: 'aws_sagemaker';
+  /**
+   * Provider
+   */
+  provider?: 'aws_sagemaker';
   /**
    * Extra
    */
@@ -1148,6 +2126,10 @@ export type AzureIntegration = {
    * Name
    */
   name?: 'azure';
+  /**
+   * Provider
+   */
+  provider?: 'azure';
   /**
    * Extra
    */
@@ -1631,6 +2613,10 @@ export type BaseScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -1671,6 +2657,10 @@ export type BaseScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -1777,6 +2767,63 @@ export type BaseScorerVersionResponse = {
    * Allowed Model
    */
   allowed_model?: boolean | null;
+  /**
+   * Created By
+   */
+  created_by?: string | null;
+};
+
+/**
+ * BillingUsageDataPoint
+ */
+export type BillingUsageDataPoint = {
+  /**
+   * Timestamp
+   */
+  timestamp: string;
+  /**
+   * Value
+   */
+  value: number;
+};
+
+/**
+ * BillingUsageMetric
+ */
+export const BillingUsageMetric = {
+  TRACES: 'traces',
+  SPANS: 'spans',
+  LUNA_TOKENS: 'luna_tokens',
+  LUNA_FINE_TUNING_RUNS: 'luna_fine_tuning_runs'
+} as const;
+
+/**
+ * BillingUsageMetric
+ */
+export type BillingUsageMetric =
+  (typeof BillingUsageMetric)[keyof typeof BillingUsageMetric];
+
+/**
+ * BillingUsageResponse
+ */
+export type BillingUsageResponse = {
+  metric: BillingUsageMetric;
+  /**
+   * Total
+   */
+  total?: number;
+  /**
+   * Projects
+   */
+  projects?: Array<ProjectBillingUsage>;
+  /**
+   * Available
+   */
+  available?: boolean;
+  /**
+   * Unavailable Reason
+   */
+  unavailable_reason?: string | null;
 };
 
 /**
@@ -1812,13 +2859,13 @@ export type BodyCreateCodeScorerVersionScorersScorerIdVersionCodePost = {
   /**
    * File
    */
-  file: Blob | File;
+  file: string;
   /**
    * Validation Result
    *
-   * Pre-validated result as JSON string to skip validation
+   * Pre-validated result as JSON string from the validate endpoint
    */
-  validation_result?: string | null;
+  validation_result: string;
 };
 
 /**
@@ -1844,7 +2891,7 @@ export type BodyCreateDatasetDatasetsPost = {
   /**
    * File
    */
-  file?: Blob | File | null;
+  file?: string | null;
   /**
    * Copy From Dataset Id
    */
@@ -1857,6 +2904,10 @@ export type BodyCreateDatasetDatasetsPost = {
    * Project Id
    */
   project_id?: string | null;
+  /**
+   * Column Mapping
+   */
+  column_mapping?: string | null;
 };
 
 /**
@@ -1890,44 +2941,24 @@ export type BodyLoginEmailLoginPost = {
 };
 
 /**
- * Body_update_prompt_dataset_projects__project_id__prompt_datasets__dataset_id__put
+ * Body_manual_llm_validate_multipart_scorers_llm_validate_multipart_post
  */
-export type BodyUpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPut =
-  {
-    /**
-     * File
-     */
-    file?: Blob | File | null;
-    /**
-     * Column Names
-     */
-    column_names?: Array<string> | null;
-  };
-
-/**
- * Body_upload_file_projects__project_id__upload_file_post
- */
-export type BodyUploadFileProjectsProjectIdUploadFilePost = {
+export type BodyManualLlmValidateMultipartScorersLlmValidateMultipartPost = {
   /**
-   * File
+   * Body
+   *
+   * JSON-encoded GeneratedScorerValidationRequest
    */
-  file: Blob | File;
+  body: string;
   /**
-   * Upload Metadata
+   * Query Files
    */
-  upload_metadata: string;
+  query_files?: Array<string>;
+  /**
+   * Response Files
+   */
+  response_files?: Array<string>;
 };
-
-/**
- * Body_upload_prompt_evaluation_dataset_projects__project_id__prompt_datasets_post
- */
-export type BodyUploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPost =
-  {
-    /**
-     * File
-     */
-    file: Blob | File;
-  };
 
 /**
  * Body_validate_code_scorer_dataset_scorers_code_validate_dataset_post
@@ -1936,7 +2967,7 @@ export type BodyValidateCodeScorerDatasetScorersCodeValidateDatasetPost = {
   /**
    * File
    */
-  file: Blob | File;
+  file: string;
   /**
    * Dataset Id
    */
@@ -1974,7 +3005,7 @@ export type BodyValidateCodeScorerLogRecordScorersCodeValidateLogRecordPost = {
   /**
    * File
    */
-  file: Blob | File;
+  file: string;
   /**
    * Log Stream Id
    */
@@ -2020,7 +3051,7 @@ export type BodyValidateCodeScorerScorersCodeValidatePost = {
   /**
    * File
    */
-  file: Blob | File;
+  file: string;
   /**
    * Test Input
    */
@@ -2193,6 +3224,38 @@ export type CategoricalColorConstraint = {
 };
 
 /**
+ * CategoricalMetricInfo
+ */
+export type CategoricalMetricInfo = {
+  /**
+   * Aggregation Type
+   *
+   * Discriminator: categorical metrics aggregated as per-label counts
+   */
+  aggregation_type?: 'categorical';
+  /**
+   * Name
+   *
+   * Unique identifier for the metric
+   */
+  name: string;
+  /**
+   * Label
+   *
+   * Human-readable display name for the metric
+   */
+  label: string;
+  /**
+   * Category Counts
+   *
+   * Count of occurrences per category label across records
+   */
+  category_counts?: {
+    [key: string]: number;
+  };
+};
+
+/**
  * CategoricalRollUpMethod
  *
  * Roll up methods for aggregating categorical metrics up the session/trace/span hierarchy.
@@ -2276,6 +3339,44 @@ export type ChainPollTemplate = {
   response_schema?: {
     [key: string]: unknown;
   } | null;
+};
+
+/**
+ * ChoiceAggregate
+ */
+export type ChoiceAggregate = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'choice';
+  /**
+   * Counts
+   */
+  counts: {
+    [key: string]: number;
+  };
+  /**
+   * Unrated Count
+   */
+  unrated_count: number;
+};
+
+/**
+ * ChoiceConstraints
+ */
+export type ChoiceConstraints = {
+  /**
+   * Annotation Type
+   */
+  annotation_type: 'choice';
+  /**
+   * Choices
+   */
+  choices: Array<string>;
+  /**
+   * Allow Other
+   */
+  allow_other?: boolean;
 };
 
 /**
@@ -2533,12 +3634,6 @@ export type ColumnInfo = {
    */
   applicable_types?: Array<StepType>;
   /**
-   * Complex
-   *
-   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-   */
-  complex?: boolean;
-  /**
    * Is Optional
    *
    * Whether the column is optional.
@@ -2553,10 +3648,7 @@ export type ColumnInfo = {
   /**
    * Metric Key Alias
    *
-   * Alternate metric key for this column. When scorer UUIDs are used as column IDs
-   * (e.g. "metrics/{uuid}"), this holds the legacy snake_case metric name
-   * (e.g. "correctness") for display and dual-key query fallback.
-   * Patched manually — will be in generated types once SC-64064 merges to production.
+   * Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
    */
   metric_key_alias?: string | null;
 };
@@ -2568,19 +3660,19 @@ export type ColumnMapping = {
   /**
    * Input
    */
-  input: ColumnMappingConfig | Array<string> | null;
+  input?: ColumnMappingConfig | Array<string> | null;
   /**
    * Output
    */
-  output: ColumnMappingConfig | Array<string> | null;
+  output?: ColumnMappingConfig | Array<string> | null;
   /**
    * Generated Output
    */
-  generated_output: ColumnMappingConfig | Array<string> | null;
+  generated_output?: ColumnMappingConfig | Array<string> | null;
   /**
    * Metadata
    */
-  metadata: ColumnMappingConfig | Array<string> | null;
+  metadata?: ColumnMappingConfig | Array<string> | null;
   /**
    * Mgt
    */
@@ -2711,6 +3803,34 @@ export type CompletenessTemplate = {
 };
 
 /**
+ * ComputeHealthScoreRequest
+ */
+export type ComputeHealthScoreRequest = {
+  /**
+   * Scorer Id
+   */
+  scorer_id: string;
+  /**
+   * The scorer's output type, used to dispatch the correct metric.
+   */
+  output_type: OutputTypeEnum;
+  /**
+   * Scoreable Node Types
+   *
+   * The scorer's scoreable_node_types. Determines which record type carries the score.
+   */
+  scoreable_node_types?: Array<StepType>;
+  /**
+   * Mgt Overlay
+   *
+   * Client-side pending MGT edits: {row_id: value}. Overrides committed dataset values.
+   */
+  mgt_overlay?: {
+    [key: string]: string | null;
+  };
+};
+
+/**
  * ContentModality
  *
  * Classification of content modality
@@ -2837,6 +3957,26 @@ export const ControlCheckStage = { PRE: 'pre', POST: 'post' } as const;
  */
 export type ControlCheckStage =
   (typeof ControlCheckStage)[keyof typeof ControlCheckStage];
+
+/**
+ * ControlResourceAction
+ *
+ * Actions on Agent Control's org-scoped ``control`` resource.
+ */
+export const ControlResourceAction = {
+  CREATE: 'create',
+  READ: 'read',
+  UPDATE: 'update',
+  DELETE: 'delete'
+} as const;
+
+/**
+ * ControlResourceAction
+ *
+ * Actions on Agent Control's org-scoped ``control`` resource.
+ */
+export type ControlResourceAction =
+  (typeof ControlResourceAction)[keyof typeof ControlResourceAction];
 
 /**
  * ControlResult
@@ -3086,6 +4226,42 @@ export type CorrectnessScorer = {
 };
 
 /**
+ * CostInterval
+ */
+export const CostInterval = {
+  HOURLY: 'hourly',
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+  MONTHLY: 'monthly'
+} as const;
+
+/**
+ * CostInterval
+ */
+export type CostInterval = (typeof CostInterval)[keyof typeof CostInterval];
+
+/**
+ * CreateAnnotationQueueRequest
+ */
+export type CreateAnnotationQueueRequest = {
+  name: Name;
+  /**
+   * Description
+   */
+  description?: string | null;
+  /**
+   * Annotator Emails
+   */
+  annotator_emails?: Array<string>;
+  /**
+   * Copy Templates From Queue Id
+   *
+   * Optional ID of an existing annotation queue to copy templates from
+   */
+  copy_templates_from_queue_id?: string | null;
+};
+
+/**
  * CreateCodeMetricGenerationRequest
  *
  * Request to generate scorer code from a user message.
@@ -3103,6 +4279,10 @@ export type CreateCodeMetricGenerationRequest = {
    * Selected scoreable node type (llm, retriever, trace, agent, workflow, tool, session)
    */
   node_type?: string | null;
+  /**
+   * Selected output type (boolean, percentage, count, discrete, categorical, multilabel, freeform)
+   */
+  output_type?: OutputTypeEnum | null;
   /**
    * Model Name
    *
@@ -3237,7 +4417,7 @@ export type CreateJobRequest = {
   /**
    * Protect Scorer Payload
    */
-  protect_scorer_payload?: Blob | File | null;
+  protect_scorer_payload?: string | null;
   prompt_settings?: PromptRunSettings | null;
   /**
    * Scorers
@@ -3398,12 +4578,6 @@ export type CreateJobRequest = {
    * Segment Filters
    */
   segment_filters?: Array<SegmentFilter> | null;
-  prompt_optimization_configuration?: PromptOptimizationConfiguration | null;
-  /**
-   * Epoch
-   */
-  epoch?: number;
-  metric_critique_configuration?: MetricCritiqueJobConfiguration | null;
   /**
    * Is Session
    */
@@ -3430,6 +4604,14 @@ export type CreateJobRequest = {
    * Multijudge Average Boolean Metrics
    */
   multijudge_average_boolean_metrics?: boolean;
+  /**
+   * Store Metric Ids
+   */
+  store_metric_ids?: boolean;
+  /**
+   * Trace Ids
+   */
+  trace_ids?: Array<string>;
 };
 
 /**
@@ -3521,7 +4703,7 @@ export type CreateJobResponse = {
   /**
    * Protect Scorer Payload
    */
-  protect_scorer_payload?: Blob | File | null;
+  protect_scorer_payload?: string | null;
   prompt_settings?: PromptRunSettings | null;
   /**
    * Scorers
@@ -3682,12 +4864,6 @@ export type CreateJobResponse = {
    * Segment Filters
    */
   segment_filters?: Array<SegmentFilter> | null;
-  prompt_optimization_configuration?: PromptOptimizationConfiguration | null;
-  /**
-   * Epoch
-   */
-  epoch?: number;
-  metric_critique_configuration?: MetricCritiqueJobConfiguration | null;
   /**
    * Is Session
    */
@@ -3714,6 +4890,14 @@ export type CreateJobResponse = {
    * Multijudge Average Boolean Metrics
    */
   multijudge_average_boolean_metrics?: boolean;
+  /**
+   * Store Metric Ids
+   */
+  store_metric_ids?: boolean;
+  /**
+   * Trace Ids
+   */
+  trace_ids?: Array<string>;
   /**
    * Message
    */
@@ -3816,6 +5000,28 @@ export type CreatePromptTemplateWithVersionRequestBody = {
 };
 
 /**
+ * CreateQueueTemplateRequest
+ *
+ * Request to create templates in an annotation queue.
+ *
+ * Supports two scenarios:
+ * 1. Create a single template (template field)
+ * 2. Copy all templates from a source queue (copy_from_queue_id field)
+ */
+export type CreateQueueTemplateRequest = {
+  /**
+   * Template to create. Required if copy_from_queue_id is not provided.
+   */
+  template?: AnnotationTemplateCreate | null;
+  /**
+   * Copy From Queue Id
+   *
+   * Source queue ID to copy all templates from. Required if template is not provided.
+   */
+  copy_from_queue_id?: string | null;
+};
+
+/**
  * CreateScorerRequest
  */
 export type CreateScorerRequest = {
@@ -3824,9 +5030,17 @@ export type CreateScorerRequest = {
    */
   name: string;
   /**
+   * Id
+   */
+  id?: string | null;
+  /**
+   * Label
+   */
+  label?: string | null;
+  /**
    * Description
    */
-  description?: string;
+  description?: string | null;
   /**
    * Tags
    */
@@ -3886,6 +5100,14 @@ export type CreateScorerRequest = {
         type: 'multi_label';
       } & MetricColorPickerMultiLabel)
     | null;
+  /**
+   * Is Global
+   */
+  is_global?: boolean | null;
+  /**
+   * Project Ids
+   */
+  project_ids?: Array<string>;
 };
 
 /**
@@ -4070,7 +5292,11 @@ export type CustomIntegration = {
   /**
    * Name
    */
-  name?: 'custom';
+  name?: string;
+  /**
+   * Provider
+   */
+  provider?: 'custom';
   /**
    * Extra
    */
@@ -4174,6 +5400,65 @@ export type CustomIntegrationCreate = {
    * Token
    */
   token?: string | null;
+};
+
+/**
+ * CustomIntegrationDefinition
+ *
+ * Response schema for the full JSON definition of a custom integration.
+ *
+ * Returns the exact same structure used to create the integration,
+ * including decrypted sensitive fields (api_key_value, token, headers).
+ * Only accessible to users with edit permission (creator + admins).
+ */
+export type CustomIntegrationDefinition = {
+  authentication_type: CustomAuthenticationType;
+  /**
+   * Endpoint
+   */
+  endpoint: string;
+  /**
+   * Default Model
+   */
+  default_model?: string | null;
+  /**
+   * Model Properties
+   */
+  model_properties?: Array<PromptgalileoSchemasConfigCustomModelProperties> | null;
+  /**
+   * Token
+   */
+  token?: string | null;
+  /**
+   * Api Key Header
+   */
+  api_key_header?: string | null;
+  /**
+   * Api Key Value
+   */
+  api_key_value?: string | null;
+  /**
+   * Authentication Scope
+   */
+  authentication_scope?: string | null;
+  /**
+   * Oauth2 Token Url
+   */
+  oauth2_token_url?: string | null;
+  /**
+   * Headers
+   */
+  headers?: {
+    [key: string]: string;
+  } | null;
+  custom_llm_config?: CustomLlmConfig | null;
+  /**
+   * Custom Header Mapping
+   */
+  custom_header_mapping?: {
+    [key: string]: string;
+  } | null;
+  multi_modal_config?: MultiModalModelIntegrationConfig | null;
 };
 
 /**
@@ -4325,6 +5610,10 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -4365,6 +5654,10 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -4485,6 +5778,10 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -4525,6 +5822,10 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -4645,6 +5946,10 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -4685,6 +5990,10 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -4805,6 +6114,10 @@ export type CustomizedCompletenessGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -4845,6 +6158,10 @@ export type CustomizedCompletenessGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -4965,6 +6282,10 @@ export type CustomizedFactualityGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5005,6 +6326,10 @@ export type CustomizedFactualityGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
   /**
    * Function Explanation Param Name
    */
@@ -5129,6 +6454,10 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5169,6 +6498,10 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -5289,6 +6622,10 @@ export type CustomizedGroundednessGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5329,6 +6666,10 @@ export type CustomizedGroundednessGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -5449,6 +6790,10 @@ export type CustomizedInputSexistGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5489,6 +6834,10 @@ export type CustomizedInputSexistGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -5609,6 +6958,10 @@ export type CustomizedInputToxicityGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5649,6 +7002,10 @@ export type CustomizedInputToxicityGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -5769,6 +7126,10 @@ export type CustomizedInstructionAdherenceGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5809,6 +7170,10 @@ export type CustomizedInstructionAdherenceGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
   /**
    * Function Explanation Param Name
    */
@@ -5933,6 +7298,10 @@ export type CustomizedPromptInjectionGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -5973,6 +7342,10 @@ export type CustomizedPromptInjectionGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -6093,6 +7466,10 @@ export type CustomizedSexistGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -6133,6 +7510,10 @@ export type CustomizedSexistGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -6253,6 +7634,10 @@ export type CustomizedToolErrorRateGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -6293,6 +7678,10 @@ export type CustomizedToolErrorRateGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -6413,6 +7802,10 @@ export type CustomizedToolSelectionQualityGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -6453,6 +7846,10 @@ export type CustomizedToolSelectionQualityGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -6573,6 +7970,10 @@ export type CustomizedToxicityGptScorer = {
    */
   multimodal_capabilities?: Array<MultimodalCapability> | null;
   /**
+   * Requires Tools In Llm Span
+   */
+  requires_tools_in_llm_span?: boolean;
+  /**
    * Required Scorers
    */
   required_scorers?: Array<string> | null;
@@ -6613,6 +8014,10 @@ export type CustomizedToxicityGptScorer = {
         [key: string]: number;
       }
     | null;
+  /**
+   * Scorer Path Name
+   */
+  scorer_path_name?: string | null;
 };
 
 /**
@@ -6672,10 +8077,12 @@ export const DataTypeOptions = {
   SCORE_RATING: 'score_rating',
   STAR_RATING: 'star_rating',
   TAGS_RATING: 'tags_rating',
+  CHOICE_RATING: 'choice_rating',
   THUMB_RATING_AGGREGATE: 'thumb_rating_aggregate',
   SCORE_RATING_AGGREGATE: 'score_rating_aggregate',
   STAR_RATING_AGGREGATE: 'star_rating_aggregate',
-  TAGS_RATING_AGGREGATE: 'tags_rating_aggregate'
+  TAGS_RATING_AGGREGATE: 'tags_rating_aggregate',
+  CHOICE_RATING_AGGREGATE: 'choice_rating_aggregate'
 } as const;
 
 /**
@@ -6712,6 +8119,10 @@ export type DatabricksIntegration = {
    * Name
    */
   name?: 'databricks';
+  /**
+   * Provider
+   */
+  provider?: 'databricks';
   /**
    * Extra
    */
@@ -7250,6 +8661,42 @@ export type DatasetProjectsSort = {
 };
 
 /**
+ * DatasetRemoveColumn
+ *
+ * Drop a column from the dataset schema.
+ */
+export type DatasetRemoveColumn = {
+  /**
+   * Edit Type
+   */
+  edit_type?: 'remove_column';
+  /**
+   * Column Name
+   */
+  column_name: string;
+};
+
+/**
+ * DatasetRenameColumn
+ *
+ * Rename a column in the dataset schema, preserving values.
+ */
+export type DatasetRenameColumn = {
+  /**
+   * Edit Type
+   */
+  edit_type?: 'rename_column';
+  /**
+   * Column Name
+   */
+  column_name: string;
+  /**
+   * New Column Name
+   */
+  new_column_name: string;
+};
+
+/**
  * DatasetRow
  */
 export type DatasetRow = {
@@ -7537,6 +8984,7 @@ export const ErrorType = {
   PERMISSION_ERROR: 'permission_error',
   NOT_FOUND_ERROR: 'not_found_error',
   WORKFLOW_ERROR: 'workflow_error',
+  RATE_LIMIT_ERROR: 'rate_limit_error',
   SYSTEM_ERROR: 'system_error',
   NOT_APPLICABLE_REASON: 'not_applicable_reason',
   UNCATALOGED_ERROR: 'uncataloged_error'
@@ -7624,6 +9072,14 @@ export type ExperimentCreateRequest = {
    * Trigger
    */
   trigger?: boolean;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
 };
 
 /**
@@ -7710,6 +9166,42 @@ export type ExperimentDatasetRequest = {
    * Version Index
    */
   version_index: number;
+};
+
+/**
+ * ExperimentGroupIDFilter
+ */
+export type ExperimentGroupIdFilter = {
+  /**
+   * Name
+   */
+  name?: 'experiment_group_id';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * ExperimentGroupNameFilter
+ */
+export type ExperimentGroupNameFilter = {
+  /**
+   * Name
+   */
+  name?: 'experiment_group_name';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'ne' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  case_sensitive?: boolean;
 };
 
 /**
@@ -7909,11 +9401,14 @@ export type ExperimentResponse = {
    * Num Traces
    */
   num_traces?: number | null;
+  /**
+   * Num Sessions
+   */
+  num_sessions?: number | null;
   task_type: TaskType;
   dataset?: ExperimentDataset | null;
   /**
    * Aggregate Metrics
-   * @deprecated Use `metricAggregates` instead.
    */
   aggregate_metrics?: {
     [key: string]: unknown;
@@ -7921,7 +9416,7 @@ export type ExperimentResponse = {
   /**
    * Structured Aggregate Metrics
    *
-   * Structured aggregate metrics keyed by raw metric name with full statistical aggregates. Present only when use_clickhouse_run_aggregates flag is enabled.
+   * Structured aggregate metrics with full statistical aggregates (avg, min, max, sum, count). Keys are scorer UUIDs for scorer-backed metrics (matching available_columns column IDs after stripping the 'metrics/' prefix) and raw strings for system metrics (e.g. 'duration_ns', 'cost'). Present only when use_clickhouse_run_aggregates flag is enabled.
    */
   structured_aggregate_metrics?: {
     [key: string]: MetricAggregates;
@@ -7976,6 +9471,18 @@ export type ExperimentResponse = {
     [key: string]: Array<RunTagDb>;
   };
   status?: ExperimentStatus;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
+  /**
+   * Experiment Group Is System
+   */
+  experiment_group_is_system?: boolean | null;
 };
 
 /**
@@ -8009,6 +9516,12 @@ export type ExperimentSearchRequest = {
     | ({
         name: 'updated_at';
       } & ExperimentUpdatedAtFilter)
+    | ({
+        name: 'experiment_group_id';
+      } & ExperimentGroupIdFilter)
+    | ({
+        name: 'experiment_group_name';
+      } & ExperimentGroupNameFilter)
   >;
   /**
    * Sort
@@ -8049,6 +9562,14 @@ export type ExperimentUpdateRequest = {
    * Task Type
    */
   task_type?: 16 | 17;
+  /**
+   * Experiment Group Id
+   */
+  experiment_group_id?: string | null;
+  /**
+   * Experiment Group Name
+   */
+  experiment_group_name?: string | null;
 };
 
 /**
@@ -8095,6 +9616,30 @@ export type ExperimentsAvailableColumnsResponse = {
    * Columns
    */
   columns?: Array<ColumnInfo>;
+};
+
+/**
+ * ExportPresignedUrlResponse
+ *
+ * Response for an export written to object storage.
+ */
+export type ExportPresignedUrlResponse = {
+  /**
+   * Url
+   */
+  url: string;
+  /**
+   * Url Expires At
+   */
+  url_expires_at: string;
+  /**
+   * File Name
+   */
+  file_name: string;
+  /**
+   * Content Type
+   */
+  content_type: string;
 };
 
 /**
@@ -8358,6 +9903,18 @@ export type ExtendedAgentSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -8707,6 +10264,18 @@ export type ExtendedAgentSpanRecordWithChildren = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -9001,6 +10570,18 @@ export type ExtendedControlSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -9303,6 +10884,18 @@ export type ExtendedLlmSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -9635,6 +11228,18 @@ export type ExtendedRetrieverSpanRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -9931,6 +11536,18 @@ export type ExtendedRetrieverSpanRecordWithChildren = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -10251,6 +11868,18 @@ export type ExtendedSessionRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -10564,6 +12193,18 @@ export type ExtendedSessionRecordWithChildren = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -10827,6 +12468,18 @@ export type ExtendedToolSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -11130,6 +12783,18 @@ export type ExtendedToolSpanRecordWithChildren = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -11449,6 +13114,18 @@ export type ExtendedTraceRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -11778,6 +13455,18 @@ export type ExtendedTraceRecordWithChildren = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -12090,6 +13779,18 @@ export type ExtendedWorkflowSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -12435,6 +14136,18 @@ export type ExtendedWorkflowSpanRecordWithChildren = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -12537,6 +14250,24 @@ export type FactualityTemplate = {
 };
 
 /**
+ * FeatureIntegrationCosts
+ */
+export type FeatureIntegrationCosts = {
+  /**
+   * Feature Name
+   */
+  feature_name: string;
+  /**
+   * Total Cost
+   */
+  total_cost?: number;
+  /**
+   * Projects
+   */
+  projects?: Array<ProjectIntegrationCosts>;
+};
+
+/**
  * FeedbackAggregate
  */
 export type FeedbackAggregate = {
@@ -12558,7 +14289,13 @@ export type FeedbackAggregate = {
       } & TagsAggregate)
     | ({
         feedback_type: 'text';
-      } & TextAggregate);
+      } & TextAggregate)
+    | ({
+        feedback_type: 'choice';
+      } & ChoiceAggregate)
+    | ({
+        feedback_type: 'tree_choice';
+      } & TreeChoiceAggregate);
 };
 
 /**
@@ -12575,19 +14312,25 @@ export type FeedbackRatingDb = {
   rating:
     | ({
         feedback_type: 'like_dislike';
-      } & LikeDislikeRating)
+      } & LibsPythonSchemasLogRecordsFeedbackLikeDislikeRating)
     | ({
         feedback_type: 'star';
-      } & StarRating)
+      } & LibsPythonSchemasLogRecordsFeedbackStarRating)
     | ({
         feedback_type: 'score';
-      } & ScoreRating)
+      } & LibsPythonSchemasLogRecordsFeedbackScoreRating)
     | ({
         feedback_type: 'tags';
-      } & TagsRating)
+      } & LibsPythonSchemasLogRecordsFeedbackTagsRating)
     | ({
         feedback_type: 'text';
-      } & TextRating);
+      } & LibsPythonSchemasLogRecordsFeedbackTextRating)
+    | ({
+        feedback_type: 'choice';
+      } & LibsPythonSchemasLogRecordsFeedbackChoiceRating)
+    | ({
+        feedback_type: 'tree_choice';
+      } & LibsPythonSchemasLogRecordsFeedbackTreeChoiceRating);
   /**
    * Created At
    */
@@ -12621,7 +14364,9 @@ export const FeedbackType = {
   STAR: 'star',
   SCORE: 'score',
   TAGS: 'tags',
-  TEXT: 'text'
+  TEXT: 'text',
+  CHOICE: 'choice',
+  TREE_CHOICE: 'tree_choice'
 } as const;
 
 /**
@@ -13224,6 +14969,67 @@ export type HallucinationSegment = {
 };
 
 /**
+ * HealthScoreResult
+ */
+export type HealthScoreResult = {
+  health_score_type: HealthScoreType | null;
+  /**
+   * Value
+   *
+   * Primary health score metric value, or None if no valid rows.
+   */
+  value: number | null;
+  /**
+   * Skipped Rows
+   *
+   * Rows excluded because MGT or score could not be parsed.
+   */
+  skipped_rows: number;
+  /**
+   * Secondary
+   *
+   * Secondary metrics (MAE, RMSE, R², per-class F1, etc.).
+   */
+  secondary: {
+    [key: string]: number | null;
+  };
+  /**
+   * Total Scored Rows
+   *
+   * Rows with a successful scorer result.
+   */
+  total_scored_rows: number;
+  /**
+   * Total Mgt Rows
+   *
+   * Rows with a non-null MGT value after overlay.
+   */
+  total_mgt_rows: number;
+  /**
+   * Joined Rows
+   *
+   * Rows with both a score and a MGT value (used for computation).
+   */
+  joined_rows: number;
+};
+
+/**
+ * HealthScoreType
+ */
+export const HealthScoreType = {
+  MACRO_F1: 'macro_f1',
+  MICRO_F1: 'micro_f1',
+  MSE: 'mse',
+  MAE: 'mae'
+} as const;
+
+/**
+ * HealthScoreType
+ */
+export type HealthScoreType =
+  (typeof HealthScoreType)[keyof typeof HealthScoreType];
+
+/**
  * HealthcheckResponse
  */
 export type HealthcheckResponse = {
@@ -13766,7 +15572,8 @@ export type InstructionAdherenceTemplate = {
 export const IntegrationAction = {
   UPDATE: 'update',
   DELETE: 'delete',
-  SHARE: 'share'
+  SHARE: 'share',
+  READ_SECRETS: 'read_secrets'
 } as const;
 
 /**
@@ -13774,6 +15581,30 @@ export const IntegrationAction = {
  */
 export type IntegrationAction =
   (typeof IntegrationAction)[keyof typeof IntegrationAction];
+
+/**
+ * IntegrationCostsDataPoint
+ */
+export type IntegrationCostsDataPoint = {
+  /**
+   * Timestamp
+   */
+  timestamp: string;
+  /**
+   * Cost
+   */
+  cost: number;
+};
+
+/**
+ * IntegrationCostsResponse
+ */
+export type IntegrationCostsResponse = {
+  /**
+   * Features
+   */
+  features?: Array<FeatureIntegrationCosts>;
+};
 
 /**
  * IntegrationDB
@@ -13787,7 +15618,11 @@ export type IntegrationDb = {
    * Permissions
    */
   permissions?: Array<Permission>;
-  name: IntegrationName;
+  /**
+   * Name
+   */
+  name: string;
+  provider: IntegrationProvider;
   /**
    * Created At
    */
@@ -13814,7 +15649,10 @@ export type IntegrationDb = {
  * IntegrationDisableRequest
  */
 export type IntegrationDisableRequest = {
-  integration_name: IntegrationName;
+  /**
+   * Integration Name
+   */
+  integration_name: string;
 };
 
 /**
@@ -13825,6 +15663,11 @@ export type IntegrationModelsResponse = {
    * Integration Name
    */
   integration_name: string;
+  /**
+   * Integration Id
+   */
+  integration_id: string;
+  provider: IntegrationProvider;
   /**
    * Models
    */
@@ -13854,9 +15697,9 @@ export type IntegrationModelsResponse = {
 };
 
 /**
- * IntegrationName
+ * IntegrationProvider
  */
-export const IntegrationName = {
+export const IntegrationProvider = {
   ANTHROPIC: 'anthropic',
   AWS_BEDROCK: 'aws_bedrock',
   AWS_SAGEMAKER: 'aws_sagemaker',
@@ -13872,16 +15715,19 @@ export const IntegrationName = {
 } as const;
 
 /**
- * IntegrationName
+ * IntegrationProvider
  */
-export type IntegrationName =
-  (typeof IntegrationName)[keyof typeof IntegrationName];
+export type IntegrationProvider =
+  (typeof IntegrationProvider)[keyof typeof IntegrationProvider];
 
 /**
  * IntegrationSelectRequest
  */
 export type IntegrationSelectRequest = {
-  integration_name: IntegrationName;
+  /**
+   * Integration Name
+   */
+  integration_name: string;
   /**
    * Integration Id
    */
@@ -14127,7 +15973,11 @@ export type JsonValue =
 /**
  * LLMExportFormat
  */
-export const LlmExportFormat = { CSV: 'csv', JSONL: 'jsonl' } as const;
+export const LlmExportFormat = {
+  CSV: 'csv',
+  JSONL: 'jsonl',
+  JSONL_FLAT: 'jsonl_flat'
+} as const;
 
 /**
  * LLMExportFormat
@@ -14182,17 +16032,138 @@ export type LikeDislikeAggregate = {
 };
 
 /**
- * LikeDislikeRating
+ * LikeDislikeConstraints
  */
-export type LikeDislikeRating = {
+export type LikeDislikeConstraints = {
   /**
-   * Feedback Type
+   * Annotation Type
    */
-  feedback_type?: 'like_dislike';
+  annotation_type: 'like_dislike';
+};
+
+/**
+ * ListAnnotationQueueCollaboratorsResponse
+ */
+export type ListAnnotationQueueCollaboratorsResponse = {
   /**
-   * Value
+   * Starting Token
    */
-  value: boolean;
+  starting_token?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Paginated
+   */
+  paginated?: boolean;
+  /**
+   * Next Starting Token
+   */
+  next_starting_token?: number | null;
+  /**
+   * Collaborators
+   */
+  collaborators: Array<UserAnnotationQueueCollaborator>;
+};
+
+/**
+ * ListAnnotationQueueParams
+ */
+export type ListAnnotationQueueParams = {
+  /**
+   * Filters
+   */
+  filters?: Array<
+    | ({
+        name: 'id';
+      } & AnnotationQueueIdFilter)
+    | ({
+        name: 'name';
+      } & AnnotationQueueNameFilter)
+    | ({
+        name: 'project_id';
+      } & AnnotationQueueProjectFilter)
+    | ({
+        name: 'created_at';
+      } & AnnotationQueueCreatedAtFilter)
+    | ({
+        name: 'updated_at';
+      } & AnnotationQueueUpdatedAtFilter)
+    | ({
+        name: 'num_log_records';
+      } & AnnotationQueueNumLogRecordsFilter)
+    | ({
+        name: 'num_annotators';
+      } & AnnotationQueueNumAnnotatorsFilter)
+    | ({
+        name: 'num_users';
+      } & AnnotationQueueNumUsersFilter)
+    | ({
+        name: 'overall_progress';
+      } & AnnotationQueueOverallProgressFilter)
+    | ({
+        name: 'num_templates';
+      } & AnnotationQueueNumTemplatesFilter)
+  >;
+  /**
+   * Sort
+   */
+  sort?:
+    | ({
+        name: 'name';
+      } & AnnotationQueueNameSort)
+    | ({
+        name: 'created_at';
+      } & AnnotationQueueCreatedAtSort)
+    | ({
+        name: 'updated_at';
+      } & AnnotationQueueUpdatedAtSort)
+    | ({
+        name: 'created_by';
+      } & AnnotationQueueCreatedBySort)
+    | ({
+        name: 'num_users';
+      } & AnnotationQueueNumUsersSort)
+    | ({
+        name: 'num_log_records';
+      } & AnnotationQueueNumLogRecordsSort)
+    | ({
+        name: 'num_templates';
+      } & AnnotationQueueNumTemplatesSort)
+    | ({
+        name: 'num_annotators';
+      } & AnnotationQueueNumAnnotatorsSort)
+    | ({
+        name: 'overall_progress';
+      } & AnnotationQueueOverallProgressSort)
+    | null;
+};
+
+/**
+ * ListAnnotationQueueResponse
+ */
+export type ListAnnotationQueueResponse = {
+  /**
+   * Starting Token
+   */
+  starting_token?: number;
+  /**
+   * Limit
+   */
+  limit?: number;
+  /**
+   * Paginated
+   */
+  paginated?: boolean;
+  /**
+   * Next Starting Token
+   */
+  next_starting_token?: number | null;
+  /**
+   * Annotation Queues
+   */
+  annotation_queues: Array<AnnotationQueueResponse>;
 };
 
 /**
@@ -14418,32 +16389,6 @@ export type ListLogStreamResponse = {
 };
 
 /**
- * ListPromptDatasetResponse
- */
-export type ListPromptDatasetResponse = {
-  /**
-   * Starting Token
-   */
-  starting_token?: number;
-  /**
-   * Limit
-   */
-  limit?: number;
-  /**
-   * Paginated
-   */
-  paginated?: boolean;
-  /**
-   * Next Starting Token
-   */
-  next_starting_token?: number | null;
-  /**
-   * Datasets
-   */
-  datasets?: Array<PromptDatasetDb>;
-};
-
-/**
  * ListPromptTemplateParams
  */
 export type ListPromptTemplateParams = {
@@ -14620,8 +16565,17 @@ export type ListScorersRequest = {
         name: 'scoreable_node_types';
       } & ScorerScoreableNodeTypesFilter)
     | ({
+        name: 'multimodal_capabilities';
+      } & ScorerMultimodalCapabilitiesFilter)
+    | ({
         name: 'id';
       } & ScorerIdFilter)
+    | ({
+        name: 'is_global';
+      } & ScorerIsGlobalFilter)
+    | ({
+        name: 'scope_projects';
+      } & ScorerScopeProjectsFilter)
   >;
   /**
    * Sort
@@ -14630,6 +16584,9 @@ export type ListScorersRequest = {
     | ({
         name: 'name';
       } & ScorerNameSort)
+    | ({
+        name: 'updated_at';
+      } & ScorerUpdatedAtSort)
     | ({
         name: 'enabled_in_run';
       } & ScorerEnabledInRunSort)
@@ -14725,8 +16682,40 @@ export type LlmMetrics = {
    * Time until the first token was generated in nanoseconds.
    */
   time_to_first_token_ns?: number | null;
+  /**
+   * Num Image Input Tokens
+   *
+   * Number of image input tokens.
+   */
+  num_image_input_tokens?: number | null;
+  /**
+   * Num Audio Input Tokens
+   *
+   * Number of audio input tokens.
+   */
+  num_audio_input_tokens?: number | null;
+  /**
+   * Num Audio Output Tokens
+   *
+   * Number of audio output tokens.
+   */
+  num_audio_output_tokens?: number | null;
+  /**
+   * Num Image Output Tokens
+   *
+   * Number of image output tokens.
+   */
+  num_image_output_tokens?: number | null;
   [key: string]:
     | unknown
+    | number
+    | null
+    | number
+    | null
+    | number
+    | null
+    | number
+    | null
     | number
     | null
     | number
@@ -15092,12 +17081,6 @@ export type LogRecordsColumnInfo = {
    */
   applicable_types?: Array<StepType>;
   /**
-   * Complex
-   *
-   * Whether the column requires special handling in the UI. Setting this to True will hide the column in the UI until the UI adds support for it.
-   */
-  complex?: boolean;
-  /**
    * Is Optional
    *
    * Whether the column is optional.
@@ -15109,6 +17092,12 @@ export type LogRecordsColumnInfo = {
    * Default roll-up aggregation method for this metric (e.g., 'sum', 'average').
    */
   roll_up_method?: string | null;
+  /**
+   * Metric Key Alias
+   *
+   * Alternate metric key for this column. When scorer UUIDs are used as column IDs, this holds the legacy metric_name string for dual-key ClickHouse query fallback.
+   */
+  metric_key_alias?: string | null;
   /**
    * For metric columns only: Scorer config that produced the metric.
    */
@@ -15137,12 +17126,6 @@ export type LogRecordsColumnInfo = {
    * Type of label color for the column, if this is a multilabel metric column.
    */
   label_color?: 'positive' | 'negative' | null;
-  /**
-   * Metric Key Alias
-   *
-   * Alternate metric key for this column. When store_metric_ids is ON, this holds the legacy metric_name string. Used for dual-key ClickHouse queries.
-   */
-  metric_key_alias?: string | null;
 };
 
 /**
@@ -15319,6 +17302,12 @@ export type LogRecordsExportRequest = {
    */
   file_name?: string | null;
   /**
+   * Export Computed Metrics Only
+   *
+   * When true, export only enabled scorer metrics with computed values (success or roll_up). For session exports, omit entire sessions unless every enabled metric at session, trace, or span level is ready (success, roll_up, or not_applicable). Not supported with export_format=jsonl_flat (returns 422); use jsonl or csv instead.
+   */
+  export_computed_metrics_only?: boolean;
+  /**
    * Log Stream Id
    *
    * Log stream id associated with the traces.
@@ -15369,6 +17358,12 @@ export type LogRecordsExportRequest = {
    */
   sort?: LogRecordsSortClause | null;
   root_type: RootType;
+  /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the export. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
 };
 
 /**
@@ -15650,6 +17645,12 @@ export type LogRecordsPartialQueryRequest = {
    * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
    */
   include_counts?: boolean;
+  /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
   select_columns: SelectColumns;
 };
 
@@ -15848,6 +17849,12 @@ export type LogRecordsQueryRequest = {
    * If True, include computed child counts (e.g., num_traces for sessions, num_spans for traces).
    */
   include_counts?: boolean;
+  /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
 };
 
 /**
@@ -16772,6 +18779,12 @@ export type LogTracesIngestResponse = {
    */
   traces_count: number;
   /**
+   * Spans Count
+   *
+   * total number of spans ingested
+   */
+  spans_count: number;
+  /**
    * Trace Ids
    *
    * List of trace IDs that were ingested. Only included if include_trace_ids=True in request.
@@ -17413,47 +19426,6 @@ export type MetricCritiqueContent = {
 };
 
 /**
- * MetricCritiqueJobConfiguration
- *
- * Info necessary to execute a metric critique job.
- */
-export type MetricCritiqueJobConfiguration = {
-  /**
-   * Project Type
-   */
-  project_type: 'prompt_evaluation' | 'llm_monitor' | 'gen_ai';
-  /**
-   * Metric Name
-   */
-  metric_name: string;
-  /**
-   * Scorer Id
-   */
-  scorer_id?: string | null;
-  /**
-   * Critique Ids
-   */
-  critique_ids: Array<string>;
-  /**
-   * Recompute Settings
-   */
-  recompute_settings?:
-    | ({
-        mode: 'runs';
-      } & RecomputeSettingsRuns)
-    | ({
-        mode: 'project';
-      } & RecomputeSettingsProject)
-    | ({
-        mode: 'observe_filters';
-      } & RecomputeSettingsObserve)
-    | ({
-        mode: 'log_stream_filters';
-      } & RecomputeSettingsLogStream)
-    | null;
-};
-
-/**
  * MetricError
  */
 export type MetricError = {
@@ -17666,6 +19638,10 @@ export type MetricRollUp = {
    */
   num_judges?: number | null;
   /**
+   * Multijudge Average
+   */
+  multijudge_average?: number | null;
+  /**
    * Input Tokens
    */
   input_tokens?: number | null;
@@ -17678,6 +19654,14 @@ export type MetricRollUp = {
    */
   total_tokens?: number | null;
   critique?: MetricCritiqueColumnar | null;
+  /**
+   * Metadata
+   *
+   * Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
   /**
    * Roll Up Metrics
    *
@@ -17818,6 +19802,10 @@ export type MetricSuccess = {
    */
   num_judges?: number | null;
   /**
+   * Multijudge Average
+   */
+  multijudge_average?: number | null;
+  /**
    * Input Tokens
    */
   input_tokens?: number | null;
@@ -17830,6 +19818,14 @@ export type MetricSuccess = {
    */
   total_tokens?: number | null;
   critique?: MetricCritiqueColumnar | null;
+  /**
+   * Metadata
+   *
+   * Optional per-row context returned alongside the score by code-based scorers that return a (score, metadata) tuple. Sourced from the {metric_name}_metadata auxiliary key, which is stored as a JSON string in ClickHouse.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  } | null;
   /**
    * Display Value
    */
@@ -17913,9 +19909,9 @@ export type MetricsTestingAvailableColumnsRequest = {
    */
   name: string;
   /**
-   * Output type of the metrics testing table. If not provided, all columns are returned.
+   * Output type of the scorer. Required when metric_key is REGISTERED_SCORER_VALIDATION; used to determine the data_type for validation columns.
    */
-  output_type?: OutputTypeEnum;
+  output_type?: OutputTypeEnum | null;
   /**
    * Cot Enabled
    *
@@ -17954,6 +19950,10 @@ export type MistralIntegration = {
    * Name
    */
   name?: 'mistral';
+  /**
+   * Provider
+   */
+  provider?: 'mistral';
   /**
    * Extra
    */
@@ -18042,14 +20042,6 @@ export type Model = {
    * Token Limit
    */
   token_limit?: number | null;
-  /**
-   * Output Price
-   */
-  output_price?: number;
-  /**
-   * Input Price
-   */
-  input_price?: number;
   cost_by?: ModelCostBy;
   /**
    * Is Chat
@@ -18285,6 +20277,10 @@ export type NvidiaIntegration = {
    */
   name?: 'nvidia';
   /**
+   * Provider
+   */
+  provider?: 'nvidia';
+  /**
    * Extra
    */
   extra?: {
@@ -18332,6 +20328,10 @@ export type OpenAiIntegration = {
    * Name
    */
   name?: 'openai';
+  /**
+   * Provider
+   */
+  provider?: 'openai';
   /**
    * Extra
    */
@@ -18389,7 +20389,9 @@ export const OrganizationAction = {
   DELETE: 'delete',
   DELETE_LOG_DATA: 'delete_log_data',
   READ_SETTINGS: 'read_settings',
-  UPDATE_SETTINGS: 'update_settings'
+  UPDATE_SETTINGS: 'update_settings',
+  READ_COST_SETTINGS: 'read_cost_settings',
+  READ_AI_USAGE: 'read_ai_usage'
 } as const;
 
 /**
@@ -18869,6 +20871,18 @@ export type PartialExtendedAgentSpanRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -19163,6 +21177,18 @@ export type PartialExtendedControlSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -19465,6 +21491,18 @@ export type PartialExtendedLlmSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -19797,6 +21835,18 @@ export type PartialExtendedRetrieverSpanRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -20116,6 +22166,18 @@ export type PartialExtendedSessionRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -20159,6 +22221,10 @@ export type PartialExtendedSessionRecord = {
    * Previous Session Id
    */
   previous_session_id?: string | null;
+  /**
+   * Num Traces
+   */
+  num_traces?: number | null;
 };
 
 /**
@@ -20375,6 +22441,18 @@ export type PartialExtendedToolSpanRecord = {
    * Whether every field is annotated by every annotator in the queue
    */
   fully_annotated?: boolean | null;
+  /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
   /**
    * Metric Info
    *
@@ -20695,6 +22773,18 @@ export type PartialExtendedTraceRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -20740,6 +22830,10 @@ export type PartialExtendedTraceRecord = {
    * Whether the trace is complete or not
    */
   is_complete?: boolean;
+  /**
+   * Num Spans
+   */
+  num_spans?: number | null;
 };
 
 /**
@@ -21004,6 +23098,18 @@ export type PartialExtendedWorkflowSpanRecord = {
    */
   fully_annotated?: boolean | null;
   /**
+   * Progress Message
+   *
+   * Runner progress text written directly to CH span
+   */
+  progress_message?: string;
+  /**
+   * Error Message
+   *
+   * Runner error text written directly to CH span
+   */
+  error_message?: string;
+  /**
    * Metric Info
    *
    * Detailed information about the metrics associated with this trace or span
@@ -21109,6 +23215,7 @@ export type Permission = {
     | GroupAction
     | GroupMemberAction
     | ProjectAction
+    | ScorerAction
     | RegisteredScorerAction
     | ApiKeyAction
     | GeneratedScorerAction
@@ -21116,7 +23223,8 @@ export type Permission = {
     | DatasetAction
     | IntegrationAction
     | OrganizationAction
-    | AnnotationQueueAction;
+    | AnnotationQueueAction
+    | ControlResourceAction;
   /**
    * Allowed
    */
@@ -21160,13 +23268,37 @@ export const ProjectAction = {
   EDIT_RUN_TAGS: 'edit_run_tags',
   DISMISS_ALERT: 'dismiss_alert',
   EDIT_SLICE: 'edit_slice',
-  EDIT_EDIT: 'edit_edit'
+  EDIT_EDIT: 'edit_edit',
+  UPDATE_CONTROL_BINDINGS: 'update_control_bindings',
+  USE_CONTROL_RUNTIME: 'use_control_runtime'
 } as const;
 
 /**
  * ProjectAction
  */
 export type ProjectAction = (typeof ProjectAction)[keyof typeof ProjectAction];
+
+/**
+ * ProjectBillingUsage
+ */
+export type ProjectBillingUsage = {
+  /**
+   * Project Id
+   */
+  project_id: string;
+  /**
+   * Project Name
+   */
+  project_name: string;
+  /**
+   * Total
+   */
+  total?: number;
+  /**
+   * Data Points
+   */
+  data_points?: Array<BillingUsageDataPoint>;
+};
 
 /**
  * ProjectBookmarkFilter
@@ -21474,6 +23606,28 @@ export type ProjectIdFilter = {
 };
 
 /**
+ * ProjectIntegrationCosts
+ */
+export type ProjectIntegrationCosts = {
+  /**
+   * Project Id
+   */
+  project_id: string;
+  /**
+   * Project Name
+   */
+  project_name: string;
+  /**
+   * Total Cost
+   */
+  total_cost?: number;
+  /**
+   * Data Points
+   */
+  data_points?: Array<IntegrationCostsDataPoint>;
+};
+
+/**
  * ProjectItem
  *
  * Represents a single project item for the UI list.
@@ -21684,11 +23838,6 @@ export type ProjectUpdate = {
    */
   name?: string | null;
   /**
-   * Created By
-   */
-  created_by?: string | null;
-  type?: ProjectType | null;
-  /**
    * Labels
    */
   labels?: Array<string> | null;
@@ -21767,36 +23916,6 @@ export type ProjectUpdatedAtSort = {
    * Sort Type
    */
   sort_type?: 'column';
-};
-
-/**
- * PromptDatasetDB
- */
-export type PromptDatasetDb = {
-  /**
-   * Id
-   */
-  id: string;
-  /**
-   * Dataset Id
-   */
-  dataset_id: string;
-  /**
-   * File Name
-   */
-  file_name?: string | null;
-  /**
-   * Message
-   */
-  message?: string | null;
-  /**
-   * Num Rows
-   */
-  num_rows?: number | null;
-  /**
-   * Rows
-   */
-  rows?: number | null;
 };
 
 /**
@@ -21882,63 +24001,6 @@ export type PromptInjectionTemplate = {
   response_schema?: {
     [key: string]: unknown;
   } | null;
-};
-
-/**
- * PromptOptimizationConfiguration
- *
- * Configuration for prompt optimization.
- */
-export type PromptOptimizationConfiguration = {
-  /**
-   * Prompt
-   */
-  prompt: string;
-  /**
-   * Evaluation Criteria
-   */
-  evaluation_criteria: string;
-  /**
-   * Task Description
-   */
-  task_description: string;
-  /**
-   * Includes Target
-   */
-  includes_target: boolean;
-  /**
-   * Num Rows
-   */
-  num_rows: number;
-  /**
-   * Iterations
-   */
-  iterations: number;
-  /**
-   * Max Tokens
-   */
-  max_tokens: number;
-  /**
-   * Temperature
-   */
-  temperature: number;
-  /**
-   * Generation Model Alias
-   */
-  generation_model_alias: string;
-  /**
-   * Evaluation Model Alias
-   */
-  evaluation_model_alias: string;
-  integration_name?: LlmIntegration;
-  /**
-   * Reasoning Effort
-   */
-  reasoning_effort?: string | null;
-  /**
-   * Verbosity
-   */
-  verbosity?: string | null;
 };
 
 /**
@@ -22392,7 +24454,8 @@ export const RecommendedModelPurpose = {
   CUSTOM_METRIC_JUDGE: 'custom_metric_judge',
   CUSTOM_METRIC_AUTOGEN: 'custom_metric_autogen',
   AUTOTUNE: 'autotune',
-  SIGNALS: 'signals'
+  SIGNALS: 'signals',
+  AI_ASSISTANT: 'ai_assistant'
 } as const;
 
 /**
@@ -22400,6 +24463,28 @@ export const RecommendedModelPurpose = {
  */
 export type RecommendedModelPurpose =
   (typeof RecommendedModelPurpose)[keyof typeof RecommendedModelPurpose];
+
+/**
+ * RecommendedModelsResponse
+ */
+export type RecommendedModelsResponse = {
+  /**
+   * Supported
+   */
+  supported: {
+    [key in RecommendedModelPurpose]?: {
+      [key: string]: Array<string>;
+    };
+  };
+  /**
+   * Available
+   */
+  available: {
+    [key in RecommendedModelPurpose]?: {
+      [key: string]: Array<string>;
+    };
+  };
+};
 
 /**
  * RecomputeLogRecordsMetricsRequest
@@ -22480,67 +24565,17 @@ export type RecomputeLogRecordsMetricsRequest = {
    */
   include_counts?: boolean;
   /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
+  /**
    * Scorer Ids
    *
    * List of scorer IDs for which metrics should be recomputed.
    */
   scorer_ids: Array<string>;
-};
-
-/**
- * RecomputeSettingsLogStream
- */
-export type RecomputeSettingsLogStream = {
-  /**
-   * Mode
-   */
-  mode?: 'log_stream_filters';
-  /**
-   * Run Id
-   */
-  run_id: string;
-  /**
-   * Filters
-   */
-  filters: Array<unknown>;
-};
-
-/**
- * RecomputeSettingsObserve
- */
-export type RecomputeSettingsObserve = {
-  /**
-   * Mode
-   */
-  mode?: 'observe_filters';
-  /**
-   * Filters
-   */
-  filters: Array<unknown>;
-};
-
-/**
- * RecomputeSettingsProject
- */
-export type RecomputeSettingsProject = {
-  /**
-   * Mode
-   */
-  mode?: 'project';
-};
-
-/**
- * RecomputeSettingsRuns
- */
-export type RecomputeSettingsRuns = {
-  /**
-   * Mode
-   */
-  mode?: 'runs';
-  /**
-   * Run Ids
-   */
-  run_ids: Array<string>;
 };
 
 /**
@@ -22606,6 +24641,40 @@ export type RegisteredScorerTaskResultResponse = {
    * Result
    */
   result?: ValidateRegisteredScorerResult | string | null;
+};
+
+/**
+ * RemoveRecordsFromQueueRequest
+ *
+ * Request to remove records from an annotation queue.
+ */
+export type RemoveRecordsFromQueueRequest = {
+  /**
+   * Record Selector
+   *
+   * Selector to specify which records to remove (either by record IDs or filter tree)
+   */
+  record_selector:
+    | ({
+        type: 'record_ids';
+      } & AnnotationQueueRecordsByRecordIds)
+    | ({
+        type: 'filter_tree';
+      } & AnnotationQueueRecordsByFilterTree);
+};
+
+/**
+ * RemoveRecordsFromQueueResponse
+ *
+ * Response after removing records from an annotation queue.
+ */
+export type RemoveRecordsFromQueueResponse = {
+  /**
+   * Num Records Removed
+   *
+   * Number of records removed from the queue
+   */
+  num_records_removed: number;
 };
 
 /**
@@ -23146,11 +25215,11 @@ export type RunDb = {
   /**
    * Logged Splits
    */
-  logged_splits: Array<string>;
+  logged_splits?: Array<string>;
   /**
    * Logged Inference Names
    */
-  logged_inference_names: Array<string>;
+  logged_inference_names?: Array<string>;
 };
 
 /**
@@ -23211,6 +25280,14 @@ export type RunDbThin = {
    */
   example_content_id?: string | null;
   creator: UserDb;
+  /**
+   * Logged Splits
+   */
+  logged_splits?: Array<string>;
+  /**
+   * Logged Inference Names
+   */
+  logged_inference_names?: Array<string>;
 };
 
 /**
@@ -23441,18 +25518,38 @@ export type ScoreBucket = {
 };
 
 /**
- * ScoreRating
+ * ScoreConstraints
  */
-export type ScoreRating = {
+export type ScoreConstraints = {
   /**
-   * Feedback Type
+   * Annotation Type
    */
-  feedback_type?: 'score';
+  annotation_type: 'score';
   /**
-   * Value
+   * Min
    */
-  value: number;
+  min: number;
+  /**
+   * Max
+   */
+  max: number;
 };
+
+/**
+ * ScorerAction
+ */
+export const ScorerAction = {
+  UPDATE: 'update',
+  DELETE: 'delete',
+  SHARE: 'share',
+  EXPORT: 'export',
+  AUTOTUNE_APPLY: 'autotune_apply'
+} as const;
+
+/**
+ * ScorerAction
+ */
+export type ScorerAction = (typeof ScorerAction)[keyof typeof ScorerAction];
 
 /**
  * ScorerConfig
@@ -23694,6 +25791,16 @@ export type ScorerExcludeSlmScorersFilter = {
 };
 
 /**
+ * ScorerHealthScoresResponse
+ */
+export type ScorerHealthScoresResponse = {
+  /**
+   * Scores
+   */
+  scores: Array<ScorerVersionHealthScoreEntry>;
+};
+
+/**
  * ScorerIDFilter
  */
 export type ScorerIdFilter = {
@@ -23709,6 +25816,27 @@ export type ScorerIdFilter = {
    * Value
    */
   value: string | Array<string | string>;
+};
+
+/**
+ * ScorerIsGlobalFilter
+ *
+ * Filters on the access scope tier: is_global=True (global metrics) vs
+ * is_global=False (project-scoped metrics).
+ */
+export type ScorerIsGlobalFilter = {
+  /**
+   * Name
+   */
+  name?: 'is_global';
+  /**
+   * Operator
+   */
+  operator?: 'eq' | 'ne';
+  /**
+   * Value
+   */
+  value: boolean;
 };
 
 /**
@@ -23753,6 +25881,35 @@ export type ScorerModelTypeFilter = {
    * Value
    */
   value: string | Array<string>;
+};
+
+/**
+ * ScorerMultimodalCapabilitiesFilter
+ *
+ * Filter scorers by multimodal_capabilities.
+ *
+ * Use operator ``contains`` to match scorers that support a single capability
+ * (e.g. ``{"name": "multimodal_capabilities", "operator": "contains", "value": "vision"}``).
+ * Use ``one_of`` to match scorers whose capabilities include ANY of the given
+ * values (e.g. ``{"name": "multimodal_capabilities", "operator": "one_of", "value": ["vision", "audio"]}``).
+ */
+export type ScorerMultimodalCapabilitiesFilter = {
+  /**
+   * Name
+   */
+  name?: 'multimodal_capabilities';
+  /**
+   * Operator
+   */
+  operator: 'eq' | 'contains' | 'one_of' | 'not_in';
+  /**
+   * Value
+   */
+  value: string | Array<string>;
+  /**
+   * Case Sensitive
+   */
+  case_sensitive?: boolean;
 };
 
 /**
@@ -23803,6 +25960,10 @@ export type ScorerResponse = {
    * Id
    */
   id: string;
+  /**
+   * Permissions
+   */
+  permissions?: Array<Permission>;
   /**
    * Name
    */
@@ -23895,10 +26056,60 @@ export type ScorerResponse = {
         type: 'multi_label';
       } & MetricColorPickerMultiLabel)
     | null;
+  color_threshold_config?: MetricColorPickerNumeric | null;
   /**
    * Metric Name
    */
   metric_name?: string | null;
+  /**
+   * Is Global
+   */
+  is_global?: boolean;
+  /**
+   * Scope Projects
+   */
+  scope_projects?: Array<ScorerScopeProjectRef>;
+};
+
+/**
+ * ScorerScopeProjectRef
+ *
+ * Minimal project representation (id and name only) for scorer access scope.
+ */
+export type ScorerScopeProjectRef = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Name
+   */
+  name: string;
+};
+
+/**
+ * ScorerScopeProjectsFilter
+ *
+ * Matches scorers whose access scope (scorer_projects) includes ANY of the
+ * given project ids. include_global=True additionally matches global scorers
+ * ("metrics available in project X").
+ *
+ * Distinct from the run-usage "projects used" relation (scorers_to_projects /
+ * GET /scorers/{scorer_id}/projects), which tracks where a scorer has run.
+ */
+export type ScorerScopeProjectsFilter = {
+  /**
+   * Name
+   */
+  name?: 'scope_projects';
+  /**
+   * Project Ids
+   */
+  project_ids: Array<string>;
+  /**
+   * Include Global
+   */
+  include_global?: boolean;
 };
 
 /**
@@ -24007,6 +26218,64 @@ export type ScorerUpdatedAtFilter = {
 };
 
 /**
+ * ScorerUpdatedAtSort
+ */
+export type ScorerUpdatedAtSort = {
+  /**
+   * Name
+   */
+  name?: 'updated_at';
+  /**
+   * Ascending
+   */
+  ascending?: boolean;
+  /**
+   * Sort Type
+   */
+  sort_type?: 'column';
+};
+
+/**
+ * ScorerVersionHealthScoreEntry
+ */
+export type ScorerVersionHealthScoreEntry = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Scorer Version Id
+   */
+  scorer_version_id: string;
+  /**
+   * Scorer Version Number
+   */
+  scorer_version_number: number;
+  /**
+   * Dataset Id
+   */
+  dataset_id: string;
+  /**
+   * Health Score Type
+   */
+  health_score_type: string;
+  /**
+   * Score
+   */
+  score: number;
+  /**
+   * Secondary
+   */
+  secondary: {
+    [key: string]: number | null;
+  } | null;
+  /**
+   * Computed At
+   */
+  computed_at: string;
+};
+
+/**
  * ScorersConfiguration
  *
  * Configure which scorers to enable for a particular prompt run.
@@ -24095,6 +26364,10 @@ export type ScorersConfiguration = {
    * Chunk Relevance Luna
    */
   chunk_relevance_luna?: boolean;
+  /**
+   * Completeness Luna
+   */
+  completeness_luna?: boolean;
   /**
    * Completeness Nli
    */
@@ -24239,6 +26512,12 @@ export type SegmentFilter = {
    * Whether to sample only on LLM scorers.
    */
   llm_scorers?: boolean;
+  /**
+   * Multimodal Scorers
+   *
+   * Whether to sample only on multimodal scorers.
+   */
+  multimodal_scorers?: boolean;
 };
 
 /**
@@ -24599,17 +26878,13 @@ export type StarAggregate = {
 };
 
 /**
- * StarRating
+ * StarConstraints
  */
-export type StarRating = {
+export type StarConstraints = {
   /**
-   * Feedback Type
+   * Annotation Type
    */
-  feedback_type?: 'star';
-  /**
-   * Value
-   */
-  value: number;
+  annotation_type: 'star';
 };
 
 /**
@@ -24639,6 +26914,74 @@ export type StringData = {
    * Input Strings
    */
   input_strings: Array<string>;
+};
+
+/**
+ * StubTraceRecord
+ *
+ * Placeholder for a trace referenced by spans but not yet ingested.
+ *
+ * Synthesized when one or more spans declare trace_id=X but no
+ * TraceRecord with that id exists in storage. Holds the orphan spans
+ * together so the client can render them under a single root.
+ *
+ * Extends ExtendedRecordWithChildSpans so isinstance checks work
+ * uniformly for both real and stub traces.
+ */
+export type StubTraceRecord = {
+  /**
+   * Spans
+   */
+  spans?: Array<
+    | ({
+        type: 'agent';
+      } & ExtendedAgentSpanRecordWithChildren)
+    | ({
+        type: 'workflow';
+      } & ExtendedWorkflowSpanRecordWithChildren)
+    | ({
+        type: 'llm';
+      } & ExtendedLlmSpanRecord)
+    | ({
+        type: 'tool';
+      } & ExtendedToolSpanRecordWithChildren)
+    | ({
+        type: 'retriever';
+      } & ExtendedRetrieverSpanRecordWithChildren)
+    | ({
+        type: 'control';
+      } & ExtendedControlSpanRecord)
+  >;
+  /**
+   * Type
+   *
+   * Discriminator; identifies this as a synthesized placeholder, not a real trace.
+   */
+  type?: 'stub_trace';
+  /**
+   * Id
+   *
+   * ID of the missing trace, taken from span trace_id references.
+   */
+  id: string;
+  /**
+   * Project Id
+   *
+   * Project ID inferred from child spans, if all agree; otherwise None.
+   */
+  project_id?: string | null;
+  /**
+   * Run Id
+   *
+   * Run ID inferred from child spans, if all agree; otherwise None.
+   */
+  run_id?: string | null;
+  /**
+   * Session Id
+   *
+   * Session ID inferred from child spans, if all agree; otherwise None.
+   */
+  session_id?: string | null;
 };
 
 /**
@@ -24751,6 +27094,12 @@ export type SyntheticDatasetExtensionResponse = {
  */
 export type SystemMetricInfo = {
   /**
+   * Aggregation Type
+   *
+   * Discriminator: numeric metrics aggregated via stats/histogram
+   */
+  aggregation_type?: 'numeric';
+  /**
    * Name
    *
    * Unique identifier for the metric
@@ -24847,17 +27196,21 @@ export type TagsAggregate = {
 };
 
 /**
- * TagsRating
+ * TagsConstraints
  */
-export type TagsRating = {
+export type TagsConstraints = {
   /**
-   * Feedback Type
+   * Annotation Type
    */
-  feedback_type?: 'tags';
+  annotation_type: 'tags';
   /**
-   * Value
+   * Tags
    */
-  value: Array<string>;
+  tags: Array<string>;
+  /**
+   * Allow Other
+   */
+  allow_other?: boolean;
 };
 
 /**
@@ -24898,21 +27251,10 @@ export type TaskResultStatus =
  * We store these as ints instead of strings because we will be looking this up in the database frequently.
  */
 export const TaskType = {
-  0: 0,
-  1: 1,
-  2: 2,
-  3: 3,
-  4: 4,
-  5: 5,
-  6: 6,
   7: 7,
-  8: 8,
   9: 9,
-  10: 10,
-  11: 11,
   12: 12,
   13: 13,
-  14: 14,
   15: 15,
   16: 16,
   17: 17,
@@ -24968,6 +27310,16 @@ export type TextAggregate = {
 };
 
 /**
+ * TextConstraints
+ */
+export type TextConstraints = {
+  /**
+   * Annotation Type
+   */
+  annotation_type: 'text';
+};
+
+/**
  * TextContentPart
  *
  * A text segment within a message.
@@ -24981,20 +27333,6 @@ export type TextContentPart = {
    * Text
    */
   text: string;
-};
-
-/**
- * TextRating
- */
-export type TextRating = {
-  /**
-   * Feedback Type
-   */
-  feedback_type?: 'text';
-  /**
-   * Value
-   */
-  value: string;
 };
 
 /**
@@ -25625,6 +27963,80 @@ export type TraceMetadata = {
 };
 
 /**
+ * TreeChoiceAggregate
+ */
+export type TreeChoiceAggregate = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'tree_choice';
+  /**
+   * Counts
+   */
+  counts: {
+    [key: string]: number;
+  };
+  /**
+   * Unrated Count
+   */
+  unrated_count: number;
+};
+
+/**
+ * TreeChoiceConstraints
+ */
+export type TreeChoiceConstraints = {
+  /**
+   * Annotation Type
+   */
+  annotation_type: 'tree_choice';
+  /**
+   * Choices Tree
+   */
+  choices_tree?: Array<TreeChoiceNode> | null;
+  /**
+   * Choices Tree Yaml
+   */
+  choices_tree_yaml?: string | null;
+};
+
+/**
+ * TreeChoiceDBConstraints
+ */
+export type TreeChoiceDbConstraints = {
+  /**
+   * Annotation Type
+   */
+  annotation_type: 'tree_choice';
+  /**
+   * Choices Tree
+   */
+  choices_tree: Array<TreeChoiceNode>;
+  /**
+   * Choices Tree Yaml
+   */
+  choices_tree_yaml: string;
+};
+
+/**
+ * TreeChoiceNode
+ */
+export type TreeChoiceNode = {
+  /**
+   * Label
+   */
+  label: string;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Children
+   */
+  children?: Array<TreeChoiceNode>;
+};
+
+/**
  * UncertaintyScorer
  */
 export type UncertaintyScorer = {
@@ -25648,6 +28060,17 @@ export type UncertaintyScorer = {
         name: 'modality';
       } & ModalityFilter)
   > | null;
+};
+
+/**
+ * UpdateAnnotationQueueRequest
+ */
+export type UpdateAnnotationQueueRequest = {
+  name?: Name | null;
+  /**
+   * Description
+   */
+  description?: string | null;
 };
 
 /**
@@ -25684,6 +28107,12 @@ export type UpdateDatasetContentRequest = {
     | ({
         edit_type: 'copy_record_data';
       } & DatasetCopyRecordData)
+    | ({
+        edit_type: 'remove_column';
+      } & DatasetRemoveColumn)
+    | ({
+        edit_type: 'rename_column';
+      } & DatasetRenameColumn)
   >;
 };
 
@@ -25783,6 +28212,25 @@ export type UpdateScorerRequest = {
 };
 
 /**
+ * UpdateScorerScopeRequest
+ *
+ * Full-replace access scope update for a scorer (Share / manage visibility).
+ *
+ * is_global=True promotes the scorer to global (org admin only; project_ids
+ * must be empty). is_global=False scopes the scorer to exactly project_ids.
+ */
+export type UpdateScorerScopeRequest = {
+  /**
+   * Is Global
+   */
+  is_global: boolean;
+  /**
+   * Project Ids
+   */
+  project_ids?: Array<string>;
+};
+
+/**
  * UpsertDatasetContentRequest
  */
 export type UpsertDatasetContentRequest = {
@@ -25817,6 +28265,55 @@ export const UserAction = {
  * UserAction
  */
 export type UserAction = (typeof UserAction)[keyof typeof UserAction];
+
+/**
+ * UserAnnotationQueueCollaborator
+ *
+ * User collaborator for an annotation queue, extends shared UserCollaborator with annotation_queue_id.
+ */
+export type UserAnnotationQueueCollaborator = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Permissions
+   */
+  permissions?: Array<Permission>;
+  role: CollaboratorRole;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * User Id
+   */
+  user_id: string;
+  /**
+   * First Name
+   */
+  first_name: string | null;
+  /**
+   * Last Name
+   */
+  last_name: string | null;
+  /**
+   * Email
+   */
+  email: string;
+  /**
+   * Annotation Queue Id
+   */
+  annotation_queue_id: string;
+  /**
+   * Track Progress
+   */
+  track_progress?: boolean;
+  /**
+   * Progress
+   */
+  progress?: number | null;
+};
 
 /**
  * UserCollaborator
@@ -26028,6 +28525,19 @@ export type ValidateLlmScorerDatasetRequest = {
   chain_poll_template: ChainPollTemplate;
   scorer_configuration: GeneratedScorerConfiguration;
   /**
+   * Normalized Input
+   *
+   * Optional multimodal content parts. When set, replaces the text-only query/response formatting in the validation job so that file content is passed through to the LLM.
+   */
+  normalized_input?: Array<
+    | ({
+        type: 'text';
+      } & TextContentPart)
+    | ({
+        type: 'file';
+      } & FileContentPart)
+  > | null;
+  /**
    * User Prompt
    */
   user_prompt: string;
@@ -26154,6 +28664,12 @@ export type ValidateLlmScorerLogRecordRequest = {
    */
   include_counts?: boolean;
   /**
+   * Include Code Metric Metadata
+   *
+   * If True, include per-row scorer metadata (the dict returned alongside the score by code-based scorers via the (score, metadata) tuple-return contract) on each MetricSuccess in the response. Off by default to keep payloads small for callers that don't need it.
+   */
+  include_code_metric_metadata?: boolean;
+  /**
    * Query
    */
   query: string;
@@ -26163,6 +28679,19 @@ export type ValidateLlmScorerLogRecordRequest = {
   response: string;
   chain_poll_template: ChainPollTemplate;
   scorer_configuration: GeneratedScorerConfiguration;
+  /**
+   * Normalized Input
+   *
+   * Optional multimodal content parts. When set, replaces the text-only query/response formatting in the validation job so that file content is passed through to the LLM.
+   */
+  normalized_input?: Array<
+    | ({
+        type: 'text';
+      } & TextContentPart)
+    | ({
+        type: 'file';
+      } & FileContentPart)
+  > | null;
   /**
    * User Prompt
    */
@@ -26228,6 +28757,16 @@ export type ValidationError = {
    * Error Type
    */
   type: string;
+  /**
+   * Input
+   */
+  input?: unknown;
+  /**
+   * Context
+   */
+  ctx?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
@@ -26242,6 +28781,10 @@ export type VegasGatewayIntegration = {
    * Name
    */
   name?: 'vegas_gateway';
+  /**
+   * Provider
+   */
+  provider?: 'vegas_gateway';
   /**
    * Extra
    */
@@ -26325,6 +28868,10 @@ export type VertexAiIntegration = {
    * Name
    */
   name?: 'vertex_ai';
+  /**
+   * Provider
+   */
+  provider?: 'vertex_ai';
   /**
    * Extra
    */
@@ -26615,6 +29162,30 @@ export type WorkflowSpan = {
 };
 
 /**
+ * WriteHealthScoreRequest
+ */
+export type WriteHealthScoreRequest = {
+  /**
+   * Dataset Id
+   */
+  dataset_id: string;
+  /**
+   * Health Score Type
+   */
+  health_score_type: string;
+  /**
+   * Score
+   */
+  score: number;
+  /**
+   * Secondary
+   */
+  secondary?: {
+    [key: string]: number | null;
+  } | null;
+};
+
+/**
  * WriterIntegration
  */
 export type WriterIntegration = {
@@ -26630,6 +29201,10 @@ export type WriterIntegration = {
    * Name
    */
   name?: 'writer';
+  /**
+   * Provider
+   */
+  provider?: 'writer';
   /**
    * Extra
    */
@@ -26650,6 +29225,104 @@ export type WriterIntegrationCreate = {
    * Token
    */
   token: string;
+};
+
+/**
+ * ChoiceRating
+ */
+export type ApiSchemasAnnotationChoiceRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'choice';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * LikeDislikeRating
+ */
+export type ApiSchemasAnnotationLikeDislikeRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'like_dislike';
+  /**
+   * Value
+   */
+  value: boolean;
+};
+
+/**
+ * ScoreRating
+ */
+export type ApiSchemasAnnotationScoreRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'score';
+  /**
+   * Value
+   */
+  value: number;
+};
+
+/**
+ * StarRating
+ */
+export type ApiSchemasAnnotationStarRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'star';
+  /**
+   * Value
+   */
+  value: number;
+};
+
+/**
+ * TagsRating
+ */
+export type ApiSchemasAnnotationTagsRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'tags';
+  /**
+   * Value
+   */
+  value: Array<string>;
+};
+
+/**
+ * TextRating
+ */
+export type ApiSchemasAnnotationTextRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'text';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * TreeChoiceRating
+ */
+export type ApiSchemasAnnotationTreeChoiceRating = {
+  /**
+   * Annotation Type
+   */
+  annotation_type?: 'tree_choice';
+  /**
+   * Value
+   */
+  value: string;
 };
 
 /**
@@ -26892,6 +29565,8 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
   COMPLETENESS: 'completeness',
   CONTEXT_ADHERENCE: 'context_adherence',
   CONTEXT_ADHERENCE_LUNA: 'context_adherence_luna',
+  CONTEXT_ADHERENCE_VISION: 'context_adherence_vision',
+  CONTEXT_ADHERENCE_AUDIO: 'context_adherence_audio',
   CONTEXT_RELEVANCE: 'context_relevance',
   CONTEXT_RELEVANCE_LUNA: 'context_relevance_luna',
   CONVERSATION_QUALITY: 'conversation_quality',
@@ -26907,6 +29582,8 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
   INPUT_TONE_GPT: 'input_tone_gpt',
   INPUT_TOXICITY: 'input_toxicity',
   INPUT_TOXICITY_LUNA: 'input_toxicity_luna',
+  INPUT_TOXICITY_VISION: 'input_toxicity_vision',
+  INPUT_TOXICITY_AUDIO: 'input_toxicity_audio',
   INSTRUCTION_ADHERENCE: 'instruction_adherence',
   OUTPUT_PII: 'output_pii',
   OUTPUT_PII_GPT: 'output_pii_gpt',
@@ -26916,6 +29593,8 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
   OUTPUT_TONE_GPT: 'output_tone_gpt',
   OUTPUT_TOXICITY: 'output_toxicity',
   OUTPUT_TOXICITY_LUNA: 'output_toxicity_luna',
+  OUTPUT_TOXICITY_VISION: 'output_toxicity_vision',
+  OUTPUT_TOXICITY_AUDIO: 'output_toxicity_audio',
   PROMPT_INJECTION: 'prompt_injection',
   PROMPT_INJECTION_LUNA: 'prompt_injection_luna',
   PROMPT_PERPLEXITY: 'prompt_perplexity',
@@ -26939,6 +29618,104 @@ export const GalileoCoreSchemasSharedScorersScorerNameScorerName = {
  */
 export type GalileoCoreSchemasSharedScorersScorerNameScorerName =
   (typeof GalileoCoreSchemasSharedScorersScorerNameScorerName)[keyof typeof GalileoCoreSchemasSharedScorersScorerNameScorerName];
+
+/**
+ * ChoiceRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackChoiceRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'choice';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * LikeDislikeRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackLikeDislikeRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'like_dislike';
+  /**
+   * Value
+   */
+  value: boolean;
+};
+
+/**
+ * ScoreRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackScoreRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'score';
+  /**
+   * Value
+   */
+  value: number;
+};
+
+/**
+ * StarRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackStarRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'star';
+  /**
+   * Value
+   */
+  value: number;
+};
+
+/**
+ * TagsRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackTagsRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'tags';
+  /**
+   * Value
+   */
+  value: Array<string>;
+};
+
+/**
+ * TextRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackTextRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'text';
+  /**
+   * Value
+   */
+  value: string;
+};
+
+/**
+ * TreeChoiceRating
+ */
+export type LibsPythonSchemasLogRecordsFeedbackTreeChoiceRating = {
+  /**
+   * Feedback Type
+   */
+  feedback_type?: 'tree_choice';
+  /**
+   * Value
+   */
+  value: string;
+};
 
 /**
  * ModelProperties
@@ -26990,6 +29767,7 @@ export const PromptgalileoSchemasScorerNameScorerName = {
   _CONTEXT_RELEVANCE: '_context_relevance',
   _CONTEXT_RELEVANCE_LUNA: '_context_relevance_luna',
   _CHUNK_RELEVANCE_LUNA: '_chunk_relevance_luna',
+  _COMPLETENESS_LUNA: '_completeness_luna',
   _CHUNK_ATTRIBUTION_UTILIZATION_GPT: '_chunk_attribution_utilization_gpt',
   _FACTUALITY: '_factuality',
   _GROUNDEDNESS: '_groundedness',
@@ -27128,88 +29906,6 @@ export type LoginApiKeyLoginApiKeyPostResponses = {
 
 export type LoginApiKeyLoginApiKeyPostResponse =
   LoginApiKeyLoginApiKeyPostResponses[keyof LoginApiKeyLoginApiKeyPostResponses];
-
-export type ListPromptDatasetsProjectsProjectIdPromptDatasetsGetData = {
-  body?: never;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: {
-    /**
-     * Starting Token
-     */
-    starting_token?: number;
-    /**
-     * Limit
-     */
-    limit?: number;
-  };
-  url: '/projects/{project_id}/prompt_datasets';
-};
-
-export type ListPromptDatasetsProjectsProjectIdPromptDatasetsGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ListPromptDatasetsProjectsProjectIdPromptDatasetsGetError =
-  ListPromptDatasetsProjectsProjectIdPromptDatasetsGetErrors[keyof ListPromptDatasetsProjectsProjectIdPromptDatasetsGetErrors];
-
-export type ListPromptDatasetsProjectsProjectIdPromptDatasetsGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: ListPromptDatasetResponse;
-};
-
-export type ListPromptDatasetsProjectsProjectIdPromptDatasetsGetResponse =
-  ListPromptDatasetsProjectsProjectIdPromptDatasetsGetResponses[keyof ListPromptDatasetsProjectsProjectIdPromptDatasetsGetResponses];
-
-export type UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostData =
-  {
-    body: BodyUploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPost;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-    };
-    query?: {
-      format?: DatasetFormat;
-      /**
-       * Hidden
-       */
-      hidden?: boolean;
-    };
-    url: '/projects/{project_id}/prompt_datasets';
-  };
-
-export type UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostError =
-  UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostErrors[keyof UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostErrors];
-
-export type UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: PromptDatasetDb;
-  };
-
-export type UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostResponse =
-  UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostResponses[keyof UploadPromptEvaluationDatasetProjectsProjectIdPromptDatasetsPostResponses];
 
 export type ListDatasetsDatasetsGetData = {
   body?: never;
@@ -27447,131 +30143,6 @@ export type QueryDatasetsDatasetsQueryPostResponses = {
 
 export type QueryDatasetsDatasetsQueryPostResponse =
   QueryDatasetsDatasetsQueryPostResponses[keyof QueryDatasetsDatasetsQueryPostResponses];
-
-export type DeletePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdDeleteData =
-  {
-    body?: never;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-      /**
-       * Dataset Id
-       */
-      dataset_id: string;
-    };
-    query?: never;
-    url: '/projects/{project_id}/prompt_datasets/{dataset_id}';
-  };
-
-export type DeletePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdDeleteErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type DeletePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdDeleteError =
-  DeletePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdDeleteErrors[keyof DeletePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdDeleteErrors];
-
-export type DeletePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdDeleteResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-  };
-
-export type DownloadPromptDatasetProjectsProjectIdPromptDatasetsDatasetIdGetData =
-  {
-    body?: never;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-      /**
-       * Dataset Id
-       */
-      dataset_id: string;
-    };
-    query?: never;
-    url: '/projects/{project_id}/prompt_datasets/{dataset_id}';
-  };
-
-export type DownloadPromptDatasetProjectsProjectIdPromptDatasetsDatasetIdGetErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type DownloadPromptDatasetProjectsProjectIdPromptDatasetsDatasetIdGetError =
-  DownloadPromptDatasetProjectsProjectIdPromptDatasetsDatasetIdGetErrors[keyof DownloadPromptDatasetProjectsProjectIdPromptDatasetsDatasetIdGetErrors];
-
-export type DownloadPromptDatasetProjectsProjectIdPromptDatasetsDatasetIdGetResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-  };
-
-export type UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutData =
-  {
-    body?: BodyUpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPut;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-      /**
-       * Dataset Id
-       */
-      dataset_id: string;
-    };
-    query?: {
-      /**
-       * File Name
-       */
-      file_name?: string | null;
-      /**
-       * Num Rows
-       */
-      num_rows?: number | null;
-      format?: DatasetFormat;
-      /**
-       * Hidden
-       */
-      hidden?: boolean;
-    };
-    url: '/projects/{project_id}/prompt_datasets/{dataset_id}';
-  };
-
-export type UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutError =
-  UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutErrors[keyof UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutErrors];
-
-export type UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: PromptDatasetDb;
-  };
-
-export type UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutResponse =
-  UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutResponses[keyof UpdatePromptDatasetProjectsProjectIdPromptDatasetsDatasetIdPutResponses];
 
 export type GetDatasetContentDatasetsDatasetIdContentGetData = {
   body?: never;
@@ -28526,35 +31097,6 @@ export type CreateProjectProjectsPostResponses = {
 
 export type CreateProjectProjectsPostResponse =
   CreateProjectProjectsPostResponses[keyof CreateProjectProjectsPostResponses];
-
-export type UploadFileProjectsProjectIdUploadFilePostData = {
-  body: BodyUploadFileProjectsProjectIdUploadFilePost;
-  path: {
-    /**
-     * Project Id
-     */
-    project_id: string;
-  };
-  query?: never;
-  url: '/projects/{project_id}/upload_file';
-};
-
-export type UploadFileProjectsProjectIdUploadFilePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type UploadFileProjectsProjectIdUploadFilePostError =
-  UploadFileProjectsProjectIdUploadFilePostErrors[keyof UploadFileProjectsProjectIdUploadFilePostErrors];
-
-export type UploadFileProjectsProjectIdUploadFilePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: unknown;
-};
 
 export type GetCollaboratorRolesCollaboratorRolesGetData = {
   body?: never;
@@ -29862,47 +32404,6 @@ export type GetJobsForProjectRunProjectsProjectIdRunsRunIdJobsGetResponses = {
 export type GetJobsForProjectRunProjectsProjectIdRunsRunIdJobsGetResponse =
   GetJobsForProjectRunProjectsProjectIdRunsRunIdJobsGetResponses[keyof GetJobsForProjectRunProjectsProjectIdRunsRunIdJobsGetResponses];
 
-export type GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetData =
-  {
-    body?: never;
-    path: {
-      /**
-       * Project Id
-       */
-      project_id: string;
-      /**
-       * Run Id
-       */
-      run_id: string;
-    };
-    query?: never;
-    url: '/projects/{project_id}/runs/{run_id}/jobs/latest';
-  };
-
-export type GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetError =
-  GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetErrors[keyof GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetErrors];
-
-export type GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetResponses =
-  {
-    /**
-     * Response Get Latest Job For Project Run Projects  Project Id  Runs  Run Id  Jobs Latest Get
-     *
-     * Successful Response
-     */
-    200: JobDb | null;
-  };
-
-export type GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetResponse =
-  GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetResponses[keyof GetLatestJobForProjectRunProjectsProjectIdRunsRunIdJobsLatestGetResponses];
-
 export type GetSettingsProjectsProjectIdRunsRunIdScorerSettingsGetData = {
   body?: never;
   path: {
@@ -31084,264 +33585,6 @@ export type InvokeProtectInvokePostResponses = {
 export type InvokeProtectInvokePostResponse =
   InvokeProtectInvokePostResponses[keyof InvokeProtectInvokePostResponses];
 
-export type DeleteScorerScorersScorerIdDeleteData = {
-  body?: never;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: never;
-  url: '/scorers/{scorer_id}';
-};
-
-export type DeleteScorerScorersScorerIdDeleteErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type DeleteScorerScorersScorerIdDeleteError =
-  DeleteScorerScorersScorerIdDeleteErrors[keyof DeleteScorerScorersScorerIdDeleteErrors];
-
-export type DeleteScorerScorersScorerIdDeleteResponses = {
-  /**
-   * Successful Response
-   */
-  200: DeleteScorerResponse;
-};
-
-export type DeleteScorerScorersScorerIdDeleteResponse =
-  DeleteScorerScorersScorerIdDeleteResponses[keyof DeleteScorerScorersScorerIdDeleteResponses];
-
-export type GetScorerScorersScorerIdGetData = {
-  body?: never;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: never;
-  url: '/scorers/{scorer_id}';
-};
-
-export type GetScorerScorersScorerIdGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetScorerScorersScorerIdGetError =
-  GetScorerScorersScorerIdGetErrors[keyof GetScorerScorersScorerIdGetErrors];
-
-export type GetScorerScorersScorerIdGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: ScorerResponse;
-};
-
-export type GetScorerScorersScorerIdGetResponse =
-  GetScorerScorersScorerIdGetResponses[keyof GetScorerScorersScorerIdGetResponses];
-
-export type UpdateScorersScorerIdPatchData = {
-  body: UpdateScorerRequest;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: never;
-  url: '/scorers/{scorer_id}';
-};
-
-export type UpdateScorersScorerIdPatchErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type UpdateScorersScorerIdPatchError =
-  UpdateScorersScorerIdPatchErrors[keyof UpdateScorersScorerIdPatchErrors];
-
-export type UpdateScorersScorerIdPatchResponses = {
-  /**
-   * Successful Response
-   */
-  200: ScorerResponse;
-};
-
-export type UpdateScorersScorerIdPatchResponse =
-  UpdateScorersScorerIdPatchResponses[keyof UpdateScorersScorerIdPatchResponses];
-
-export type ValidateCodeScorerScorersCodeValidatePostData = {
-  body: BodyValidateCodeScorerScorersCodeValidatePost;
-  path?: never;
-  query?: never;
-  url: '/scorers/code/validate';
-};
-
-export type ValidateCodeScorerScorersCodeValidatePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ValidateCodeScorerScorersCodeValidatePostError =
-  ValidateCodeScorerScorersCodeValidatePostErrors[keyof ValidateCodeScorerScorersCodeValidatePostErrors];
-
-export type ValidateCodeScorerScorersCodeValidatePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: ValidateCodeScorerResponse;
-};
-
-export type ValidateCodeScorerScorersCodeValidatePostResponse =
-  ValidateCodeScorerScorersCodeValidatePostResponses[keyof ValidateCodeScorerScorersCodeValidatePostResponses];
-
-export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetData = {
-  body?: never;
-  path: {
-    /**
-     * Task Id
-     */
-    task_id: string;
-  };
-  query?: never;
-  url: '/scorers/code/validate/{task_id}';
-};
-
-export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetError =
-  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors];
-
-export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: RegisteredScorerTaskResultResponse;
-  };
-
-export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponse =
-  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses];
-
-export type GetScorerVersionCodeScorersScorerIdVersionCodeGetData = {
-  body?: never;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: {
-    /**
-     * Version
-     *
-     * version number, defaults to latest version
-     */
-    version?: number | null;
-  };
-  url: '/scorers/{scorer_id}/version/code';
-};
-
-export type GetScorerVersionCodeScorersScorerIdVersionCodeGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetScorerVersionCodeScorersScorerIdVersionCodeGetError =
-  GetScorerVersionCodeScorersScorerIdVersionCodeGetErrors[keyof GetScorerVersionCodeScorersScorerIdVersionCodeGetErrors];
-
-export type GetScorerVersionCodeScorersScorerIdVersionCodeGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: unknown;
-};
-
-export type CreateCodeScorerVersionScorersScorerIdVersionCodePostData = {
-  body: BodyCreateCodeScorerVersionScorersScorerIdVersionCodePost;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: never;
-  url: '/scorers/{scorer_id}/version/code';
-};
-
-export type CreateCodeScorerVersionScorersScorerIdVersionCodePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type CreateCodeScorerVersionScorersScorerIdVersionCodePostError =
-  CreateCodeScorerVersionScorersScorerIdVersionCodePostErrors[keyof CreateCodeScorerVersionScorersScorerIdVersionCodePostErrors];
-
-export type CreateCodeScorerVersionScorersScorerIdVersionCodePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: BaseScorerVersionResponse;
-};
-
-export type CreateCodeScorerVersionScorersScorerIdVersionCodePostResponse =
-  CreateCodeScorerVersionScorersScorerIdVersionCodePostResponses[keyof CreateCodeScorerVersionScorersScorerIdVersionCodePostResponses];
-
-export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostData = {
-  body: CreateScorerVersionRequest;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: never;
-  url: '/scorers/{scorer_id}/version/preset';
-};
-
-export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostError =
-  CreatePresetScorerVersionScorersScorerIdVersionPresetPostErrors[keyof CreatePresetScorerVersionScorersScorerIdVersionPresetPostErrors];
-
-export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: BaseScorerVersionResponse;
-  };
-
-export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponse =
-  CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponses[keyof CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponses];
-
 export type CreateLunaScorerVersionScorersScorerIdVersionLunaPostData = {
   body: CreateCustomLunaScorerVersionRequest;
   path: {
@@ -31374,319 +33617,12 @@ export type CreateLunaScorerVersionScorersScorerIdVersionLunaPostResponses = {
 export type CreateLunaScorerVersionScorersScorerIdVersionLunaPostResponse =
   CreateLunaScorerVersionScorersScorerIdVersionLunaPostResponses[keyof CreateLunaScorerVersionScorersScorerIdVersionLunaPostResponses];
 
-export type ListScorersWithFiltersScorersListPostData = {
-  body: ListScorersRequest;
-  path?: never;
-  query?: {
-    /**
-     * Starting Token
-     */
-    starting_token?: number;
-    /**
-     * Limit
-     */
-    limit?: number;
-  };
-  url: '/scorers/list';
-};
-
-export type ListScorersWithFiltersScorersListPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ListScorersWithFiltersScorersListPostError =
-  ListScorersWithFiltersScorersListPostErrors[keyof ListScorersWithFiltersScorersListPostErrors];
-
-export type ListScorersWithFiltersScorersListPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: ListScorersResponse;
-};
-
-export type ListScorersWithFiltersScorersListPostResponse =
-  ListScorersWithFiltersScorersListPostResponses[keyof ListScorersWithFiltersScorersListPostResponses];
-
-export type ListTagsScorersTagsGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: '/scorers/tags';
-};
-
-export type ListTagsScorersTagsGetResponses = {
-  /**
-   * Response List Tags Scorers Tags Get
-   *
-   * Successful Response
-   */
-  200: Array<string>;
-};
-
-export type ListTagsScorersTagsGetResponse =
-  ListTagsScorersTagsGetResponses[keyof ListTagsScorersTagsGetResponses];
-
-export type GetScorerVersionOrLatestScorersScorerIdVersionGetData = {
-  body?: never;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: {
-    /**
-     * Version
-     */
-    version?: number;
-  };
-  url: '/scorers/{scorer_id}/version';
-};
-
-export type GetScorerVersionOrLatestScorersScorerIdVersionGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type GetScorerVersionOrLatestScorersScorerIdVersionGetError =
-  GetScorerVersionOrLatestScorersScorerIdVersionGetErrors[keyof GetScorerVersionOrLatestScorersScorerIdVersionGetErrors];
-
-export type GetScorerVersionOrLatestScorersScorerIdVersionGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: BaseScorerVersionResponse;
-};
-
-export type GetScorerVersionOrLatestScorersScorerIdVersionGetResponse =
-  GetScorerVersionOrLatestScorersScorerIdVersionGetResponses[keyof GetScorerVersionOrLatestScorersScorerIdVersionGetResponses];
-
-export type ListAllVersionsForScorerScorersScorerIdVersionsGetData = {
-  body?: never;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: {
-    /**
-     * Run Id
-     */
-    run_id?: string | null;
-    /**
-     * Starting Token
-     */
-    starting_token?: number;
-    /**
-     * Limit
-     */
-    limit?: number;
-  };
-  url: '/scorers/{scorer_id}/versions';
-};
-
-export type ListAllVersionsForScorerScorersScorerIdVersionsGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ListAllVersionsForScorerScorersScorerIdVersionsGetError =
-  ListAllVersionsForScorerScorersScorerIdVersionsGetErrors[keyof ListAllVersionsForScorerScorersScorerIdVersionsGetErrors];
-
-export type ListAllVersionsForScorerScorersScorerIdVersionsGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: ListScorerVersionsResponse;
-};
-
-export type ListAllVersionsForScorerScorersScorerIdVersionsGetResponse =
-  ListAllVersionsForScorerScorersScorerIdVersionsGetResponses[keyof ListAllVersionsForScorerScorersScorerIdVersionsGetResponses];
-
-export type ListProjectsForScorerRouteScorersScorerIdProjectsGetData = {
-  body?: never;
-  path: {
-    /**
-     * Scorer Id
-     */
-    scorer_id: string;
-  };
-  query?: {
-    /**
-     * Starting Token
-     */
-    starting_token?: number;
-    /**
-     * Limit
-     */
-    limit?: number;
-  };
-  url: '/scorers/{scorer_id}/projects';
-};
-
-export type ListProjectsForScorerRouteScorersScorerIdProjectsGetErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ListProjectsForScorerRouteScorersScorerIdProjectsGetError =
-  ListProjectsForScorerRouteScorersScorerIdProjectsGetErrors[keyof ListProjectsForScorerRouteScorersScorerIdProjectsGetErrors];
-
-export type ListProjectsForScorerRouteScorersScorerIdProjectsGetResponses = {
-  /**
-   * Successful Response
-   */
-  200: ApiSchemasProjectV2GetProjectsPaginatedResponse;
-};
-
-export type ListProjectsForScorerRouteScorersScorerIdProjectsGetResponse =
-  ListProjectsForScorerRouteScorersScorerIdProjectsGetResponses[keyof ListProjectsForScorerRouteScorersScorerIdProjectsGetResponses];
-
-export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetData =
-  {
-    body?: never;
-    path: {
-      /**
-       * Scorer Version Id
-       */
-      scorer_version_id: string;
-    };
-    query: {
-      /**
-       * Scorer Id
-       */
-      scorer_id: string;
-      /**
-       * Starting Token
-       */
-      starting_token?: number;
-      /**
-       * Limit
-       */
-      limit?: number;
-    };
-    url: '/scorers/versions/{scorer_version_id}/projects';
-  };
-
-export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetError =
-  ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetErrors[keyof ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetErrors];
-
-export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: ApiSchemasProjectV2GetProjectsPaginatedResponse;
-  };
-
-export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponse =
-  ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponses[keyof ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponses];
-
-export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostData =
-  {
-    body?: never;
-    path: {
-      /**
-       * Scorer Id
-       */
-      scorer_id: string;
-      /**
-       * Version Number
-       */
-      version_number: number;
-    };
-    query?: never;
-    url: '/scorers/{scorer_id}/versions/{version_number}/restore';
-  };
-
-export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostErrors =
-  {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-  };
-
-export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostError =
-  RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostErrors[keyof RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostErrors];
-
-export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponses =
-  {
-    /**
-     * Successful Response
-     */
-    200: BaseScorerVersionResponse;
-  };
-
-export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponse =
-  RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponses[keyof RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponses];
-
-export type AutogenLlmScorerScorersLlmAutogenPostData = {
-  body: CreateLlmScorerAutogenRequest;
-  path?: never;
-  query?: never;
-  url: '/scorers/llm/autogen';
-};
-
-export type AutogenLlmScorerScorersLlmAutogenPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type AutogenLlmScorerScorersLlmAutogenPostError =
-  AutogenLlmScorerScorersLlmAutogenPostErrors[keyof AutogenLlmScorerScorersLlmAutogenPostErrors];
-
-export type AutogenLlmScorerScorersLlmAutogenPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: GenerationResponse;
-};
-
-export type AutogenLlmScorerScorersLlmAutogenPostResponse =
-  AutogenLlmScorerScorersLlmAutogenPostResponses[keyof AutogenLlmScorerScorersLlmAutogenPostResponses];
-
 export type ManualLlmValidateScorersLlmValidatePostData = {
-  /**
-   * Body
-   */
-  body: {
-    [key: string]: unknown;
-  };
+  body?: never;
   path?: never;
   query?: never;
   url: '/scorers/llm/validate';
 };
-
-export type ManualLlmValidateScorersLlmValidatePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type ManualLlmValidateScorersLlmValidatePostError =
-  ManualLlmValidateScorersLlmValidatePostErrors[keyof ManualLlmValidateScorersLlmValidatePostErrors];
 
 export type ManualLlmValidateScorersLlmValidatePostResponses = {
   /**
@@ -31697,6 +33633,34 @@ export type ManualLlmValidateScorersLlmValidatePostResponses = {
 
 export type ManualLlmValidateScorersLlmValidatePostResponse =
   ManualLlmValidateScorersLlmValidatePostResponses[keyof ManualLlmValidateScorersLlmValidatePostResponses];
+
+export type ManualLlmValidateMultipartScorersLlmValidateMultipartPostData = {
+  body: BodyManualLlmValidateMultipartScorersLlmValidateMultipartPost;
+  path?: never;
+  query?: never;
+  url: '/scorers/llm/validate/multipart';
+};
+
+export type ManualLlmValidateMultipartScorersLlmValidateMultipartPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ManualLlmValidateMultipartScorersLlmValidateMultipartPostError =
+  ManualLlmValidateMultipartScorersLlmValidateMultipartPostErrors[keyof ManualLlmValidateMultipartScorersLlmValidateMultipartPostErrors];
+
+export type ManualLlmValidateMultipartScorersLlmValidateMultipartPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: GeneratedScorerValidationResponse;
+  };
+
+export type ManualLlmValidateMultipartScorersLlmValidateMultipartPostResponse =
+  ManualLlmValidateMultipartScorersLlmValidateMultipartPostResponses[keyof ManualLlmValidateMultipartScorersLlmValidateMultipartPostResponses];
 
 export type GetStageProjectsProjectIdStagesGetData = {
   body?: never;
@@ -32077,7 +34041,7 @@ export type ListAvailableIntegrationsIntegrationsAvailableGetResponse =
 export type DeleteIntegrationIntegrationsNameDeleteData = {
   body?: never;
   path: {
-    name: IntegrationName;
+    name: IntegrationProvider;
   };
   query?: never;
   url: '/integrations/{name}';
@@ -32103,7 +34067,7 @@ export type DeleteIntegrationIntegrationsNameDeleteResponses = {
 export type GetIntegrationIntegrationsNameGetData = {
   body?: never;
   path: {
-    name: IntegrationName;
+    name: IntegrationProvider;
   };
   query?: never;
   url: '/integrations/{name}';
@@ -32127,40 +34091,40 @@ export type GetIntegrationIntegrationsNameGetResponses = {
    */
   200:
     | ({
-        name: 'aws_bedrock';
+        provider: 'aws_bedrock';
       } & AwsBedrockIntegration)
     | ({
-        name: 'aws_sagemaker';
+        provider: 'aws_sagemaker';
       } & AwsSageMakerIntegration)
     | ({
-        name: 'azure';
+        provider: 'azure';
       } & AzureIntegration)
     | ({
-        name: 'anthropic';
+        provider: 'anthropic';
       } & AnthropicIntegration)
     | ({
-        name: 'custom';
+        provider: 'custom';
       } & CustomIntegration)
     | ({
-        name: 'databricks';
+        provider: 'databricks';
       } & DatabricksIntegration)
     | ({
-        name: 'mistral';
+        provider: 'mistral';
       } & MistralIntegration)
     | ({
-        name: 'nvidia';
+        provider: 'nvidia';
       } & NvidiaIntegration)
     | ({
-        name: 'openai';
+        provider: 'openai';
       } & OpenAiIntegration)
     | ({
-        name: 'vegas_gateway';
+        provider: 'vegas_gateway';
       } & VegasGatewayIntegration)
     | ({
-        name: 'vertex_ai';
+        provider: 'vertex_ai';
       } & VertexAiIntegration)
     | ({
-        name: 'writer';
+        provider: 'writer';
       } & WriterIntegration);
 };
 
@@ -32170,7 +34134,7 @@ export type GetIntegrationIntegrationsNameGetResponse =
 export type GetIntegrationStatusIntegrationsNameStatusGetData = {
   body?: never;
   path: {
-    name: IntegrationName;
+    name: IntegrationProvider;
   };
   query?: never;
   url: '/integrations/{name}/status';
@@ -32688,6 +34652,109 @@ export type CreateOrUpdateIntegrationIntegrationsCustomPutResponses = {
 export type CreateOrUpdateIntegrationIntegrationsCustomPutResponse =
   CreateOrUpdateIntegrationIntegrationsCustomPutResponses[keyof CreateOrUpdateIntegrationIntegrationsCustomPutResponses];
 
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Name
+     *
+     * Slug identifying this named custom integration
+     */
+    name: string;
+  };
+  query?: never;
+  url: '/integrations/custom/{name}';
+};
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteError =
+  DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteErrors[keyof DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteErrors];
+
+export type DeleteNamedCustomIntegrationIntegrationsCustomNameDeleteResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetData = {
+  body?: never;
+  path: {
+    /**
+     * Name
+     *
+     * Slug identifying this named custom integration
+     */
+    name: string;
+  };
+  query?: never;
+  url: '/integrations/custom/{name}';
+};
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetError =
+  GetNamedCustomIntegrationIntegrationsCustomNameGetErrors[keyof GetNamedCustomIntegrationIntegrationsCustomNameGetErrors];
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: IntegrationDb;
+};
+
+export type GetNamedCustomIntegrationIntegrationsCustomNameGetResponse =
+  GetNamedCustomIntegrationIntegrationsCustomNameGetResponses[keyof GetNamedCustomIntegrationIntegrationsCustomNameGetResponses];
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutData =
+  {
+    body: CustomIntegrationCreate;
+    path: {
+      /**
+       * Name
+       *
+       * Slug identifying this named custom integration
+       */
+      name: string;
+    };
+    query?: never;
+    url: '/integrations/custom/{name}';
+  };
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutError =
+  CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutErrors[keyof CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutErrors];
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: IntegrationDb;
+  };
+
+export type CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponse =
+  CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponses[keyof CreateOrUpdateNamedCustomIntegrationIntegrationsCustomNamePutResponses];
+
 export type CreateOrUpdateUnityCatalogIntegrationIntegrationsDatabricksUnityCatalogSqlPutData =
   {
     body: DatabricksIntegrationCreate;
@@ -33030,6 +35097,346 @@ export type GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGet
 export type GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGetResponse =
   GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGetResponses[keyof GetAvailableScorerModelsLlmIntegrationsLlmIntegrationScorerModelsGetResponses];
 
+export type CreateAnnotationQueueAnnotationQueuesPostData = {
+  body: CreateAnnotationQueueRequest;
+  path?: never;
+  query?: never;
+  url: '/annotation_queues';
+};
+
+export type CreateAnnotationQueueAnnotationQueuesPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateAnnotationQueueAnnotationQueuesPostError =
+  CreateAnnotationQueueAnnotationQueuesPostErrors[keyof CreateAnnotationQueueAnnotationQueuesPostErrors];
+
+export type CreateAnnotationQueueAnnotationQueuesPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: AnnotationQueueResponse;
+};
+
+export type CreateAnnotationQueueAnnotationQueuesPostResponse =
+  CreateAnnotationQueueAnnotationQueuesPostResponses[keyof CreateAnnotationQueueAnnotationQueuesPostResponses];
+
+export type DeleteAnnotationQueueAnnotationQueuesQueueIdDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: never;
+  url: '/annotation_queues/{queue_id}';
+};
+
+export type DeleteAnnotationQueueAnnotationQueuesQueueIdDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteAnnotationQueueAnnotationQueuesQueueIdDeleteError =
+  DeleteAnnotationQueueAnnotationQueuesQueueIdDeleteErrors[keyof DeleteAnnotationQueueAnnotationQueuesQueueIdDeleteErrors];
+
+export type DeleteAnnotationQueueAnnotationQueuesQueueIdDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type GetAnnotationQueueAnnotationQueuesQueueIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: never;
+  url: '/annotation_queues/{queue_id}';
+};
+
+export type GetAnnotationQueueAnnotationQueuesQueueIdGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetAnnotationQueueAnnotationQueuesQueueIdGetError =
+  GetAnnotationQueueAnnotationQueuesQueueIdGetErrors[keyof GetAnnotationQueueAnnotationQueuesQueueIdGetErrors];
+
+export type GetAnnotationQueueAnnotationQueuesQueueIdGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: AnnotationQueueResponse;
+};
+
+export type GetAnnotationQueueAnnotationQueuesQueueIdGetResponse =
+  GetAnnotationQueueAnnotationQueuesQueueIdGetResponses[keyof GetAnnotationQueueAnnotationQueuesQueueIdGetResponses];
+
+export type UpdateAnnotationQueueAnnotationQueuesQueueIdPatchData = {
+  body: UpdateAnnotationQueueRequest;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: never;
+  url: '/annotation_queues/{queue_id}';
+};
+
+export type UpdateAnnotationQueueAnnotationQueuesQueueIdPatchErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateAnnotationQueueAnnotationQueuesQueueIdPatchError =
+  UpdateAnnotationQueueAnnotationQueuesQueueIdPatchErrors[keyof UpdateAnnotationQueueAnnotationQueuesQueueIdPatchErrors];
+
+export type UpdateAnnotationQueueAnnotationQueuesQueueIdPatchResponses = {
+  /**
+   * Successful Response
+   */
+  200: AnnotationQueueResponse;
+};
+
+export type UpdateAnnotationQueueAnnotationQueuesQueueIdPatchResponse =
+  UpdateAnnotationQueueAnnotationQueuesQueueIdPatchResponses[keyof UpdateAnnotationQueueAnnotationQueuesQueueIdPatchResponses];
+
+export type ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetData = {
+  body?: never;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: {
+    /**
+     * Starting Token
+     */
+    starting_token?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: '/annotation_queues/{queue_id}/users';
+};
+
+export type ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetError =
+  ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetErrors[keyof ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetErrors];
+
+export type ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListAnnotationQueueCollaboratorsResponse;
+};
+
+export type ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetResponse =
+  ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetResponses[keyof ListAnnotationQueueUsersAnnotationQueuesQueueIdUsersGetResponses];
+
+export type ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostData =
+  {
+    /**
+     * Body
+     */
+    body: Array<AnnotationQueueUserCollaboratorCreate>;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/users';
+  };
+
+export type ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostError =
+  ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostErrors[keyof ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostErrors];
+
+export type ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostResponses =
+  {
+    /**
+     * Response Share Annotation Queue With Users Annotation Queues  Queue Id  Users Post
+     *
+     * Successful Response
+     */
+    200: Array<UserAnnotationQueueCollaborator>;
+  };
+
+export type ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostResponse =
+  ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostResponses[keyof ShareAnnotationQueueWithUsersAnnotationQueuesQueueIdUsersPostResponses];
+
+export type RemoveAnnotationQueueUserAnnotationQueuesQueueIdUsersUserIdDeleteData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+      /**
+       * User Id
+       */
+      user_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/users/{user_id}';
+  };
+
+export type RemoveAnnotationQueueUserAnnotationQueuesQueueIdUsersUserIdDeleteErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type RemoveAnnotationQueueUserAnnotationQueuesQueueIdUsersUserIdDeleteError =
+  RemoveAnnotationQueueUserAnnotationQueuesQueueIdUsersUserIdDeleteErrors[keyof RemoveAnnotationQueueUserAnnotationQueuesQueueIdUsersUserIdDeleteErrors];
+
+export type RemoveAnnotationQueueUserAnnotationQueuesQueueIdUsersUserIdDeleteResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchData =
+  {
+    body: AnnotationQueueUserCollaboratorUpdate;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+      /**
+       * User Id
+       */
+      user_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/users/{user_id}';
+  };
+
+export type UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchError =
+  UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchErrors[keyof UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchErrors];
+
+export type UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: UserAnnotationQueueCollaborator;
+  };
+
+export type UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchResponse =
+  UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchResponses[keyof UpdateAnnotationQueueUserRoleAnnotationQueuesQueueIdUsersUserIdPatchResponses];
+
+export type PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostData =
+  {
+    body: AnnotationQueuePartialSearchRequest;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/partial_search';
+  };
+
+export type PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostError =
+  PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostErrors[keyof PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostErrors];
+
+export type PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsPartialQueryResponse;
+  };
+
+export type PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostResponse =
+  PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostResponses[keyof PartialSearchAnnotationQueueRecordsAnnotationQueuesQueueIdPartialSearchPostResponses];
+
+export type CountDatasetsDatasetsQueryCountPostData = {
+  body?: ListDatasetParams;
+  path?: never;
+  query?: never;
+  url: '/datasets/query/count';
+};
+
+export type CountDatasetsDatasetsQueryCountPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CountDatasetsDatasetsQueryCountPostError =
+  CountDatasetsDatasetsQueryCountPostErrors[keyof CountDatasetsDatasetsQueryCountPostErrors];
+
+export type CountDatasetsDatasetsQueryCountPostResponses = {
+  /**
+   * Response Count Datasets Datasets Query Count Post
+   *
+   * Successful Response
+   */
+  200: number;
+};
+
+export type CountDatasetsDatasetsQueryCountPostResponse =
+  CountDatasetsDatasetsQueryCountPostResponses[keyof CountDatasetsDatasetsQueryCountPostResponses];
+
 export type GetDatasetVariablePreviewDatasetsDatasetIdVariablePreviewGetData = {
   body?: never;
   path: {
@@ -33166,6 +35573,109 @@ export type CreateScorersPostResponses = {
 export type CreateScorersPostResponse =
   CreateScorersPostResponses[keyof CreateScorersPostResponses];
 
+export type DeleteScorerScorersScorerIdDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: never;
+  url: '/scorers/{scorer_id}';
+};
+
+export type DeleteScorerScorersScorerIdDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteScorerScorersScorerIdDeleteError =
+  DeleteScorerScorersScorerIdDeleteErrors[keyof DeleteScorerScorersScorerIdDeleteErrors];
+
+export type DeleteScorerScorersScorerIdDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  200: DeleteScorerResponse;
+};
+
+export type DeleteScorerScorersScorerIdDeleteResponse =
+  DeleteScorerScorersScorerIdDeleteResponses[keyof DeleteScorerScorersScorerIdDeleteResponses];
+
+export type GetScorerScorersScorerIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: {
+    /**
+     * Actions
+     *
+     * Actions to include in the 'permissions' field of the scorer.
+     */
+    actions?: Array<ScorerAction>;
+  };
+  url: '/scorers/{scorer_id}';
+};
+
+export type GetScorerScorersScorerIdGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetScorerScorersScorerIdGetError =
+  GetScorerScorersScorerIdGetErrors[keyof GetScorerScorersScorerIdGetErrors];
+
+export type GetScorerScorersScorerIdGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ScorerResponse;
+};
+
+export type GetScorerScorersScorerIdGetResponse =
+  GetScorerScorersScorerIdGetResponses[keyof GetScorerScorersScorerIdGetResponses];
+
+export type UpdateScorersScorerIdPatchData = {
+  body: UpdateScorerRequest;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: never;
+  url: '/scorers/{scorer_id}';
+};
+
+export type UpdateScorersScorerIdPatchErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateScorersScorerIdPatchError =
+  UpdateScorersScorerIdPatchErrors[keyof UpdateScorersScorerIdPatchErrors];
+
+export type UpdateScorersScorerIdPatchResponses = {
+  /**
+   * Successful Response
+   */
+  200: ScorerResponse;
+};
+
+export type UpdateScorersScorerIdPatchResponse =
+  UpdateScorersScorerIdPatchResponses[keyof UpdateScorersScorerIdPatchResponses];
+
 export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostData = {
   body: CreateLlmScorerVersionRequest;
   path: {
@@ -33198,6 +35708,33 @@ export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses = {
 export type CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponse =
   CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses[keyof CreateLlmScorerVersionScorersScorerIdVersionLlmPostResponses];
 
+export type ValidateCodeScorerScorersCodeValidatePostData = {
+  body: BodyValidateCodeScorerScorersCodeValidatePost;
+  path?: never;
+  query?: never;
+  url: '/scorers/code/validate';
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostError =
+  ValidateCodeScorerScorersCodeValidatePostErrors[keyof ValidateCodeScorerScorersCodeValidatePostErrors];
+
+export type ValidateCodeScorerScorersCodeValidatePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ValidateCodeScorerResponse;
+};
+
+export type ValidateCodeScorerScorersCodeValidatePostResponse =
+  ValidateCodeScorerScorersCodeValidatePostResponses[keyof ValidateCodeScorerScorersCodeValidatePostResponses];
+
 export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostData = {
   body: BodyValidateCodeScorerLogRecordScorersCodeValidateLogRecordPost;
   path?: never;
@@ -33226,6 +35763,467 @@ export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponses
 
 export type ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponse =
   ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponses[keyof ValidateCodeScorerLogRecordScorersCodeValidateLogRecordPostResponses];
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetData = {
+  body?: never;
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string;
+  };
+  query?: never;
+  url: '/scorers/code/validate/{task_id}';
+};
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetError =
+  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetErrors];
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: RegisteredScorerTaskResultResponse;
+  };
+
+export type GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponse =
+  GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses[keyof GetValidateCodeScorerTaskResultScorersCodeValidateTaskIdGetResponses];
+
+export type GetScorerVersionCodeScorersScorerIdVersionCodeGetData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: {
+    /**
+     * Version
+     *
+     * version number, defaults to latest version
+     */
+    version?: number | null;
+  };
+  url: '/scorers/{scorer_id}/version/code';
+};
+
+export type GetScorerVersionCodeScorersScorerIdVersionCodeGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetScorerVersionCodeScorersScorerIdVersionCodeGetError =
+  GetScorerVersionCodeScorersScorerIdVersionCodeGetErrors[keyof GetScorerVersionCodeScorersScorerIdVersionCodeGetErrors];
+
+export type GetScorerVersionCodeScorersScorerIdVersionCodeGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type CreateCodeScorerVersionScorersScorerIdVersionCodePostData = {
+  body: BodyCreateCodeScorerVersionScorersScorerIdVersionCodePost;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: never;
+  url: '/scorers/{scorer_id}/version/code';
+};
+
+export type CreateCodeScorerVersionScorersScorerIdVersionCodePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateCodeScorerVersionScorersScorerIdVersionCodePostError =
+  CreateCodeScorerVersionScorersScorerIdVersionCodePostErrors[keyof CreateCodeScorerVersionScorersScorerIdVersionCodePostErrors];
+
+export type CreateCodeScorerVersionScorersScorerIdVersionCodePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: BaseScorerVersionResponse;
+};
+
+export type CreateCodeScorerVersionScorersScorerIdVersionCodePostResponse =
+  CreateCodeScorerVersionScorersScorerIdVersionCodePostResponses[keyof CreateCodeScorerVersionScorersScorerIdVersionCodePostResponses];
+
+export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostData = {
+  body: CreateScorerVersionRequest;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: never;
+  url: '/scorers/{scorer_id}/version/preset';
+};
+
+export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostError =
+  CreatePresetScorerVersionScorersScorerIdVersionPresetPostErrors[keyof CreatePresetScorerVersionScorersScorerIdVersionPresetPostErrors];
+
+export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: BaseScorerVersionResponse;
+  };
+
+export type CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponse =
+  CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponses[keyof CreatePresetScorerVersionScorersScorerIdVersionPresetPostResponses];
+
+export type ListScorersWithFiltersScorersListPostData = {
+  body: ListScorersRequest;
+  path?: never;
+  query?: {
+    /**
+     * Actions
+     *
+     * Actions to include in the 'permissions' field of the scorers.
+     */
+    actions?: Array<ScorerAction>;
+    /**
+     * Starting Token
+     */
+    starting_token?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: '/scorers/list';
+};
+
+export type ListScorersWithFiltersScorersListPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListScorersWithFiltersScorersListPostError =
+  ListScorersWithFiltersScorersListPostErrors[keyof ListScorersWithFiltersScorersListPostErrors];
+
+export type ListScorersWithFiltersScorersListPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListScorersResponse;
+};
+
+export type ListScorersWithFiltersScorersListPostResponse =
+  ListScorersWithFiltersScorersListPostResponses[keyof ListScorersWithFiltersScorersListPostResponses];
+
+export type ListTagsScorersTagsGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/scorers/tags';
+};
+
+export type ListTagsScorersTagsGetResponses = {
+  /**
+   * Response List Tags Scorers Tags Get
+   *
+   * Successful Response
+   */
+  200: Array<string>;
+};
+
+export type ListTagsScorersTagsGetResponse =
+  ListTagsScorersTagsGetResponses[keyof ListTagsScorersTagsGetResponses];
+
+export type GetScorerVersionOrLatestScorersScorerIdVersionGetData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: {
+    /**
+     * Version
+     */
+    version?: number;
+  };
+  url: '/scorers/{scorer_id}/version';
+};
+
+export type GetScorerVersionOrLatestScorersScorerIdVersionGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetScorerVersionOrLatestScorersScorerIdVersionGetError =
+  GetScorerVersionOrLatestScorersScorerIdVersionGetErrors[keyof GetScorerVersionOrLatestScorersScorerIdVersionGetErrors];
+
+export type GetScorerVersionOrLatestScorersScorerIdVersionGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: BaseScorerVersionResponse;
+};
+
+export type GetScorerVersionOrLatestScorersScorerIdVersionGetResponse =
+  GetScorerVersionOrLatestScorersScorerIdVersionGetResponses[keyof GetScorerVersionOrLatestScorersScorerIdVersionGetResponses];
+
+export type ListAllVersionsForScorerScorersScorerIdVersionsGetData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: {
+    /**
+     * Run Id
+     */
+    run_id?: string | null;
+    /**
+     * Starting Token
+     */
+    starting_token?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: '/scorers/{scorer_id}/versions';
+};
+
+export type ListAllVersionsForScorerScorersScorerIdVersionsGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListAllVersionsForScorerScorersScorerIdVersionsGetError =
+  ListAllVersionsForScorerScorersScorerIdVersionsGetErrors[keyof ListAllVersionsForScorerScorersScorerIdVersionsGetErrors];
+
+export type ListAllVersionsForScorerScorersScorerIdVersionsGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListScorerVersionsResponse;
+};
+
+export type ListAllVersionsForScorerScorersScorerIdVersionsGetResponse =
+  ListAllVersionsForScorerScorersScorerIdVersionsGetResponses[keyof ListAllVersionsForScorerScorersScorerIdVersionsGetResponses];
+
+export type SetScorerScopeScorersScorerIdScopePutData = {
+  body: UpdateScorerScopeRequest;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: never;
+  url: '/scorers/{scorer_id}/scope';
+};
+
+export type SetScorerScopeScorersScorerIdScopePutErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SetScorerScopeScorersScorerIdScopePutError =
+  SetScorerScopeScorersScorerIdScopePutErrors[keyof SetScorerScopeScorersScorerIdScopePutErrors];
+
+export type SetScorerScopeScorersScorerIdScopePutResponses = {
+  /**
+   * Successful Response
+   */
+  200: ScorerResponse;
+};
+
+export type SetScorerScopeScorersScorerIdScopePutResponse =
+  SetScorerScopeScorersScorerIdScopePutResponses[keyof SetScorerScopeScorersScorerIdScopePutResponses];
+
+export type ListProjectsForScorerRouteScorersScorerIdProjectsGetData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query?: {
+    /**
+     * Starting Token
+     */
+    starting_token?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: '/scorers/{scorer_id}/projects';
+};
+
+export type ListProjectsForScorerRouteScorersScorerIdProjectsGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListProjectsForScorerRouteScorersScorerIdProjectsGetError =
+  ListProjectsForScorerRouteScorersScorerIdProjectsGetErrors[keyof ListProjectsForScorerRouteScorersScorerIdProjectsGetErrors];
+
+export type ListProjectsForScorerRouteScorersScorerIdProjectsGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ApiSchemasProjectV2GetProjectsPaginatedResponse;
+};
+
+export type ListProjectsForScorerRouteScorersScorerIdProjectsGetResponse =
+  ListProjectsForScorerRouteScorersScorerIdProjectsGetResponses[keyof ListProjectsForScorerRouteScorersScorerIdProjectsGetResponses];
+
+export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Scorer Version Id
+       */
+      scorer_version_id: string;
+    };
+    query?: {
+      /**
+       * Starting Token
+       */
+      starting_token?: number;
+      /**
+       * Limit
+       */
+      limit?: number;
+    };
+    url: '/scorers/versions/{scorer_version_id}/projects';
+  };
+
+export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetError =
+  ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetErrors[keyof ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetErrors];
+
+export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: ApiSchemasProjectV2GetProjectsPaginatedResponse;
+  };
+
+export type ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponse =
+  ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponses[keyof ListProjectsForScorerVersionRouteScorersVersionsScorerVersionIdProjectsGetResponses];
+
+export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Scorer Id
+       */
+      scorer_id: string;
+      /**
+       * Version Number
+       */
+      version_number: number;
+    };
+    query?: never;
+    url: '/scorers/{scorer_id}/versions/{version_number}/restore';
+  };
+
+export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostError =
+  RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostErrors[keyof RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostErrors];
+
+export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: BaseScorerVersionResponse;
+  };
+
+export type RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponse =
+  RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponses[keyof RestoreScorerVersionScorersScorerIdVersionsVersionNumberRestorePostResponses];
+
+export type AutogenLlmScorerScorersLlmAutogenPostData = {
+  body: CreateLlmScorerAutogenRequest;
+  path?: never;
+  query?: never;
+  url: '/scorers/llm/autogen';
+};
+
+export type AutogenLlmScorerScorersLlmAutogenPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type AutogenLlmScorerScorersLlmAutogenPostError =
+  AutogenLlmScorerScorersLlmAutogenPostErrors[keyof AutogenLlmScorerScorersLlmAutogenPostErrors];
+
+export type AutogenLlmScorerScorersLlmAutogenPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: GenerationResponse;
+};
+
+export type AutogenLlmScorerScorersLlmAutogenPostResponse =
+  AutogenLlmScorerScorersLlmAutogenPostResponses[keyof AutogenLlmScorerScorersLlmAutogenPostResponses];
 
 export type ValidateLlmScorerLogRecordScorersLlmValidateLogRecordPostData = {
   body: ValidateLlmScorerLogRecordRequest;
@@ -33309,6 +36307,121 @@ export type ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses = {
 export type ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponse =
   ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses[keyof ValidateCodeScorerDatasetScorersCodeValidateDatasetPostResponses];
 
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostData =
+  {
+    body: ComputeHealthScoreRequest;
+    path: {
+      /**
+       * Project Id
+       */
+      project_id: string;
+      /**
+       * Run Id
+       */
+      run_id: string;
+    };
+    query?: never;
+    url: '/projects/{project_id}/metrics-testing/{run_id}/health-score';
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostError =
+  ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors[keyof ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostErrors];
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: HealthScoreResult;
+  };
+
+export type ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponse =
+  ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses[keyof ComputeHealthScoreEndpointProjectsProjectIdMetricsTestingRunIdHealthScorePostResponses];
+
+export type GetScorerHealthScoresScorersScorerIdHealthScoresGetData = {
+  body?: never;
+  path: {
+    /**
+     * Scorer Id
+     */
+    scorer_id: string;
+  };
+  query: {
+    /**
+     * Dataset Id
+     */
+    dataset_id: string;
+  };
+  url: '/scorers/{scorer_id}/health-scores';
+};
+
+export type GetScorerHealthScoresScorersScorerIdHealthScoresGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetScorerHealthScoresScorersScorerIdHealthScoresGetError =
+  GetScorerHealthScoresScorersScorerIdHealthScoresGetErrors[keyof GetScorerHealthScoresScorersScorerIdHealthScoresGetErrors];
+
+export type GetScorerHealthScoresScorersScorerIdHealthScoresGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: ScorerHealthScoresResponse;
+};
+
+export type GetScorerHealthScoresScorersScorerIdHealthScoresGetResponse =
+  GetScorerHealthScoresScorersScorerIdHealthScoresGetResponses[keyof GetScorerHealthScoresScorersScorerIdHealthScoresGetResponses];
+
+export type WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostData =
+  {
+    body: WriteHealthScoreRequest;
+    path: {
+      /**
+       * Scorer Id
+       */
+      scorer_id: string;
+      /**
+       * Version Number
+       */
+      version_number: number;
+    };
+    query?: never;
+    url: '/scorers/{scorer_id}/versions/{version_number}/health-scores';
+  };
+
+export type WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostError =
+  WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostErrors[keyof WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostErrors];
+
+export type WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: ScorerVersionHealthScoreEntry;
+  };
+
+export type WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostResponse =
+  WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostResponses[keyof WriteScorerVersionHealthScoreScorersScorerIdVersionsVersionNumberHealthScoresPostResponses];
+
 export type LogTracesProjectsProjectIdTracesPostData = {
   body: LogTracesIngestRequest;
   path: {
@@ -33374,9 +36487,17 @@ export type GetTraceProjectsProjectIdTracesTraceIdGetError =
 
 export type GetTraceProjectsProjectIdTracesTraceIdGetResponses = {
   /**
+   * Response Get Trace Projects  Project Id  Traces  Trace Id  Get
+   *
    * Successful Response
    */
-  200: ExtendedTraceRecordWithChildren;
+  200:
+    | ({
+        type: 'trace';
+      } & ExtendedTraceRecordWithChildren)
+    | ({
+        type: 'stub_trace';
+      } & StubTraceRecord);
 };
 
 export type GetTraceProjectsProjectIdTracesTraceIdGetResponse =
@@ -34179,6 +37300,38 @@ export type ExportRecordsProjectsProjectIdExportRecordsPostResponses = {
   200: unknown;
 };
 
+export type ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostData = {
+  body: LogRecordsExportRequest;
+  path: {
+    /**
+     * Project Id
+     */
+    project_id: string;
+  };
+  query?: never;
+  url: '/projects/{project_id}/export_records/url';
+};
+
+export type ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostError =
+  ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostErrors[keyof ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostErrors];
+
+export type ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ExportPresignedUrlResponse;
+};
+
+export type ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostResponse =
+  ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostResponses[keyof ExportRecordsUrlProjectsProjectIdExportRecordsUrlPostResponses];
+
 export type DeleteTracesProjectsProjectIdTracesDeletePostData = {
   body: LogRecordsDeleteRequest;
   path: {
@@ -34294,6 +37447,102 @@ export type ListIntegrationsIntegrationsGetResponses = {
 export type ListIntegrationsIntegrationsGetResponse =
   ListIntegrationsIntegrationsGetResponses[keyof ListIntegrationsIntegrationsGetResponses];
 
+export type GetIntegrationCostsIntegrationsCostsSummaryGetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Start Time
+     *
+     * Start of time range (UTC)
+     */
+    start_time: string;
+    /**
+     * End Time
+     *
+     * End of time range (UTC)
+     */
+    end_time: string;
+    /**
+     * Aggregation interval
+     */
+    interval: CostInterval;
+  };
+  url: '/integrations/costs/summary';
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetError =
+  GetIntegrationCostsIntegrationsCostsSummaryGetErrors[keyof GetIntegrationCostsIntegrationsCostsSummaryGetErrors];
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: IntegrationCostsResponse;
+};
+
+export type GetIntegrationCostsIntegrationsCostsSummaryGetResponse =
+  GetIntegrationCostsIntegrationsCostsSummaryGetResponses[keyof GetIntegrationCostsIntegrationsCostsSummaryGetResponses];
+
+export type GetBillingUsageBillingUsageMetricGetData = {
+  body?: never;
+  path: {
+    metric: BillingUsageMetric;
+  };
+  query: {
+    /**
+     * Start Time
+     *
+     * Start of time range (UTC)
+     */
+    start_time: string;
+    /**
+     * End Time
+     *
+     * End of time range (UTC)
+     */
+    end_time: string;
+    /**
+     * Aggregation interval
+     */
+    interval: CostInterval;
+    /**
+     * Project Id
+     *
+     * Optional project filter
+     */
+    project_id?: string | null;
+  };
+  url: '/billing/usage/{metric}';
+};
+
+export type GetBillingUsageBillingUsageMetricGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetBillingUsageBillingUsageMetricGetError =
+  GetBillingUsageBillingUsageMetricGetErrors[keyof GetBillingUsageBillingUsageMetricGetErrors];
+
+export type GetBillingUsageBillingUsageMetricGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: BillingUsageResponse;
+};
+
+export type GetBillingUsageBillingUsageMetricGetResponse =
+  GetBillingUsageBillingUsageMetricGetResponses[keyof GetBillingUsageBillingUsageMetricGetResponses];
+
 export type SelectIntegrationIntegrationsSelectPostData = {
   body: IntegrationSelectRequest;
   path?: never;
@@ -34345,6 +37594,120 @@ export type DisableIntegrationIntegrationsDisablePostResponses = {
   200: unknown;
 };
 
+export type GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetData =
+  {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/integrations/custom/definition';
+  };
+
+export type GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: CustomIntegrationDefinition;
+  };
+
+export type GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponse =
+  GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponses[keyof GetCustomIntegrationDefinitionIntegrationsCustomDefinitionGetResponses];
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Name
+       *
+       * Slug identifying this named custom integration
+       */
+      name: string;
+    };
+    query?: never;
+    url: '/integrations/custom/{name}/status';
+  };
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetError =
+  GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetErrors[keyof GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetErrors];
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponses =
+  {
+    /**
+     * Response Get Named Custom Integration Status Integrations Custom  Name  Status Get
+     *
+     * Successful Response
+     */
+    200: {
+      [key: string]: string;
+    };
+  };
+
+export type GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponse =
+  GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponses[keyof GetNamedCustomIntegrationStatusIntegrationsCustomNameStatusGetResponses];
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Name
+       *
+       * Slug identifying this named custom integration
+       */
+      name: string;
+    };
+    query?: never;
+    url: '/integrations/custom/{name}/definition';
+  };
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetError =
+  GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetErrors[keyof GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetErrors];
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: CustomIntegrationDefinition;
+  };
+
+export type GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponse =
+  GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponses[keyof GetNamedCustomIntegrationDefinitionIntegrationsCustomNameDefinitionGetResponses];
+
+export type GetRecommendedModelsLlmIntegrationsRecommendedModelsGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/llm_integrations/recommended_models';
+};
+
+export type GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: RecommendedModelsResponse;
+};
+
+export type GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponse =
+  GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponses[keyof GetRecommendedModelsLlmIntegrationsRecommendedModelsGetResponses];
+
 export type GetIntegrationsAndModelInfoLlmIntegrationsGetData = {
   body?: never;
   path?: never;
@@ -34374,7 +37737,7 @@ export type GetIntegrationsAndModelInfoLlmIntegrationsGetResponses = {
    * Successful Response
    */
   200: {
-    [key in LlmIntegration]?: IntegrationModelsResponse;
+    [key: string]: IntegrationModelsResponse;
   };
 };
 
@@ -34422,7 +37785,7 @@ export type GetIntegrationsAndModelInfoForRunLlmIntegrationsProjectsProjectIdRun
      * Successful Response
      */
     200: {
-      [key in LlmIntegration]?: IntegrationModelsResponse;
+      [key: string]: IntegrationModelsResponse;
     };
   };
 
@@ -34490,3 +37853,630 @@ export type GetCodeMetricGenerationStatusCodeMetricGenerationsGenerationIdStatus
 
 export type GetCodeMetricGenerationStatusCodeMetricGenerationsGenerationIdStatusGetResponse =
   GetCodeMetricGenerationStatusCodeMetricGenerationsGenerationIdStatusGetResponses[keyof GetCodeMetricGenerationStatusCodeMetricGenerationsGenerationIdStatusGetResponses];
+
+export type QueueDetailsAnnotationQueuesQueueIdDetailsGetData = {
+  body?: never;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: never;
+  url: '/annotation_queues/{queue_id}/details';
+};
+
+export type QueueDetailsAnnotationQueuesQueueIdDetailsGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueueDetailsAnnotationQueuesQueueIdDetailsGetError =
+  QueueDetailsAnnotationQueuesQueueIdDetailsGetErrors[keyof QueueDetailsAnnotationQueuesQueueIdDetailsGetErrors];
+
+export type QueueDetailsAnnotationQueuesQueueIdDetailsGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: AnnotationQueueDetailsResponse;
+};
+
+export type QueueDetailsAnnotationQueuesQueueIdDetailsGetResponse =
+  QueueDetailsAnnotationQueuesQueueIdDetailsGetResponses[keyof QueueDetailsAnnotationQueuesQueueIdDetailsGetResponses];
+
+export type CountAnnotationQueuesAnnotationQueuesCountPostData = {
+  body?: ListAnnotationQueueParams;
+  path?: never;
+  query?: never;
+  url: '/annotation_queues/count';
+};
+
+export type CountAnnotationQueuesAnnotationQueuesCountPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CountAnnotationQueuesAnnotationQueuesCountPostError =
+  CountAnnotationQueuesAnnotationQueuesCountPostErrors[keyof CountAnnotationQueuesAnnotationQueuesCountPostErrors];
+
+export type CountAnnotationQueuesAnnotationQueuesCountPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: AnnotationQueueCountResponse;
+};
+
+export type CountAnnotationQueuesAnnotationQueuesCountPostResponse =
+  CountAnnotationQueuesAnnotationQueuesCountPostResponses[keyof CountAnnotationQueuesAnnotationQueuesCountPostResponses];
+
+export type QueryAnnotationQueuesAnnotationQueuesQueryPostData = {
+  body?: ListAnnotationQueueParams;
+  path?: never;
+  query?: {
+    /**
+     * Starting Token
+     */
+    starting_token?: number;
+    /**
+     * Limit
+     */
+    limit?: number;
+  };
+  url: '/annotation_queues/query';
+};
+
+export type QueryAnnotationQueuesAnnotationQueuesQueryPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type QueryAnnotationQueuesAnnotationQueuesQueryPostError =
+  QueryAnnotationQueuesAnnotationQueuesQueryPostErrors[keyof QueryAnnotationQueuesAnnotationQueuesQueryPostErrors];
+
+export type QueryAnnotationQueuesAnnotationQueuesQueryPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListAnnotationQueueResponse;
+};
+
+export type QueryAnnotationQueuesAnnotationQueuesQueryPostResponse =
+  QueryAnnotationQueuesAnnotationQueuesQueryPostResponses[keyof QueryAnnotationQueuesAnnotationQueuesQueryPostResponses];
+
+export type ReorderQueueTemplatesAnnotationQueuesQueueIdTemplatesReorderPostData =
+  {
+    body: AnnotationTemplateReorder;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/templates/reorder';
+  };
+
+export type ReorderQueueTemplatesAnnotationQueuesQueueIdTemplatesReorderPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ReorderQueueTemplatesAnnotationQueuesQueueIdTemplatesReorderPostError =
+  ReorderQueueTemplatesAnnotationQueuesQueueIdTemplatesReorderPostErrors[keyof ReorderQueueTemplatesAnnotationQueuesQueueIdTemplatesReorderPostErrors];
+
+export type ReorderQueueTemplatesAnnotationQueuesQueueIdTemplatesReorderPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetData = {
+  body?: never;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: never;
+  url: '/annotation_queues/{queue_id}/templates';
+};
+
+export type GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetError =
+  GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetErrors[keyof GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetErrors];
+
+export type GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetResponses = {
+  /**
+   * Response Get Queue Templates Annotation Queues  Queue Id  Templates Get
+   *
+   * Successful Response
+   */
+  200: Array<AnnotationTemplateDb>;
+};
+
+export type GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetResponse =
+  GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetResponses[keyof GetQueueTemplatesAnnotationQueuesQueueIdTemplatesGetResponses];
+
+export type CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostData = {
+  body: CreateQueueTemplateRequest;
+  path: {
+    /**
+     * Queue Id
+     */
+    queue_id: string;
+  };
+  query?: never;
+  url: '/annotation_queues/{queue_id}/templates';
+};
+
+export type CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostError =
+  CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostErrors[keyof CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostErrors];
+
+export type CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostResponses = {
+  /**
+   * Response Create Queue Template Annotation Queues  Queue Id  Templates Post
+   *
+   * Successful Response
+   */
+  200: Array<AnnotationTemplateDb>;
+};
+
+export type CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostResponse =
+  CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostResponses[keyof CreateQueueTemplateAnnotationQueuesQueueIdTemplatesPostResponses];
+
+export type DeleteQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdDeleteData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Template Id
+       */
+      template_id: string;
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/templates/{template_id}';
+  };
+
+export type DeleteQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdDeleteErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type DeleteQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdDeleteError =
+  DeleteQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdDeleteErrors[keyof DeleteQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdDeleteErrors];
+
+export type DeleteQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdDeleteResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchData =
+  {
+    body: AnnotationTemplateUpdate;
+    path: {
+      /**
+       * Template Id
+       */
+      template_id: string;
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/templates/{template_id}';
+  };
+
+export type UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchError =
+  UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchErrors[keyof UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchErrors];
+
+export type UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: AnnotationTemplateDb;
+  };
+
+export type UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchResponse =
+  UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchResponses[keyof UpdateQueueTemplateAnnotationQueuesQueueIdTemplatesTemplateIdPatchResponses];
+
+export type AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostData =
+  {
+    body: AddRecordsToQueueRequest;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records';
+  };
+
+export type AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostError =
+  AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostErrors[keyof AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostErrors];
+
+export type AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: AddRecordsToQueueResponse;
+  };
+
+export type AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostResponse =
+  AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostResponses[keyof AddRecordsToAnnotationQueueAnnotationQueuesQueueIdRecordsPostResponses];
+
+export type ExportAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsExportPostData =
+  {
+    body: AnnotationQueueExportRequest;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records/export';
+  };
+
+export type ExportAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsExportPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ExportAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsExportPostError =
+  ExportAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsExportPostErrors[keyof ExportAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsExportPostErrors];
+
+export type ExportAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsExportPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostData =
+  {
+    body: AnnotationQueueExportRequest;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records/export/url';
+  };
+
+export type ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostError =
+  ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostErrors[keyof ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostErrors];
+
+export type ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: ExportPresignedUrlResponse;
+  };
+
+export type ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostResponse =
+  ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostResponses[keyof ExportAnnotationQueueRecordsUrlAnnotationQueuesQueueIdRecordsExportUrlPostResponses];
+
+export type RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostData =
+  {
+    body: RemoveRecordsFromQueueRequest;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records/remove';
+  };
+
+export type RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostError =
+  RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostErrors[keyof RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostErrors];
+
+export type RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: RemoveRecordsFromQueueResponse;
+  };
+
+export type RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostResponse =
+  RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostResponses[keyof RemoveRecordsFromAnnotationQueueAnnotationQueuesQueueIdRecordsRemovePostResponses];
+
+export type CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostData =
+  {
+    body: AnnotationQueueCountRequest;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records/count';
+  };
+
+export type CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostError =
+  CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostErrors[keyof CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostErrors];
+
+export type CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsQueryCountResponse;
+  };
+
+export type CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostResponse =
+  CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostResponses[keyof CountAnnotationQueueRecordsAnnotationQueuesQueueIdRecordsCountPostResponses];
+
+export type GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Record Id
+       */
+      record_id: string;
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records/{record_id}';
+  };
+
+export type GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetError =
+  GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetErrors[keyof GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetErrors];
+
+export type GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetResponses =
+  {
+    /**
+     * Response Get Annotation Queue Record Annotation Queues  Queue Id  Records  Record Id  Get
+     *
+     * Successful Response
+     */
+    200:
+      | ({
+          type: 'trace';
+        } & PartialExtendedTraceRecord)
+      | ({
+          type: 'agent';
+        } & PartialExtendedAgentSpanRecord)
+      | ({
+          type: 'workflow';
+        } & PartialExtendedWorkflowSpanRecord)
+      | ({
+          type: 'llm';
+        } & PartialExtendedLlmSpanRecord)
+      | ({
+          type: 'tool';
+        } & PartialExtendedToolSpanRecord)
+      | ({
+          type: 'retriever';
+        } & PartialExtendedRetrieverSpanRecord)
+      | ({
+          type: 'control';
+        } & PartialExtendedControlSpanRecord)
+      | ({
+          type: 'session';
+        } & PartialExtendedSessionRecord);
+  };
+
+export type GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetResponse =
+  GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetResponses[keyof GetAnnotationQueueRecordAnnotationQueuesQueueIdRecordsRecordIdGetResponses];
+
+export type DeleteAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingDeleteData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+      /**
+       * Record Id
+       */
+      record_id: string;
+    };
+    query: {
+      /**
+       * Annotation Template Id
+       */
+      annotation_template_id: string;
+    };
+    url: '/annotation_queues/{queue_id}/records/{record_id}/rating';
+  };
+
+export type DeleteAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingDeleteErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type DeleteAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingDeleteError =
+  DeleteAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingDeleteErrors[keyof DeleteAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingDeleteErrors];
+
+export type DeleteAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingDeleteResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+  };
+
+export type CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutData =
+  {
+    body: AnnotationRatingCreate;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+      /**
+       * Record Id
+       */
+      record_id: string;
+    };
+    query: {
+      /**
+       * Annotation Template Id
+       */
+      annotation_template_id: string;
+    };
+    url: '/annotation_queues/{queue_id}/records/{record_id}/rating';
+  };
+
+export type CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutError =
+  CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutErrors[keyof CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutErrors];
+
+export type CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: AnnotationRatingDb;
+  };
+
+export type CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutResponse =
+  CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutResponses[keyof CreateAnnotationQueueRecordRatingAnnotationQueuesQueueIdRecordsRecordIdRatingPutResponses];
+
+export type GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostData =
+  {
+    body?: never;
+    path: {
+      /**
+       * Queue Id
+       */
+      queue_id: string;
+    };
+    query?: never;
+    url: '/annotation_queues/{queue_id}/records/available_columns';
+  };
+
+export type GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostErrors =
+  {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+  };
+
+export type GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostError =
+  GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostErrors[keyof GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostErrors];
+
+export type GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostResponses =
+  {
+    /**
+     * Successful Response
+     */
+    200: LogRecordsAvailableColumnsResponse;
+  };
+
+export type GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostResponse =
+  GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostResponses[keyof GetAnnotationQueueRecordsAvailableColumnsAnnotationQueuesQueueIdRecordsAvailableColumnsPostResponses];
