@@ -31,9 +31,7 @@ export type LlmSpanAllowedInputType =
   | Message
   | Message[];
 export type LlmSpanAllowedOutputType =
-  | string
-  | Record<string, string>
-  | Message;
+  string | Record<string, string> | Message;
 export type RetrieverSpanAllowedOutputType =
   | string
   | Record<string, string>

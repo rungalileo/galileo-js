@@ -61,14 +61,7 @@ import {
 } from './utils/scorers';
 import { Scorers, ScorerSettings } from './entities/scorers';
 import { exportRecords } from './utils/export';
-import { Jobs } from './utils/jobs';
-import {
-  getJobProgress,
-  logScorerJobsStatus,
-  getRunScorerJobs,
-  getScorerJobsStatus,
-  getJob
-} from './utils/job-progress';
+import { monitorExperimentProgress } from './utils/job-progress';
 import {
   getPromptTemplate,
   getPromptTemplates,
@@ -244,15 +237,8 @@ export {
   createCodeScorerVersion,
   deleteScorer,
   validateCodeScorer,
-  // Jobs (legacy)
-  getScorerJobsStatus,
-  // Job Progress (new standardized API)
-  getJobProgress,
-  logScorerJobsStatus,
-  getRunScorerJobs,
-  getJob,
-  // Jobs class
-  Jobs,
+  // Experiment progress monitoring
+  monitorExperimentProgress,
   // Search
   RecordType,
   getTraces,

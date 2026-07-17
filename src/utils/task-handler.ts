@@ -7,11 +7,7 @@ import { getSdkLogger } from 'galileo-generated';
 const sdkLogger = getSdkLogger();
 
 export type TaskStatus =
-  | 'not_found'
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed';
+  'not_found' | 'pending' | 'running' | 'completed' | 'failed';
 
 interface Task {
   promise: Promise<unknown> | null;
