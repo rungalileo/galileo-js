@@ -66,7 +66,11 @@ export type ExtendedSpanRecord =
   | ExtendedRetrieverSpanRecordWithChildren;
 
 export type SpanSchema =
-  AgentSpan | WorkflowSpan | LlmSpan | RetrieverSpan | ToolSpan;
+  | AgentSpan
+  | WorkflowSpan
+  | LlmSpan
+  | RetrieverSpan
+  | ToolSpan;
 
 export {
   Trace as TraceSchemaOpenAPI,
