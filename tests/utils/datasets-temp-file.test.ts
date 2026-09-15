@@ -1,7 +1,8 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { readdirSync } from 'fs';
+import { mkdtempSync, readdirSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
+import { join } from 'path';
 
 import { createDataset } from '../../src/utils/datasets';
 import { commonHandlers, TEST_HOST } from '../common';
@@ -49,17 +50,28 @@ const server = setupServer(
   http.post(`${TEST_HOST}/datasets`, postDatasetsHandler)
 );
 
-const tempDirCount = (): number =>
-  readdirSync(tmpdir()).filter((entry) => entry.startsWith('galileo-dataset-'))
-    .length;
+// Own TMPDIR for this file. `os.tmpdir()` reads the env on every call, so the
+// SDK's `mkdtemp` lands here -- which makes counting leftovers deterministic.
+// jest runs test files in parallel workers and datasets.test.ts also creates
+// datasets, so counting the shared tmpdir would race against a sibling worker.
+let sandboxTmp: string;
+let originalTmpDir: string | undefined;
 
 beforeAll(() => {
   process.env.GALILEO_API_KEY = 'test-key';
   process.env.GALILEO_CONSOLE_URL = TEST_HOST;
+  originalTmpDir = process.env.TMPDIR;
+  sandboxTmp = mkdtempSync(join(tmpdir(), 'galileo-sdk-test-'));
+  process.env.TMPDIR = sandboxTmp;
   server.listen({ onUnhandledRequest: 'bypass' });
 });
 afterEach(() => uploadedRowsByName.clear());
-afterAll(() => server.close());
+afterAll(() => {
+  server.close();
+  if (originalTmpDir === undefined) delete process.env.TMPDIR;
+  else process.env.TMPDIR = originalTmpDir;
+  rmSync(sandboxTmp, { recursive: true, force: true });
+});
 
 describe('createDataset temp file isolation', () => {
   test('concurrent calls each upload their own rows', async () => {
@@ -88,11 +100,16 @@ describe('createDataset temp file isolation', () => {
     expect(uploadedRowsByName.get('delta')).toContain('delta-row');
   });
 
-  test('temp directories do not accumulate', async () => {
+  test('the temp directory is removed after the upload', async () => {
     // Unique paths would otherwise leak one directory per call, where the old
     // shared file was simply overwritten.
-    const before = tempDirCount();
+    const leftovers = () =>
+      readdirSync(sandboxTmp).filter((entry) =>
+        entry.startsWith('galileo-dataset-')
+      );
+
+    expect(leftovers()).toHaveLength(0);
     await createDataset({ name: 'epsilon', content: [{ col: 'epsilon-row' }] });
-    expect(tempDirCount()).toBe(before);
+    expect(leftovers()).toHaveLength(0);
   });
 });
