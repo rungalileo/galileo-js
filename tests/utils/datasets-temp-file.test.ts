@@ -1,6 +1,11 @@
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { GalileoConfig } from 'galileo-generated';
+import {
+  enableLogging,
+  GalileoConfig,
+  resetSdkLogger,
+  setCustomLogger
+} from 'galileo-generated';
 import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
@@ -35,6 +40,7 @@ jest.mock('os', () => ({
 // the only way to reach that leak path. Scoped to dataset temp files, so the
 // suite's own writes (and every other fs call) pass straight through.
 let mockFailDatasetWrite = false;
+let mockFailDatasetRemove = false;
 jest.mock('fs', () => {
   const actual = jest.requireActual('fs');
   return {
@@ -44,6 +50,18 @@ jest.mock('fs', () => {
         throw new Error('simulated write failure');
       }
       return (actual.writeFileSync as (...args: unknown[]) => unknown)(
+        target,
+        ...rest
+      );
+    },
+    rmSync: (target: unknown, ...rest: unknown[]) => {
+      if (
+        mockFailDatasetRemove &&
+        String(target).includes('galileo-dataset-')
+      ) {
+        throw new Error('simulated EPERM');
+      }
+      return (actual.rmSync as (...args: unknown[]) => unknown)(
         target,
         ...rest
       );
@@ -172,6 +190,41 @@ describe('createDataset temp file isolation', () => {
       ).rejects.toThrow('simulated write failure');
     } finally {
       mockFailDatasetWrite = false;
+    }
+    expect(leftovers()).toHaveLength(0);
+  });
+
+  test('test create dataset logs a cleanup failure without failing the upload', async () => {
+    // The only path that reaches the catch in `_removeTempDir`. Cleanup must
+    // stay non-fatal, so the upload still resolves; the warning is the only
+    // signal that a directory was left behind.
+    const warn = jest.fn();
+    setCustomLogger({
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn,
+      error: jest.fn()
+    });
+    enableLogging('warn');
+    mockFailDatasetRemove = true;
+    try {
+      await expect(
+        createDataset({ name: 'iota', content: [{ col: 'iota-row' }] })
+      ).resolves.toBeDefined();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('galileo-dataset-')
+      );
+    } finally {
+      mockFailDatasetRemove = false;
+      resetSdkLogger();
+    }
+
+    // The simulated failure really did leave the directory, so remove it here
+    // or the later `leftovers()` assertions would see it.
+    for (const entry of leftovers()) {
+      jest
+        .requireActual('fs')
+        .rmSync(join(mockSandboxTmp, entry), { recursive: true, force: true });
     }
     expect(leftovers()).toHaveLength(0);
   });

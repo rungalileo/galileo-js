@@ -104,8 +104,9 @@ function _removeTempDir(dir: string): void {
   } catch (error) {
     // Deliberately not fatal: cleanup runs in `createDataset`'s `finally`, and
     // failing here would turn a successful upload into a thrown error. Logged
-    // rather than swallowed so a host that cannot clear its temp directory is
-    // visible instead of silently accumulating them.
+    // rather than swallowed so the directory is recoverable by whoever is
+    // looking -- the SDK logger is silent by default, so this surfaces only
+    // under `enableLogging()` or GALILEO_LOG_LEVEL, matching the rest of the SDK.
     sdkLogger.warn(
       `Failed to remove temporary dataset directory ${dir}: ${
         error instanceof Error ? error.message : String(error)
