@@ -14,9 +14,12 @@ import type {
 import { DatasetFormatObject } from '../types/dataset.types';
 import { existsSync, mkdtempSync, PathLike, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { RunExperimentParams } from './experiments';
 import { Dataset, Datasets } from '../entities/datasets';
+import { getSdkLogger } from 'galileo-generated';
+
+const sdkLogger = getSdkLogger();
 
 // Re-export types
 export { Dataset, Datasets };
@@ -79,33 +82,50 @@ function _transposeDictToRows(
  * each other's content -- silently, since the dataset's own name and id were
  * still correct. The write is not atomic either, so a torn file was possible.
  */
-function _writeTempDataset(rows: string): PathLike {
+function _writeTempDataset(rows: string): { path: PathLike; dir: string } {
   const dir = mkdtempSync(join(tmpdir(), 'galileo-dataset-'));
-  writeFileSync(join(dir, `dataset.${DatasetFormatObject.JSONL}`), rows, {
-    encoding: 'utf-8'
-  });
-  return join(dir, `dataset.${DatasetFormatObject.JSONL}`);
+  const path = join(dir, `dataset.${DatasetFormatObject.JSONL}`);
+  try {
+    writeFileSync(path, rows, { encoding: 'utf-8' });
+  } catch (error) {
+    // The directory exists from here on, but the caller never receives it, so
+    // its `finally` cannot clean up. Remove it before rethrowing, or a failed
+    // serialisation (out of space, permissions) leaks a directory.
+    _removeTempDir(dir);
+    throw error;
+  }
+  return { path, dir };
 }
 
 /** Remove a directory created by `_writeTempDataset`. Never throws. */
-function _cleanupTempDataset(datasetPath: PathLike): void {
+function _removeTempDir(dir: string): void {
   try {
-    rmSync(dirname(datasetPath.toString()), { recursive: true, force: true });
-  } catch {
-    // Best effort: a temp file left behind is harmless next to a failed upload.
+    rmSync(dir, { recursive: true, force: true });
+  } catch (error) {
+    // Deliberately not fatal: cleanup runs in `createDataset`'s `finally`, and
+    // failing here would turn a successful upload into a thrown error. Logged
+    // rather than swallowed so a host that cannot clear its temp directory is
+    // visible instead of silently accumulating them.
+    sdkLogger.warn(
+      `Failed to remove temporary dataset directory ${dir}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
 /**
- * @returns the path, its format, and whether the path is a temp file this call
- * created (and so must clean up).
+ * @returns the path, its format, and the temp directory this call created, if
+ * any. The directory is carried explicitly rather than derived from the path:
+ * cleanup is a recursive force-remove, and deriving its target with `dirname`
+ * would couple a destructive call to an invariant nothing checks.
  */
 function _parseDataset(
   dataset: DatasetType
-): [PathLike, DatasetFormat, boolean] {
+): [PathLike, DatasetFormat, string | undefined] {
   let datasetPath: PathLike;
   let datasetFormat: DatasetFormat;
-  let isTemp = false;
+  let tempDir: string | undefined;
 
   if (typeof dataset === 'string') {
     datasetPath = dataset;
@@ -114,8 +134,7 @@ function _parseDataset(
       dataset as Record<string, string[]>
     );
     const rows = datasetRows.map((row) => _stringifyValue(row)).join('\n');
-    datasetPath = _writeTempDataset(rows);
-    isTemp = true;
+    ({ path: datasetPath, dir: tempDir } = _writeTempDataset(rows));
   } else if (Array.isArray(dataset)) {
     const rows = dataset
       .map((item) => {
@@ -135,8 +154,7 @@ function _parseDataset(
         return _stringifyValue(jsonifiedInner);
       })
       .join('\n');
-    datasetPath = _writeTempDataset(rows);
-    isTemp = true;
+    ({ path: datasetPath, dir: tempDir } = _writeTempDataset(rows));
   } else {
     throw new Error(
       'Dataset must be a path to a file, a string, an array of objects, or an object of arrays.'
@@ -164,7 +182,7 @@ function _parseDataset(
       );
   }
 
-  return [datasetPath, datasetFormat, isTemp];
+  return [datasetPath, datasetFormat, tempDir];
 }
 
 // ============================================================================
@@ -354,14 +372,14 @@ export async function createDataset(
   };
 
   // Held so the temp directory can be removed once the upload has read it.
-  let tempPath: PathLike | undefined;
+  let tempDir: string | undefined;
 
   if (_isCreateDatasetOptions(datasetOrOptions)) {
     // New object signature
-    const [datasetPath, datasetFormat, isTemp] = _parseDataset(
+    const [datasetPath, datasetFormat, createdTempDir] = _parseDataset(
       datasetOrOptions.content as DatasetType
     );
-    if (isTemp) tempPath = datasetPath;
+    tempDir = createdTempDir;
     resolvedOptions = {
       name: datasetOrOptions.name,
       filePath: datasetPath.toString(),
@@ -371,10 +389,10 @@ export async function createDataset(
     };
   } else {
     // Old positional signature: createDataset(dataset, name)
-    const [datasetPath, datasetFormat, isTemp] = _parseDataset(
+    const [datasetPath, datasetFormat, createdTempDir] = _parseDataset(
       datasetOrOptions as DatasetType
     );
-    if (isTemp) tempPath = datasetPath;
+    tempDir = createdTempDir;
     const resolvedName =
       name ?? datasetPath.toString().split('/').pop() ?? datasetPath.toString();
     resolvedOptions = {
@@ -391,7 +409,7 @@ export async function createDataset(
   } finally {
     // Each call now writes its own directory, so unlike the old shared
     // `temp.jsonl` these would accumulate if they were never removed.
-    if (tempPath !== undefined) _cleanupTempDataset(tempPath);
+    if (tempDir !== undefined) _removeTempDir(tempDir);
   }
 }
 
