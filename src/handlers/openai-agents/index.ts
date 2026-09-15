@@ -353,7 +353,8 @@ export class GalileoTracingProcessor implements TracingProcessor {
     if (spanData.type === 'response') {
       const finalData = extractLlmData(spanData);
       const responseObj = finalData._responseObject as
-        Record<string, unknown> | undefined;
+        | Record<string, unknown>
+        | undefined;
       const { _responseObject: _removed, ...rest } = finalData;
       void _removed;
       node.spanParams = { ...node.spanParams, ...rest };
