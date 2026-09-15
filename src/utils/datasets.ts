@@ -12,9 +12,9 @@ import type {
   CreateDatasetOptions
 } from '../types/dataset.types';
 import { DatasetFormatObject } from '../types/dataset.types';
-import { existsSync, PathLike, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, PathLike, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { RunExperimentParams } from './experiments';
 import { Dataset, Datasets } from '../entities/datasets';
 
@@ -70,9 +70,42 @@ function _transposeDictToRows(
   );
 }
 
-function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
+/**
+ * Serialise rows to a JSONL file in a directory unique to this call.
+ *
+ * The path must not be shared. `createDataset` writes the file here and the
+ * upload reads it back as a separate, later step, so a single fixed path in
+ * `os.tmpdir()` let two concurrent calls interleave write/write/read and upload
+ * each other's content -- silently, since the dataset's own name and id were
+ * still correct. The write is not atomic either, so a torn file was possible.
+ */
+function _writeTempDataset(rows: string): PathLike {
+  const dir = mkdtempSync(join(tmpdir(), 'galileo-dataset-'));
+  writeFileSync(join(dir, `dataset.${DatasetFormatObject.JSONL}`), rows, {
+    encoding: 'utf-8'
+  });
+  return join(dir, `dataset.${DatasetFormatObject.JSONL}`);
+}
+
+/** Remove a directory created by `_writeTempDataset`. Never throws. */
+function _cleanupTempDataset(datasetPath: PathLike): void {
+  try {
+    rmSync(dirname(datasetPath.toString()), { recursive: true, force: true });
+  } catch {
+    // Best effort: a temp file left behind is harmless next to a failed upload.
+  }
+}
+
+/**
+ * @returns the path, its format, and whether the path is a temp file this call
+ * created (and so must clean up).
+ */
+function _parseDataset(
+  dataset: DatasetType
+): [PathLike, DatasetFormat, boolean] {
   let datasetPath: PathLike;
   let datasetFormat: DatasetFormat;
+  let isTemp = false;
 
   if (typeof dataset === 'string') {
     datasetPath = dataset;
@@ -80,12 +113,10 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
     const datasetRows = _transposeDictToRows(
       dataset as Record<string, string[]>
     );
-    const tempFilePath = join(tmpdir(), `temp.${DatasetFormatObject.JSONL}`);
     const rows = datasetRows.map((row) => _stringifyValue(row)).join('\n');
-    writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
-    datasetPath = tempFilePath;
+    datasetPath = _writeTempDataset(rows);
+    isTemp = true;
   } else if (Array.isArray(dataset)) {
-    const tempFilePath = join(tmpdir(), `temp.${DatasetFormatObject.JSONL}`);
     const rows = dataset
       .map((item) => {
         const jsonifiedInner: Record<string, string> = {};
@@ -104,8 +135,8 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
         return _stringifyValue(jsonifiedInner);
       })
       .join('\n');
-    writeFileSync(tempFilePath, rows, { encoding: 'utf-8' });
-    datasetPath = tempFilePath;
+    datasetPath = _writeTempDataset(rows);
+    isTemp = true;
   } else {
     throw new Error(
       'Dataset must be a path to a file, a string, an array of objects, or an object of arrays.'
@@ -133,7 +164,7 @@ function _parseDataset(dataset: DatasetType): [PathLike, DatasetFormat] {
       );
   }
 
-  return [datasetPath, datasetFormat];
+  return [datasetPath, datasetFormat, isTemp];
 }
 
 // ============================================================================
@@ -322,11 +353,15 @@ export async function createDataset(
     projectName?: string;
   };
 
+  // Held so the temp directory can be removed once the upload has read it.
+  let tempPath: PathLike | undefined;
+
   if (_isCreateDatasetOptions(datasetOrOptions)) {
     // New object signature
-    const [datasetPath, datasetFormat] = _parseDataset(
+    const [datasetPath, datasetFormat, isTemp] = _parseDataset(
       datasetOrOptions.content as DatasetType
     );
+    if (isTemp) tempPath = datasetPath;
     resolvedOptions = {
       name: datasetOrOptions.name,
       filePath: datasetPath.toString(),
@@ -336,9 +371,10 @@ export async function createDataset(
     };
   } else {
     // Old positional signature: createDataset(dataset, name)
-    const [datasetPath, datasetFormat] = _parseDataset(
+    const [datasetPath, datasetFormat, isTemp] = _parseDataset(
       datasetOrOptions as DatasetType
     );
+    if (isTemp) tempPath = datasetPath;
     const resolvedName =
       name ?? datasetPath.toString().split('/').pop() ?? datasetPath.toString();
     resolvedOptions = {
@@ -348,9 +384,15 @@ export async function createDataset(
     };
   }
 
-  const datasetsService = new Datasets();
-  const dataset = await datasetsService.create(resolvedOptions);
-  return dataset.toDatasetDB();
+  try {
+    const datasetsService = new Datasets();
+    const dataset = await datasetsService.create(resolvedOptions);
+    return dataset.toDatasetDB();
+  } finally {
+    // Each call now writes its own directory, so unlike the old shared
+    // `temp.jsonl` these would accumulate if they were never removed.
+    if (tempPath !== undefined) _cleanupTempDataset(tempPath);
+  }
 }
 
 /**
