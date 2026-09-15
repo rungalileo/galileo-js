@@ -39,7 +39,8 @@ function loadOTLPTraceExporter(): new (
 }
 
 function loadResourceClass():
-  (new (attrs: Record<string, unknown>) => unknown) | null {
+  | (new (attrs: Record<string, unknown>) => unknown)
+  | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require('@opentelemetry/resources').Resource ?? null;
@@ -74,7 +75,8 @@ export class GalileoOTLPExporter implements SpanExporterLike {
   private _headerOverrides: Record<string, string | null> = {};
   private _hooked = false;
   private _ResourceClass:
-    (new (attrs: Record<string, unknown>) => unknown) | null;
+    | (new (attrs: Record<string, unknown>) => unknown)
+    | null;
 
   readonly project: string;
   readonly logstream: string;
