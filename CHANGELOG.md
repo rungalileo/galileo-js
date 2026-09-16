@@ -1,3 +1,17 @@
+# [2.3.0](https://github.com/rungalileo/galileo-js/compare/v2.2.0...v2.3.0) (2026-09-16)
+
+
+### Bug Fixes
+
+* give each createDataset call its own temp file ([#699](https://github.com/rungalileo/galileo-js/issues/699)) ([818eb8e](https://github.com/rungalileo/galileo-js/commit/818eb8ea832c455a3d218a0346b3a16c4585b3df))
+* **security:** update axios to 1.16.0 ([#627](https://github.com/rungalileo/galileo-js/issues/627)) ([ea6602f](https://github.com/rungalileo/galileo-js/commit/ea6602f0f8f5651c73ddaa85be23a559c2532c14))
+
+
+### Features
+
+* **cost:** per-modality token breakdown in JS SDK (F3 Track D) ([#619](https://github.com/rungalileo/galileo-js/issues/619)) ([ff0ac76](https://github.com/rungalileo/galileo-js/commit/ff0ac762684f6c2e2e4505bb9ab1b23bbc05b739))
+* route prompt-template experiments through batched create [SC-65568] ([#622](https://github.com/rungalileo/galileo-js/issues/622)) ([6fe04ea](https://github.com/rungalileo/galileo-js/commit/6fe04ea7a4a5a645ea11fcd4d6ea002cfb26ae29))
+
 # [2.2.0](https://github.com/rungalileo/galileo-js/compare/v2.1.2...v2.2.0) (2026-05-26)
 
 ### Features
