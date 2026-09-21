@@ -770,9 +770,8 @@ describe('experiments utility', () => {
     });
 
     it('should surface a project lookup failure instead of reporting it as a missing project', async () => {
-      // A 5xx from the project lookup used to be rewritten as "Exactly one of
-      // 'projectId' or 'projectName' must be provided", which sends people
-      // looking for a caller mistake that is not there.
+      // This used to be rewritten as "Exactly one of 'projectId' or
+      // 'projectName' must be provided", pointing at a mistake that isn't there.
       mockGetProjectByName.mockRejectedValueOnce(
         new Error('503 Service Unavailable - upstream connect error')
       );
@@ -785,6 +784,23 @@ describe('experiments utility', () => {
           function: async () => 'output'
         } as unknown as RunExperimentParams<Record<string, unknown>>)
       ).rejects.toThrow('503 Service Unavailable');
+    });
+
+    it('should fall back to GALILEO_PROJECT when projectName is an empty string', async () => {
+      // '' is falsy for the guard but survives the lookup's `??`, so without
+      // normalizing it the env fallback never runs.
+      process.env.GALILEO_PROJECT = projectName;
+
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          datasetId: 'test-dataset-id',
+          projectName: '',
+          function: async () => 'output'
+        } as unknown as RunExperimentParams<Record<string, unknown>>)
+      ).resolves.toBeDefined();
+
+      expect(mockGetProjectByName).toHaveBeenCalledWith(projectName);
     });
 
     it('should still report a missing project when nothing identifies one', async () => {

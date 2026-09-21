@@ -540,11 +540,16 @@ export class Experiments {
     projectName?: string,
     projectId?: string
   ): Promise<Project> {
-    // Validate up front rather than catching. The lookup below makes network
-    // calls, so catching it would report a transient 5xx as a caller mistake.
+    // Normalized because the lookup coalesces with `??`, so an empty string
+    // survives and defeats the env fallback.
+    const name = projectName || undefined;
+    const id = projectId || undefined;
+
+    // Validated up front, not caught: the lookup makes network calls, so a
+    // catch would report a transient 5xx as a caller mistake.
     if (
-      !projectName &&
-      !projectId &&
+      !name &&
+      !id &&
       !process.env.GALILEO_PROJECT_ID &&
       !process.env.GALILEO_PROJECT
     ) {
@@ -553,10 +558,7 @@ export class Experiments {
       );
     }
 
-    return await getProjectWithEnvFallbacks({
-      name: projectName,
-      projectId
-    });
+    return await getProjectWithEnvFallbacks({ name, projectId: id });
   }
 
   private async validateExperimentName(
@@ -639,7 +641,8 @@ export class Experiments {
 
   private async configureExperimentMetrics(
     metrics:
-      (GalileoMetrics | string | Metric | LocalMetricConfig)[] | undefined,
+      | (GalileoMetrics | string | Metric | LocalMetricConfig)[]
+      | undefined,
     projectId: string,
     experimentId: string
   ): Promise<[ScorerConfig[], LocalMetricConfig[]]> {
@@ -747,7 +750,8 @@ export class Experiments {
     projectName: string,
     projectId: string,
     metrics:
-      (GalileoMetrics | string | Metric | LocalMetricConfig)[] | undefined,
+      | (GalileoMetrics | string | Metric | LocalMetricConfig)[]
+      | undefined,
     promptTemplate: PromptTemplateType,
     promptSettings: PromptRunSettings
   ): Promise<RunExperimentOutput> {
