@@ -768,6 +768,45 @@ describe('experiments utility', () => {
         'Experiment not properly configured for either function or prompt template processing.'
       );
     });
+
+    it('should surface a project lookup failure instead of reporting it as a missing project', async () => {
+      // A 5xx from the project lookup used to be rewritten as "Exactly one of
+      // 'projectId' or 'projectName' must be provided", which sends people
+      // looking for a caller mistake that is not there.
+      mockGetProjectByName.mockRejectedValueOnce(
+        new Error('503 Service Unavailable - upstream connect error')
+      );
+
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          datasetId: 'test-dataset-id',
+          projectName,
+          function: async () => 'output'
+        } as unknown as RunExperimentParams<Record<string, unknown>>)
+      ).rejects.toThrow('503 Service Unavailable');
+    });
+
+    it('should still report a missing project when nothing identifies one', async () => {
+      const { GALILEO_PROJECT, GALILEO_PROJECT_ID } = process.env;
+      delete process.env.GALILEO_PROJECT;
+      delete process.env.GALILEO_PROJECT_ID;
+
+      try {
+        await expect(
+          runExperiment({
+            name: 'Test Experiment',
+            datasetId: 'test-dataset-id',
+            function: async () => 'output'
+          } as unknown as RunExperimentParams<Record<string, unknown>>)
+        ).rejects.toThrow("Exactly one of 'projectId' or 'projectName'");
+      } finally {
+        if (GALILEO_PROJECT !== undefined)
+          process.env.GALILEO_PROJECT = GALILEO_PROJECT;
+        if (GALILEO_PROJECT_ID !== undefined)
+          process.env.GALILEO_PROJECT_ID = GALILEO_PROJECT_ID;
+      }
+    });
   });
 
   describe('getExperiments with projectId', () => {

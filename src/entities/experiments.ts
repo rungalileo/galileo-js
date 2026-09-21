@@ -540,18 +540,23 @@ export class Experiments {
     projectName?: string,
     projectId?: string
   ): Promise<Project> {
-    try {
-      const project = await getProjectWithEnvFallbacks({
-        name: projectName,
-        projectId
-      });
-
-      return project;
-    } catch (error) {
+    // Validate up front rather than catching. The lookup below makes network
+    // calls, so catching it would report a transient 5xx as a caller mistake.
+    if (
+      !projectName &&
+      !projectId &&
+      !process.env.GALILEO_PROJECT_ID &&
+      !process.env.GALILEO_PROJECT
+    ) {
       throw new Error(
         "Exactly one of 'projectId' or 'projectName' must be provided, or set in the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT"
       );
     }
+
+    return await getProjectWithEnvFallbacks({
+      name: projectName,
+      projectId
+    });
   }
 
   private async validateExperimentName(
