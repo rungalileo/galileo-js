@@ -101,7 +101,11 @@ export class Projects {
       const envProjectId = process.env.GALILEO_PROJECT_ID;
       const envProjectName = process.env.GALILEO_PROJECT;
       if (envProjectId && envProjectName) {
-        throw new Error('Provide only one of projectId or name');
+        // Names the env vars, not the arguments: this branch only runs when
+        // the caller passed neither.
+        throw new Error(
+          'Provide only one of the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT'
+        );
       }
     }
 

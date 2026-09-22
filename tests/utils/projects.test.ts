@@ -171,7 +171,7 @@ describe('projects utils', () => {
       process.env.GALILEO_PROJECT_ID = projectId;
       process.env.GALILEO_PROJECT = projectName;
       await expect(getProjectWithEnvFallbacks({})).rejects.toThrow(
-        'Provide only one of projectId or name'
+        'Provide only one of the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT'
       );
     });
 

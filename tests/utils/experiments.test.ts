@@ -790,6 +790,7 @@ describe('experiments utility', () => {
       // '' is falsy for the guard but survives the lookup's `??`, so without
       // normalizing it the env fallback never runs.
       process.env.GALILEO_PROJECT = projectName;
+      delete process.env.GALILEO_PROJECT_ID;
 
       await expect(
         runExperiment({
