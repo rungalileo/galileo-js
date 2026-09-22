@@ -800,7 +800,9 @@ describe('experiments utility', () => {
         } as unknown as RunExperimentParams<Record<string, unknown>>)
       ).resolves.toBeDefined();
 
-      expect(mockGetProjectByName).toHaveBeenCalledWith(projectName, undefined);
+      expect(mockGetProjectByName).toHaveBeenCalledWith(projectName, {
+        projectType: undefined
+      });
     });
 
     it('should still report a missing project when nothing identifies one', async () => {
