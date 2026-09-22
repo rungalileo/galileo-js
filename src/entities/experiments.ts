@@ -540,18 +540,25 @@ export class Experiments {
     projectName?: string,
     projectId?: string
   ): Promise<Project> {
-    try {
-      const project = await getProjectWithEnvFallbacks({
-        name: projectName,
-        projectId
-      });
+    // Normalized because the lookup coalesces with `??`, so an empty string
+    // survives and defeats the env fallback.
+    const name = projectName || undefined;
+    const id = projectId || undefined;
 
-      return project;
-    } catch (error) {
+    // Validated up front, not caught: the lookup makes network calls, so a
+    // catch would report a transient 5xx as a caller mistake.
+    if (
+      !name &&
+      !id &&
+      !process.env.GALILEO_PROJECT_ID &&
+      !process.env.GALILEO_PROJECT
+    ) {
       throw new Error(
         "Exactly one of 'projectId' or 'projectName' must be provided, or set in the environment variables GALILEO_PROJECT_ID or GALILEO_PROJECT"
       );
     }
+
+    return await getProjectWithEnvFallbacks({ name, projectId: id });
   }
 
   private async validateExperimentName(

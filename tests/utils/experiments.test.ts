@@ -768,6 +768,64 @@ describe('experiments utility', () => {
         'Experiment not properly configured for either function or prompt template processing.'
       );
     });
+
+    it('should surface a project lookup failure instead of reporting it as a missing project', async () => {
+      // This used to be rewritten as "Exactly one of 'projectId' or
+      // 'projectName' must be provided", pointing at a mistake that isn't there.
+      mockGetProjectByName.mockRejectedValueOnce(
+        new Error('503 Service Unavailable - upstream connect error')
+      );
+
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          datasetId: 'test-dataset-id',
+          projectName,
+          function: async () => 'output'
+        } as unknown as RunExperimentParams<Record<string, unknown>>)
+      ).rejects.toThrow('503 Service Unavailable');
+    });
+
+    it('should fall back to GALILEO_PROJECT when projectName is an empty string', async () => {
+      // '' is falsy for the guard but survives the lookup's `??`, so without
+      // normalizing it the env fallback never runs.
+      process.env.GALILEO_PROJECT = projectName;
+      delete process.env.GALILEO_PROJECT_ID;
+
+      await expect(
+        runExperiment({
+          name: 'Test Experiment',
+          datasetId: 'test-dataset-id',
+          projectName: '',
+          function: async () => 'output'
+        } as unknown as RunExperimentParams<Record<string, unknown>>)
+      ).resolves.toBeDefined();
+
+      expect(mockGetProjectByName).toHaveBeenCalledWith(projectName, {
+        projectType: undefined
+      });
+    });
+
+    it('should still report a missing project when nothing identifies one', async () => {
+      const { GALILEO_PROJECT, GALILEO_PROJECT_ID } = process.env;
+      delete process.env.GALILEO_PROJECT;
+      delete process.env.GALILEO_PROJECT_ID;
+
+      try {
+        await expect(
+          runExperiment({
+            name: 'Test Experiment',
+            datasetId: 'test-dataset-id',
+            function: async () => 'output'
+          } as unknown as RunExperimentParams<Record<string, unknown>>)
+        ).rejects.toThrow("Exactly one of 'projectId' or 'projectName'");
+      } finally {
+        if (GALILEO_PROJECT !== undefined)
+          process.env.GALILEO_PROJECT = GALILEO_PROJECT;
+        if (GALILEO_PROJECT_ID !== undefined)
+          process.env.GALILEO_PROJECT_ID = GALILEO_PROJECT_ID;
+      }
+    });
   });
 
   describe('getExperiments with projectId', () => {
