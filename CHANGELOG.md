@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/rungalileo/galileo-js/compare/v2.3.0...v2.3.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **experiments:** stop masking project lookup failures as caller errors ([#704](https://github.com/rungalileo/galileo-js/issues/704)) ([9fb7e9f](https://github.com/rungalileo/galileo-js/commit/9fb7e9fe8c3b269ab324be01335a254fb3c86e9a))
+
 # [2.3.0](https://github.com/rungalileo/galileo-js/compare/v2.2.0...v2.3.0) (2026-09-16)
 
 
