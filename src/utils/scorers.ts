@@ -144,6 +144,7 @@ export const createRunScorerSettings = async ({
  * @param outputType - (Optional) The output type for the scorer.
  * @param inputType - (Optional) The input type for the scorer.
  * @param groundTruth - (Optional) Whether the scorer requires ground truth (`reference_output`) from the dataset. When true, the judge LLM receives the row's ground-truth value in its prompt.
+ * @param requiredScorers - (Optional) Metrics this scorer depends on (labels or names); computed before it. Set at creation only.
  * @returns A promise that resolves to the created scorer.
  * @internal Used by metrics.ts; not part of the public API. Use Scorers.create() instead.
  */
@@ -158,7 +159,8 @@ export const createScorer = async (
   scoreableNodeTypes?: StepType[],
   outputType?: OutputType,
   inputType?: InputType,
-  groundTruth?: boolean
+  groundTruth?: boolean,
+  requiredScorers?: string[]
 ): Promise<ScorerResponse> => {
   const scorersService = new Scorers();
   return await scorersService.create({
@@ -172,7 +174,10 @@ export const createScorer = async (
     scoreableNodeTypes,
     outputType,
     inputType,
-    groundTruth
+    groundTruth,
+    ...(requiredScorers && requiredScorers.length > 0
+      ? { requiredScorers }
+      : {})
   });
 };
 

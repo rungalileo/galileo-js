@@ -171,7 +171,12 @@ export class Metrics {
       undefined, // No model type
       undefined, // No default version ID
       scoreableNodeTypes,
-      outputType
+      outputType,
+      undefined, // No input type
+      undefined, // No ground truth
+      // Persist the dependencies on the scorer itself, not only in validation, so
+      // the runner computes them before this metric (matches the Python SDK).
+      requiredMetrics
     );
     sdkLogger.info(`Metric created: ${scorer.id}`);
 

@@ -199,4 +199,5 @@ export type createScorerOptions = {
   outputType?: OutputType;
   inputType?: InputType;
   groundTruth?: boolean;
+  requiredScorers?: string[];
 };
