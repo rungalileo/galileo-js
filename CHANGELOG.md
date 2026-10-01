@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/rungalileo/galileo-js/compare/v2.3.1...v2.3.2) (2026-10-01)
+
+
+### Bug Fixes
+
+* persist requiredMetrics when creating a custom code metric ([#713](https://github.com/rungalileo/galileo-js/issues/713)) ([5f34c74](https://github.com/rungalileo/galileo-js/commit/5f34c747a761cba29c3ff6a14f318d2a282ee8f1))
+
 ## [2.3.1](https://github.com/rungalileo/galileo-js/compare/v2.3.0...v2.3.1) (2026-09-22)
 
 
