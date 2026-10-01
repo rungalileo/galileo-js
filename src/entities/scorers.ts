@@ -145,6 +145,7 @@ export class Scorers {
    * @param options.scoreableNodeTypes - (Optional) The node types that can be scored.
    * @param options.outputType - (Optional) The output type for the scorer.
    * @param options.inputType - (Optional) The input type for the scorer.
+   * @param options.requiredScorers - (Optional) Metrics this scorer depends on; set at creation only.
    * @returns A promise that resolves to the created scorer.
    */
   async create(options: {
@@ -159,6 +160,7 @@ export class Scorers {
     outputType?: OutputType;
     inputType?: InputType;
     groundTruth?: boolean;
+    requiredScorers?: string[];
   }): Promise<ScorerResponse> {
     const client = await this.ensureClient();
     return await client.createScorer(options);

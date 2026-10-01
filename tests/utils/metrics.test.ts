@@ -898,6 +898,39 @@ describe('metrics utils', () => {
       );
     });
 
+    it('should persist requiredMetrics on the created scorer', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        requiredMetrics: [GalileoMetrics.correctness, 'custom_metric']
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requiredScorers: [GalileoMetrics.correctness, 'custom_metric']
+        })
+      );
+    });
+
+    it('should not send requiredScorers when requiredMetrics is omitted or empty', async () => {
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm
+      });
+      await createCustomCodeMetric({
+        name: 'my_code_metric',
+        codePath: validCodeFile,
+        nodeLevel: StepType.llm,
+        requiredMetrics: []
+      });
+
+      for (const [options] of mockCreateScorer.mock.calls) {
+        expect(options).not.toHaveProperty('requiredScorers');
+      }
+    });
+
     it('should pass custom timeout and poll interval with requiredMetrics', async () => {
       await createCustomCodeMetric({
         name: 'my_code_metric',
