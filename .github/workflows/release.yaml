@@ -53,7 +53,7 @@ jobs:
           git config --global gpg.format ssh
           git config --global user.signingKey ~/.ssh/galileo_signing_key
           git config --global commit.gpgsign true
-          git config --global user.email ci@rungalileo.io
+          git config --global user.email ${{ vars.SAO_PLATFORM_AUTOMATION_EMAIL }}
           git config --global user.name "galileo-automation"
 
       - name: Semantic Release (bump version + npm publish + Github release)
@@ -67,6 +67,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GALILEO_AUTOMATION_GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: galileo-automation
-          GIT_AUTHOR_EMAIL: ci@rungalileo.io
+          GIT_AUTHOR_EMAIL: ${{ vars.SAO_PLATFORM_AUTOMATION_EMAIL }}
           GIT_COMMITTER_NAME: galileo-automation
-          GIT_COMMITTER_EMAIL: ci@rungalileo.io
+          GIT_COMMITTER_EMAIL: ${{ vars.SAO_PLATFORM_AUTOMATION_EMAIL }}
