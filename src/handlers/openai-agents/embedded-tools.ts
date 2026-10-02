@@ -96,7 +96,8 @@ export function extractToolOutput(
     case 'code_interpreter_call': {
       // Concatenate all output logs and urls
       const outputs = item.outputs as
-        Array<Record<string, unknown>> | undefined;
+        | Array<Record<string, unknown>>
+        | undefined;
       if (!Array.isArray(outputs) || outputs.length === 0) return null;
       const parts = outputs
         .map((o) => {
