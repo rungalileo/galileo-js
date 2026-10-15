@@ -15,6 +15,16 @@ import {
   isGalileoAPIStandardErrorData
 } from '../types/errors.types';
 
+// The scorer_type values this SDK can decode. The API leaves decision scorers out of
+// responses for clients that do not list them in this header.
+export const SCORER_CAPABILITIES_HEADER = 'X-Galileo-Scorer-Capabilities';
+export const SCORER_CAPABILITIES = 'decision';
+
+const sdkHeaders = (): Record<string, string> => ({
+  'X-Galileo-SDK': getSdkIdentifier(),
+  [SCORER_CAPABILITIES_HEADER]: SCORER_CAPABILITIES
+});
+
 // Type guards for snake_case and camelCase conversion
 type ValidatedSnakeCase<T extends object, TTarget> =
   ObjectToSnake<T> extends TTarget ? TTarget : never;
@@ -70,9 +80,7 @@ export class BaseClient {
   ): Promise<AxiosResponse<T>> {
     await this.refreshTokenIfNeeded(endpoint);
 
-    let headers: Record<string, any> = {
-      'X-Galileo-SDK': getSdkIdentifier()
-    };
+    let headers: Record<string, any> = sdkHeaders();
     if (this.token) {
       headers = { ...this.getAuthHeader(this.token), ...headers };
     }
@@ -221,9 +229,7 @@ export class BaseClient {
   ): Promise<Readable> {
     await this.refreshTokenIfNeeded(endpoint);
 
-    let headers: Record<string, any> = {
-      'X-Galileo-SDK': getSdkIdentifier()
-    };
+    let headers: Record<string, any> = sdkHeaders();
     if (this.token) {
       headers = { ...this.getAuthHeader(this.token), ...headers };
     }
@@ -307,7 +313,7 @@ export class BaseClient {
         baseUrl: this.apiUrl,
         headers: {
           Authorization: `Bearer ${this.token}`,
-          'X-Galileo-SDK': getSdkIdentifier()
+          ...sdkHeaders()
         }
       });
     }
