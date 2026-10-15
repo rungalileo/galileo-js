@@ -5,7 +5,8 @@ import { setupServer } from 'msw/node';
 import {
   BaseClient,
   GENERIC_ERROR_MESSAGE,
-  RequestMethod
+  RequestMethod,
+  SCORER_CAPABILITIES
 } from '../../src/api-client/base-client';
 import { Routes } from '../../src/types/routes.types';
 import { getSdkIdentifier } from '../../src/utils/version';
@@ -23,6 +24,10 @@ class TestClient extends BaseClient {
 
   public async testRequest() {
     return this.makeRequest(RequestMethod.GET, Routes.healthCheck);
+  }
+
+  public async testTypedRequest() {
+    return this.client!.GET('/healthcheck');
   }
 
   public setTokenForTest(t: string): void {
@@ -66,6 +71,24 @@ describe('BaseClient Headers', () => {
     expect(capturedHeaders['x-galileo-sdk']).toMatch(
       /^galileo-js\/\d+\.\d+\.\d+$/
     );
+  });
+
+  it('should tell the API it can decode decision scorers', async () => {
+    const client = new TestClient();
+
+    await client.testRequest();
+
+    expect(SCORER_CAPABILITIES).toBe('decision');
+    expect(capturedHeaders['x-galileo-scorer-capabilities']).toBe('decision');
+  });
+
+  it('should send the SDK headers from the typed client too', async () => {
+    const client = new TestClient();
+
+    await client.testTypedRequest();
+
+    expect(capturedHeaders['x-galileo-sdk']).toBe(getSdkIdentifier());
+    expect(capturedHeaders['x-galileo-scorer-capabilities']).toBe('decision');
   });
 
   it('should include Authorization header', async () => {
