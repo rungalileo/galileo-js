@@ -335,7 +335,54 @@ describe('BaseClient API error handling', () => {
     );
     const client = new TestClient();
 
-    await expect(client.testRequest()).rejects.toMatchObject({ status: 422 });
+    await expect(client.testRequest()).rejects.toMatchObject({
+      httpStatus: 422
+    });
+  });
+
+  test('test makeRequest records the http status on a standard_error failure', async () => {
+    server.use(
+      http.get('http://localhost:8088/healthcheck', () =>
+        HttpResponse.json(
+          { standard_error: FULL_STANDARD_ERROR },
+          { status: 422 }
+        )
+      )
+    );
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.toMatchObject({
+      name: 'GalileoAPIError',
+      httpStatus: 422
+    });
+  });
+
+  test('test makeRequest records the http status on an unparseable failure', async () => {
+    server.use(
+      http.get(
+        'http://localhost:8088/healthcheck',
+        () => new HttpResponse('<html>Bad Gateway</html>', { status: 502 })
+      )
+    );
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.toMatchObject({
+      httpStatus: 502
+    });
+  });
+
+  test('test makeRequest does not set status, which the retry logic reads', async () => {
+    server.use(
+      http.get('http://localhost:8088/healthcheck', () =>
+        HttpResponse.json(
+          { standard_error: FULL_STANDARD_ERROR },
+          { status: 503 }
+        )
+      )
+    );
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.not.toHaveProperty('status');
   });
 
   test('test makeRequest throws with detail message when detail is validation array', async () => {

@@ -32,8 +32,9 @@ export function extractStatusFromError(error: unknown): number | undefined {
 }
 
 /**
- * Records the HTTP status of a failed response on the error, in the `status`
- * property that {@link extractStatusFromError} reads.
+ * Records the HTTP status of a failed API response on the error as `httpStatus`.
+ * It is not named `status` because the retry logic reads that property, and
+ * recording a status must not change which errors are retried.
  * @returns The same error, so it can be thrown inline
  */
 export function withHttpStatus<T extends Error>(
@@ -41,9 +42,26 @@ export function withHttpStatus<T extends Error>(
   status: number | undefined
 ): T {
   if (status !== undefined) {
-    Object.assign(error, { status });
+    Object.assign(error, { httpStatus: status });
   }
   return error;
+}
+
+/**
+ * Reads the status recorded by {@link withHttpStatus}.
+ * @returns The HTTP status of the failed API response, or undefined when the
+ * error did not come from a response (timeout, network error)
+ */
+export function extractHttpStatus(error: unknown): number | undefined {
+  if (
+    !!error &&
+    typeof error === 'object' &&
+    'httpStatus' in error &&
+    typeof error.httpStatus === 'number'
+  ) {
+    return error.httpStatus;
+  }
+  return undefined;
 }
 
 /**

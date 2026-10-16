@@ -42,7 +42,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ScorerSettings } from '../entities/scorers';
 import { getSdkLogger } from 'galileo-generated';
-import { extractStatusFromError } from './errors';
+import { extractHttpStatus } from './errors';
 
 const sdkLogger = getSdkLogger();
 
@@ -156,10 +156,11 @@ export class Metrics {
         scorerId: scorer.id,
         modelName,
         question,
-        answerOptions
+        // An empty list means no options; the version endpoint takes null for boolean_probability.
+        answerOptions: answerOptions?.length ? answerOptions : undefined
       });
     } catch (error) {
-      const status = extractStatusFromError(error);
+      const status = extractHttpStatus(error);
       if (status === undefined || status < 400 || status >= 500) {
         // The API gave no definitive rejection (timeout, network error, 5xx), so the
         // version may have been saved. Keep the scorer rather than delete a working one.
@@ -168,7 +169,7 @@ export class Metrics {
           new Error(
             `Creating the decision version for scorer ${scorer.id} ("${name}") failed without a definitive API response, so the version may or may not exist. The scorer was kept; check it before retrying or delete it. Cause: ${reason}`
           ),
-          { cause: error }
+          { cause: error, scorerId: scorer.id }
         );
       }
       try {

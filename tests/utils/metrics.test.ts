@@ -385,6 +385,22 @@ describe('metrics utils', () => {
       expect(mockCreateScorer.mock.calls[1][0].outputType).toBe('discrete');
     });
 
+    it('should treat an empty answerOptions array as no options', async () => {
+      await createDecisionMetric({
+        name: 'is_refund',
+        question: 'Q?',
+        answerOptions: []
+      });
+
+      expect(mockCreateScorer.mock.calls[0][0].outputType).toBe(
+        'boolean_probability'
+      );
+      expect(mockCreateDecisionScorerVersion).toHaveBeenCalledWith(
+        EXAMPLE_CUSTOM_SCORER.id,
+        expect.objectContaining({ answerOptions: undefined })
+      );
+    });
+
     it('should send string answer options for a categorical metric', async () => {
       await createDecisionMetric({
         name: 'intent',
@@ -468,7 +484,7 @@ describe('metrics utils', () => {
     });
 
     const apiErrorWithStatus = (message: string, status: number): Error =>
-      Object.assign(new Error(message), { status });
+      Object.assign(new Error(message), { httpStatus: status });
 
     it.each([400, 403, 404, 422])(
       'should delete the scorer and rethrow when the version request is rejected with %i',
