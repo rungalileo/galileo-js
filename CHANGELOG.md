@@ -1,3 +1,11 @@
+# [2.4.0](https://github.com/rungalileo/galileo-js/compare/v2.3.2...v2.4.0) (2026-10-16)
+
+
+### Features
+
+* **metrics:** add createDecisionMetric (SAO-17974) ([#727](https://github.com/rungalileo/galileo-js/issues/727)) ([d3df852](https://github.com/rungalileo/galileo-js/commit/d3df8528723fe003bae1d6e0284aba2f0f0871d5))
+* request decision scorers from the API (SAO-18652) ([#725](https://github.com/rungalileo/galileo-js/issues/725)) ([de72ab9](https://github.com/rungalileo/galileo-js/commit/de72ab9f6065c971748730e5c0d43410c2b39b64))
+
 ## [2.3.2](https://github.com/rungalileo/galileo-js/compare/v2.3.1...v2.3.2) (2026-10-01)
 
 
