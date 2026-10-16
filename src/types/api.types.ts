@@ -4232,8 +4232,7 @@ export interface components {
     AnthropicIntegration: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** @default api_key */
       authentication_type?: components['schemas']['AnthropicAuthenticationType'];
       /**
@@ -4271,8 +4270,7 @@ export interface components {
     AnthropicIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** @default api_key */
       authentication_type?: components['schemas']['AnthropicAuthenticationType'];
       /**
@@ -4329,8 +4327,7 @@ export interface components {
     AwsBedrockIntegration: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** @default key_secret */
       credential_type?: components['schemas']['AwsCredentialType'];
       /**
@@ -4373,8 +4370,7 @@ export interface components {
       region?: string;
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** Models */
       models?: components['schemas']['Model'][];
       /** Id */
@@ -4393,8 +4389,7 @@ export interface components {
     AwsSageMakerIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** Models */
       models?: components['schemas']['Model'][];
       /** @default key_secret */
@@ -4421,16 +4416,12 @@ export interface components {
      * @enum {string}
      */
     AzureAuthenticationType:
-      | 'api_key'
-      | 'client_secret'
-      | 'username_password'
-      | 'custom_oauth2';
+      'api_key' | 'client_secret' | 'username_password' | 'custom_oauth2';
     /** AzureIntegration */
     AzureIntegration: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /**
        * Proxy
        * @default false
@@ -4474,8 +4465,7 @@ export interface components {
        * @description The available deployments for this integration. If provided, we will not try to get this list from Azure.
        */
       available_deployments?:
-        | components['schemas']['AzureModelDeployment'][]
-        | null;
+        components['schemas']['AzureModelDeployment'][] | null;
       /** Id */
       id?: string | null;
       /**
@@ -4492,8 +4482,7 @@ export interface components {
     AzureIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /**
        * Proxy
        * @default false
@@ -4537,8 +4526,7 @@ export interface components {
        * @description The available deployments for this integration. If provided, we will not try to get this list from Azure.
        */
       available_deployments?:
-        | components['schemas']['AzureModelDeployment'][]
-        | null;
+        components['schemas']['AzureModelDeployment'][] | null;
       /** Token */
       token: string;
     };
@@ -4559,8 +4547,7 @@ export interface components {
     BaseAwsIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** @default key_secret */
       credential_type?: components['schemas']['AwsCredentialType'];
       /**
@@ -4841,8 +4828,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -4890,8 +4876,7 @@ export interface components {
       scorer_id: string;
       generated_scorer?: components['schemas']['BaseGeneratedScorerDB'] | null;
       registered_scorer?:
-        | components['schemas']['BaseRegisteredScorerDB']
-        | null;
+        components['schemas']['BaseRegisteredScorerDB'] | null;
       finetuned_scorer?: components['schemas']['BaseFinetunedScorerDB'] | null;
       /** Model Name */
       model_name?: string | null;
@@ -4927,14 +4912,11 @@ export interface components {
        */
       scorer_id: string;
       generated_scorer?:
-        | components['schemas']['GeneratedScorerResponse']
-        | null;
+        components['schemas']['GeneratedScorerResponse'] | null;
       registered_scorer?:
-        | components['schemas']['CreateUpdateRegisteredScorerResponse']
-        | null;
+        components['schemas']['CreateUpdateRegisteredScorerResponse'] | null;
       finetuned_scorer?:
-        | components['schemas']['FineTunedScorerResponse']
-        | null;
+        components['schemas']['FineTunedScorerResponse'] | null;
       /** Model Name */
       model_name?: string | null;
       /** Num Judges */
@@ -5179,8 +5161,7 @@ export interface components {
       /** Average */
       average?: number | null;
       roll_up_method?:
-        | components['schemas']['RollUpMethodDisplayOptions']
-        | null;
+        components['schemas']['RollUpMethodDisplayOptions'] | null;
       data_type?: components['schemas']['OutputTypeEnum'] | null;
     };
     /** BucketedMetrics */
@@ -5558,9 +5539,7 @@ export interface components {
       output: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Generated Output */
       generated_output:
-        | components['schemas']['ColumnMappingConfig']
-        | string[]
-        | null;
+        components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Metadata */
       metadata: components['schemas']['ColumnMappingConfig'] | string[] | null;
       /** Mgt */
@@ -6022,9 +6001,7 @@ export interface components {
       question: string;
       /** Answer Options */
       answer_options?:
-        | string[]
-        | components['schemas']['DecisionLevel'][]
-        | null;
+        string[] | components['schemas']['DecisionLevel'][] | null;
     };
     /** CreateJobRequest */
     CreateJobRequest: {
@@ -6129,17 +6106,14 @@ export interface components {
         | null;
       /** Prompt Registered Scorers Configuration */
       prompt_registered_scorers_configuration?:
-        | components['schemas']['RegisteredScorer'][]
-        | null;
+        components['schemas']['RegisteredScorer'][] | null;
       /** Prompt Generated Scorers Configuration */
       prompt_generated_scorers_configuration?: string[] | null;
       /** Prompt Finetuned Scorers Configuration */
       prompt_finetuned_scorers_configuration?:
-        | components['schemas']['FineTunedScorer'][]
-        | null;
+        components['schemas']['FineTunedScorer'][] | null;
       prompt_scorers_configuration?:
-        | components['schemas']['ScorersConfiguration']
-        | null;
+        components['schemas']['ScorersConfiguration'] | null;
       /** Prompt Customized Scorers Configuration */
       prompt_customized_scorers_configuration?:
         | (
@@ -6169,16 +6143,14 @@ export interface components {
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
       prompt_optimization_configuration?:
-        | components['schemas']['PromptOptimizationConfiguration']
-        | null;
+        components['schemas']['PromptOptimizationConfiguration'] | null;
       /**
        * Epoch
        * @default 0
        */
       epoch?: number;
       metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration']
-        | null;
+        components['schemas']['MetricCritiqueJobConfiguration'] | null;
       /** Is Session */
       is_session?: boolean | null;
       /** Validation Config */
@@ -6309,17 +6281,14 @@ export interface components {
         | null;
       /** Prompt Registered Scorers Configuration */
       prompt_registered_scorers_configuration?:
-        | components['schemas']['RegisteredScorer'][]
-        | null;
+        components['schemas']['RegisteredScorer'][] | null;
       /** Prompt Generated Scorers Configuration */
       prompt_generated_scorers_configuration?: string[] | null;
       /** Prompt Finetuned Scorers Configuration */
       prompt_finetuned_scorers_configuration?:
-        | components['schemas']['FineTunedScorer'][]
-        | null;
+        components['schemas']['FineTunedScorer'][] | null;
       prompt_scorers_configuration?:
-        | components['schemas']['ScorersConfiguration']
-        | null;
+        components['schemas']['ScorersConfiguration'] | null;
       /** Prompt Customized Scorers Configuration */
       prompt_customized_scorers_configuration?:
         | (
@@ -6349,16 +6318,14 @@ export interface components {
       /** Segment Filters */
       segment_filters?: components['schemas']['SegmentFilter'][] | null;
       prompt_optimization_configuration?:
-        | components['schemas']['PromptOptimizationConfiguration']
-        | null;
+        components['schemas']['PromptOptimizationConfiguration'] | null;
       /**
        * Epoch
        * @default 0
        */
       epoch?: number;
       metric_critique_configuration?:
-        | components['schemas']['MetricCritiqueJobConfiguration']
-        | null;
+        components['schemas']['MetricCritiqueJobConfiguration'] | null;
       /** Is Session */
       is_session?: boolean | null;
       /** Validation Config */
@@ -6475,15 +6442,13 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
       required_metric_ids?: string[] | null;
       roll_up_method?:
-        | components['schemas']['RollUpMethodDisplayOptions']
-        | null;
+        components['schemas']['RollUpMethodDisplayOptions'] | null;
       /** Metric Color Picker Config */
       metric_color_picker_config?:
         | (
@@ -6559,8 +6524,7 @@ export interface components {
     CustomIntegration: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** @default oauth2 */
       authentication_type?: components['schemas']['CustomAuthenticationType'];
       /**
@@ -6649,8 +6613,7 @@ export interface components {
     CustomIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /** @default oauth2 */
       authentication_type?: components['schemas']['CustomAuthenticationType'];
       /**
@@ -6847,8 +6810,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -6978,8 +6940,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7099,8 +7060,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7219,8 +7179,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7349,8 +7308,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7476,8 +7434,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7603,8 +7560,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7730,8 +7686,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7857,8 +7812,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -7984,8 +7938,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8116,8 +8069,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8243,8 +8195,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8374,8 +8325,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8501,8 +8451,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -8628,8 +8577,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -9401,11 +9349,7 @@ export interface components {
      * @enum {string}
      */
     EventStatus:
-      | 'in_progress'
-      | 'completed'
-      | 'failed'
-      | 'cancelled'
-      | 'incomplete';
+      'in_progress' | 'completed' | 'failed' | 'cancelled' | 'incomplete';
     /**
      * ExecutionStatus
      * @description Status of the execution.
@@ -13632,8 +13576,7 @@ export interface components {
        * @description Multimodal capabilities required by this scorer.
        */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
     };
     /** GeneratedScorerResponse */
     GeneratedScorerResponse: {
@@ -16851,10 +16794,7 @@ export interface components {
      * @enum {string}
      */
     LoggingMethod:
-      | 'playground'
-      | 'python_client'
-      | 'typescript_client'
-      | 'api_direct';
+      'playground' | 'python_client' | 'typescript_client' | 'api_direct';
     /**
      * LunaInputTypeEnum
      * @enum {string}
@@ -21258,10 +21198,7 @@ export interface components {
      * @enum {string}
      */
     RecommendedModelPurpose:
-      | 'custom_metric_judge'
-      | 'custom_metric_autogen'
-      | 'autotune'
-      | 'signals';
+      'custom_metric_judge' | 'custom_metric_autogen' | 'autotune' | 'signals';
     /**
      * RecomputeLogRecordsMetricsRequest
      * @description Request to recompute metrics for a genai project run (log stream or experiment).
@@ -21410,9 +21347,7 @@ export interface components {
       status: components['schemas']['TaskResultStatus'];
       /** Result */
       result?:
-        | components['schemas']['ValidateRegisteredScorerResult']
-        | string
-        | null;
+        components['schemas']['ValidateRegisteredScorerResult'] | string | null;
     };
     /** RenderTemplateRequest */
     RenderTemplateRequest: {
@@ -22046,11 +21981,9 @@ export interface components {
        * @description Multimodal capabilities which this scorer can utilize in its evaluation.
        */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       roll_up_method?:
-        | components['schemas']['RollUpMethodDisplayOptions']
-        | null;
+        components['schemas']['RollUpMethodDisplayOptions'] | null;
       /**
        * Score Type
        * @description Return type of code scorers (e.g., 'bool', 'int', 'float', 'str').
@@ -22317,8 +22250,7 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       /** Required Scorers */
       required_scorers?: string[] | null;
       /** Required Metric Ids */
@@ -22326,8 +22258,7 @@ export interface components {
       /** Deprecated */
       deprecated?: boolean | null;
       roll_up_method?:
-        | components['schemas']['RollUpMethodDisplayOptions']
-        | null;
+        components['schemas']['RollUpMethodDisplayOptions'] | null;
       roll_up_config?: components['schemas']['BaseMetricRollUpConfigDB'] | null;
       /**
        * Label
@@ -23110,8 +23041,7 @@ export interface components {
       /** Examples */
       examples?: string[];
       source_dataset?:
-        | components['schemas']['SyntheticDataSourceDataset']
-        | null;
+        components['schemas']['SyntheticDataSourceDataset'] | null;
       /** Data Types */
       data_types?: components['schemas']['SyntheticDataTypes'][] | null;
       /**
@@ -24014,11 +23944,9 @@ export interface components {
       input_type?: components['schemas']['InputTypeEnum'] | null;
       /** Multimodal Capabilities */
       multimodal_capabilities?:
-        | components['schemas']['MultimodalCapability'][]
-        | null;
+        components['schemas']['MultimodalCapability'][] | null;
       roll_up_method?:
-        | components['schemas']['RollUpMethodDisplayOptions']
-        | null;
+        components['schemas']['RollUpMethodDisplayOptions'] | null;
       /** Metric Color Picker Config */
       metric_color_picker_config?:
         | (
@@ -24188,8 +24116,7 @@ export interface components {
        */
       include_llm_credentials?: boolean;
       chain_aggregation?:
-        | components['schemas']['ChainAggregationStrategy']
-        | null;
+        components['schemas']['ChainAggregationStrategy'] | null;
       /** Test Scores */
       test_scores: components['schemas']['TestScore'][];
     };
@@ -24400,8 +24327,7 @@ export interface components {
     VegasGatewayIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       /**
        * Endpoint
        * Format: uri
@@ -24438,8 +24364,7 @@ export interface components {
     VertexAIIntegration: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       gcs_config?: components['schemas']['VertexAIGCSConfigResponse'] | null;
       /** Id */
       id?: string | null;
@@ -24457,8 +24382,7 @@ export interface components {
     VertexAIIntegrationCreate: {
       /** @description Configuration for multi-modal (file upload) capabilities. */
       multi_modal_config?:
-        | components['schemas']['MultiModalModelIntegrationConfig']
-        | null;
+        components['schemas']['MultiModalModelIntegrationConfig'] | null;
       gcs_config?: components['schemas']['VertexAIGCSConfig'] | null;
       /** Token */
       token: string;
@@ -24829,12 +24753,7 @@ export interface components {
      * @enum {string}
      */
     galileo_core__schemas__shared__message_role__MessageRole:
-      | 'agent'
-      | 'assistant'
-      | 'function'
-      | 'system'
-      | 'tool'
-      | 'user';
+      'agent' | 'assistant' | 'function' | 'system' | 'tool' | 'user';
     /**
      * ScorerName
      * @enum {string}
@@ -32055,8 +31974,7 @@ export interface operations {
     parameters: {
       query?: {
         multimodal_capabilities?:
-          | components['schemas']['MultimodalCapability'][]
-          | null;
+          components['schemas']['MultimodalCapability'][] | null;
       };
       header?: never;
       path?: never;
@@ -32090,8 +32008,7 @@ export interface operations {
     parameters: {
       query?: {
         multimodal_capabilities?:
-          | components['schemas']['MultimodalCapability'][]
-          | null;
+          components['schemas']['MultimodalCapability'][] | null;
       };
       header?: never;
       path: {
