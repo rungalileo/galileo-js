@@ -1,6 +1,7 @@
 import {
   type CreateCustomLlmMetricParams,
   type CreateCustomCodeMetricParams,
+  type CreateDecisionMetricParams,
   type DeleteMetricParams,
   type DeleteMetricByNameParams,
   OutputType,
@@ -11,6 +12,7 @@ import {
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
+  createDecisionScorerVersion,
   validateCodeScorer,
   deleteScorer,
   getScorers,
@@ -40,6 +42,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ScorerSettings } from '../entities/scorers';
 import { getSdkLogger } from 'galileo-generated';
+import { extractHttpStatus } from './errors';
 
 const sdkLogger = getSdkLogger();
 
@@ -96,6 +99,88 @@ export class Metrics {
       modelName,
       numJudges
     });
+  }
+
+  /**
+   * Creates a decision metric: one typed question answered with probabilities
+   * by a decision model such as `jev-1.13.0`.
+   *
+   * Creates the scorer, then its decision version. If the API rejects the
+   * version request with an HTTP 4xx (unknown model, invalid answer options,
+   * feature disabled), the new scorer is deleted so no empty evaluator is left
+   * behind, and the original error is rethrown. On a timeout, network error or
+   * 5xx the version may have been saved, so the scorer is kept and the thrown
+   * error names its id.
+   *
+   * @param params - The parameters for creating the decision metric.
+   * @returns A promise that resolves to the created scorer version.
+   *
+   * @example
+   * ```typescript
+   * const version = await new Metrics().createDecisionMetric({
+   *   name: 'refund_intent',
+   *   question: 'What does the customer want?',
+   *   outputType: OutputType.CATEGORICAL,
+   *   answerOptions: ['refund', 'exchange', 'other']
+   * });
+   * ```
+   */
+  public async createDecisionMetric({
+    name,
+    question,
+    nodeLevel = StepType.llm,
+    modelName = 'jev-1.13.0',
+    outputType,
+    answerOptions,
+    inputType,
+    description = '',
+    tags = [],
+    groundTruth
+  }: CreateDecisionMetricParams): Promise<BaseScorerVersionResponse> {
+    const scorer = await createScorer(
+      name,
+      ScorerTypes.decision,
+      description,
+      tags,
+      undefined,
+      undefined,
+      undefined,
+      [nodeLevel],
+      outputType ?? inferDecisionOutputType(answerOptions),
+      inputType,
+      groundTruth
+    );
+
+    try {
+      return await createDecisionScorerVersion({
+        scorerId: scorer.id,
+        modelName,
+        question,
+        // An empty list means no options; the version endpoint takes null for boolean_probability.
+        answerOptions: answerOptions?.length ? answerOptions : undefined
+      });
+    } catch (error) {
+      const status = extractHttpStatus(error);
+      if (status === undefined || status < 400 || status >= 500) {
+        // The API gave no definitive rejection (timeout, network error, 5xx), so the
+        // version may have been saved. Keep the scorer rather than delete a working one.
+        const reason = error instanceof Error ? error.message : String(error);
+        throw Object.assign(
+          new Error(
+            `Creating the decision version for scorer ${scorer.id} ("${name}") failed without a definitive API response, so the version may or may not exist. The scorer was kept; check it before retrying or delete it. Cause: ${reason}`
+          ),
+          { cause: error, scorerId: scorer.id }
+        );
+      }
+      try {
+        await deleteScorer(scorer.id);
+      } catch (cleanupError) {
+        sdkLogger.warn(
+          `Failed to delete decision scorer ${scorer.id} after its version request was rejected: ${String(cleanupError)}`
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -551,6 +636,21 @@ function isLocalMetricConfig(value: any): value is LocalMetricConfig {
   );
 }
 
+/**
+ * Picks the decision output type that matches the answer options: none for
+ * `boolean_probability`, strings for `categorical`, levels for `discrete`.
+ */
+function inferDecisionOutputType(
+  answerOptions: CreateDecisionMetricParams['answerOptions']
+): OutputType {
+  if (!answerOptions || answerOptions.length === 0) {
+    return OutputType.BOOLEAN_PROBABILITY;
+  }
+  return typeof answerOptions[0] === 'string'
+    ? OutputType.CATEGORICAL
+    : OutputType.DISCRETE;
+}
+
 // Standalone utility functions that instantiate the Metrics class
 
 /**
@@ -564,6 +664,31 @@ export const createCustomLlmMetric = async (
 ): Promise<BaseScorerVersionResponse> => {
   const metrics = new Metrics();
   return await metrics.createCustomLlmMetric(params);
+};
+
+/**
+ * Creates a decision metric. See {@link Metrics.createDecisionMetric}.
+ *
+ * @param params - The parameters for creating the decision metric.
+ * @returns A promise that resolves to the created scorer version.
+ *
+ * @example
+ * ```typescript
+ * import { createDecisionMetric, OutputType } from 'galileo';
+ *
+ * await createDecisionMetric({
+ *   name: 'refund_intent',
+ *   question: 'What does the customer want?',
+ *   outputType: OutputType.CATEGORICAL,
+ *   answerOptions: ['refund', 'exchange', 'other']
+ * });
+ * ```
+ */
+export const createDecisionMetric = async (
+  params: CreateDecisionMetricParams
+): Promise<BaseScorerVersionResponse> => {
+  const metrics = new Metrics();
+  return await metrics.createDecisionMetric(params);
 };
 
 /**

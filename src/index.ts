@@ -5,7 +5,8 @@ import { GalileoConfig, type GalileoConfigInput } from 'galileo-generated';
 import {
   GalileoMetrics,
   LocalMetricConfig,
-  Metric
+  Metric,
+  CreateDecisionMetricParams
 } from './types/metrics.types';
 import {
   LogRecordsFilter,
@@ -45,6 +46,7 @@ import {
 import {
   createCustomLlmMetric,
   createCustomCodeMetric,
+  createDecisionMetric,
   deleteMetric,
   createMetricConfigs,
   getMetrics
@@ -55,6 +57,7 @@ import {
   getScorersByLabels,
   getScorersByIds,
   createLlmScorerVersion,
+  createDecisionScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
   validateCodeScorer
@@ -103,6 +106,12 @@ import {
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
 import type { LogTracesIngestRequest } from './types/logging/trace.types';
+import {
+  InputType,
+  OutputType,
+  type DecisionLevel
+} from './types/scorer.types';
+import { StepType } from './types/logging/step.types';
 import { GalileoLogger } from './utils/galileo-logger';
 import {
   init,
@@ -223,10 +232,14 @@ export {
   // Metrics
   createCustomLlmMetric,
   createCustomCodeMetric,
+  createDecisionMetric,
   getMetrics,
   deleteMetric,
   createMetricConfigs,
   // Scorers
+  OutputType,
+  InputType,
+  StepType,
   Scorers,
   ScorerSettings,
   getScorers,
@@ -234,6 +247,7 @@ export {
   getScorersByLabels,
   getScorersByIds,
   createLlmScorerVersion,
+  createDecisionScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
   validateCodeScorer,
@@ -263,7 +277,9 @@ export type {
   ListDatasetResponse,
   SyntheticDatasetExtensionRequest,
   JobProgress,
-  RunExperimentParams
+  RunExperimentParams,
+  DecisionLevel,
+  CreateDecisionMetricParams
 };
 
 export type { StartSessionOptions } from './types/logging/logger.types';

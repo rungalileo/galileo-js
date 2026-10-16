@@ -1,4 +1,9 @@
-import type { OutputType, ScorerTypes } from './scorer.types';
+import type {
+  DecisionLevel,
+  InputType,
+  OutputType,
+  ScorerTypes
+} from './scorer.types';
 import type { StepType } from './logging/step.types';
 import type { components } from './api.types';
 import type { ObjectToCamel } from 'ts-case-convert';
@@ -99,6 +104,31 @@ export interface CreateCustomLlmMetricParams {
   description?: string;
   tags?: string[];
   outputType?: OutputType;
+  groundTruth?: boolean;
+}
+
+export interface CreateDecisionMetricParams {
+  name: string;
+  /** The question the decision model answers (1-2,000 characters). */
+  question: string;
+  /** The node type the metric scores. Decision metrics score exactly one node type. Defaults to `llm`. */
+  nodeLevel?: StepType;
+  /** Model registry version that answers the question. Defaults to `jev-1.13.0`. */
+  modelName?: string;
+  /**
+   * One of `boolean_probability`, `categorical` or `discrete`. Defaults to the
+   * type that matches `answerOptions`: `boolean_probability` without options,
+   * `categorical` for strings, `discrete` for levels.
+   */
+  outputType?: OutputType;
+  /**
+   * Required for `categorical` (2-255 unique strings) and `discrete` (2-10
+   * levels numbered 0, 1, 2... in order). Omit for `boolean_probability`.
+   */
+  answerOptions?: string[] | DecisionLevel[];
+  inputType?: InputType;
+  description?: string;
+  tags?: string[];
   groundTruth?: boolean;
 }
 

@@ -14,6 +14,7 @@ import {
   GalileoAPIError,
   isGalileoAPIStandardErrorData
 } from '../types/errors.types';
+import { withHttpStatus } from '../utils/errors';
 
 // The scorer_type values this SDK can decode. The API leaves decision scorers out of
 // responses for clients that do not list them in this header.
@@ -424,10 +425,16 @@ export class BaseClient {
     if (error && typeof error === 'object') {
       if ('standard_error' in error) {
         if (isGalileoAPIStandardErrorData(error.standard_error)) {
-          throw new GalileoAPIError(error.standard_error);
+          throw withHttpStatus(
+            new GalileoAPIError(error.standard_error),
+            statusCode
+          );
         } else {
-          throw new Error(
-            `❗ Something didn't go quite right. The API returned an error, but the details could not be parsed.`
+          throw withHttpStatus(
+            new Error(
+              `❗ Something didn't go quite right. The API returned an error, but the details could not be parsed.`
+            ),
+            statusCode
           );
         }
       } else if ('detail' in error) {
@@ -440,8 +447,11 @@ export class BaseClient {
               : GENERIC_ERROR_MESSAGE;
 
         if (statusCode) {
-          throw new Error(
-            `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`
+          throw withHttpStatus(
+            new Error(
+              `❗ Something didn't go quite right. The API returned a non-ok status code ${statusCode} with output: ${errorMessage}`
+            ),
+            statusCode
           );
         } else {
           throw new Error(
@@ -449,10 +459,10 @@ export class BaseClient {
           );
         }
       } else {
-        throw new Error(GENERIC_ERROR_MESSAGE);
+        throw withHttpStatus(new Error(GENERIC_ERROR_MESSAGE), statusCode);
       }
     } else {
-      throw new Error(GENERIC_ERROR_MESSAGE);
+      throw withHttpStatus(new Error(GENERIC_ERROR_MESSAGE), statusCode);
     }
   }
 }

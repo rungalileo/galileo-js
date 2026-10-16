@@ -1692,6 +1692,7 @@ export type BaseScorerVersionDb = {
   generated_scorer?: BaseGeneratedScorerDb | null;
   registered_scorer?: BaseRegisteredScorerDb | null;
   finetuned_scorer?: BaseFinetunedScorerDb | null;
+  decision_scorer?: DecisionScorerDb | null;
   /**
    * Model Name
    */
@@ -1741,6 +1742,7 @@ export type BaseScorerVersionResponse = {
   generated_scorer?: GeneratedScorerResponse | null;
   registered_scorer?: CreateUpdateRegisteredScorerResponse | null;
   finetuned_scorer?: FineTunedScorerResponse | null;
+  decision_scorer?: DecisionScorerDb | null;
   /**
    * Model Name
    */
@@ -3144,6 +3146,44 @@ export type CreateCustomLunaScorerVersionRequest = {
   executor?: GalileoCoreSchemasSharedScorersScorerNameScorerName | null;
   luna_input_type?: LunaInputTypeEnum | null;
   luna_output_type?: LunaOutputTypeEnum | null;
+};
+
+/**
+ * CreateDecisionScorerVersionRequest
+ *
+ * The question and model for a new decision scorer version.
+ *
+ * The inherited scoreable_node_types, output_type and input_type are optional, but each must
+ * match the scorer when sent. The service checks these fields, and it checks answer_options
+ * against the stored output_type.
+ */
+export type CreateDecisionScorerVersionRequest = {
+  /**
+   * Model Name
+   */
+  model_name: string;
+  /**
+   * Num Judges
+   */
+  num_judges?: number | null;
+  /**
+   * Scoreable Node Types
+   */
+  scoreable_node_types?: Array<string> | null;
+  /**
+   * Cot Enabled
+   */
+  cot_enabled?: boolean | null;
+  output_type?: OutputTypeEnum | null;
+  input_type?: InputTypeEnum | null;
+  /**
+   * Question
+   */
+  question: string;
+  /**
+   * Answer Options
+   */
+  answer_options?: Array<string> | Array<DecisionLevel> | null;
 };
 
 /**
@@ -7445,6 +7485,63 @@ export type DeleteRunResponse = {
    * Message
    */
   message: string;
+};
+
+/**
+ * DecisionLevel
+ *
+ * One level of a score question. A question's levels run 0, 1, 2 and so on, with no gaps.
+ */
+export type DecisionLevel = {
+  /**
+   * Level
+   */
+  level: number;
+  /**
+   * Label
+   */
+  label: string;
+  /**
+   * Description
+   */
+  description?: string | null;
+};
+
+/**
+ * DecisionScorerDB
+ *
+ * A row of the decision_scorers table.
+ *
+ * answer_options depends on the output type of the scorer:
+ * - categorical: a list of labels (list[str]).
+ * - discrete: a list of DecisionLevel.
+ * - boolean_probability: None.
+ */
+export type DecisionScorerDb = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Organization Id
+   */
+  organization_id: string;
+  /**
+   * Created By
+   */
+  created_by?: string | null;
+  /**
+   * Question
+   */
+  question: string;
+  /**
+   * Answer Options
+   */
+  answer_options?: Array<string> | Array<DecisionLevel> | null;
+  /**
+   * Created At
+   */
+  created_at: string;
 };
 
 /**
@@ -18074,7 +18171,8 @@ export type ModelCostBy = (typeof ModelCostBy)[keyof typeof ModelCostBy];
 export const ModelType = {
   SLM: 'slm',
   LLM: 'llm',
-  CODE: 'code'
+  CODE: 'code',
+  DECISION: 'decision'
 } as const;
 
 /**
@@ -18541,7 +18639,8 @@ export const OutputTypeEnum = {
   PERCENTAGE: 'percentage',
   MULTILABEL: 'multilabel',
   RETRIEVED_CHUNK_LIST_BOOLEAN: 'retrieved_chunk_list_boolean',
-  BOOLEAN_MULTILABEL: 'boolean_multilabel'
+  BOOLEAN_MULTILABEL: 'boolean_multilabel',
+  BOOLEAN_PROBABILITY: 'boolean_probability'
 } as const;
 
 /**
@@ -23947,6 +24046,7 @@ export const ScorerTypes = {
   LLM: 'llm',
   CODE: 'code',
   LUNA: 'luna',
+  DECISION: 'decision',
   PRESET: 'preset'
 } as const;
 
