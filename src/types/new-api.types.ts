@@ -1692,6 +1692,7 @@ export type BaseScorerVersionDb = {
   generatedScorer?: BaseGeneratedScorerDb | null;
   registeredScorer?: BaseRegisteredScorerDb | null;
   finetunedScorer?: BaseFinetunedScorerDb | null;
+  decisionScorer?: DecisionScorerDb | null;
   /**
    * Model Name
    */
@@ -1741,6 +1742,7 @@ export type BaseScorerVersionResponse = {
   generatedScorer?: GeneratedScorerResponse | null;
   registeredScorer?: CreateUpdateRegisteredScorerResponse | null;
   finetunedScorer?: FineTunedScorerResponse | null;
+  decisionScorer?: DecisionScorerDb | null;
   /**
    * Model Name
    */
@@ -7503,6 +7505,43 @@ export type DecisionLevel = {
    * Description
    */
   description?: string | null;
+};
+
+/**
+ * DecisionScorerDB
+ *
+ * A row of the decision_scorers table.
+ *
+ * answer_options depends on the output type of the scorer:
+ * - categorical: a list of labels (list[str]).
+ * - discrete: a list of DecisionLevel.
+ * - boolean_probability: None.
+ */
+export type DecisionScorerDb = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Organization Id
+   */
+  organizationId: string;
+  /**
+   * Created By
+   */
+  createdBy?: string | null;
+  /**
+   * Question
+   */
+  question: string;
+  /**
+   * Answer Options
+   */
+  answerOptions?: Array<string> | Array<DecisionLevel> | null;
+  /**
+   * Created At
+   */
+  createdAt: string;
 };
 
 /**
@@ -18157,7 +18196,8 @@ export type ModelCostBy = (typeof ModelCostBy)[keyof typeof ModelCostBy];
 export const ModelType = {
   SLM: 'slm',
   LLM: 'llm',
-  CODE: 'code'
+  CODE: 'code',
+  DECISION: 'decision'
 } as const;
 
 /**

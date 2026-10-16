@@ -715,6 +715,38 @@ describe('ScorerService', () => {
       });
     });
 
+    it('should expose decisionScorer on the created version', async () => {
+      mockMakeRequest.mockResolvedValue({
+        id: 'version-id',
+        version: 1,
+        scorer_id: scorerId,
+        decision_scorer: {
+          id: 'decision-id',
+          organization_id: 'org-id',
+          question: 'What does the customer want?',
+          answer_options: ['refund', 'exchange'],
+          created_at: '2026-10-16T00:00:00Z'
+        }
+      });
+
+      const result = await scorerService.createDecisionScorerVersion(
+        scorerId,
+        {
+          modelName: 'jev-1.13.0',
+          question: 'What does the customer want?',
+          answerOptions: ['refund', 'exchange']
+        }
+      );
+
+      expect(result.decisionScorer?.question).toBe(
+        'What does the customer want?'
+      );
+      expect(result.decisionScorer?.answerOptions).toEqual([
+        'refund',
+        'exchange'
+      ]);
+    });
+
     it('should not send num_judges or cot_enabled', async () => {
       mockMakeRequest.mockResolvedValue({ id: 'v', version: 1 });
 

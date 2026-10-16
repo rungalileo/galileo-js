@@ -4878,6 +4878,7 @@ export interface components {
       registered_scorer?:
         components['schemas']['BaseRegisteredScorerDB'] | null;
       finetuned_scorer?: components['schemas']['BaseFinetunedScorerDB'] | null;
+      decision_scorer?: components['schemas']['DecisionScorerDB'] | null;
       /** Model Name */
       model_name?: string | null;
       /** Num Judges */
@@ -4917,6 +4918,7 @@ export interface components {
         components['schemas']['CreateUpdateRegisteredScorerResponse'] | null;
       finetuned_scorer?:
         components['schemas']['FineTunedScorerResponse'] | null;
+      decision_scorer?: components['schemas']['DecisionScorerDB'] | null;
       /** Model Name */
       model_name?: string | null;
       /** Num Judges */
@@ -9299,6 +9301,39 @@ export interface components {
       label: string;
       /** Description */
       description?: string | null;
+    };
+    /**
+     * DecisionScorerDB
+     * @description A row of the decision_scorers table.
+     *
+     *     answer_options depends on the output type of the scorer:
+     *     - categorical: a list of labels (list[str]).
+     *     - discrete: a list of DecisionLevel.
+     *     - boolean_probability: None.
+     */
+    DecisionScorerDB: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string;
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string;
+      /** Created By */
+      created_by?: string | null;
+      /** Question */
+      question: string;
+      /** Answer Options */
+      answer_options?:
+        string[] | components['schemas']['DecisionLevel'][] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
     };
     /** DeleteRunResponse */
     DeleteRunResponse: {
@@ -17767,7 +17802,7 @@ export interface components {
      * ModelType
      * @enum {string}
      */
-    ModelType: 'slm' | 'llm' | 'code';
+    ModelType: 'slm' | 'llm' | 'code' | 'decision';
     /**
      * MultiModalModelIntegrationConfig
      * @description Configuration for multi-modal capabilities (file uploads).
