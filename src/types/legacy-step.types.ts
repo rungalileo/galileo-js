@@ -100,9 +100,7 @@ export class WorkflowStep extends StepWithChildren {
 }
 
 type RetrieverStepOutputType = (
-  | string
-  | Document
-  | { [key: string]: string }
+  string | Document | { [key: string]: string }
 )[];
 
 interface StepWithoutChildrenType extends BaseStepType {

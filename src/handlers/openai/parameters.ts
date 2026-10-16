@@ -78,8 +78,7 @@ export function getOpenAiArgs(
 ): Record<string, unknown> {
   const result = { ...requestData };
   const callerMetadata = requestData.metadata as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
 
   // Only add metadata if distillation is explicitly enabled
   // Reference: https://platform.openai.com/docs/guides/distillation

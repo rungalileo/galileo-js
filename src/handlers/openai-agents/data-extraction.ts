@@ -79,8 +79,7 @@ export function extractLlmData(
     // ResponseSpanData uses underscore-prefixed fields in TypeScript SDK
     const input = spanData._input ?? spanData.input;
     const response = (spanData._response ?? spanData.response) as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
 
     const model =
       (response?.model as string | undefined) ??

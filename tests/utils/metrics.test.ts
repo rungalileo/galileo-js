@@ -540,6 +540,10 @@ describe('metrics utils', () => {
         );
         await expect(result).rejects.toThrow(/may or may not exist/);
         await expect(result).rejects.toThrow(failure.message);
+        await expect(result).rejects.toMatchObject({
+          scorerId: EXAMPLE_CUSTOM_SCORER.id,
+          cause: failure
+        });
         expect(mockDeleteScorer).not.toHaveBeenCalled();
       }
     );

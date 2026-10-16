@@ -416,8 +416,7 @@ export class GalileoCallback
     runName?: string
   ): Promise<void> {
     const invocationParams = extraParams?.invocation_params as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const model = invocationParams?.model_name as string | undefined;
     const temperature = invocationParams?.temperature as number | undefined;
     const name = getNodeName('llm', llm, runName, metadata);
@@ -471,14 +470,12 @@ export class GalileoCallback
     runName?: string
   ): Promise<void> {
     const invocationParams = extraParams?.invocation_params as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const model =
       invocationParams?.model ?? invocationParams?._type ?? 'undefined-type';
     const temperature = invocationParams?.temperature ?? 0.0;
     const tools = invocationParams?.tools as
-      | Record<string, unknown>[]
-      | undefined;
+      Record<string, unknown>[] | undefined;
     const name = getNodeName('chat', llm, runName, metadata);
 
     // Serialize messages safely, preserving tool_calls when present
@@ -542,8 +539,7 @@ export class GalileoCallback
     // ChatGeneration has a .message property with usage_metadata; plain Generation does not.
     // Use property narrowing since the Generation type doesn't declare .message.
     const genRecord = firstGen as unknown as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const message =
       genRecord &&
       typeof genRecord.message === 'object' &&
@@ -557,12 +553,10 @@ export class GalileoCallback
       totalTokens === undefined
     ) {
       const usageMeta = message?.usage_metadata as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       if (usageMeta) {
         numInputTokens = (usageMeta.input_tokens ?? usageMeta.prompt_tokens) as
-          | number
-          | undefined;
+          number | undefined;
         numOutputTokens = (usageMeta.output_tokens ??
           usageMeta.completion_tokens) as number | undefined;
         totalTokens = usageMeta.total_tokens as number | undefined;
@@ -582,14 +576,11 @@ export class GalileoCallback
 
     if (message) {
       const usageMeta = message.usage_metadata as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const inputDetails = usageMeta?.input_token_details as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const outputDetails = usageMeta?.output_token_details as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       if (inputDetails?.audio !== undefined)
         numAudioInputTokens = inputDetails.audio as number;
       if (inputDetails?.image !== undefined)
@@ -601,14 +592,11 @@ export class GalileoCallback
 
       // Surface 2: response_metadata token detail lists
       const responseMeta = message.response_metadata as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const promptDetails = responseMeta?.prompt_tokens_details as
-        | Array<Record<string, unknown>>
-        | undefined;
+        Array<Record<string, unknown>> | undefined;
       const candidatesDetails = responseMeta?.candidates_tokens_details as
-        | Array<Record<string, unknown>>
-        | undefined;
+        Array<Record<string, unknown>> | undefined;
       if (promptDetails) {
         for (const entry of promptDetails) {
           const modality = String(entry.modality ?? '').toUpperCase();
