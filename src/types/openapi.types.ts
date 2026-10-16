@@ -1643,7 +1643,9 @@ export type BaseScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -3156,32 +3158,32 @@ export type CreateCustomLunaScorerVersionRequest = {
  * against the stored output_type.
  */
 export type CreateDecisionScorerVersionRequest = {
-    /**
-     * Model Name
-     */
-    model_name: string;
-    /**
-     * Num Judges
-     */
-    num_judges?: number | null;
-    /**
-     * Scoreable Node Types
-     */
-    scoreable_node_types?: Array<string> | null;
-    /**
-     * Cot Enabled
-     */
-    cot_enabled?: boolean | null;
-    output_type?: OutputTypeEnum | null;
-    input_type?: InputTypeEnum | null;
-    /**
-     * Question
-     */
-    question: string;
-    /**
-     * Answer Options
-     */
-    answer_options?: Array<string> | Array<DecisionLevel> | null;
+  /**
+   * Model Name
+   */
+  model_name: string;
+  /**
+   * Num Judges
+   */
+  num_judges?: number | null;
+  /**
+   * Scoreable Node Types
+   */
+  scoreable_node_types?: Array<string> | null;
+  /**
+   * Cot Enabled
+   */
+  cot_enabled?: boolean | null;
+  output_type?: OutputTypeEnum | null;
+  input_type?: InputTypeEnum | null;
+  /**
+   * Question
+   */
+  question: string;
+  /**
+   * Answer Options
+   */
+  answer_options?: Array<string> | Array<DecisionLevel> | null;
 };
 
 /**
@@ -4373,7 +4375,9 @@ export type CustomizedAgenticSessionSuccessGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4531,7 +4535,9 @@ export type CustomizedAgenticWorkflowSuccessGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4689,7 +4695,9 @@ export type CustomizedChunkAttributionUtilizationGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -4847,7 +4855,9 @@ export type CustomizedCompletenessGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5005,7 +5015,9 @@ export type CustomizedFactualityGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5167,7 +5179,9 @@ export type CustomizedGroundTruthAdherenceGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5325,7 +5339,9 @@ export type CustomizedGroundednessGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5483,7 +5499,9 @@ export type CustomizedInputSexistGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5641,7 +5659,9 @@ export type CustomizedInputToxicityGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5799,7 +5819,9 @@ export type CustomizedInstructionAdherenceGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -5961,7 +5983,9 @@ export type CustomizedPromptInjectionGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -6119,7 +6143,9 @@ export type CustomizedSexistGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -6277,7 +6303,9 @@ export type CustomizedToolErrorRateGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -6435,7 +6463,9 @@ export type CustomizedToolSelectionQualityGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -6593,7 +6623,9 @@ export type CustomizedToxicityGptScorer = {
    * Roll Up Methods
    */
   roll_up_methods?:
-    Array<NumericRollUpMethod> | Array<CategoricalRollUpMethod> | null;
+    | Array<NumericRollUpMethod>
+    | Array<CategoricalRollUpMethod>
+    | null;
   /**
    * Prompt
    */
@@ -7491,18 +7523,18 @@ export type DeleteRunResponse = {
  * One level of a score question. A question's levels run 0, 1, 2 and so on, with no gaps.
  */
 export type DecisionLevel = {
-    /**
-     * Level
-     */
-    level: number;
-    /**
-     * Label
-     */
-    label: string;
-    /**
-     * Description
-     */
-    description?: string | null;
+  /**
+   * Level
+   */
+  level: number;
+  /**
+   * Label
+   */
+  label: string;
+  /**
+   * Description
+   */
+  description?: string | null;
 };
 
 /**
@@ -12772,10 +12804,11 @@ export const FileStatus = {
 export type FileStatus = (typeof FileStatus)[keyof typeof FileStatus];
 
 export type FilterExpressionAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType =
-  | FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
-  | AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
-  | OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
-  | NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType;
+
+    | FilterLeafAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    | AndNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    | OrNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType
+    | NotNodeAnnotatedUnionLogRecordsIdFilterLogRecordsDateFilterLogRecordsNumberFilterLogRecordsBooleanFilterLogRecordsCollectionFilterLogRecordsTextFilterLogRecordsFullyAnnotatedFilterFieldInfoAnnotationNoneTypeRequiredTrueDiscriminatorType;
 
 /**
  * FilterLeaf[Annotated[Union[LogRecordsIDFilter, LogRecordsDateFilter, LogRecordsNumberFilter, LogRecordsBooleanFilter, LogRecordsCollectionFilter, LogRecordsTextFilter, LogRecordsFullyAnnotatedFilter], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]
