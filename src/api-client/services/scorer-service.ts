@@ -20,6 +20,8 @@ import {
   BaseScorerVersionResponse,
   CreateLlmScorerVersionRequest,
   CreateLlmScorerVersionRequestOpenAPI,
+  CreateDecisionScorerVersionRequest,
+  CreateDecisionScorerVersionRequestOpenAPI,
   DeleteScorerResponse,
   DeleteScorerResponseOpenAPI
 } from '../../types/scorer.types';
@@ -343,6 +345,34 @@ export class ScorerService extends BaseClient {
     const response = await this.makeRequest<BaseScorerVersionResponseOpenAPI>(
       RequestMethod.POST,
       Routes.llmScorerVersion,
+      request,
+      { scorer_id: scorerId }
+    );
+
+    return this.convertToCamelCase<
+      BaseScorerVersionResponseOpenAPI,
+      BaseScorerVersionResponse
+    >(response);
+  };
+
+  /**
+   * Creates a new decision scorer version for a given scorer.
+   *
+   * @param scorerId - The unique identifier of the scorer.
+   * @param options - The model, question and answer options for the version.
+   * @returns A promise that resolves to the created {@link BaseScorerVersionResponse}.
+   */
+  public createDecisionScorerVersion = async (
+    scorerId: string,
+    options: CreateDecisionScorerVersionRequest
+  ): Promise<BaseScorerVersionResponse> => {
+    const request = this.convertToSnakeCase<
+      CreateDecisionScorerVersionRequest,
+      CreateDecisionScorerVersionRequestOpenAPI
+    >(options);
+    const response = await this.makeRequest<BaseScorerVersionResponseOpenAPI>(
+      RequestMethod.POST,
+      Routes.decisionScorerVersion,
       request,
       { scorer_id: scorerId }
     );

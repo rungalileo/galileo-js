@@ -74,6 +74,7 @@ export enum Routes {
   jobs = 'jobs',
   scorer = 'scorers',
   llmScorerVersion = 'scorers/{scorer_id}/version/llm',
+  decisionScorerVersion = 'scorers/{scorer_id}/version/decision',
   codeScorerVersion = 'scorers/{scorer_id}/version/code',
   codeScorerValidate = 'scorers/code/validate',
   codeScorerValidateResult = 'scorers/code/validate/{task_id}',

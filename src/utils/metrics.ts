@@ -1,6 +1,7 @@
 import {
   type CreateCustomLlmMetricParams,
   type CreateCustomCodeMetricParams,
+  type CreateDecisionMetricParams,
   type DeleteMetricParams,
   type DeleteMetricByNameParams,
   OutputType,
@@ -11,6 +12,7 @@ import {
   createScorer,
   createLlmScorerVersion,
   createCodeScorerVersion,
+  createDecisionScorerVersion,
   validateCodeScorer,
   deleteScorer,
   getScorers,
@@ -96,6 +98,73 @@ export class Metrics {
       modelName,
       numJudges
     });
+  }
+
+  /**
+   * Creates a decision metric: one typed question answered with probabilities
+   * by a decision model such as `jev-1.13.0`.
+   *
+   * Creates the scorer, then its decision version. If the version request fails
+   * (unknown model, invalid answer options, feature disabled), the new scorer
+   * is deleted so no empty evaluator is left behind, and the original error is
+   * rethrown.
+   *
+   * @param params - The parameters for creating the decision metric.
+   * @returns A promise that resolves to the created scorer version.
+   *
+   * @example
+   * ```typescript
+   * const version = await new Metrics().createDecisionMetric({
+   *   name: 'refund_intent',
+   *   question: 'What does the customer want?',
+   *   outputType: OutputType.CATEGORICAL,
+   *   answerOptions: ['refund', 'exchange', 'other']
+   * });
+   * ```
+   */
+  public async createDecisionMetric({
+    name,
+    question,
+    nodeLevel = StepType.llm,
+    modelName = 'jev-1.13.0',
+    outputType = OutputType.BOOLEAN_PROBABILITY,
+    answerOptions,
+    inputType,
+    description = '',
+    tags = [],
+    groundTruth
+  }: CreateDecisionMetricParams): Promise<BaseScorerVersionResponse> {
+    const scorer = await createScorer(
+      name,
+      ScorerTypes.decision,
+      description,
+      tags,
+      undefined,
+      undefined,
+      undefined,
+      [nodeLevel],
+      outputType,
+      inputType,
+      groundTruth
+    );
+
+    try {
+      return await createDecisionScorerVersion({
+        scorerId: scorer.id,
+        modelName,
+        question,
+        answerOptions
+      });
+    } catch (error) {
+      try {
+        await deleteScorer(scorer.id);
+      } catch (cleanupError) {
+        sdkLogger.warn(
+          `Failed to delete decision scorer ${scorer.id} after its version request failed: ${String(cleanupError)}`
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -564,6 +633,31 @@ export const createCustomLlmMetric = async (
 ): Promise<BaseScorerVersionResponse> => {
   const metrics = new Metrics();
   return await metrics.createCustomLlmMetric(params);
+};
+
+/**
+ * Creates a decision metric. See {@link Metrics.createDecisionMetric}.
+ *
+ * @param params - The parameters for creating the decision metric.
+ * @returns A promise that resolves to the created scorer version.
+ *
+ * @example
+ * ```typescript
+ * import { createDecisionMetric, OutputType } from 'galileo';
+ *
+ * await createDecisionMetric({
+ *   name: 'refund_intent',
+ *   question: 'What does the customer want?',
+ *   outputType: OutputType.CATEGORICAL,
+ *   answerOptions: ['refund', 'exchange', 'other']
+ * });
+ * ```
+ */
+export const createDecisionMetric = async (
+  params: CreateDecisionMetricParams
+): Promise<BaseScorerVersionResponse> => {
+  const metrics = new Metrics();
+  return await metrics.createDecisionMetric(params);
 };
 
 /**

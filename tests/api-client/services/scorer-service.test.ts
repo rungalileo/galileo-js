@@ -677,4 +677,54 @@ describe('ScorerService', () => {
       expect(result.version).toBe(2);
     });
   });
+
+  describe('createDecisionScorerVersion()', () => {
+    it('should post a snake_case body to the decision version route', async () => {
+      mockMakeRequest.mockResolvedValue({
+        id: 'version-id',
+        version: 1,
+        scorer_id: scorerId
+      });
+
+      const result = await scorerService.createDecisionScorerVersion(scorerId, {
+        modelName: 'jev-1.13.0',
+        question: 'How good is the answer?',
+        answerOptions: [
+          { level: 0, label: 'poor' },
+          { level: 1, label: 'good', description: 'Meets the bar' }
+        ]
+      });
+
+      expect(mockMakeRequest).toHaveBeenCalledWith(
+        'POST',
+        'scorers/{scorer_id}/version/decision',
+        {
+          model_name: 'jev-1.13.0',
+          question: 'How good is the answer?',
+          answer_options: [
+            { level: 0, label: 'poor' },
+            { level: 1, label: 'good', description: 'Meets the bar' }
+          ]
+        },
+        { scorer_id: scorerId }
+      );
+      expect(result).toEqual({
+        id: 'version-id',
+        version: 1,
+        scorerId
+      });
+    });
+
+    it('should not send num_judges or cot_enabled', async () => {
+      mockMakeRequest.mockResolvedValue({ id: 'v', version: 1 });
+
+      await scorerService.createDecisionScorerVersion(scorerId, {
+        modelName: 'jev-1.13.0',
+        question: 'Q?'
+      });
+
+      const body = mockMakeRequest.mock.calls[0][2] as Record<string, unknown>;
+      expect(body).toEqual({ model_name: 'jev-1.13.0', question: 'Q?' });
+    });
+  });
 });

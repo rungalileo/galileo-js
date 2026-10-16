@@ -13,6 +13,7 @@ import {
   CreateScorerRequest,
   ListScorersResponse,
   BaseScorerVersionResponse,
+  CreateDecisionScorerVersionRequest,
   DeleteScorerResponse
 } from '../types/scorer.types';
 import {
@@ -2056,6 +2057,20 @@ export class GalileoApiClient extends BaseClient {
           };
 
     return this.scorerService!.createLLMScorerVersion(scorerId, options);
+  }
+
+  /**
+   * Creates a new decision scorer version.
+   * @param scorerId - The unique identifier of the scorer.
+   * @param options - The model, question and answer options for the version.
+   * @returns A promise that resolves to the created scorer version.
+   */
+  public async createDecisionScorerVersion(
+    scorerId: string,
+    options: CreateDecisionScorerVersionRequest
+  ): Promise<BaseScorerVersionResponse> {
+    this.ensureService(this.scorerService);
+    return this.scorerService!.createDecisionScorerVersion(scorerId, options);
   }
 
   /**

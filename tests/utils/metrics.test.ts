@@ -1,6 +1,7 @@
 import {
   createCustomLlmMetric,
   createCustomCodeMetric,
+  createDecisionMetric,
   createMetricConfigs,
   deleteMetric,
   getMetrics
@@ -17,7 +18,8 @@ import {
   Scorer,
   ScorerVersion,
   ScorerTypes,
-  OutputType
+  OutputType,
+  InputType
 } from '../../src/types/scorer.types';
 import { StepType } from '../../src/types';
 import { LogStreamType } from '../../src/types/log-stream.types';
@@ -30,6 +32,7 @@ import * as os from 'os';
 const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockCreateScorer = jest.fn();
 const mockCreateLlmScorerVersion = jest.fn();
+const mockCreateDecisionScorerVersion = jest.fn();
 const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
 const mockGetScorerVersion = jest.fn();
@@ -52,6 +55,7 @@ jest.mock('../../src/api-client', () => {
         init: mockInit,
         createScorer: mockCreateScorer,
         createLlmScorerVersion: mockCreateLlmScorerVersion,
+        createDecisionScorerVersion: mockCreateDecisionScorerVersion,
         createCodeScorerVersion: mockCreateCodeScorerVersion,
         deleteScorer: mockDeleteScorer,
         getScorerVersion: mockGetScorerVersion,
@@ -188,6 +192,9 @@ describe('metrics utils', () => {
       scorers: [],
       nextStartingToken: null
     });
+    mockCreateDecisionScorerVersion.mockResolvedValue(
+      EXAMPLE_CUSTOM_SCORER_VERSION
+    );
     mockDeleteScorer.mockResolvedValue(undefined);
     mockCreateRunScorerSettings.mockResolvedValue(undefined);
     mockGetProject.mockResolvedValue(EXAMPLE_PROJECT);
@@ -325,6 +332,162 @@ describe('metrics utils', () => {
           userPrompt: 'Test prompt'
         })
       ).rejects.toThrow(apiError);
+    });
+  });
+
+  describe('createDecisionMetric', () => {
+    it('should create a boolean_probability metric with default parameters', async () => {
+      const result = await createDecisionMetric({
+        name: 'is_refund',
+        question: 'Is the customer asking for a refund?'
+      });
+
+      expect(result).toEqual(EXAMPLE_CUSTOM_SCORER_VERSION);
+      expect(mockCreateScorer).toHaveBeenCalledWith({
+        name: 'is_refund',
+        scorerType: ScorerTypes.decision,
+        description: '',
+        tags: [],
+        defaults: undefined,
+        modelType: undefined,
+        defaultVersionId: undefined,
+        scoreableNodeTypes: ['llm'],
+        outputType: 'boolean_probability',
+        inputType: undefined,
+        groundTruth: undefined
+      });
+      expect(mockCreateDecisionScorerVersion).toHaveBeenCalledWith(
+        EXAMPLE_CUSTOM_SCORER.id,
+        {
+          modelName: 'jev-1.13.0',
+          question: 'Is the customer asking for a refund?',
+          answerOptions: undefined
+        }
+      );
+    });
+
+    it('should send string answer options for a categorical metric', async () => {
+      await createDecisionMetric({
+        name: 'intent',
+        question: 'What does the customer want?',
+        outputType: OutputType.CATEGORICAL,
+        answerOptions: ['a', 'b']
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({ outputType: 'categorical' })
+      );
+      expect(mockCreateDecisionScorerVersion).toHaveBeenCalledWith(
+        EXAMPLE_CUSTOM_SCORER.id,
+        {
+          modelName: 'jev-1.13.0',
+          question: 'What does the customer want?',
+          answerOptions: ['a', 'b']
+        }
+      );
+    });
+
+    it('should send DecisionLevel options for a discrete metric', async () => {
+      const levels = [
+        { level: 0, label: 'poor' },
+        { level: 1, label: 'good', description: 'Meets the bar' }
+      ];
+
+      await createDecisionMetric({
+        name: 'quality',
+        question: 'How good is the answer?',
+        outputType: OutputType.DISCRETE,
+        answerOptions: levels
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({ outputType: 'discrete' })
+      );
+      expect(mockCreateDecisionScorerVersion).toHaveBeenCalledWith(
+        EXAMPLE_CUSTOM_SCORER.id,
+        expect.objectContaining({ answerOptions: levels })
+      );
+    });
+
+    it('should map nodeLevel to a single scoreable node type and forward the optional fields', async () => {
+      await createDecisionMetric({
+        name: 'trace_decision',
+        question: 'Did the agent finish the task?',
+        nodeLevel: StepType.trace,
+        modelName: 'jev-1.14.0',
+        inputType: InputType.trace_io_only,
+        description: 'desc',
+        tags: ['t1'],
+        groundTruth: true
+      });
+
+      expect(mockCreateScorer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scoreableNodeTypes: ['trace'],
+          inputType: 'trace_io_only',
+          description: 'desc',
+          tags: ['t1'],
+          groundTruth: true
+        })
+      );
+      expect(mockCreateDecisionScorerVersion).toHaveBeenCalledWith(
+        EXAMPLE_CUSTOM_SCORER.id,
+        expect.objectContaining({ modelName: 'jev-1.14.0' })
+      );
+    });
+
+    it('should not send num_judges or cot_enabled', async () => {
+      await createDecisionMetric({
+        name: 'intent',
+        question: 'What does the customer want?'
+      });
+
+      const [, versionRequest] = mockCreateDecisionScorerVersion.mock.calls[0];
+      expect(versionRequest).not.toHaveProperty('numJudges');
+      expect(versionRequest).not.toHaveProperty('cotEnabled');
+      expect(mockCreateScorer.mock.calls[0][0].defaults).toBeUndefined();
+    });
+
+    it('should delete the scorer and rethrow when the version request fails', async () => {
+      const apiError = new Error('Unknown decision model: nope-1.0');
+      mockCreateDecisionScorerVersion.mockRejectedValueOnce(apiError);
+
+      await expect(
+        createDecisionMetric({
+          name: 'intent',
+          question: 'What does the customer want?',
+          modelName: 'nope-1.0'
+        })
+      ).rejects.toThrow(apiError);
+
+      expect(mockDeleteScorer).toHaveBeenCalledWith(EXAMPLE_CUSTOM_SCORER.id);
+    });
+
+    it('should rethrow the version error when deleting the scorer also fails', async () => {
+      const apiError = new Error('answer_options must be unique');
+      mockCreateDecisionScorerVersion.mockRejectedValueOnce(apiError);
+      mockDeleteScorer.mockRejectedValueOnce(new Error('delete failed'));
+
+      await expect(
+        createDecisionMetric({
+          name: 'intent',
+          question: 'What does the customer want?',
+          outputType: OutputType.CATEGORICAL,
+          answerOptions: ['a', 'A']
+        })
+      ).rejects.toThrow(apiError);
+    });
+
+    it('should not delete anything when creating the scorer fails', async () => {
+      const apiError = new Error('403 decision_model_metrics is disabled');
+      mockCreateScorer.mockRejectedValueOnce(apiError);
+
+      await expect(
+        createDecisionMetric({ name: 'intent', question: 'Q?' })
+      ).rejects.toThrow(apiError);
+
+      expect(mockCreateDecisionScorerVersion).not.toHaveBeenCalled();
+      expect(mockDeleteScorer).not.toHaveBeenCalled();
     });
   });
 

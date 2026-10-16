@@ -1,5 +1,6 @@
 import {
   CreateLlmScorerVersionParams,
+  CreateDecisionScorerVersionParams,
   ModelType,
   ScorerConfig,
   ScorerResponse,
@@ -212,6 +213,22 @@ export const createLlmScorerVersion = async ({
     modelName,
     numJudges
   });
+};
+
+/**
+ * Creates a new decision scorer version for a given scorer.
+ * @param params - The parameters for creating the decision scorer version.
+ * @param params.scorerId - The unique identifier of the scorer.
+ * @param params.modelName - The model registry version, such as `jev-1.13.0`.
+ * @param params.question - The question the decision model answers.
+ * @param params.answerOptions - (Optional) Answer options: strings for `categorical`, `DecisionLevel` objects for `discrete`, omitted for `boolean_probability`.
+ * @returns A promise that resolves to the created scorer version.
+ */
+export const createDecisionScorerVersion = async (
+  params: CreateDecisionScorerVersionParams
+): Promise<BaseScorerVersionResponse> => {
+  const scorersService = new Scorers();
+  return await scorersService.createDecisionScorerVersion(params);
 };
 
 /**

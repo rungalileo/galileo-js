@@ -8,6 +8,8 @@ import type {
   ListScorersResponse,
   BaseScorerVersionResponse,
   CreateLlmScorerVersionRequest,
+  CreateDecisionScorerVersionRequest,
+  DecisionLevel,
   DeleteScorerResponse,
   ScorerConfig
 } from './new-api.types';
@@ -19,6 +21,7 @@ import type {
   ListScorersResponse as ListScorersResponseOpenAPI,
   BaseScorerVersionResponse as BaseScorerVersionResponseOpenAPI,
   CreateLlmScorerVersionRequest as CreateLlmScorerVersionRequestOpenAPI,
+  CreateDecisionScorerVersionRequest as CreateDecisionScorerVersionRequestOpenAPI,
   DeleteScorerResponse as DeleteScorerResponseOpenAPI,
   ScorerConfig as ScorerConfigOpenAPI
 } from './openapi.types';
@@ -30,6 +33,8 @@ export {
   ListScorersResponse,
   BaseScorerVersionResponse,
   CreateLlmScorerVersionRequest,
+  CreateDecisionScorerVersionRequest,
+  DecisionLevel,
   DeleteScorerResponse,
   ScorerConfig,
   CreateScorerRequestOpenAPI,
@@ -38,6 +43,7 @@ export {
   ListScorersResponseOpenAPI,
   BaseScorerVersionResponseOpenAPI,
   CreateLlmScorerVersionRequestOpenAPI,
+  CreateDecisionScorerVersionRequestOpenAPI,
   DeleteScorerResponseOpenAPI,
   ScorerConfigOpenAPI
 };
@@ -89,7 +95,8 @@ export interface CustomizedScorer {
 export enum ScorerTypes {
   llm = 'llm',
   code = 'code',
-  preset = 'preset'
+  preset = 'preset',
+  decision = 'decision'
 }
 
 export type ScorerVersion = components['schemas']['BaseScorerVersionDB'];
@@ -106,6 +113,7 @@ export type Scorer = components['schemas']['ScorerResponse'];
 
 export enum OutputType {
   BOOLEAN = 'boolean',
+  BOOLEAN_PROBABILITY = 'boolean_probability',
   CATEGORICAL = 'categorical',
   COUNT = 'count',
   DISCRETE = 'discrete',
@@ -138,6 +146,20 @@ export interface CreateLlmScorerVersionParams {
   modelName?: string;
   numJudges?: number;
   outputType?: OutputType;
+}
+
+export interface CreateDecisionScorerVersionParams {
+  scorerId: string;
+  /** Model registry version that answers the question, such as `jev-1.13.0`. */
+  modelName: string;
+  /** The question the decision model answers (1-2,000 characters). */
+  question: string;
+  /**
+   * Answer options. A string array for `categorical` (2-255 unique options), a
+   * {@link DecisionLevel} array for `discrete` (2-10 levels numbered 0, 1, 2...),
+   * and omitted for `boolean_probability`.
+   */
+  answerOptions?: string[] | DecisionLevel[] | null;
 }
 
 // Code Scorer Validation Types

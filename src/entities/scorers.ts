@@ -9,6 +9,7 @@ import {
   ChainPollTemplate,
   ScorerResponse,
   BaseScorerVersionResponse,
+  CreateDecisionScorerVersionParams,
   DeleteScorerResponse
 } from '../types/scorer.types';
 import { StepType } from '../types/logging/step.types';
@@ -197,6 +198,19 @@ export class Scorers {
       options.modelName,
       options.numJudges
     );
+  }
+
+  /**
+   * Creates a decision scorer version.
+   * @param options - The scorer ID, model, question and answer options.
+   * @returns A promise that resolves to the created scorer version.
+   */
+  async createDecisionScorerVersion({
+    scorerId,
+    ...request
+  }: CreateDecisionScorerVersionParams): Promise<BaseScorerVersionResponse> {
+    const client = await this.ensureClient();
+    return await client.createDecisionScorerVersion(scorerId, request);
   }
 
   /**
