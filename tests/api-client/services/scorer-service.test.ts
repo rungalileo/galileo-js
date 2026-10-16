@@ -729,14 +729,11 @@ describe('ScorerService', () => {
         }
       });
 
-      const result = await scorerService.createDecisionScorerVersion(
-        scorerId,
-        {
-          modelName: 'jev-1.13.0',
-          question: 'What does the customer want?',
-          answerOptions: ['refund', 'exchange']
-        }
-      );
+      const result = await scorerService.createDecisionScorerVersion(scorerId, {
+        modelName: 'jev-1.13.0',
+        question: 'What does the customer want?',
+        answerOptions: ['refund', 'exchange']
+      });
 
       expect(result.decisionScorer?.question).toBe(
         'What does the customer want?'
