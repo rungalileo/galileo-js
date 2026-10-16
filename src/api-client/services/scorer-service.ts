@@ -20,6 +20,7 @@ import {
   BaseScorerVersionResponse,
   CreateLlmScorerVersionRequest,
   CreateLlmScorerVersionRequestOpenAPI,
+  CreateDecisionScorerVersionBody,
   CreateDecisionScorerVersionRequest,
   CreateDecisionScorerVersionRequestOpenAPI,
   DeleteScorerResponse,
@@ -364,7 +365,7 @@ export class ScorerService extends BaseClient {
    */
   public createDecisionScorerVersion = async (
     scorerId: string,
-    options: CreateDecisionScorerVersionRequest
+    options: CreateDecisionScorerVersionBody
   ): Promise<BaseScorerVersionResponse> => {
     const request = this.convertToSnakeCase<
       CreateDecisionScorerVersionRequest,

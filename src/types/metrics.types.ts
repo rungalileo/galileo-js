@@ -117,7 +117,11 @@ export interface CreateDecisionMetricParams {
   nodeLevel?: StepType;
   /** Model registry version that answers the question. Defaults to `jev-1.13.0`. */
   modelName?: string;
-  /** One of `boolean_probability` (default), `categorical` or `discrete`. */
+  /**
+   * One of `boolean_probability`, `categorical` or `discrete`. Defaults to the
+   * type that matches `answerOptions`: `boolean_probability` without options,
+   * `categorical` for strings, `discrete` for levels.
+   */
   outputType?: OutputType;
   /**
    * Required for `categorical` (2-255 unique strings) and `discrete` (2-10

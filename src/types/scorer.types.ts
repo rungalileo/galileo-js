@@ -148,6 +148,12 @@ export interface CreateLlmScorerVersionParams {
   outputType?: OutputType;
 }
 
+/** Request body for a decision scorer version. The server rejects `numJudges` and `cotEnabled`. */
+export type CreateDecisionScorerVersionBody = Omit<
+  CreateDecisionScorerVersionRequest,
+  'numJudges' | 'cotEnabled'
+>;
+
 export interface CreateDecisionScorerVersionParams {
   scorerId: string;
   /** Model registry version that answers the question, such as `jev-1.13.0`. */

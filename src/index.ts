@@ -5,7 +5,8 @@ import { GalileoConfig, type GalileoConfigInput } from 'galileo-generated';
 import {
   GalileoMetrics,
   LocalMetricConfig,
-  Metric
+  Metric,
+  CreateDecisionMetricParams
 } from './types/metrics.types';
 import {
   LogRecordsFilter,
@@ -105,8 +106,12 @@ import {
 import { ExperimentTags } from './entities/experiment-tags';
 import { Experiments } from './entities/experiments';
 import type { LogTracesIngestRequest } from './types/logging/trace.types';
-import { OutputType } from './types/scorer.types';
-import type { DecisionLevel, CreateDecisionMetricParams } from './types';
+import {
+  InputType,
+  OutputType,
+  type DecisionLevel
+} from './types/scorer.types';
+import { StepType } from './types/logging/step.types';
 import { GalileoLogger } from './utils/galileo-logger';
 import {
   init,
@@ -233,6 +238,8 @@ export {
   createMetricConfigs,
   // Scorers
   OutputType,
+  InputType,
+  StepType,
   Scorers,
   ScorerSettings,
   getScorers,

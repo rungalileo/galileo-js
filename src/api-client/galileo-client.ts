@@ -13,7 +13,7 @@ import {
   CreateScorerRequest,
   ListScorersResponse,
   BaseScorerVersionResponse,
-  CreateDecisionScorerVersionRequest,
+  CreateDecisionScorerVersionBody,
   DeleteScorerResponse
 } from '../types/scorer.types';
 import {
@@ -2067,7 +2067,7 @@ export class GalileoApiClient extends BaseClient {
    */
   public async createDecisionScorerVersion(
     scorerId: string,
-    options: CreateDecisionScorerVersionRequest
+    options: CreateDecisionScorerVersionBody
   ): Promise<BaseScorerVersionResponse> {
     this.ensureService(this.scorerService);
     return this.scorerService!.createDecisionScorerVersion(scorerId, options);

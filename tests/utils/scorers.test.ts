@@ -1,6 +1,7 @@
 import {
   createScorer,
   createLlmScorerVersion,
+  createDecisionScorerVersion,
   createCodeScorerVersion,
   deleteScorer,
   getScorerVersion,
@@ -27,6 +28,7 @@ import { Scorers, ScorerSettings } from '../../src/entities/scorers';
 // Create mock implementation functions
 const mockInit = jest.fn().mockResolvedValue(undefined);
 const mockCreateScorer = jest.fn();
+const mockCreateDecisionScorerVersion = jest.fn();
 const mockCreateLlmScorerVersion = jest.fn();
 const mockCreateCodeScorerVersion = jest.fn();
 const mockDeleteScorer = jest.fn();
@@ -46,6 +48,8 @@ jest.mock('../../src/api-client', () => {
         createScorer: mockCreateScorer,
         createLlmScorerVersion: (...args: unknown[]) =>
           mockCreateLlmScorerVersion(...args),
+        createDecisionScorerVersion: (...args: unknown[]) =>
+          mockCreateDecisionScorerVersion(...args),
         createCodeScorerVersion: (...args: unknown[]) =>
           mockCreateCodeScorerVersion(...args),
         deleteScorer: mockDeleteScorer,
@@ -164,6 +168,49 @@ describe('scorers utility', () => {
       await expect(createScorer('test', ScorerTypes.llm)).rejects.toThrow(
         apiError
       );
+    });
+  });
+
+  describe('createDecisionScorerVersion', () => {
+    const mockVersion: ScorerVersion = {
+      id: 'ver-uuid',
+      version: 1,
+      scorer_id: 'scorer-uuid'
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockInit.mockResolvedValue(undefined);
+      mockCreateDecisionScorerVersion.mockResolvedValue(mockVersion);
+    });
+
+    it('should pass the scorer id and request body to the client', async () => {
+      const result = await createDecisionScorerVersion({
+        scorerId: 'scorer-uuid',
+        modelName: 'jev-1.13.0',
+        question: 'Q?',
+        answerOptions: ['a', 'b']
+      });
+
+      expect(mockInit).toHaveBeenCalled();
+      expect(mockCreateDecisionScorerVersion).toHaveBeenCalledWith(
+        'scorer-uuid',
+        { modelName: 'jev-1.13.0', question: 'Q?', answerOptions: ['a', 'b'] }
+      );
+      expect(result).toEqual(mockVersion);
+    });
+
+    it('should rethrow client errors', async () => {
+      const apiError = new Error('API error');
+      mockCreateDecisionScorerVersion.mockRejectedValueOnce(apiError);
+
+      await expect(
+        createDecisionScorerVersion({
+          scorerId: 'scorer-uuid',
+          modelName: 'jev-1.13.0',
+          question: 'Q?'
+        })
+      ).rejects.toThrow(apiError);
     });
   });
 

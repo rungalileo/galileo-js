@@ -366,6 +366,25 @@ describe('metrics utils', () => {
       );
     });
 
+    it('should infer the output type from the answer options', async () => {
+      await createDecisionMetric({
+        name: 'intent',
+        question: 'Q?',
+        answerOptions: ['a', 'b']
+      });
+      await createDecisionMetric({
+        name: 'quality',
+        question: 'Q?',
+        answerOptions: [
+          { level: 0, label: 'poor' },
+          { level: 1, label: 'good' }
+        ]
+      });
+
+      expect(mockCreateScorer.mock.calls[0][0].outputType).toBe('categorical');
+      expect(mockCreateScorer.mock.calls[1][0].outputType).toBe('discrete');
+    });
+
     it('should send string answer options for a categorical metric', async () => {
       await createDecisionMetric({
         name: 'intent',

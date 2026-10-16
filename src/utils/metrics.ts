@@ -127,7 +127,7 @@ export class Metrics {
     question,
     nodeLevel = StepType.llm,
     modelName = 'jev-1.13.0',
-    outputType = OutputType.BOOLEAN_PROBABILITY,
+    outputType,
     answerOptions,
     inputType,
     description = '',
@@ -143,7 +143,7 @@ export class Metrics {
       undefined,
       undefined,
       [nodeLevel],
-      outputType,
+      outputType ?? inferDecisionOutputType(answerOptions),
       inputType,
       groundTruth
     );
@@ -618,6 +618,21 @@ function isLocalMetricConfig(value: any): value is LocalMetricConfig {
     typeof value.name === 'string' &&
     typeof value.scorerFn === 'function'
   );
+}
+
+/**
+ * Picks the decision output type that matches the answer options: none for
+ * `boolean_probability`, strings for `categorical`, levels for `discrete`.
+ */
+function inferDecisionOutputType(
+  answerOptions: CreateDecisionMetricParams['answerOptions']
+): OutputType {
+  if (!answerOptions || answerOptions.length === 0) {
+    return OutputType.BOOLEAN_PROBABILITY;
+  }
+  return typeof answerOptions[0] === 'string'
+    ? OutputType.CATEGORICAL
+    : OutputType.DISCRETE;
 }
 
 // Standalone utility functions that instantiate the Metrics class
