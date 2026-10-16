@@ -2723,6 +2723,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+    "/scorers/{scorer_id}/version/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Decision Scorer Version
+         * @description Create a decision evaluator version that holds its question, answer options and model.
+         */
+        post: operations["create_decision_scorer_version_scorers__scorer_id__version_decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
   '/scorers/{scorer_id}/version/llm': {
     parameters: {
       query?: never;
@@ -5958,6 +5978,30 @@ export interface components {
       luna_input_type?: components['schemas']['LunaInputTypeEnum'] | null;
       luna_output_type?: components['schemas']['LunaOutputTypeEnum'] | null;
     };
+        /**
+         * CreateDecisionScorerVersionRequest
+         * @description The question and model for a new decision scorer version.
+         *
+         *     The inherited scoreable_node_types, output_type and input_type are optional, but each must
+         *     match the scorer when sent. The service checks these fields, and it checks answer_options
+         *     against the stored output_type.
+         */
+        CreateDecisionScorerVersionRequest: {
+            /** Model Name */
+            model_name: string;
+            /** Num Judges */
+            num_judges?: number | null;
+            /** Scoreable Node Types */
+            scoreable_node_types?: string[] | null;
+            /** Cot Enabled */
+            cot_enabled?: boolean | null;
+            output_type?: components["schemas"]["OutputTypeEnum"] | null;
+            input_type?: components["schemas"]["InputTypeEnum"] | null;
+            /** Question */
+            question: string;
+            /** Answer Options */
+            answer_options?: string[] | components["schemas"]["DecisionLevel"][] | null;
+        };
     /** CreateJobRequest */
     CreateJobRequest: {
       resource_limits?: components['schemas']['TaskResourceLimits'] | null;
@@ -9243,6 +9287,18 @@ export interface components {
       /** Message */
       message: string;
     };
+        /**
+         * DecisionLevel
+         * @description One level of a score question. A question's levels run 0, 1, 2 and so on, with no gaps.
+         */
+        DecisionLevel: {
+            /** Level */
+            level: number;
+            /** Label */
+            label: string;
+            /** Description */
+            description?: string | null;
+        };
     /** DeleteRunResponse */
     DeleteRunResponse: {
       /** Message */
@@ -18038,7 +18094,8 @@ export interface components {
       | 'percentage'
       | 'multilabel'
       | 'retrieved_chunk_list_boolean'
-      | 'boolean_multilabel';
+      | 'boolean_multilabel'
+      | 'boolean_probability';
     /** OverrideAction */
     OverrideAction: {
       /**
@@ -22298,7 +22355,7 @@ export interface components {
      * ScorerTypes
      * @enum {string}
      */
-    ScorerTypes: 'llm' | 'code' | 'luna' | 'preset';
+    ScorerTypes: 'llm' | 'code' | 'luna' | 'decision' | 'preset';
     /** ScorerUpdatedAtFilter */
     ScorerUpdatedAtFilter: {
       /**
@@ -30639,6 +30696,41 @@ export interface operations {
       };
     };
   };
+    create_decision_scorer_version_scorers__scorer_id__version_decision_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scorer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDecisionScorerVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaseScorerVersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
   create_llm_scorer_version_scorers__scorer_id__version_llm_post: {
     parameters: {
       query?: never;

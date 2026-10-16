@@ -3147,6 +3147,44 @@ export type CreateCustomLunaScorerVersionRequest = {
 };
 
 /**
+ * CreateDecisionScorerVersionRequest
+ *
+ * The question and model for a new decision scorer version.
+ *
+ * The inherited scoreable_node_types, output_type and input_type are optional, but each must
+ * match the scorer when sent. The service checks these fields, and it checks answer_options
+ * against the stored output_type.
+ */
+export type CreateDecisionScorerVersionRequest = {
+    /**
+     * Model Name
+     */
+    model_name: string;
+    /**
+     * Num Judges
+     */
+    num_judges?: number | null;
+    /**
+     * Scoreable Node Types
+     */
+    scoreable_node_types?: Array<string> | null;
+    /**
+     * Cot Enabled
+     */
+    cot_enabled?: boolean | null;
+    output_type?: OutputTypeEnum | null;
+    input_type?: InputTypeEnum | null;
+    /**
+     * Question
+     */
+    question: string;
+    /**
+     * Answer Options
+     */
+    answer_options?: Array<string> | Array<DecisionLevel> | null;
+};
+
+/**
  * CreateJobRequest
  */
 export type CreateJobRequest = {
@@ -7445,6 +7483,26 @@ export type DeleteRunResponse = {
    * Message
    */
   message: string;
+};
+
+/**
+ * DecisionLevel
+ *
+ * One level of a score question. A question's levels run 0, 1, 2 and so on, with no gaps.
+ */
+export type DecisionLevel = {
+    /**
+     * Level
+     */
+    level: number;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Description
+     */
+    description?: string | null;
 };
 
 /**
@@ -18541,7 +18599,8 @@ export const OutputTypeEnum = {
   PERCENTAGE: 'percentage',
   MULTILABEL: 'multilabel',
   RETRIEVED_CHUNK_LIST_BOOLEAN: 'retrieved_chunk_list_boolean',
-  BOOLEAN_MULTILABEL: 'boolean_multilabel'
+  BOOLEAN_MULTILABEL: 'boolean_multilabel',
+  BOOLEAN_PROBABILITY: 'boolean_probability'
 } as const;
 
 /**
@@ -23947,6 +24006,7 @@ export const ScorerTypes = {
   LLM: 'llm',
   CODE: 'code',
   LUNA: 'luna',
+  DECISION: 'decision',
   PRESET: 'preset'
 } as const;
 
