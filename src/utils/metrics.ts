@@ -42,6 +42,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ScorerSettings } from '../entities/scorers';
 import { getSdkLogger } from 'galileo-generated';
+import { extractStatusFromError } from './errors';
 
 const sdkLogger = getSdkLogger();
 
@@ -104,10 +105,12 @@ export class Metrics {
    * Creates a decision metric: one typed question answered with probabilities
    * by a decision model such as `jev-1.13.0`.
    *
-   * Creates the scorer, then its decision version. If the version request fails
-   * (unknown model, invalid answer options, feature disabled), the new scorer
-   * is deleted so no empty evaluator is left behind, and the original error is
-   * rethrown.
+   * Creates the scorer, then its decision version. If the API rejects the
+   * version request with an HTTP 4xx (unknown model, invalid answer options,
+   * feature disabled), the new scorer is deleted so no empty evaluator is left
+   * behind, and the original error is rethrown. On a timeout, network error or
+   * 5xx the version may have been saved, so the scorer is kept and the thrown
+   * error names its id.
    *
    * @param params - The parameters for creating the decision metric.
    * @returns A promise that resolves to the created scorer version.
@@ -156,11 +159,23 @@ export class Metrics {
         answerOptions
       });
     } catch (error) {
+      const status = extractStatusFromError(error);
+      if (status === undefined || status < 400 || status >= 500) {
+        // The API gave no definitive rejection (timeout, network error, 5xx), so the
+        // version may have been saved. Keep the scorer rather than delete a working one.
+        const reason = error instanceof Error ? error.message : String(error);
+        throw Object.assign(
+          new Error(
+            `Creating the decision version for scorer ${scorer.id} ("${name}") failed without a definitive API response, so the version may or may not exist. The scorer was kept; check it before retrying or delete it. Cause: ${reason}`
+          ),
+          { cause: error }
+        );
+      }
       try {
         await deleteScorer(scorer.id);
       } catch (cleanupError) {
         sdkLogger.warn(
-          `Failed to delete decision scorer ${scorer.id} after its version request failed: ${String(cleanupError)}`
+          `Failed to delete decision scorer ${scorer.id} after its version request was rejected: ${String(cleanupError)}`
         );
       }
       throw error;

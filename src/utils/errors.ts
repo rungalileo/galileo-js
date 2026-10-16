@@ -32,6 +32,21 @@ export function extractStatusFromError(error: unknown): number | undefined {
 }
 
 /**
+ * Records the HTTP status of a failed response on the error, in the `status`
+ * property that {@link extractStatusFromError} reads.
+ * @returns The same error, so it can be thrown inline
+ */
+export function withHttpStatus<T extends Error>(
+  error: T,
+  status: number | undefined
+): T {
+  if (status !== undefined) {
+    Object.assign(error, { status });
+  }
+  return error;
+}
+
+/**
  * Manages error mapping and retry logic for various error types
  */
 export class ErrorManager {

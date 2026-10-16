@@ -327,6 +327,17 @@ describe('BaseClient API error handling', () => {
     );
   });
 
+  test('test makeRequest records the http status on the thrown error', async () => {
+    server.use(
+      http.get('http://localhost:8088/healthcheck', () =>
+        HttpResponse.json({ detail: 'Validation failed' }, { status: 422 })
+      )
+    );
+    const client = new TestClient();
+
+    await expect(client.testRequest()).rejects.toMatchObject({ status: 422 });
+  });
+
   test('test makeRequest throws with detail message when detail is validation array', async () => {
     server.use(
       http.get('http://localhost:8088/healthcheck', () =>

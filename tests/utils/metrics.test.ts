@@ -467,23 +467,32 @@ describe('metrics utils', () => {
       expect(mockCreateScorer.mock.calls[0][0].defaults).toBeUndefined();
     });
 
-    it('should delete the scorer and rethrow when the version request fails', async () => {
-      const apiError = new Error('Unknown decision model: nope-1.0');
-      mockCreateDecisionScorerVersion.mockRejectedValueOnce(apiError);
+    const apiErrorWithStatus = (message: string, status: number): Error =>
+      Object.assign(new Error(message), { status });
 
-      await expect(
-        createDecisionMetric({
-          name: 'intent',
-          question: 'What does the customer want?',
-          modelName: 'nope-1.0'
-        })
-      ).rejects.toThrow(apiError);
+    it.each([400, 403, 404, 422])(
+      'should delete the scorer and rethrow when the version request is rejected with %i',
+      async (status) => {
+        const apiError = apiErrorWithStatus(
+          'Unknown decision model: nope-1.0',
+          status
+        );
+        mockCreateDecisionScorerVersion.mockRejectedValueOnce(apiError);
 
-      expect(mockDeleteScorer).toHaveBeenCalledWith(EXAMPLE_CUSTOM_SCORER.id);
-    });
+        await expect(
+          createDecisionMetric({
+            name: 'intent',
+            question: 'What does the customer want?',
+            modelName: 'nope-1.0'
+          })
+        ).rejects.toBe(apiError);
+
+        expect(mockDeleteScorer).toHaveBeenCalledWith(EXAMPLE_CUSTOM_SCORER.id);
+      }
+    );
 
     it('should rethrow the version error when deleting the scorer also fails', async () => {
-      const apiError = new Error('answer_options must be unique');
+      const apiError = apiErrorWithStatus('answer_options must be unique', 422);
       mockCreateDecisionScorerVersion.mockRejectedValueOnce(apiError);
       mockDeleteScorer.mockRejectedValueOnce(new Error('delete failed'));
 
@@ -494,8 +503,30 @@ describe('metrics utils', () => {
           outputType: OutputType.CATEGORICAL,
           answerOptions: ['a', 'A']
         })
-      ).rejects.toThrow(apiError);
+      ).rejects.toBe(apiError);
     });
+
+    it.each([
+      ['a 5xx response', apiErrorWithStatus('Bad gateway', 502)],
+      ['a network error', new Error('Request failed: timeout of 5000ms')]
+    ])(
+      'should keep the scorer and name its id after %s',
+      async (_label, failure) => {
+        mockCreateDecisionScorerVersion.mockRejectedValueOnce(failure);
+
+        const result = createDecisionMetric({
+          name: 'intent',
+          question: 'What does the customer want?'
+        });
+
+        await expect(result).rejects.toThrow(
+          `scorer ${EXAMPLE_CUSTOM_SCORER.id}`
+        );
+        await expect(result).rejects.toThrow(/may or may not exist/);
+        await expect(result).rejects.toThrow(failure.message);
+        expect(mockDeleteScorer).not.toHaveBeenCalled();
+      }
+    );
 
     it('should not delete anything when creating the scorer fails', async () => {
       const apiError = new Error('403 decision_model_metrics is disabled');
