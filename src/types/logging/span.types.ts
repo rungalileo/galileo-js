@@ -475,7 +475,11 @@ export class ToolSpan extends StepWithChildSpans {
 
 // Type for all span types
 export type Span =
-  WorkflowSpan | AgentSpan | LlmSpan | RetrieverSpan | ToolSpan;
+  | WorkflowSpan
+  | AgentSpan
+  | LlmSpan
+  | RetrieverSpan
+  | ToolSpan;
 
 /**
  * Type guard to validate if a value is a valid AgentType
