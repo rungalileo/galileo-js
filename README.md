@@ -6,24 +6,24 @@ JS/TypeScript client library for the Galileo platform.
 
 ### Installation
 
-`npm i galileo`
+`npm i splunkao`
 
 ### Setup
 
 Set the following environment variables.
 For credentials, either:
 
-- `GALILEO_API_KEY`: Your Galileo API key
+- `SPLUNKAO_API_KEY`: Your Galileo API key
   or
-- `GALILEO_USERNAME`: Your Galileo login
-- `GALILEO_PASSWORD`: Your Galileo password
+- `SPLUNKAO_USERNAME`: Your Galileo login
+- `SPLUNKAO_PASSWORD`: Your Galileo password
 
 then:
 
-- `GALILEO_PROJECT`: (Optional) Project name
-- `GALILEO_LOG_STREAM`: (Optional) Log stream name
+- `SPLUNKAO_PROJECT`: (Optional) Project name
+- `SPLUNKAO_LOG_STREAM`: (Optional) Log stream name
 
-Note: if you would like to point to an environment other than app.galileo.ai, you'll need to set the GALILEO_CONSOLE_URL environment variable.
+Note: if you would like to point to an environment other than app.galileo.ai, you'll need to set the SPLUNKAO_CONSOLE_URL environment variable.
 
 ### Optional Peer Dependencies
 
@@ -50,7 +50,7 @@ npm install @openai/agents
 Logging with the OpenAI wrapper
 
 ```js
-import { wrapOpenAI, flush, log, init } from 'galileo';
+import { wrapOpenAI, flush, log, init } from 'splunkao';
 import { OpenAI } from 'openai';
 
 const openai = wrapOpenAI(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
@@ -69,7 +69,7 @@ await flush();
 Using `ingestionHook` with `wrapOpenAI` for custom trace handling:
 
 ```js
-import { wrapOpenAI } from 'galileo';
+import { wrapOpenAI } from 'splunkao';
 import { OpenAI } from 'openai';
 
 const openai = wrapOpenAI(
@@ -91,7 +91,7 @@ const result = await openai.chat.completions.create({
 Using the `log` function wrapper
 
 ```js
-import { wrapOpenAI, flush, log, init } from 'galileo';
+import { wrapOpenAI, flush, log, init } from 'splunkao';
 import { OpenAI } from 'openai';
 
 const openai = wrapOpenAI(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }));
@@ -105,7 +105,7 @@ const callOpenAI = async (input) => {
   return result;
 };
 
-// Optionally initialize the logger if you haven't set GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables
+// Optionally initialize the logger if you haven't set SPLUNKAO_PROJECT and SPLUNKAO_LOG_STREAM environment variables
 const config = {
   projectName: 'My Test Project',
   logStreamName: 'my-ts-test-log-stream'
@@ -132,13 +132,13 @@ const result = await wrappedFunc('world');
 await flush(config);
 ```
 
-Logging with the GalileoLogger
+Logging with the SplunkaoLogger
 
 ```js
-import { GalileoLogger } from 'galileo';
+import { SplunkaoLogger } from 'splunkao';
 
-// You can set the GALILEO_PROJECT and GALILEO_LOG_STREAM environment variables
-const logger = new GalileoLogger({
+// You can set the SPLUNKAO_PROJECT and SPLUNKAO_LOG_STREAM environment variables
+const logger = new SplunkaoLogger({
   projectName: 'my-test-project',
   logStreamName: 'my-test-log-stream'
 });
@@ -195,20 +195,20 @@ const flushedTraces = await logger.flush();
 
 #### LangChain Integration
 
-Use `GalileoCallback` to automatically log LangChain traces. Requires `@langchain/core` as a peer dependency.
+Use `SplunkaoCallback` to automatically log LangChain traces. Requires `@langchain/core` as a peer dependency.
 
 ```bash
 npm install @langchain/core @langchain/openai
 ```
 
 ```js
-import { GalileoCallback, init, flush } from 'galileo';
+import { SplunkaoCallback, init, flush } from 'splunkao';
 import { ChatOpenAI } from '@langchain/openai';
 
 await init({ projectName: 'my-project' });
 
 const model = new ChatOpenAI({ model: 'gpt-4o' });
-const callback = new GalileoCallback();
+const callback = new SplunkaoCallback();
 
 const response = await model.invoke('Say hello!', { callbacks: [callback] });
 
@@ -217,16 +217,16 @@ await flush();
 
 #### OpenAI Agents SDK Integration
 
-Use `GalileoTracingProcessor` to log traces from the OpenAI Agents SDK. Requires `@openai/agents` as a peer dependency.
+Use `SplunkaoTracingProcessor` to log traces from the OpenAI Agents SDK. Requires `@openai/agents` as a peer dependency.
 
 ```js
-import { GalileoTracingProcessor } from 'galileo';
+import { SplunkaoTracingProcessor } from 'splunkao';
 
 // Basic usage
-const processor = new GalileoTracingProcessor();
+const processor = new SplunkaoTracingProcessor();
 
 // With custom ingestion hook
-const processorWithHook = new GalileoTracingProcessor(
+const processorWithHook = new SplunkaoTracingProcessor(
   undefined, // no custom logger
   true, // flush on trace end
   async (request) => {
@@ -240,7 +240,7 @@ const processorWithHook = new GalileoTracingProcessor(
 Create a dataset and upload it to Galileo:
 
 ```js
-import { createDataset } from 'galileo';
+import { createDataset } from 'splunkao';
 
 const dataset = await createDataset({
   name: 'names',
@@ -256,7 +256,7 @@ const dataset = await createDataset({
 Retrieve an existing dataset:
 
 ```js
-import { getDataset } from 'galileo';
+import { getDataset } from 'splunkao';
 
 const dataset = await getDataset({ name: 'names' });
 ```
@@ -264,7 +264,7 @@ const dataset = await getDataset({ name: 'names' });
 Get a list of all datasets:
 
 ```js
-import { getDatasets } from 'galileo';
+import { getDatasets } from 'splunkao';
 
 const datasets = await getDatasets();
 ```
@@ -274,7 +274,7 @@ const datasets = await getDatasets();
 Create a prompt template and use it to run a prompt experiment:
 
 ```js
-import { createPrompt, runExperiment } from 'galileo';
+import { createPrompt, runExperiment } from 'splunkao';
 
 const template = await createPrompt({
   template: [{ role: 'user', content: 'Say "Hello, {name}"!' }],
@@ -295,7 +295,7 @@ await runExperiment({
 You can also use an existing template and a dataset object:
 
 ```js
-import { getPromptTemplate, getDataset, runExperiment } from 'galileo';
+import { getPromptTemplate, getDataset, runExperiment } from 'splunkao';
 
 const template = await getPromptTemplate({
   projectName: 'my-test-project-5',
@@ -318,7 +318,7 @@ await runExperiment({
 You can also use a runner function to run an experiment with a dataset:
 
 ```js
-import { runExperiment } from 'galileo';
+import { runExperiment } from 'splunkao';
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -343,7 +343,7 @@ await runExperiment({
 Here's how you can use a locally generated dataset with a runner function:
 
 ```js
-import { runExperiment } from 'galileo';
+import { runExperiment } from 'splunkao';
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -388,6 +388,6 @@ In the root directory, run:
 In the examples directory, run:
 
 - `npm i`
-- `npm link galileo`
+- `npm link splunkao`
 
 Use `node` to run examples, e.g. `node examples/logger/workflow.js`.
