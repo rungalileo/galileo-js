@@ -641,7 +641,8 @@ export class Experiments {
 
   private async configureExperimentMetrics(
     metrics:
-      (GalileoMetrics | string | Metric | LocalMetricConfig)[] | undefined,
+      | (GalileoMetrics | string | Metric | LocalMetricConfig)[]
+      | undefined,
     projectId: string,
     experimentId: string
   ): Promise<[ScorerConfig[], LocalMetricConfig[]]> {
@@ -749,7 +750,8 @@ export class Experiments {
     projectName: string,
     projectId: string,
     metrics:
-      (GalileoMetrics | string | Metric | LocalMetricConfig)[] | undefined,
+      | (GalileoMetrics | string | Metric | LocalMetricConfig)[]
+      | undefined,
     promptTemplate: PromptTemplateType,
     promptSettings: PromptRunSettings
   ): Promise<RunExperimentOutput> {
