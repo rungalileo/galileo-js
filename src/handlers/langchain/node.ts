@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export type LANGCHAIN_NODE_TYPE =
-  'agent' | 'chain' | 'chat' | 'llm' | 'retriever' | 'tool';
+  | 'agent'
+  | 'chain'
+  | 'chat'
+  | 'llm'
+  | 'retriever'
+  | 'tool';
 
 /**
  * A node in the LangChain trace.
